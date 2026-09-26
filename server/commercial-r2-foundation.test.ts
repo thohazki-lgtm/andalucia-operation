@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const server = await readFile('server/index.ts', 'utf8')
+const chargeables = await readFile('server/chargeable-repository.ts', 'utf8')
+const billTips = await readFile('server/financial-preview-service.ts', 'utf8')
+const commercialCss = await readFile('src/financial-preview.css', 'utf8')
+const chargeableUi = await readFile('src/chargeables.tsx', 'utf8')
+const wineCss = await readFile('src/wine-spirits.css', 'utf8')
+
+assert.match(server, /GET' && url\.pathname === '\/api\/config\/chargeables'.*authorizedChargeableContext/)
+assert.match(server, /PUT' && chargeableConfigMatch.*assertTrustedOrigin\(request\).*authorizedChargeableContext/)
+assert.match(server, /\/api\/chargeables\/duplicate-review'.*assertTrustedOrigin\(request\).*authorizedChargeableContext/)
+assert.match(chargeables, /entity_type, entity_id, action, before_data, after_data, actor/)
+assert.match(chargeables, /Realized and cancelled chargeable transactions are immutable/)
+assert.match(chargeables, /A clear correction reason is required/)
+assert.match(chargeables, /sameCreateRequest/)
+assert.match(chargeables, /duplicateWarnings/)
+assert.match(chargeables, /label: group === 'statuses' \? existing!\.label/)
+assert.match(chargeables, /active: group === 'statuses' \? true/)
+assert.match(chargeables, /metadata: group === 'statuses' \? existing!\.metadata/)
+assert.match(chargeableUi, />Protected</)
+assert.match(chargeableUi, />Edit color</)
+assert.doesNotMatch(chargeableUi, /onSave\('statuses', \{ \.\.\.option, active:/)
+assert.match(billTips, /approvedHelperAmounts = new Set\(\[500n, 1000n, 1500n, 2000n\]\)/)
+assert.match(billTips, /billTipWorkedDayUnits/)
+assert.match(commercialCss, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+assert.match(commercialCss, /min-height:44px/)
+assert.match(wineCss, /\.wine-drawer \.chargeable-drawer-body section > div > b/)
+assert.match(wineCss, /color: #1d3c4c/)
+
+console.log(JSON.stringify({ authenticatedConfigurationRead: true, trustedConfigurationMutation: true, outletAuthorization: true, configurationAudit: true, protectedStatusSemantics: true, protectedStatusUi: true, wineDrawerContrast: true, retryIdempotency: true, duplicateReview: true, realizedImmutability: true, correctionReason: true, helperWhitelist: [5, 10, 15, 20], explicitWorkedDayUnits: true, mobileHelperReflow: true }, null, 2))

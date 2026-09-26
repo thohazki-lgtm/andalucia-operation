@@ -1,0 +1,39 @@
+.modal.maintenance-modal {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.maintenance-modal .modal-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.maintenance-modal .modal-title h3 {
+  min-width: 0;
+  font: 600 20px 'Playfair Display', serif;
+  color: #183e53;
+}
+
+.maintenance-modal .modal-title .icon-button {
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .modal.maintenance-modal {
+    width: calc(100vw - 16px);
+    padding: 20px;
+  }
+
+  .maintenance-modal .form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-inline: 0;
+  }
+
+  .maintenance-modal .form-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+}

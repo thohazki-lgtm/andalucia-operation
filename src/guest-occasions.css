@@ -1,0 +1,69 @@
+.occasion-toolbar,.occasion-toolbar>div,.occasion-filters,.occasion-config-heading{display:flex;align-items:center;gap:10px}
+.occasion-toolbar,.occasion-summary,.occasion-panel{width:100%;max-width:100%;min-width:0}
+.occasion-toolbar>div{max-width:100%;min-width:0;flex-wrap:wrap}
+.occasion-panel{contain:inline-size}
+.occasion-toolbar{justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
+.occasion-toolbar label{display:flex;align-items:center;gap:8px;font-size:12px;color:#657780}
+.occasion-toolbar input{width:auto}
+.occasion-toolbar span{font-weight:700;color:#274657}
+.occasion-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.occasion-summary article{padding:18px}
+.occasion-summary span{display:block;color:#6d7e88;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.occasion-summary strong{display:block;margin-top:8px;font-size:28px;color:#183e53}
+.occasion-summary .attention{border-left:4px solid #b38b3a}
+.occasion-summary .vip{border-left:4px solid #6c63a8}.occasion-summary .complete{border-left:4px solid #2f8063}
+.occasion-panel{padding:0;overflow:hidden}
+.occasion-tabs{display:flex;gap:6px;padding:12px 16px 0;overflow-x:auto;border-bottom:1px solid #e3eaee}.occasion-tabs button{appearance:none;border:0;border-bottom:3px solid transparent;background:transparent;color:#60737d;font:inherit;font-size:12px;font-weight:700;white-space:nowrap;padding:10px 9px;min-height:42px;cursor:pointer}.occasion-tabs button.active{color:#194d69;border-bottom-color:#b48b3d}.occasion-tabs b{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:4px;padding:0 5px;border-radius:10px;background:#edf2f4;color:#536871;font-size:10px}.occasion-tabs button.active b{background:#dceaf0;color:#194d69}
+.occasion-filters{padding:16px;border-bottom:1px solid #e3eaee;flex-wrap:wrap}
+.occasion-filters input{min-width:300px;flex:1}
+.occasion-filters select{min-width:180px}
+.occasion-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden}
+.occasion-table{width:100%;border-collapse:collapse;min-width:1000px}
+.occasion-table th,.occasion-table td{padding:12px 14px;border-bottom:1px solid #e7edf0;text-align:left;vertical-align:middle}
+.occasion-table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7c85;background:#f7fafb}
+.occasion-table td b,.occasion-table td small{display:block}
+.occasion-table td small{margin-top:3px;color:#7a8991}
+.occasion-time{color:#173f55;font-size:14px;white-space:nowrap}
+.occasion-chip{display:inline-block;padding:5px 9px;border-radius:14px;color:#fff;font-size:12px;font-weight:700}
+.occasion-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.linked-booking-note{margin:10px 0;color:#55707f;font-size:12px;background:#edf5f7;border-radius:8px;padding:9px 11px}
+.occasion-detail{display:grid;grid-template-columns:155px 1fr;gap:11px 18px}
+.occasion-detail span{color:#6d7d86}
+.occasion-config{margin-top:18px}
+.occasion-config-subtitle{margin:5px 0 0;color:#627680;font-size:12px;line-height:1.45}
+.occasion-config-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:18px;align-items:start}
+.occasion-config-card{min-width:0;border:1px solid #e2e9ed;border-radius:12px;background:#fff;padding:16px;align-self:start}
+.occasion-config-heading{justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+.occasion-config-heading h4{margin:0;color:#294858;font-size:15px}
+.occasion-config-heading p{margin:4px 0 0;color:#6a7c86;font-size:11px;line-height:1.45}
+.occasion-config-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e4ebef;min-width:0}
+.occasion-config-row:last-child{border-bottom:0}
+.occasion-config-row b,.occasion-config-row small{display:block}
+.occasion-config-row b{min-width:0;color:#294858;font-size:13px;overflow-wrap:anywhere}
+.occasion-config-row small{margin-top:3px;color:#75858e;font-size:11px}
+.occasion-config-row .status-dot{display:inline-block;margin-right:8px}
+.config-lock{display:inline-block;margin-right:5px;font-size:11px;line-height:1;vertical-align:1px}
+.config-protected-state{color:#657985;font-size:11px;font-weight:600;white-space:nowrap}
+.occasion-config-row .link{min-height:40px;padding-inline:8px;white-space:nowrap}
+.occasion-drawer-backdrop{position:fixed;inset:0;z-index:80;background:rgba(10,31,43,.28);display:flex;justify-content:flex-end}.occasion-drawer{width:min(520px,100vw);height:100%;background:#fff;box-shadow:-18px 0 45px rgba(20,48,63,.18);display:flex;flex-direction:column;animation:occasion-drawer-in .18s ease-out}.occasion-drawer>header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px;border-bottom:1px solid #e2e9ed}.occasion-drawer>header h2{margin:3px 0 10px;color:#163e54}.occasion-drawer .close{position:static;flex:0 0 auto;min-width:44px;min-height:44px}.occasion-drawer-body{overflow-y:auto;padding:8px 24px 24px}.occasion-drawer>footer{display:flex;justify-content:flex-end;gap:9px;padding:16px 24px;border-top:1px solid #e2e9ed;flex-wrap:wrap}.drawer-section{padding:17px 0;border-bottom:1px solid #e6ecef}.drawer-section h3{margin:0 0 11px;color:#506a78;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.drawer-section>div{display:grid;gap:9px}.drawer-detail{display:grid;grid-template-columns:145px minmax(0,1fr);gap:14px}.drawer-detail span{color:#71818a;font-size:12px}.drawer-detail b{color:#253f4d;font-size:13px;overflow-wrap:anywhere}.drawer-help{margin:0 0 10px;color:#627680;font-size:12px;line-height:1.5}@keyframes occasion-drawer-in{from{transform:translateX(28px);opacity:.65}to{transform:translateX(0);opacity:1}}
+@media(max-width:1000px){.occasion-config-grid{grid-template-columns:1fr}
+.occasion-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){.occasion-form-grid{grid-template-columns:1fr}
+.occasion-summary{grid-template-columns:1fr}
+.occasion-toolbar>div{flex-wrap:wrap}
+.occasion-config-card{padding:13px}
+.occasion-config-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.occasion-config-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}
+.occasion-config-row>div{grid-column:1/-1}
+.occasion-config-row .config-protected-state,.occasion-config-row .badge{justify-self:start}
+.occasion-config-row .link{justify-self:end;min-height:44px}
+.occasion-config-row.manual .link:last-child{grid-column:2}
+}
+@media(max-width:1050px) and (min-width:701px){.occasion-table{min-width:900px}.occasion-table th,.occasion-table td{padding:10px 9px}.occasion-table th:first-child,.occasion-table td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:8px 0 12px -12px #173d56}.occasion-table th:first-child{z-index:3;background:#f7fafb}}
+@media(max-width:700px){.occasion-filters input,.occasion-filters select{width:100%;min-width:0}.occasion-table{display:none}.occasion-table-wrap>.mobile-occasion-list{display:grid;gap:10px;padding:10px}.mobile-occasion-card .occasion-chip{font-size:10px}.mobile-occasion-card .attention-flag{color:#9a6823;background:#fbf0dc;border-radius:12px;padding:5px 8px;font-size:9px;font-weight:700;white-space:nowrap}.occasion-card-time{display:inline-block;margin-right:7px;color:#173f55;font-size:13px;font-weight:800}.occasion-drawer>header,.occasion-drawer-body,.occasion-drawer>footer{padding-left:16px;padding-right:16px}.drawer-detail{grid-template-columns:112px minmax(0,1fr)}.occasion-drawer>footer>*{flex:1;min-height:44px}.occasion-tabs{padding-left:10px;padding-right:10px}}
+main:has(.occasion-toolbar){min-width:0;max-width:100%;overflow-x:hidden}
+.attention-records{border-bottom:1px solid #dde6ea;background:#fbfcfd}.attention-records>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px 8px}.attention-records>header h3{margin:2px 0 0;font-size:16px;color:#213f50}.attention-table-wrap{width:100%;max-width:100%;overflow-x:auto}.attention-table{width:100%;min-width:900px;border-collapse:collapse}.attention-table th,.attention-table td{padding:11px 14px;border-top:1px solid #e7edf0;text-align:left;vertical-align:middle}.attention-table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#5f7382;background:#f7fafb}.attention-table td b,.attention-table td small{display:block}.attention-table td small{margin-top:3px;color:#71818a}.attention-evidence{max-width:260px;color:#536a77;font-size:12px;line-height:1.4}.attention-state{background:#f6ead2;color:#835f1e}.mobile-attention-list{display:none}
+.evidence-disclosure{margin-top:2px;border:1px solid #e0e8ec;border-radius:9px;background:#f8fafb;padding:9px 11px}.evidence-disclosure summary{cursor:pointer;color:#28556d;font-size:12px;font-weight:700}.evidence-disclosure p{margin:9px 0 0;color:#465f6c;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:700px){.occasion-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.occasion-summary article{padding:13px}.occasion-summary strong{font-size:23px}.occasion-summary span{font-size:10px}.attention-table{display:none}.mobile-attention-list{display:grid;gap:10px;padding:10px}.attention-records>header{padding:13px 12px 5px}.mobile-attention-card p{margin:0;color:#536a77;font-size:12px;line-height:1.45;overflow-wrap:anywhere}.mobile-attention-card .attention-flag{color:#825d1c;background:#fbf0dc;border-radius:12px;padding:5px 8px;font-size:9px;font-weight:700;white-space:nowrap}.occasion-tabs button{min-height:44px;padding-left:11px;padding-right:11px}}
+.intelligence-attention{margin-bottom:16px}.intelligence-attention>.panel-title{align-items:center}.intelligence-attention>div:last-child{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}.intelligence-attention article{min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:5px 9px}.intelligence-attention article small,.intelligence-attention article p{grid-column:2;min-width:0;margin:0;overflow-wrap:anywhere}.intelligence-attention article p{color:var(--muted);font-size:12px}.badge.danger{background:#f7e3e0;color:#8b3028}

@@ -1,0 +1,18 @@
+/* Maintenance R2.1 table refinement: contained scrolling with a readable record identity. */
+@media (min-width:701px) {
+  .maintenance-table th:first-child,
+  .maintenance-table td:first-child {
+    position: sticky;
+    left: 0;
+    min-width: 260px;
+    max-width: 340px;
+    background: #fff;
+    box-shadow: 1px 0 0 #dce5e9, 7px 0 12px -12px rgba(24, 62, 83, .55);
+    z-index: 1;
+  }
+
+  .maintenance-table th:first-child {
+    background: #f7fafb;
+    z-index: 2;
+  }
+}

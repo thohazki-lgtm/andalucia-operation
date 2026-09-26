@@ -1,0 +1,63 @@
+.wine-page { min-width: 0; display: grid; gap: 1rem; }
+.wine-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; min-width: 0; }
+.wine-toolbar h2 { margin: .15rem 0 .25rem; }
+.wine-toolbar p { margin: 0; }
+.wine-toolbar > div:last-child { display: flex; align-items: flex-end; gap: .75rem; flex: 0 0 auto; }
+.wine-toolbar label { display: grid; gap: .35rem; font-size: .75rem; font-weight: 700; color: var(--ink-muted, #66726e); }
+.wine-panel { min-width: 0; overflow: hidden; }
+.wine-filters { display: grid; grid-template-columns: minmax(15rem, 1fr) minmax(12rem, .65fr) minmax(10rem, .45fr) auto; align-items: center; gap: .65rem; padding: 1rem; }
+.wine-filters input:not([type="checkbox"]), .wine-filters select { width: 100%; min-width: 0; }
+.wine-table-wrap { min-width: 0; max-width: 100%; overflow-x: auto; outline-offset: -2px; }
+.wine-table { min-width: 1120px; width: 100%; }
+.wine-table th, .wine-table td { white-space: nowrap; }
+.wine-table .wine-name { white-space: normal; min-width: 11rem; max-width: 18rem; }
+.wine-table td small { display: block; margin-top: .2rem; color: var(--ink-muted, #66726e); }
+.wine-status { display: inline-flex; align-items: center; min-height: 1.7rem; padding: .22rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 800; background: #edf0ed; color: #49534f; }
+.wine-status.charged { background: #e0f2e9; color: #1f6948; }
+.wine-status.pending { background: #fff2d6; color: #8a6111; }
+.wine-status.cancelled, .wine-status.void { background: #f3e7e5; color: #8c4035; }
+.archived-row { opacity: .68; }
+.wine-mobile-list { display: none; }
+.wine-modal { max-width: 880px; }
+.wine-form-intro { margin-top: -.4rem; color: var(--ink-muted, #66726e); }
+.wine-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.wine-form-grid label { min-width: 0; }
+.wine-form-grid .wine-wide { grid-column: 1 / -1; }
+.wine-form-grid small { color: var(--ink-muted, #66726e); font-weight: 500; }
+.wine-calculation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; }
+.wine-calculation > div { display: grid; gap: .2rem; min-width: 0; padding: .7rem; border: 1px solid rgba(24, 63, 52, .1); border-radius: .65rem; background: #f7f8f5; }
+.wine-calculation span { font-size: .7rem; color: var(--ink-muted, #66726e); }
+.wine-calculation b { overflow-wrap: anywhere; }
+.wine-calculation-empty { color: var(--ink-muted, #66726e); }
+.wine-duplicate-warning { display: grid; gap: .4rem; padding: .85rem; border: 1px solid #d9aa56; border-radius: .75rem; background: #fff8e7; color: #67470e; }
+.wine-duplicate-warning p { margin: 0; }
+.wine-drawer { width: min(620px, 100vw); }
+.wine-drawer .chargeable-drawer-body { color: #203f50; }
+.wine-drawer .chargeable-drawer-body section { display: grid; grid-template-columns: minmax(0, 1fr); gap: .55rem; padding: 1rem 0; border-bottom: 1px solid #e2eaed; }
+.wine-drawer .chargeable-drawer-body section h3 { margin: 0 0 .25rem; color: #173e55; font-size: .72rem; font-weight: 800; letter-spacing: .075em; text-transform: uppercase; }
+.wine-drawer .chargeable-drawer-body section > div { display: grid; grid-template-columns: minmax(8.5rem, .75fr) minmax(0, 1.25fr); gap: .8rem; align-items: start; min-width: 0; }
+.wine-drawer .chargeable-drawer-body section > div > span { color: #5f7382; font-size: .76rem; font-weight: 600; line-height: 1.4; }
+.wine-drawer .chargeable-drawer-body section > div > b { min-width: 0; color: #1d3c4c; font-size: .8rem; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+  .wine-toolbar { align-items: stretch; flex-direction: column; }
+  .wine-toolbar > div:last-child { justify-content: space-between; }
+  .wine-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wine-calculation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .wine-toolbar > div:last-child { align-items: stretch; flex-direction: column; }
+  .wine-filters { grid-template-columns: 1fr; padding: .8rem; }
+  .wine-table { display: none; }
+  .wine-table-wrap { overflow: visible; padding: .75rem; }
+  .wine-mobile-list { display: grid; gap: .75rem; }
+  .wine-form-grid, .wine-calculation { grid-template-columns: 1fr; }
+  .wine-form-grid .wine-wide { grid-column: auto; }
+  .wine-modal { max-height: 94vh; overflow-y: auto; }
+  .wine-drawer .chargeable-drawer-body section > div { grid-template-columns: minmax(6.5rem, .65fr) minmax(0, 1.35fr); gap: .6rem; }
+}
+
+@media (max-width: 390px) {
+  .wine-drawer .chargeable-drawer-body section > div { grid-template-columns: minmax(0, 1fr); gap: .1rem; }
+}
