@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-entitlement-balances-'))
@@ -16,7 +17,7 @@ const insertRoster = async (repository: StaffRepository, staffId: string, date: 
 }
 
 try {
-  const repository = new StaffRepository(dataDirectory)
+  const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await repository.initialize()
   const staff = await repository.list()
   const active = staff.find(person => person.employmentStatus === 'active')!
@@ -81,7 +82,7 @@ try {
   assert.equal(holidayCalendarRows.rows[0].count, 0)
   await repository.getDatabase().close()
 
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const afterRestart = await reopened.entitlementBalance(active.id, 2026, '2026-09-14', '2026-09-20')
   assert.deepEqual(afterRestart.annualLeave, { entitlement: 30, used: 4, remaining: 26 })

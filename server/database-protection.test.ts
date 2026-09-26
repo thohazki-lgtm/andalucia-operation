@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { spawn } from 'node:child_process'
-import { createStoreManifest } from './migration-filesystem.js'
-import { reviewedMigrationSet } from './migration-store.js'
+import { createStoreManifest, manifestsMatch } from './migration-filesystem.js'
+import { resolveMigrationDataDirectory, reviewedMigrationSet } from './migration-store.js'
 import { createVerifiedBackup, requireRecentVerifiedBackup, verifyBackupCopy } from './database-backup.js'
 import { STORE_IDENTITY_AUTHORIZATION, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, resolveRuntimeStore, storeIdentityPath } from './database-protection.js'
 
@@ -80,6 +80,13 @@ try {
   assert.equal(backup.metadata.openTestStatus, 'PASS')
   assert.equal(backup.metadata.preflightStatus, 'READY')
   assert.equal(backup.metadata.operationalFingerprint.staff && typeof backup.metadata.operationalFingerprint.staff, 'object')
+  assert.equal((await readFile(storeIdentityPath(backup.backupDirectory), 'utf8')).includes('"role": "backup"'), true)
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: backup.backupDirectory, role: 'backup' }), /BACKUP_ORIGINAL_OPEN_FORBIDDEN/)
+  assert.throws(() => resolveMigrationDataDirectory({ configuredPath: backup.backupDirectory }), /BACKUP_ORIGINAL_MIGRATION_FORBIDDEN/)
+  const originalBeforeVerification = await createStoreManifest(backup.backupDirectory)
+  await verifyBackupCopy({ backupDirectory: backup.backupDirectory, sourceManifest: backup.metadata.backupManifest, verificationDirectory: join(root, 'second-verification', 'postgres'), copyRole: 'rehearsal' })
+  const originalAfterVerification = await createStoreManifest(backup.backupDirectory)
+  assert.equal(manifestsMatch(originalBeforeVerification, originalAfterVerification), true)
   await requireRecentVerifiedBackup({ metadataPath: join(backup.folder, 'backup-metadata.json'), sourceDirectory: canonical, maximumAgeMs: 60_000 })
 
   const interrupted = join(root, 'interrupted', 'postgres')
@@ -103,7 +110,7 @@ try {
   const outletManagerPermissions = ['manage_staff', 'manage_bookings']
   assert.equal(outletManagerPermissions.includes('manage_platform'), false)
   assert.equal((await readFile(storeIdentityPath(canonical), 'utf8')).includes('isolated-canonical'), true)
-  console.log(JSON.stringify({ explicitPath: true, canonicalIdentity: true, wrongIdentityRejected: true, staleMarkerPreserved: true, crashSimulationDetected: true, recoveryMarkerBlocked: true, pendingMigrationBlockedWithoutWrite: true, unexpectedMigrationBlocked: true, offlineBackupRequired: true, verifiedBackup: true, sqlOpenTest: true, preflight: true, fingerprint: true, interruptedCopyRejected: true, failedPreflightRejected: true, unreadableBackupRejected: true, wrongStoreRejected: true, ownerOnlyHealthFoundation: true }, null, 2))
+  console.log(JSON.stringify({ explicitPath: true, canonicalIdentity: true, wrongIdentityRejected: true, staleMarkerPreserved: true, crashSimulationDetected: true, recoveryMarkerBlocked: true, pendingMigrationBlockedWithoutWrite: true, unexpectedMigrationBlocked: true, offlineBackupRequired: true, verifiedBackup: true, backupIdentity: true, directBackupOpenRejected: true, backupMigrationRejected: true, disposableVerificationAllowed: true, rehearsalRoleAllowed: true, originalBackupByteStable: true, sqlOpenTest: true, preflight: true, fingerprint: true, interruptedCopyRejected: true, failedPreflightRejected: true, unreadableBackupRejected: true, wrongStoreRejected: true, ownerOnlyHealthFoundation: true }, null, 2))
 } finally {
   await rm(root, { recursive: true, force: true })
 }

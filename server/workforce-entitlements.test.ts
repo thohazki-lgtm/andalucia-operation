@@ -3,11 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-workforce-foundation-'))
 try {
-  const repository = new StaffRepository(dataDirectory)
+  const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await repository.initialize()
   const initial = await repository.entitlements()
   const active = initial.find(item => item.employmentStatus === 'active')!
@@ -30,7 +31,7 @@ try {
   assert.equal((await repository.publicHolidays(2027)).length, 0)
   await repository.getDatabase().close()
 
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const persisted = await reopened.entitlements()
   assert.deepEqual(persisted.find(item => item.staffId === active.staffId) && [persisted.find(item => item.staffId === active.staffId)!.annualLeavePerYear, persisted.find(item => item.staffId === active.staffId)!.weeklyOffEntitlement, persisted.find(item => item.staffId === active.staffId)!.publicHolidayPerYear], [31, 2, 12])

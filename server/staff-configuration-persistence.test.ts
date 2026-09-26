@@ -3,11 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-final-polish-'))
 try {
-  const first = new StaffRepository(dataDirectory)
+  const first = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await first.initialize()
   const duty = await first.saveConfiguration('duty-codes', { id: randomUUID(), value: 'VALIDATION_DUTY', label: 'Validation Duty', color: '#345678', active: true, metadata: { displayCode: 'VD', countsAsWorking: true, dutyClassification: 'working' } })
   const employment = await first.saveConfiguration('employment-statuses', { id: randomUUID(), value: 'validation_status', label: 'Validation Status', active: true, metadata: {} })
@@ -18,7 +19,7 @@ try {
   await first.saveConfiguration('positions', { ...position, active: false })
   await first.getDatabase().close()
 
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const configuration = await reopened.configuration()
   const historicalStaff = await reopened.find(staffId)

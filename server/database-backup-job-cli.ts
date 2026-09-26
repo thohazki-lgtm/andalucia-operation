@@ -29,9 +29,10 @@ else {
         const backup = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot: resolve('.backups'), exclusiveConfirmed: true })
         await admin.recordBackup(category, backup.metadata.backupId, true)
         if (request) await admin.completeRequest(request.path, backup.metadata.backupId)
+        const rehearsal = await admin.rehearse(backup.metadata.backupId)
         const retention = command === 'daily' || command === 'weekly' ? await admin.applyRetention('YES_I_APPROVE_DB2_RETENTION') : null
-        console.log(JSON.stringify({ backupId: backup.metadata.backupId, category, status: 'VERIFIED', metadataPath: join(backup.folder, 'backup-metadata.json'), retentionRemoved: retention?.remove.length || 0 }, null, 2))
-        await lock.release('SUCCEEDED', { category, backupId: backup.metadata.backupId, verificationResult: 'VERIFIED', retentionRemoved: retention?.remove.length || 0 })
+        console.log(JSON.stringify({ backupId: backup.metadata.backupId, category, status: 'VERIFIED', metadataPath: join(backup.folder, 'backup-metadata.json'), restoreRehearsal: rehearsal.status, retentionRemoved: retention?.remove.length || 0 }, null, 2))
+        await lock.release('SUCCEEDED', { category, backupId: backup.metadata.backupId, verificationResult: 'VERIFIED', restoreStatus: rehearsal.status, retentionRemoved: retention?.remove.length || 0 })
       } catch (error) { await admin.recordBackup(category, 'failed-attempt', false, error); throw error }
     }
   } catch (error) {

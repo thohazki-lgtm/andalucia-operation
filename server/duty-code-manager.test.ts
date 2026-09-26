@@ -3,11 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-duty-code-manager-'))
 try {
-  const repository = new StaffRepository(dataDirectory)
+  const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await repository.initialize()
   const createDuty = (displayCode: string, label: string, classification: 'working' | 'off' | 'annualLeave' | 'other', countsAsWorking: boolean) => repository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label, color: '#345678', active: true, metadata: { displayCode, dutyClassification: classification, countsAsWorking } })
 
@@ -47,7 +48,7 @@ try {
   assert.equal((await repository.removeDutyCode(attendanceReferenced.id)).mode, 'retired')
 
   await repository.getDatabase().close()
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const persisted = await reopened.configuration()
   assert.equal(persisted.dutyCodes.find(option => option.id === edited.id)?.metadata?.displayCode, 'TST2')

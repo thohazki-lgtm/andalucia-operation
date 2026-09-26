@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { appendFile, mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { AuditActor } from '../src/domain.js'
-import { verifyBackupCopy, type BackupCategory } from './database-backup.js'
+import { setBackupOriginalFilesystemProtection, verifyBackupCopy, type BackupCategory } from './database-backup.js'
 import { operationMarkerPaths, SUPPORTED_SCHEMA_VERSION, type DatabaseHealth, type VerifiedBackupSummary } from './database-protection.js'
 import { createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
 
@@ -74,7 +74,15 @@ export class DatabaseBackupAdminService {
     return sorted.map(record => record.item)
   }
   async storage() { const items = await this.inventory(); const verified = items.filter(item => item.verificationStatus === 'VERIFIED'); return { totalBackupStorageBytes: items.reduce((sum, item) => sum + item.sizeBytes, 0), backupCount: items.length, verifiedBackupCount: verified.length, oldestVerifiedAt: verified.at(-1)?.createdAt || null, newestVerifiedAt: verified[0]?.createdAt || null } }
-  async pin(backupId: string, pinned: boolean, actor?: AuditActor, reason = '') { const item = (await this.inventory()).find(candidate => candidate.backupId === backupId); if (!item) throw new Error('BACKUP_NOT_FOUND'); const current = await this.json<Protection>(join(this.folder(backupId), 'db2-protection.json')); const automaticReasons = item.protectionReasons.filter(value => value !== current?.reason); if (!pinned && automaticReasons.length) throw new Error('BACKUP_PROTECTION_REQUIRED'); await writeJsonAtomic(join(this.folder(backupId), 'db2-protection.json'), { pinned, reason: pinned ? (reason.trim() || 'Owner protected backup') : '', updatedAt: new Date().toISOString(), updatedBy: actor?.displayName || systemActor.displayName } satisfies Protection); await this.audit(pinned ? 'backup_pinned' : 'backup_unpinned', this.actor(actor), backupId); return (await this.inventory()).find(candidate => candidate.backupId === backupId)! }
+  async pin(backupId: string, pinned: boolean, actor?: AuditActor, reason = '') {
+    const item = (await this.inventory()).find(candidate => candidate.backupId === backupId); if (!item) throw new Error('BACKUP_NOT_FOUND')
+    const folder = this.folder(backupId); const metadata = await this.json<BackupMetadata>(join(folder, 'backup-metadata.json')); if (!metadata || metadata.verificationStatus !== 'VERIFIED') throw new Error('VERIFIED_BACKUP_REQUIRED')
+    const current = await this.json<Protection>(join(folder, 'db2-protection.json')); const automaticReasons = item.protectionReasons.filter(value => value !== current?.reason); if (!pinned && automaticReasons.length) throw new Error('BACKUP_PROTECTION_REQUIRED')
+    const filesystem = await setBackupOriginalFilesystemProtection(metadata.backupDirectory, pinned)
+    await writeJsonAtomic(join(folder, 'db2-protection.json'), { pinned, reason: pinned ? (reason.trim() || 'Owner protected backup') : '', updatedAt: new Date().toISOString(), updatedBy: actor?.displayName || systemActor.displayName, filesystem } satisfies Protection & { filesystem: unknown })
+    await this.audit(pinned ? 'backup_pinned' : 'backup_unpinned', this.actor(actor), backupId, { filesystem })
+    return (await this.inventory()).find(candidate => candidate.backupId === backupId)!
+  }
   async requestManualBackup(actor: AuditActor) { const id = `backup-request-${new Date().toISOString().replaceAll(':', '').replaceAll('.', '-')}-${randomUUID().slice(0, 8)}`; const request = { id, category: 'manual', state: 'pending', requestedAt: new Date().toISOString(), requestedBy: { userId: actor.userId, displayName: actor.displayName }, instruction: 'Process only during a confirmed offline window with db:backup:job requested.' }; await writeJsonAtomic(join(this.adminRoot, 'requests', `${id}.json`), request); await this.audit('manual_backup_requested', this.actor(actor), undefined, { requestId: id }); return request }
   async inspect(backupId: string, actor: AuditActor) { const item = (await this.inventory()).find(candidate => candidate.backupId === backupId); if (!item) throw new Error('BACKUP_NOT_FOUND'); await this.audit('recovery_candidate_inspected', this.actor(actor), backupId); return item }
   async pendingRequest() { const root = join(this.adminRoot, 'requests'); if (!existsSync(root)) return null; const requests = (await readdir(root)).filter(name => name.endsWith('.json')).sort(); for (const name of requests) { const value = await this.json<any>(join(root, name)); if (value?.state === 'pending') return { path: join(root, name), value } } return null }
@@ -101,13 +109,15 @@ export class DatabaseBackupAdminService {
     const originalBefore = await createStoreManifest(metadata.backupDirectory)
     try {
       if (!manifestsMatch(originalBefore, metadata.backupManifest)) throw new Error('RESTORE_TEST_MANIFEST_MISMATCH')
-      const verified = await verifyBackupCopy({ backupDirectory: metadata.backupDirectory, sourceManifest: metadata.backupManifest, verificationDirectory: descendant })
+      const verified = await verifyBackupCopy({ backupDirectory: metadata.backupDirectory, sourceManifest: metadata.backupManifest, verificationDirectory: descendant, copyRole: 'rehearsal' })
       const fingerprintMatch = same(metadata.operationalFingerprint, verified.fingerprint) && (!metadata.financialFinalizationFingerprint || same(metadata.financialFinalizationFingerprint, verified.financialFinalizationFingerprint)); const migrationMatch = same((metadata as any).migrationLedger, verified.migration)
       if (!fingerprintMatch) throw new Error('RESTORE_TEST_FINGERPRINT_MISMATCH')
       if (!migrationMatch) throw new Error('RESTORE_TEST_MIGRATION_MISMATCH')
       const originalAfter = await createStoreManifest(metadata.backupDirectory); if (!manifestsMatch(originalBefore, originalAfter)) throw new Error('RESTORE_TEST_CHANGED_ORIGINAL_BACKUP')
       const result: RestoreResult = { status: 'RESTORE_TEST_PASSED', startedAt, completedAt: new Date().toISOString(), backupId, manifestMatch: true, fingerprintMatch, migrationMatch, preflightStatus: verified.preflight.status }
-      await writeJsonAtomic(join(folder, 'restore-test.json'), result); await this.audit('restore_rehearsal_completed', this.actor(actor), backupId); return result
+      await writeJsonAtomic(join(folder, 'restore-test.json'), result)
+      await writeJsonAtomic(join(folder, 'backup-candidate.json'), { backupId, category: metadata.category, state: 'VERIFIED_REHEARSED', verifiedAt: result.completedAt, sourceDirectory: metadata.sourceDirectory })
+      await this.audit('restore_rehearsal_completed', this.actor(actor), backupId); return result
     } catch (error) {
       const result: RestoreResult = { status: 'RESTORE_TEST_FAILED', startedAt, completedAt: new Date().toISOString(), backupId, manifestMatch: false, fingerprintMatch: false, migrationMatch: false, preflightStatus: 'FAILED', error: safeError(error) }
       await writeJsonAtomic(join(folder, 'restore-test.json'), result); await this.audit('restore_rehearsal_failed', this.actor(actor), backupId, { error: result.error }); throw error

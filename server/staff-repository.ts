@@ -26,7 +26,7 @@ export class StaffRepository {
   private readonly database: PGlite
   private initialized = false
 
-  constructor(private readonly dataDirectory = process.env.ANDALUCIA_DATA_DIR || resolve('.data/postgres'), database?: PGlite) { this.database = database || new PGlite(dataDirectory) }
+  constructor(private readonly dataDirectory: string, database: PGlite) { this.database = database }
 
   async assertCompatibleSchema() {
     const requiredTables = ['staff', 'configuration_options', 'duty_roster_entries', 'bookings', 'schema_migrations', 'outlet_scopes', 'user_accounts', 'authorization_roles', 'bill_tip_distributions']

@@ -16,8 +16,9 @@ if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.
 Set-Location -LiteralPath $projectRoot
 $env:ANDALUCIA_DATA_DIR = $canonicalData
 $env:ANDALUCIA_STORE_ROLE = 'canonical'
+$env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
 $startedAtUtc = [DateTime]::UtcNow
-& npm.cmd run dev
+& npm.cmd run dev:canonical
 $runtimeExit = $LASTEXITCODE
 if ($runtimeExit -ne 0) {
   $responseRoot = Join-Path $projectRoot '.backups\.db2\scheduler\control\responses'

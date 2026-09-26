@@ -1,11 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { cp, mkdir } from 'node:fs/promises'
+import { chmod, cp, mkdir, readdir, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { copyStoreVerified, createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
 import { createMigrationFingerprint, migrationStatus, runPreflight } from './migration-store.js'
-import { canonicalStoreDirectory, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, readStoreIdentity, type VerifiedBackupSummary } from './database-protection.js'
+import { canonicalStoreDirectory, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, readStoreIdentity, type DatabaseStoreRole, type VerifiedBackupSummary } from './database-protection.js'
 
 export const BACKUP_EXCLUSIVE_PHRASE = 'YES_I_CONFIRM_ANDALUCIA_APP_IS_STOPPED'
 export type BackupCategory = 'automatic-daily' | 'automatic-weekly' | 'manual' | 'pre-migration' | 'pre-finalization' | 'milestone' | 'recovery' | 'post-recovery-baseline' | 'post-db1-protection-baseline' | 'post-stale-marker-recovery'
@@ -45,16 +45,40 @@ export const createFinancialFinalizationFingerprint = async (db: PGlite) => {
   return { generatedAt: new Date().toISOString(), digest: createHash('sha256').update(JSON.stringify(detail)).digest('hex') }
 }
 
-export const verifyBackupCopy = async (options: { backupDirectory: string; sourceManifest: Awaited<ReturnType<typeof createStoreManifest>>; verificationDirectory: string }) => {
+export const setBackupOriginalFilesystemProtection = async (databaseDirectoryInput: string, readOnly: boolean) => {
+  const databaseDirectory = resolve(databaseDirectoryInput)
+  let files = 0
+  let directories = 0
+  const visit = async (directory: string): Promise<void> => {
+    if (!readOnly) await chmod(directory, 0o755)
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) { await visit(path); directories += 1 }
+      else if (entry.isFile()) { await chmod(path, readOnly ? 0o444 : 0o644); files += 1 }
+    }
+    if (readOnly) await chmod(directory, 0o555)
+  }
+  await visit(databaseDirectory)
+  return { databaseDirectory, readOnly, files, directories: directories + 1 }
+}
+
+type DisposableOpenRole = Extract<DatabaseStoreRole, 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'>
+
+export const verifyBackupCopy = async (options: { backupDirectory: string; sourceManifest: Awaited<ReturnType<typeof createStoreManifest>>; verificationDirectory: string; copyRole?: DisposableOpenRole }) => {
   const backupManifest = await createStoreManifest(options.backupDirectory)
   if (!manifestsMatch(options.sourceManifest, backupManifest)) throw new Error('BACKUP_INVALID:MANIFEST_MISMATCH')
   if (existsSync(options.verificationDirectory)) throw new Error('BACKUP_INVALID:VERIFICATION_TARGET_EXISTS')
   await mkdir(dirname(options.verificationDirectory), { recursive: true })
   await cp(options.backupDirectory, options.verificationDirectory, { recursive: true, errorOnExist: true, force: false, preserveTimestamps: true })
+  await setBackupOriginalFilesystemProtection(options.verificationDirectory, false)
   const verificationManifest = await createStoreManifest(options.verificationDirectory)
   if (!manifestsMatch(backupManifest, verificationManifest)) throw new Error('BACKUP_INVALID:VERIFICATION_COPY_MISMATCH')
-  const db = new PGlite(options.verificationDirectory)
+  const role = options.copyRole || 'backup_verification'
+  await createStoreIdentity(options.verificationDirectory, role, { storeId: `andalucia-${role}-${randomUUID()}` })
+  let db: PGlite | null = null
   try {
+    const opened = await openVerifiedDatabase({ dataDirectory: options.verificationDirectory, role })
+    db = opened.db
     await db.query('select 1')
     const preflight = await runPreflight(db, options.verificationDirectory)
     if (preflight.status !== 'READY') throw new Error(`BACKUP_INVALID:PREFLIGHT:${preflight.blockers.join(',')}`)
@@ -63,7 +87,7 @@ export const verifyBackupCopy = async (options: { backupDirectory: string; sourc
     const financialFinalizationFingerprint = await createFinancialFinalizationFingerprint(db)
     return { backupManifest, verificationManifest, preflight, migration, fingerprint, financialFinalizationFingerprint }
   } catch (error) { throw new Error(`BACKUP_INVALID:OPEN_TEST:${error instanceof Error ? error.message : String(error)}`) }
-  finally { await db.close().catch(() => undefined) }
+  finally { await db?.close().catch(() => undefined) }
 }
 
 export const createVerifiedBackup = async (options: { sourceDirectory: string; category: BackupCategory; backupRoot: string; exclusiveConfirmed: boolean; now?: Date; expectedCanonicalDirectory?: string }) => {
@@ -80,22 +104,25 @@ export const createVerifiedBackup = async (options: { sourceDirectory: string; c
   const backupDirectory = join(folder, 'postgres')
   await mkdir(folder, { recursive: true })
   try {
+    await writeJsonAtomic(join(folder, 'backup-candidate.json'), { backupId, createdAt, category: options.category, state: 'CANDIDATE', sourceDirectory })
     const copied = await copyStoreVerified(sourceDirectory, backupDirectory)
+    const backupStoreIdentity = await createStoreIdentity(backupDirectory, 'backup', { storeId: `${backupId}-original`, now: options.now })
     const verificationDirectory = join(folder, 'verification', 'postgres')
     const verified = await verifyBackupCopy({ backupDirectory, sourceManifest: copied.sourceManifest, verificationDirectory })
-    await createStoreIdentity(verificationDirectory, 'backup_verification', { storeId: `${backupId}-verification`, now: options.now })
     const metadata: VerifiedBackupSummary & Record<string, unknown> = {
       backupId, createdAt, category: options.category, verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY',
       sourceDirectory, backupDirectory, sourceManifest: copied.sourceManifest, backupManifest: copied.backupManifest,
       operationalFingerprint: verified.fingerprint,
       financialFinalizationFingerprint: verified.financialFinalizationFingerprint,
       applicationVersion: '0.1.0', schemaVersion: verified.migration.migrations.filter(item => item.state === 'applied').at(-1)?.version || 'none',
-      migrationLedger: verified.migration, storeIdentity: identity,
+      migrationLedger: verified.migration, storeIdentity: identity, backupStoreIdentity,
       verificationCopyManifest: verified.verificationManifest
     }
     await writeJsonAtomic(join(folder, 'backup-metadata.json'), metadata)
     await writeJsonAtomic(join(folder, 'migration-preflight.json'), verified.preflight)
     await writeJsonAtomic(join(folder, 'operational-fingerprint.json'), verified.fingerprint)
+    await writeJsonAtomic(join(folder, 'backup-candidate.json'), { backupId, createdAt, category: options.category, state: 'VERIFICATION_PASSED_PENDING_REHEARSAL_AND_PROTECTION', sourceDirectory })
+    await rm(join(folder, 'verification'), { recursive: true, force: true })
     return { folder, backupDirectory, metadata }
   } catch (error) {
     await writeJsonAtomic(join(folder, 'backup-failure.json'), { backupId, createdAt, category: options.category, verificationStatus: 'INVALID', error: error instanceof Error ? error.message : String(error) }).catch(() => undefined)

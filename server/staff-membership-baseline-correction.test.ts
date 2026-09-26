@@ -10,7 +10,7 @@ import { StaffMembershipBaselineService } from './staff-membership-baseline-serv
 
 const storage=await mkdtemp(join(tmpdir(),'andalucia-baseline-correction-')),path=join(storage,'postgres'),seed=new PGlite(path)
 await seed.exec(await readFile('database/schema.sql','utf8'));await seed.close()
-const repository=new StaffRepository(path)
+const repository=new StaffRepository(path,new PGlite(path))
 try{
   await repository.initialize();const db=repository.getDatabase(),service=new StaffMembershipBaselineService(db),memberships=new OutletMembershipRepository(db);await memberships.initialize()
   const actor={userId:randomUUID(),displayName:'Isolated Platform Owner'}

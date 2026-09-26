@@ -1,0 +1,3 @@
+# Migration checksums are calculated from source bytes. Force SQL migrations to
+# LF in every checkout so Windows core.autocrlf cannot change their identity.
+database/migrations/*.sql text eol=lf

@@ -13,7 +13,7 @@ const initial = new PGlite(databasePath)
 await initial.exec(await readFile('database/schema.sql', 'utf8'))
 await initial.close()
 
-const staffRepository = new StaffRepository(databasePath)
+const staffRepository = new StaffRepository(databasePath, new PGlite(databasePath))
 try {
   await staffRepository.initialize()
   const db = staffRepository.getDatabase()

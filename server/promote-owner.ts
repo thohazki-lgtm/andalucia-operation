@@ -1,12 +1,15 @@
 import { StaffRepository } from './staff-repository.js'
 import { OutletMembershipRepository } from './outlet-membership-repository.js'
 import { AuthorizationService } from './authorization-service.js'
+import { openVerifiedDatabase, resolveRuntimeStore } from './database-protection.js'
 
 const userId = process.env.PLATFORM_OWNER_USER_ID?.trim()
 const identifier = process.env.PLATFORM_OWNER_IDENTIFIER?.normalize('NFKC').trim().toLowerCase()
 if (Boolean(userId) === Boolean(identifier)) throw new Error('Provide exactly one of PLATFORM_OWNER_USER_ID or PLATFORM_OWNER_IDENTIFIER.')
 
-const repository = new StaffRepository()
+const runtimeStore = resolveRuntimeStore()
+const guarded = await openVerifiedDatabase({ dataDirectory: runtimeStore.dataDirectory, role: runtimeStore.role })
+const repository = new StaffRepository(runtimeStore.dataDirectory, guarded.db)
 try {
   await repository.assertCompatibleSchema()
   const db = repository.getDatabase()
