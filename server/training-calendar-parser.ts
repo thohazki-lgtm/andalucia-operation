@@ -1,6 +1,7 @@
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import * as XLSX from 'xlsx'
 import type { TrainingImportRecord } from '../src/domain.js'
+import { parseTrainingSpreadsheet, type TrainingSpreadsheetParseOptions } from './training-spreadsheet-parser.js'
+import { TRAINING_SPREADSHEET_MAX_CELLS, TRAINING_SPREADSHEET_MAX_COLUMNS, TRAINING_SPREADSHEET_MAX_ROWS, TRAINING_SPREADSHEET_MAX_TEXT_LENGTH } from './training-spreadsheet-security.js'
 
 export const TRAINING_CALENDAR_PARSER_VERSION = 'andalucia-training-calendar-v2'
 
@@ -46,9 +47,11 @@ function parseRows(rows: unknown[][]): TrainingImportRecord[] {
 }
 
 function parseCsv(data: Uint8Array): string[][] {
-  const text = new TextDecoder('utf-8').decode(data).replace(/^\uFEFF/, ''); const rows: string[][] = []; let row: string[] = []; let value = ''; let quoted = false
-  for (let index = 0; index < text.length; index++) { const character = text[index]; if (character === '"') { if (quoted && text[index + 1] === '"') { value += '"'; index++ } else quoted = !quoted } else if (character === ',' && !quoted) { row.push(value); value = '' } else if ((character === '\n' || character === '\r') && !quoted) { if (character === '\r' && text[index + 1] === '\n') index++; row.push(value); if (row.some(cell => clean(cell))) rows.push(row); row = []; value = '' } else value += character }
-  row.push(value); if (row.some(cell => clean(cell))) rows.push(row); return rows
+  const text = new TextDecoder('utf-8').decode(data).replace(/^\uFEFF/, ''); const rows: string[][] = []; let row: string[] = []; let value = ''; let quoted = false; let cellCount = 0
+  const append = () => { if (value.length > TRAINING_SPREADSHEET_MAX_TEXT_LENGTH) throw new Error(`Training spreadsheet rejected: a text cell exceeds ${TRAINING_SPREADSHEET_MAX_TEXT_LENGTH} characters.`); row.push(value); if (row.length > TRAINING_SPREADSHEET_MAX_COLUMNS) throw new Error(`Training spreadsheet rejected: the CSV exceeds ${TRAINING_SPREADSHEET_MAX_COLUMNS} columns.`); value = '' }
+  const finish = () => { append(); if (row.some(cell => clean(cell))) { rows.push(row); cellCount += row.length } if (rows.length > TRAINING_SPREADSHEET_MAX_ROWS || cellCount > TRAINING_SPREADSHEET_MAX_CELLS) throw new Error('Training spreadsheet rejected: the CSV exceeds the safe row or cell limit.'); row = [] }
+  for (let index = 0; index < text.length; index++) { const character = text[index]; if (character === '"') { if (quoted && text[index + 1] === '"') { value += '"'; index++ } else quoted = !quoted } else if (character === ',' && !quoted) append(); else if ((character === '\n' || character === '\r') && !quoted) { if (character === '\r' && text[index + 1] === '\n') index++; finish() } else value += character }
+  if (row.length || value) finish(); return rows
 }
 
 const field = (lines: string[], names: string[]) => { const label = new RegExp(`^(?:${names.join('|')})\\s*:\\s*(.*)$`, 'i'); const anyLabel = /^(?:topic|training|subject|time|trainer|facilitator|location|venue)\s*:/i; const index = lines.findIndex(line => label.test(line)); if (index < 0) return ''; const values = [lines[index].match(label)?.[1] || '']; for (let next = index + 1; next < lines.length && !anyLabel.test(lines[next]); next++) values.push(lines[next]); return clean(values.join(' ')) }
@@ -75,10 +78,10 @@ function parseCalendarPage(page: PdfPage, fileName: string): TrainingImportRecor
 const mergeRecords = (layout: TrainingImportRecord[], text: TrainingImportRecord[]) => { const output = [...layout]; for (const candidate of text) { if (layout.length && !candidate.date) continue; const layoutMatch = output.some(item => item.topic.toLowerCase() === candidate.topic.toLowerCase() && item.startTime === candidate.startTime && item.endTime === candidate.endTime); const exactMatch = output.some(item => `${item.date}|${item.topic}|${item.startTime}|${item.endTime}`.toLowerCase() === `${candidate.date}|${candidate.topic}|${candidate.startTime}|${candidate.endTime}`.toLowerCase()); if (!layoutMatch && !exactMatch) output.push(candidate) } return output }
 async function pdfPages(data: Uint8Array): Promise<PdfPage[]> { const document = await getDocument({ data }).promise; const pages: PdfPage[] = []; for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) { const page = await document.getPage(pageNumber); const content = await page.getTextContent(); const items = (content.items as any[]).filter(item => clean(item.str)).map(item => ({ text: clean(item.str), x: Number(item.transform[4]), y: Number(item.transform[5]) })); const rows: PdfItem[][] = []; for (const item of [...items].sort((a, b) => b.y - a.y || a.x - b.x)) { const row = rows.find(candidate => Math.abs(candidate[0].y - item.y) < 2.5); if (row) row.push(item); else rows.push([item]) } pages.push({ items, lines: rows.map(row => row.sort((a, b) => a.x - b.x).map(item => item.text).join('  ')) }) } return pages }
 
-export async function parseTrainingCalendar(data: Uint8Array, fileName: string): Promise<{ fileType: string; records: TrainingImportRecord[] }> {
+export async function parseTrainingCalendar(data: Uint8Array, fileName: string, options: TrainingSpreadsheetParseOptions = {}): Promise<{ fileType: string; records: TrainingImportRecord[] }> {
   const extension = fileName.split('.').pop()?.toLowerCase() || ''
   if (extension === 'csv') return { fileType: 'csv', records: parseRows(parseCsv(data)) }
-  if (extension === 'xlsx' || extension === 'xls') { const workbook = XLSX.read(data, { type: 'array', cellDates: true }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; if (!sheet) return { fileType: extension, records: [] }; return { fileType: extension, records: parseRows(XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' })) } }
+  if (extension === 'xlsx' || extension === 'xls') return { fileType: extension, records: parseRows(await parseTrainingSpreadsheet(data, fileName, options)) }
   if (extension === 'pdf') { const pages = await pdfPages(data); return { fileType: 'pdf', records: pages.flatMap(page => mergeRecords(parseCalendarPage(page, fileName), parseText(page.lines))) } }
   if (['png', 'jpg', 'jpeg', 'webp'].includes(extension)) throw new Error('Image calendar OCR is not available. Upload the HR calendar as XLSX, CSV or a text-based PDF.')
   throw new Error('Unsupported training calendar file. Upload XLSX, XLS, CSV or PDF.')

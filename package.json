@@ -74,6 +74,8 @@
     "test:staff-leave": "tsx server/staff-leave-records.test.ts",
     "test:leave-planner-r2": "tsx server/leave-planner-r2.test.ts",
     "test:training-module": "tsx server/training-module.test.ts",
+    "test:training-spreadsheet-security": "tsx server/training-spreadsheet-security.test.ts",
+    "test:training-spreadsheet-api-security": "tsx server/training-spreadsheet-api-security.test.ts",
     "test:training-r2-migration": "tsx server/training-r2-migration.test.ts",
     "test:training-r2-service": "tsx server/training-r2-service.test.ts",
     "test:training-r2-browser": "tsx server/training-r2-browser.test.ts",
@@ -92,7 +94,7 @@
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@types/node": "latest",
