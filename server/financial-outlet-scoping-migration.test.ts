@@ -16,7 +16,7 @@ await db.query("insert into incentive_rules(id,rule_key,source_key,rule_family,v
 await db.query("insert into financial_rate_versions(id,version,effective_from,service_charge_rate,gst_rate) values($1,1,'2026-01-01',10,17)", [rateId])
 
 const result = await runMigrations(db)
-assert.deepEqual(result.applied, ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017'])
+assert.deepEqual(result.applied, ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017', '018'])
 
 for (const table of ['chargeable_item_records', 'bill_tip_distributions', 'incentive_rules', 'financial_rate_versions', 'chargeable_incentive_earnings']) {
   const column = (await db.query<{ is_nullable: string }>("select is_nullable from information_schema.columns where table_schema='public' and table_name=$1 and column_name='outlet_scope_id'", [table])).rows[0]
@@ -48,7 +48,7 @@ const indexes = new Set((await db.query<{ indexname: string }>("select indexname
 for (const name of ['bill_tip_distribution_version_unique', 'bill_tip_distribution_current_finalized_unique', 'incentive_rule_outlet_key_version_unique', 'financial_rate_outlet_version_unique', 'chargeable_incentive_outlet_generation_unique']) assert(indexes.has(name), `${name} is required`)
 
 console.log(JSON.stringify({
-  migration: '001–017',
+  migration: '001–018',
   existingAndaluciaRecordsBackfilled: true,
   outletColumnsRequired: true,
   billTipRevisionSnapshotRequired: true,

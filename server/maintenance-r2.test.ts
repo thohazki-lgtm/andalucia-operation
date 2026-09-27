@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import type { AuthPrincipal, MaintenanceRecord } from '../src/domain.js'
+import { serviceDate } from '../src/service-date.js'
 import { MaintenanceRepository } from './maintenance-repository.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 
@@ -26,7 +27,7 @@ await assert.rejects(repository.save({ ...created, notes: 'stale overwrite' }, c
 const completed = await repository.save({ ...inProgress, status: 'completed' }, context)
 assert.equal(completed.revision, 3); assert.ok(completed.completedAt); assert.equal(completed.completedByUserId, actorId); assert.equal(completed.completedByNameSnapshot, 'Maintenance Manager (maintenance.manager)')
 await assert.rejects(repository.save({ ...completed, status: 'open' }, context), /terminal/)
-const summary = await repository.summary('2026-09-22', ANDALUCIA_SCOPE_ID); assert.equal(summary.completedToday, 1); assert.equal(summary.urgentUnresolved, 0)
+const summary = await repository.summary(serviceDate(new Date(completed.completedAt!)), ANDALUCIA_SCOPE_ID); assert.equal(summary.completedToday, 1); assert.equal(summary.urgentUnresolved, 0)
 
 const areaCreated = await repository.saveConfiguration('areas', { id: randomUUID(), value: '', label: 'Cold Store', active: true }, actor)
 assert.match(areaCreated.value, /^maintenance_area_/)
