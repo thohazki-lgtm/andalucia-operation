@@ -16,7 +16,7 @@ const schema = await readFile('database/schema.sql', 'utf8')
 const actor = { userId: randomUUID(), displayName: 'Isolated Owner' }
 const createFixture = async () => {
   await mkdir(join(root, 'canonical'), { recursive: true }); const db = new PGlite(canonical); await db.exec(schema); await db.exec(await readFile('database/migrations/001_schema_migrations.sql', 'utf8'))
-  for (const migration of (await reviewedMigrationSet()).versions.filter(item => item.version <= '017')) await db.query("insert into schema_migrations(version,name,checksum,status,actor_source,notes) values($1,$2,$3,'applied','isolated DB-2 test','')", [migration.version, migration.name, migration.checksum])
+  for (const migration of (await reviewedMigrationSet()).versions.filter(item => item.version <= '018')) await db.query("insert into schema_migrations(version,name,checksum,status,actor_source,notes) values($1,$2,$3,'applied','isolated DB-2 test','')", [migration.version, migration.name, migration.checksum])
   await db.query("insert into outlet_scopes(id,scope_key,display_name,active,outlet_type) values('00000000-0000-4000-8000-00000000a001','andalucia','Andalucía',true,'restaurant')")
   await db.query("insert into authorization_roles(id,role_key,display_name,active,global_scope) values('00000000-0000-4000-8000-000000001001','owner','Owner / Super Admin',true,true)")
   await db.query("insert into user_accounts(id,login_identifier,normalized_login_identifier,display_name,password_hash,status) values('00000000-0000-4000-8000-000000009001','isolated.owner','isolated.owner','Isolated Owner','unused','active')")
@@ -24,7 +24,7 @@ const createFixture = async () => {
   await db.close(); await createStoreIdentity(canonical, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: canonical, storeId: 'isolated-db2-canonical' })
 }
 const fakeMetadata = async (id: string, category: string, createdAt: string, overrides: Record<string, unknown> = {}) => {
-  const folder = join(backupRoot, id); await mkdir(folder, { recursive: true }); const manifest = { generatedAt: createdAt, root: join(folder, 'postgres'), files: 1, bytes: 1024, aggregateSha256: id.padEnd(64, '0').slice(0, 64), entries: [] }
+  const folder = join(backupRoot, id); const databaseFolder = join(folder, 'postgres'); await mkdir(databaseFolder, { recursive: true }); const manifest = await createStoreManifest(databaseFolder)
   await writeJsonAtomic(join(folder, 'backup-metadata.json'), { backupId: id, createdAt, category, verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY', sourceDirectory: canonical, backupDirectory: join(folder, 'postgres'), sourceManifest: manifest, backupManifest: manifest, schemaVersion: '014', operationalFingerprint: { staff: { count: 12 } }, migrationLedger: { migrations: [] }, ...overrides })
   return folder
 }
@@ -56,7 +56,7 @@ try {
   const request = await admin.requestManualBackup(actor); assert.equal(request.state, 'pending'); assert.equal((await admin.pendingRequest())?.value.id, request.id)
   assert.equal((await admin.inspect(healthy.metadata.backupId, actor)).backupId, healthy.metadata.backupId)
   const inventory = await admin.inventory(); assert.equal(inventory.find(item => item.backupId === healthy.metadata.backupId)?.restoreTestStatus, 'RESTORE_TEST_PASSED'); assert.equal(inventory.find(item => item.backupId === fingerprintMismatch)?.restoreTestStatus, 'RESTORE_TEST_FAILED'); assert.equal(admin.rankRecoveryCandidates(inventory).some(item => item.backupId === fingerprintMismatch), false)
-  const database: DatabaseHealth = { status: 'HEALTHY', storeId: 'isolated-db2-canonical', storeRole: 'canonical', migrationVersion: '015', migrationRequired: false, recoveryRequired: false, lastVerifiedBackup: null, checks: [] }
+  const database: DatabaseHealth = { status: 'HEALTHY', storeId: 'isolated-db2-canonical', storeRole: 'canonical', migrationVersion: '018', migrationRequired: false, recoveryRequired: false, lastVerifiedBackup: null, checks: [] }
   const schedulerLog = join(admin.adminRoot, 'scheduler', 'logs', 'windows-task-events.jsonl'); await mkdir(join(admin.adminRoot, 'scheduler', 'logs'), { recursive: true }); await writeFile(schedulerLog, `${JSON.stringify({ version: 'andalucia-windows-scheduler-event-v1', event: 'windows_task_finished', task: 'DailyBackup', finishedAt: '2026-09-11T01:00:00.000Z', result: 'FAILED', exitCode: 1, classification: 'isolated failure', restartResult: 'NOT_REQUIRED' })}\n`)
   const failedSummary = await admin.summary(database); assert.equal(failedSummary.warnings.includes('Scheduled backup requires attention.'), true)
   await appendFile(schedulerLog, `${JSON.stringify({ version: 'andalucia-windows-scheduler-event-v1', event: 'windows_task_finished', task: 'DailyBackup', finishedAt: '2026-09-11T02:00:00.000Z', result: 'SUCCEEDED', exitCode: 0, classification: '', restartResult: 'SUCCEEDED' })}\n`)

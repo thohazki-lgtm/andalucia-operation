@@ -10,11 +10,13 @@ import { ANDALUCIA_SCOPE_ID, ANDALUCIA_SCOPE_KEY } from './outlet-membership-rep
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const canonicalStoreDirectory = resolve(projectRoot, '.data/postgres')
+export const developmentStoreDirectory = resolve(projectRoot, '.data-development/postgres')
 export const defaultBackupRoot = resolve(projectRoot, '.backups')
 export const STORE_IDENTITY_VERSION = 'andalucia-store-identity-v1'
 export const SUPPORTED_SCHEMA_VERSION = '018'
 export const STORE_IDENTITY_AUTHORIZATION = 'YES_I_APPROVE_CANONICAL_STORE_IDENTITY'
-export type DatabaseStoreRole = 'canonical' | 'backup' | 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'
+export const CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
+export type DatabaseStoreRole = 'canonical' | 'development' | 'backup' | 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'
 export type DatabaseHealthState = 'HEALTHY' | 'BACKUP_RECOMMENDED' | 'MIGRATION_REQUIRED' | 'DATABASE_RECOVERY_REQUIRED' | 'BACKUP_INVALID' | 'STORE_CONFIGURATION_ERROR'
 
 export type StoreIdentity = {
@@ -67,15 +69,22 @@ export const operationMarkerPaths = (databaseDirectory: string) => ({
   postmaster: join(resolve(databaseDirectory), 'postmaster.pid')
 })
 
-export const resolveRuntimeStore = (environment: NodeJS.ProcessEnv = process.env) => {
+export const resolveRuntimeStore = (environment: NodeJS.ProcessEnv = process.env, expected: { canonicalDirectory?: string; developmentDirectory?: string } = {}) => {
   const configured = environment.ANDALUCIA_DATA_DIR?.trim()
   if (!configured) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_DATA_DIR_REQUIRED')
   if (!isAbsolute(configured)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_DATA_DIR_MUST_BE_ABSOLUTE')
   const role = environment.ANDALUCIA_STORE_ROLE?.trim() as DatabaseStoreRole | undefined
-  if (!role || !['canonical', 'backup', 'backup_verification', 'rehearsal', 'test', 'recovery_staging'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_STORE_ROLE_REQUIRED')
+  if (!role || !['canonical', 'development', 'backup', 'backup_verification', 'rehearsal', 'test', 'recovery_staging'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_STORE_ROLE_REQUIRED')
   const dataDirectory = resolve(configured)
-  if (role === 'canonical' && normalized(dataDirectory) !== normalized(canonicalStoreDirectory)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_STORE_PATH_MISMATCH')
-  if (role !== 'canonical' && normalized(dataDirectory) === normalized(canonicalStoreDirectory)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_STORE_ROLE_MISMATCH')
+  const expectedCanonical = resolve(expected.canonicalDirectory || canonicalStoreDirectory)
+  const expectedDevelopment = resolve(expected.developmentDirectory || developmentStoreDirectory)
+  if (!['canonical', 'development'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'APPLICATION_RUNTIME_ROLE_FORBIDDEN')
+  if (role === 'canonical') {
+    if (normalized(dataDirectory) !== normalized(expectedCanonical)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_STORE_PATH_MISMATCH')
+    if (environment.ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION !== CANONICAL_STARTUP_AUTHORIZATION) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_GUARDED_STARTUP_REQUIRED')
+  }
+  if (role === 'development' && normalized(dataDirectory) !== normalized(expectedDevelopment)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'DEVELOPMENT_STORE_PATH_MISMATCH')
+  if (role !== 'canonical' && normalized(dataDirectory) === normalized(expectedCanonical)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_STORE_ROLE_MISMATCH')
   if (!existsSync(join(dataDirectory, 'PG_VERSION'))) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'DATABASE_STORE_NOT_INITIALIZED')
   return { dataDirectory, role }
 }
@@ -139,9 +148,10 @@ const findLastVerifiedBackup = async (backupRoot = defaultBackupRoot) => {
   return candidates.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] || null
 }
 
-export const openVerifiedDatabase = async (options: { dataDirectory: string; role: DatabaseStoreRole; requiredVersion?: string; backupRoot?: string }) => {
+export const openVerifiedDatabase = async (options: { dataDirectory: string; role: DatabaseStoreRole; requiredVersion?: string; backupRoot?: string; requireOwner?: boolean }) => {
   const dataDirectory = resolve(options.dataDirectory)
   const identity = await readStoreIdentity(dataDirectory, options.role)
+  if (identity.role === 'backup') throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'BACKUP_ORIGINAL_OPEN_FORBIDDEN')
   const markers = operationMarkerPaths(dataDirectory)
   if (existsSync(markers.migration)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'MIGRATION_IN_PROGRESS')
   if (existsSync(markers.recovery)) throw new DatabaseProtectionError('DATABASE_RECOVERY_REQUIRED', 'RECOVERY_IN_PROGRESS')
@@ -168,7 +178,7 @@ export const openVerifiedDatabase = async (options: { dataDirectory: string; rol
     const outlet = (await db.query<{ id: string; scope_key: string; active: boolean }>('select id,scope_key,active from outlet_scopes where id=$1 and scope_key=$2', [ANDALUCIA_SCOPE_ID, ANDALUCIA_SCOPE_KEY])).rows[0]
     if (!outlet?.active) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_OUTLET_SCOPE_MISSING')
     const owners = Number((await db.query<{ count: number }>("select count(*)::int count from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' and r.global_scope=true")).rows[0]?.count || 0)
-    if (!owners) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'OWNER_ACCOUNT_FOUNDATION_MISSING')
+    if (options.requireOwner !== false && !owners) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'OWNER_ACCOUNT_FOUNDATION_MISSING')
     const last = await findLastVerifiedBackup(options.backupRoot)
     const latestVersion = ledger.at(-1)?.version || 'none'
     const age = last ? Date.now() - Date.parse(last.createdAt) : Number.POSITIVE_INFINITY
@@ -180,7 +190,7 @@ export const openVerifiedDatabase = async (options: { dataDirectory: string; rol
       checks: [
         { name: 'store_identity', status: 'pass', detail: identity.storeId },
         { name: 'migration_ledger', status: 'pass', detail: `Applied through ${latestVersion}` },
-        { name: 'foundation', status: 'pass', detail: 'Andalucía OutletScope and active Owner are readable.' },
+        { name: 'foundation', status: 'pass', detail: options.requireOwner === false ? 'Andalucía OutletScope is readable; Owner validation was explicitly deferred for account bootstrap.' : 'Andalucía OutletScope and active Owner are readable.' },
         ...(last ? [] : [{ name: 'verified_backup', status: 'warning' as const, detail: 'No DB-1 verified backup metadata is available yet.' }])
       ]
     }

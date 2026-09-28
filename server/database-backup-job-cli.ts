@@ -4,6 +4,7 @@ import { DatabaseBackupAdminService } from './database-backup-admin.js'
 import { canonicalStoreDirectory } from './database-protection.js'
 import { defaultExclusiveAccessCheck } from './migration-live-gate.js'
 import { acquireDatabaseSchedulerLock, type DatabaseSchedulerJob } from './database-scheduler.js'
+import { assessPathStorageHeadroom, databaseOperationPeriodKey, directorySizeBytes } from './database-operation-coordinator.js'
 
 const configured = process.env.ANDALUCIA_DATA_DIR?.trim()
 if (!configured || !isAbsolute(configured) || resolve(configured) !== canonicalStoreDirectory) throw new Error('BACKUP_WRONG_STORE')
@@ -14,7 +15,8 @@ else {
   const jobs: Record<string, DatabaseSchedulerJob> = { rehearse: 'weekly-restore-rehearsal', 'retention-plan': 'retention', 'retention-apply': 'retention', daily: 'daily-backup', weekly: 'daily-backup', requested: 'requested-backup' }
   const job = jobs[command]
   if (!job) throw new Error('DB2_JOB_COMMAND_INVALID')
-  const lock = await acquireDatabaseSchedulerLock({ backupRoot: resolve('.backups'), canonicalDirectory: configured, job })
+  const periodKey = command === 'daily' || command === 'weekly' ? (process.env.ANDALUCIA_SCHEDULED_PERIOD_KEY?.trim() || databaseOperationPeriodKey(command)) : undefined
+  const lock = await acquireDatabaseSchedulerLock({ backupRoot: resolve('.backups'), canonicalDirectory: configured, job, periodKey })
   try {
     if (command === 'rehearse') { const backupId = process.argv[3] || (await admin.inventory()).find(item => item.verificationStatus === 'VERIFIED')?.backupId; if (!backupId) throw new Error('VERIFIED_BACKUP_REQUIRED'); const result = await admin.rehearse(backupId); console.log(JSON.stringify(result, null, 2)); await lock.release('SUCCEEDED', { backupId, restoreStatus: result.status }); }
     else if (command === 'retention-plan') { const result = await admin.retentionPlan(); console.log(JSON.stringify(result, null, 2)); await lock.release('SUCCEEDED', { removalCount: result.remove.length }); }
@@ -26,12 +28,15 @@ else {
       else if (command === 'weekly') category = 'automatic-weekly'
       else { request = await admin.pendingRequest(); if (!request) throw new Error('BACKUP_REQUEST_NOT_FOUND'); category = 'manual' }
       try {
+        const sourceBytes = await directorySizeBytes(configured)
+        const storage = await assessPathStorageHeadroom(resolve('.backups'), 'backup', sourceBytes)
+        if (!storage.sufficient) throw new Error(`INSUFFICIENT_STORAGE_HEADROOM:${storage.availableBytes}:${storage.requiredBytes}`)
         const backup = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot: resolve('.backups'), exclusiveConfirmed: true })
         await admin.recordBackup(category, backup.metadata.backupId, true)
         if (request) await admin.completeRequest(request.path, backup.metadata.backupId)
-        const retention = command === 'daily' || command === 'weekly' ? await admin.applyRetention('YES_I_APPROVE_DB2_RETENTION') : null
-        console.log(JSON.stringify({ backupId: backup.metadata.backupId, category, status: 'VERIFIED', metadataPath: join(backup.folder, 'backup-metadata.json'), retentionRemoved: retention?.remove.length || 0 }, null, 2))
-        await lock.release('SUCCEEDED', { category, backupId: backup.metadata.backupId, verificationResult: 'VERIFIED', retentionRemoved: retention?.remove.length || 0 })
+        const rehearsal = await admin.rehearse(backup.metadata.backupId)
+        console.log(JSON.stringify({ backupId: backup.metadata.backupId, category, status: 'VERIFIED', metadataPath: join(backup.folder, 'backup-metadata.json'), restoreRehearsal: rehearsal.status, periodKey, storageHeadroom: storage, retention: 'DECOUPLED_NOT_EXECUTED' }, null, 2))
+        await lock.release('SUCCEEDED', { category, backupId: backup.metadata.backupId, verificationResult: 'VERIFIED', restoreStatus: rehearsal.status, periodKey, storageHeadroom: storage, retention: 'DECOUPLED_NOT_EXECUTED' })
       } catch (error) { await admin.recordBackup(category, 'failed-attempt', false, error); throw error }
     }
   } catch (error) {

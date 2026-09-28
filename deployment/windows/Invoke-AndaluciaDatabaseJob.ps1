@@ -98,6 +98,7 @@ try {
   Set-Location -LiteralPath $projectRoot
   $env:ANDALUCIA_DATA_DIR = $canonicalData
   $env:ANDALUCIA_STORE_ROLE = 'canonical'
+  $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
 
   if ($Job -eq 'DailyBackup') {
     $apiOpen = Test-LocalPort 3001
@@ -131,15 +132,23 @@ try {
     } elseif (-not (Wait-PortsClosed 1)) { throw 'ANDALUCIA_LIVE_STORE_NOT_EXCLUSIVE' }
 
     $env:ANDALUCIA_CONFIRM_LIVE_STORE_EXCLUSIVE = 'YES_I_CONFIRM_ANDALUCIA_APP_IS_STOPPED'
-    & npm.cmd run db:backup:job -- daily 2>&1 | ForEach-Object { Add-Content -LiteralPath $logPath -Value ([string]$_) -Encoding UTF8 }
+    $previousErrorPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $jobOutput = @(& npm.cmd run db:backup:job -- daily 2>&1)
     $jobExit = $LASTEXITCODE
-    if ($jobExit -ne 0) { throw "ANDALUCIA_DAILY_BACKUP_FAILED:$jobExit" }
-    Write-JobLog 'verificationResult=VERIFIED exitCode=0'
+    $ErrorActionPreference = $previousErrorPreference
+    $jobOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value ([string]$_) -Encoding UTF8 }
+    if ($jobExit -ne 0) { $detail = [string]($jobOutput | Select-Object -Last 1); throw "ANDALUCIA_DAILY_BACKUP_FAILED:${jobExit}:$detail" }
+    Write-JobLog 'verificationResult=VERIFIED restoreRehearsal=RESTORE_TEST_PASSED exitCode=0'
     Start-GuardedApplicationIfRequired
   } else {
-    & npm.cmd run db:restore:rehearse 2>&1 | ForEach-Object { Add-Content -LiteralPath $logPath -Value ([string]$_) -Encoding UTF8 }
+    $previousErrorPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $jobOutput = @(& npm.cmd run db:restore:rehearse 2>&1)
     $jobExit = $LASTEXITCODE
-    if ($jobExit -ne 0) { throw "ANDALUCIA_RESTORE_REHEARSAL_FAILED:$jobExit" }
+    $ErrorActionPreference = $previousErrorPreference
+    $jobOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value ([string]$_) -Encoding UTF8 }
+    if ($jobExit -ne 0) { $detail = [string]($jobOutput | Select-Object -Last 1); throw "ANDALUCIA_RESTORE_REHEARSAL_FAILED:${jobExit}:$detail" }
     Write-JobLog 'restoreRehearsalResult=RESTORE_TEST_PASSED exitCode=0'
   }
   Write-JobLog "task=$Job state=SUCCEEDED restartResult=$restartResult exitCode=0"
