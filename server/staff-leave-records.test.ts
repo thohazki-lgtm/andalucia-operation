@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import { OperationsRepository } from './operations-repository.js'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-staff-leave-'))
 try {
-  const repository = new StaffRepository(dataDirectory)
+  const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await repository.initialize()
   const operations = new OperationsRepository(repository.getDatabase())
   await operations.initialize()
@@ -51,7 +52,7 @@ try {
   assert.equal(rosterRows.rows[0].count, assignments.length)
 
   await repository.getDatabase().close()
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const persisted = await reopened.leaveRecords('2026-09-01', '2026-09-30', staff.id)
   assert.equal(persisted.flatMap(record => record.entries).filter(day => day.classification === 'sickLeave').length, 2)

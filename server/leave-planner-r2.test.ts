@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import type { StaffMembershipHistory } from '../src/domain.js'
 import { LeavePlannerService } from './leave-planner-service.js'
 import { OperationsRepository } from './operations-repository.js'
@@ -10,7 +11,7 @@ import { ANDALUCIA_SCOPE_ID, OutletMembershipRepository } from './outlet-members
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-leave-planner-r2-'))
-const repository = new StaffRepository(dataDirectory)
+const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
 try {
   await repository.initialize()
   const database = repository.getDatabase()

@@ -36,7 +36,7 @@ try {
   await writeFile(join(requestRoot, `${requestId}.json`), JSON.stringify({ version: 'andalucia-scheduler-shutdown-v1', requestId, requestedAt: new Date().toISOString(), action: 'graceful_shutdown', source: 'windows_task_scheduler' }), 'utf8')
   const deadline = Date.now() + 5_000
   const response = join(backupRoot, '.db2', 'scheduler', 'control', 'responses', `${requestId}.json`)
-  while ((!existsSync(response) || JSON.parse(await readFile(response, 'utf8')).state !== 'completed') && Date.now() < deadline) await new Promise(resolveWait => setTimeout(resolveWait, 50))
+  while ((!existsSync(response) || JSON.parse(await readFile(response, 'utf8')).state !== 'completed' || exitCode === null) && Date.now() < deadline) await new Promise(resolveWait => setTimeout(resolveWait, 50))
   stopControl()
   assert.equal(shutdownCalled, true)
   assert.equal(exitCode, 0)
@@ -56,6 +56,8 @@ try {
   assert.match(jobWrapper, /src\/App\.tsx/)
   assert.match(jobWrapper, /consecutiveReadyChecks -ge 3/)
   assert.match(jobWrapper, /restartResult = 'FAILED'/)
+  assert.match(jobWrapper, /restoreRehearsal=RESTORE_TEST_PASSED/)
+  assert.match(jobWrapper, /jobOutput = @\(& npm\.cmd/)
   assert.match(jobWrapper, /-not \(Test-ApplicationReadyOnce\)/)
   assert.doesNotMatch(jobWrapper, /password|session token|api secret/i)
   assert.match(installer, /StartWhenAvailable/)

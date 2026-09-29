@@ -4,7 +4,9 @@ The operational PGlite store is a complete PostgreSQL directory. Treat it as one
 
 ## Normal start
 
-Use `npm run dev`. The API command explicitly selects the canonical store and its `canonical` identity. Startup fails closed when the path, identity, migration ledger, foundation, or recovery state is not safe. Normal startup never initializes a database, applies a migration, performs a backfill, initializes financial policy, or promotes a backup.
+`npm run dev` is development-only. It selects the physically separate `.data-development/postgres` store with role `development`; it never falls back to `.data/postgres`. If that store has not been explicitly initialized, startup fails closed. `npm run db:development:init` creates an empty development store from the reviewed schema/migration/reference sources and copies zero live operational rows. An Owner account, when required for local development, must then be created through the explicit environment-driven bootstrap command; credentials are never stored in source.
+
+The canonical store can be started only by `deployment/windows/Start-AndaluciaGuardedApplication.ps1`. That launcher validates the canonical identity, sets the non-secret guarded-start authorization marker, and invokes `npm run dev:canonical`. Running `npm run dev:canonical` without the injected absolute canonical path, canonical role, and guarded authorization fails closed. Automated tests and rehearsals must provide explicit disposable paths and their matching `test`, `rehearsal`, `backup_verification`, or `recovery_staging` identities. A non-canonical role is rejected for the canonical path, and canonical role is rejected everywhere except the canonical path. Repository construction receives an already-opened database and cannot select or default a persistent path.
 
 ## Safe stop
 
@@ -25,6 +27,10 @@ The API first stops accepting connections, waits for active HTTP work, and close
 4. Run `npm run db:backup -- manual`. Other prepared categories are `automatic-daily`, `automatic-weekly`, `pre-migration`, `pre-finalization`, `milestone`, `recovery`, `post-recovery-baseline`, `post-db1-protection-baseline`, and `post-stale-marker-recovery`.
 
 A VERIFIED result requires an exact complete-directory manifest match, isolated SQL-open test, READY preflight, readable migration ledger, and operational fingerprint. An incomplete attempt is retained as invalid evidence and never replaces an earlier verified backup.
+
+The copied original is assigned the explicit `backup` store role before validation. Application database-open gates and generic migration tooling reject that role. SQL verification and restore rehearsal operate only on separately identified disposable copies (`backup_verification` and `rehearsal`). Pinning a verified backup also applies best-effort filesystem read-only modes to its database tree; identity-aware open rejection remains the primary protection and does not rely on filesystem attributes alone.
+
+Persistent store roles are `canonical`, `development`, `backup`, `backup_verification`, `rehearsal`, `test`, and `recovery_staging`. A backup original must never be passed to PGlite directly. If diagnostic work requires SQL access, first create an exact disposable descendant, give that descendant the appropriate non-backup role, validate its pre-open manifest, and re-hash the original after the descendant closes.
 
 Backups and recovery evidence live under ignored `.backups/` and `.recovery/` directories. Never commit database files, WAL, manifests, credentials, or session tokens.
 
@@ -90,7 +96,11 @@ Owners see a compact Platform section inside Customization Center. It shows data
 
 The UI can request a verified manual backup, but correctly reports it as pending until the external scheduler provides an offline window. Owners may run a non-live restore rehearsal or protect a backup. Outlet Managers do not receive platform database-administration access.
 
-Recovery readiness is separate from database health. READY requires a healthy canonical store, a verified backup within the age policy, a restore-tested backup within the rehearsal policy, and no recovery-required condition. Migration 012 being pending remains a visible warning and does not apply it.
+Recovery readiness is separate from database health. READY requires a healthy canonical store at the supported schema 018, a verified backup within the age policy, a restore-tested backup within the rehearsal policy, and no recovery-required or migration-required condition.
+
+## Migration source verification
+
+Migrations 001–018 are the reviewed set. Migration 009 remains the code-backed `foundation-reference-data` migration; it is not represented by a fabricated SQL file. SQL migration checksums are byte-sensitive. The repository therefore forces `database/migrations/*.sql` to LF through `.gitattributes`, preventing Windows `core.autocrlf` from changing a legitimate migration's checkout bytes. Meaningful SQL changes, including added or removed content and whitespace other than platform line-ending conversion performed by Git, remain checksum-visible. Never replace a recorded canonical checksum to accommodate a differently materialized checkout.
 
 ## If DATABASE_RECOVERY_REQUIRED appears
 
@@ -99,12 +109,12 @@ Stop. Preserve the complete store and runtime markers. Do not retry in a loop, r
 ## DATABASE RECOVERY REQUIRED — WHAT TO DO
 
 1. Keep the application and scheduled database jobs stopped. Open Owner **Customization Center → Platform → Database Health** from a known-good administration runtime, or use the offline recovery CLI to inspect the incident.
-2. Review only VERIFIED, SQL-open, preflight-ready, schema-011 candidates. Candidate ranking is advice, never authorization.
+2. Review only VERIFIED, SQL-open, preflight-ready, schema-018 candidates. Candidate ranking is advice, never authorization.
 3. Select a candidate and review every reported operational gap against the latest known healthy fingerprint. An older but structurally valid backup may still lose business records.
 4. Run a fresh restore rehearsal. Promotion remains blocked unless that exact candidate passes manifest verification, SQL open, migration-ledger checks, preflight, fingerprint reconciliation, and clean shutdown.
 5. As the authenticated Owner, prepare the single-use authorization. It binds the incident, canonical identity, candidate manifest and fingerprint, rehearsal, actor, target, rollback source, and expires after 30 minutes.
 6. In a controlled offline window, use `npm run db:recovery -- promote <absolute-authorization-file>` with the reviewed confirmation environment value. This quarantines the complete failed canonical directory before installing the complete staged copy; it never overlays files.
-7. Start only through the guarded application launcher. Verify identity, schema 011, Owner, OutletScope, all operational modules, and the post-start fingerprint.
+7. Start only through the guarded application launcher. Verify identity, schema 018, Owner, OutletScope, all operational modules, and the post-start fingerprint.
 8. Leave the incident in **Recovery Promoted Awaiting Acceptance** until the manager has reviewed it. Then accept through Owner Database Health. Quarantine, rehearsal, authorization, and rollback evidence remain preserved.
 9. If validation fails, stop the application and use `npm run db:recovery -- rollback <incident-id>` in an authorized offline window. The failed promoted store is quarantined and the complete authorized rollback backup is restored and reconciled.
 

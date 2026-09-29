@@ -26,7 +26,7 @@ for (const option of [
 ]) await initial.query('insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,$2,$3,$4,$5,true,$6)', [randomUUID(), 'duty_codes', option.value, option.label, JSON.stringify({ displayCode: option.displayCode, dutyClassification: option.classification, countsAsWorking: option.working }), 50])
 await initial.close()
 
-const staffRepository = new StaffRepository(databasePath)
+const staffRepository = new StaffRepository(databasePath, new PGlite(databasePath))
 try {
   await staffRepository.initialize()
   await staffRepository.getDatabase().exec('alter table chargeable_item_records add column if not exists check_invoice_number text')

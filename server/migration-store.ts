@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,11 +19,23 @@ const operationalTables = [
 ] as const
 
 const normalizePath = (value: string) => resolve(value).replaceAll('\\', '/').toLowerCase()
+const backupRoot = resolve(projectRoot, '.backups')
+const persistentStoreIdentityPath = (dataDirectory: string) => join(dirname(resolve(dataDirectory)), 'andalucia-store-identity.json')
+const rejectBackupOriginal = (dataDirectory: string) => {
+  const normalizedDirectory = normalizePath(dataDirectory)
+  if (normalizedDirectory.startsWith(`${normalizePath(backupRoot)}/`)) throw new Error('BACKUP_ORIGINAL_MIGRATION_FORBIDDEN')
+  const identityPath = persistentStoreIdentityPath(dataDirectory)
+  if (!existsSync(identityPath)) return
+  let role = ''
+  try { role = String((JSON.parse(readFileSync(identityPath, 'utf8')) as { role?: string }).role || '') } catch { throw new Error('DATABASE_STORE_IDENTITY_INVALID') }
+  if (role === 'backup') throw new Error('BACKUP_ORIGINAL_MIGRATION_FORBIDDEN')
+}
 export const resolveMigrationDataDirectory = (options: { allowLiveCandidate?: boolean; configuredPath?: string } = {}) => {
   const configured = options.configuredPath?.trim() || process.env.ANDALUCIA_MIGRATION_DATA_DIR?.trim()
   if (!configured) throw new Error('MIGRATION_DATA_DIR_REQUIRED')
   if (!isAbsolute(configured)) throw new Error('ANDALUCIA_MIGRATION_DATA_DIR_MUST_BE_ABSOLUTE')
   const dataDirectory = resolve(configured)
+  rejectBackupOriginal(dataDirectory)
   if (normalizePath(dataDirectory) === normalizePath(liveStore) && !options.allowLiveCandidate) throw new Error('LIVE_STORE_MIGRATION_FORBIDDEN_WITHOUT_EXPLICIT_AUTHORIZATION')
   if (!existsSync(join(dataDirectory, 'PG_VERSION'))) throw new Error('MIGRATION_DATA_DIRECTORY_IS_NOT_A_PGLITE_STORE')
   return dataDirectory

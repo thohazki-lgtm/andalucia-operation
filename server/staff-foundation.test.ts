@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PGlite } from '@electric-sql/pglite'
 import type { BookingRecord, Staff } from '../src/domain.js'
 import { BookingRepository } from './booking-repository.js'
 import { OperationsRepository } from './operations-repository.js'
@@ -17,7 +18,7 @@ const activeStaff: Staff = {
 }
 
 try {
-  const staff = new StaffRepository(dataDirectory)
+  const staff = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await staff.initialize()
   const operations = new OperationsRepository(staff.getDatabase())
   const bookings = new BookingRepository(staff.getDatabase())
@@ -59,7 +60,7 @@ try {
   assert.deepEqual(audits.rows.map(row => row.action), ['created', 'status_changed', 'designation_changed'])
 
   await staff.getDatabase().close()
-  const reopened = new StaffRepository(dataDirectory)
+  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await reopened.initialize()
   const persisted = await reopened.find(saved.id)
   assert.equal(persisted?.position, 'Restaurant Supervisor')
