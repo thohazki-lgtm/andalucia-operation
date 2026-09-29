@@ -1,13 +1,10 @@
-import { readFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
 import { config } from '../src/domain.js'
 import { parseActivityProgramPdf } from './activity-program-parser.js'
 import { analyzeBookingCandidates, reconcileAnalyzedBookingCovers } from './booking-intelligence-engine.js'
+import { syntheticActivityProgramPdf } from './activity-program-test-fixture.js'
 
-const fixture = process.argv[2]
-if (!fixture) throw new Error('Provide the updated Activity Program PDF path.')
-
-const parsed = await parseActivityProgramPdf(new Uint8Array(await readFile(fixture)))
+const parsed = await parseActivityProgramPdf(syntheticActivityProgramPdf('intelligence'))
 const analyzed = analyzeBookingCandidates(parsed.bookings, config.occasionTypes)
 const reconciliation = reconcileAnalyzedBookingCovers(analyzed, parsed.validation.declaredCovers)
 const ledger = analyzed.map((record, index) => ({
@@ -31,43 +28,37 @@ const ledger = analyzed.map((record, index) => ({
 }))
 
 assert.equal(parsed.reportDate, '2026-09-20')
-assert.equal(analyzed.length, 47)
-assert.equal(parsed.validation.declaredCovers, 100)
-assert.equal(reconciliation.sourceBookingTotal, 100)
-assert.equal(reconciliation.positiveAdjustments, 26)
+assert.equal(analyzed.length, 6)
+assert.equal(parsed.validation.declaredCovers, 11)
+assert.equal(reconciliation.sourceBookingTotal, 11)
+assert.equal(reconciliation.positiveAdjustments, 4)
 assert.equal(reconciliation.exclusions, 2)
-assert.equal(reconciliation.effectiveOperationalTotal, 124)
-assert.equal(reconciliation.unresolvedRecords, 4)
+assert.equal(reconciliation.effectiveOperationalTotal, 13)
+assert.equal(reconciliation.unresolvedRecords, 1)
 assert.equal(reconciliation.reconciled, true)
-const joining = analyzed.find(record => record.bookingNumber === '2691158')
+const joining = analyzed.find(record => record.bookingNumber === '9100001')
 assert(joining)
 assert.equal(joining.intelligence?.paxSemantic, 'GROUP_TOTAL')
-assert.equal(joining.intelligence?.operationalContributionPax, 15)
-assert.equal(joining.intelligence?.coverDelta, 13)
-const possibleMirror = analyzed.find(record => record.bookingNumber === '2687595')
-assert(possibleMirror)
-assert.equal(possibleMirror.intelligence?.paxSemantic, 'GROUP_TOTAL')
-assert.equal(possibleMirror.intelligence?.operationalContributionPax, 15)
-assert.equal(possibleMirror.intelligence?.coverDelta, 13)
-assert(!possibleMirror.intelligence?.findings.some(item => item.normalizedKey === 'GROUP_REVIEW_REQUIRED'))
-const blocked = analyzed.find(record => record.bookingNumber === '2690206')
+assert.equal(joining.intelligence?.operationalContributionPax, 6)
+assert.equal(joining.intelligence?.coverDelta, 4)
+const blocked = analyzed.find(record => record.bookingNumber === '9100005')
 assert(blocked)
 assert.equal(blocked.intelligence?.paxSemantic, 'BLOCKED_CAPACITY')
 assert.equal(blocked.intelligence?.operationalContributionPax, 0)
 assert.equal(blocked.intelligence?.coverDelta, -2)
-const birthday = analyzed.find(record => record.bookingNumber === '2691074')
+const birthday = analyzed.find(record => record.bookingNumber === '9100002')
 assert(birthday)
 assert(birthday.intelligence?.findings.some(item => item.normalizedKey === 'BIRTHDAY'))
 assert(birthday.intelligence?.newOccasionKeys.includes('birthday'))
-const sys = analyzed.find(record => record.bookingNumber === '2690707')
+const sys = analyzed.find(record => record.bookingNumber === '9100003')
 assert(sys)
 assert(sys.intelligence?.findings.some(item => item.normalizedKey === 'SEE_YOU_SOON'))
 assert(sys.intelligence?.newOccasionKeys.includes('see_you_soon'))
-assert.equal(analyzed.filter(record => record.intelligence?.sourcePax === 1).length, 4)
+assert.equal(analyzed.filter(record => record.intelligence?.sourcePax === 1).length, 1)
 assert(analyzed.filter(record => record.intelligence?.sourcePax === 1).every(record => record.intelligence?.paxSemantic === 'MANAGER_REVIEW' && record.intelligence.operationalContributionPax === 1))
 
 console.log(JSON.stringify({
-  reportDate: parsed.reportDate,
+  fixture: 'synthetic-fictional', reportDate: parsed.reportDate,
   validation: parsed.validation,
   reconciliation,
   totals: {

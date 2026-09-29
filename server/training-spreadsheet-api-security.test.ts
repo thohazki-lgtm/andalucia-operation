@@ -2,13 +2,15 @@ import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { resolve } from 'node:path'
-import { PGlite } from '@electric-sql/pglite'
 import * as XLSX from 'xlsx'
-import { canonicalStoreDirectory, developmentStoreDirectory, readStoreIdentity } from './database-protection.js'
+import { canonicalStoreDirectory, readStoreIdentity } from './database-protection.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { TRAINING_UPLOAD_MAX_BYTES } from './training-spreadsheet-security.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 
 const root = resolve('.')
+const fixture = await createDisposableDevelopmentStore('training-spreadsheet-api-security')
+const developmentStoreDirectory = fixture.store
 const normalized = (value: string) => resolve(value).replaceAll('\\', '/').toLowerCase()
 assert.notEqual(normalized(developmentStoreDirectory), normalized(canonicalStoreDirectory), 'The API security test must never select the canonical store.')
 const identity = await readStoreIdentity(developmentStoreDirectory, 'development')
@@ -25,7 +27,7 @@ const userIds = {
   wrongOutlet: randomUUID()
 }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
-const db = new PGlite(developmentStoreDirectory)
+const db = fixture.db
 const before = Number((await db.query<{ count: number }>('select count(*)::int count from training_sessions')).rows[0]?.count || 0)
 for (const [key, id] of Object.entries(userIds)) {
   await db.query("insert into user_accounts(id,login_identifier,normalized_login_identifier,display_name,password_hash,status,created_by,updated_by) values($1,$2,$2,$3,'isolated-test-no-login','active','R1.12 isolated test','R1.12 isolated test')", [id, `r112-${key}-${id}`, `R1.12 ${key}`])
@@ -78,6 +80,8 @@ try {
       ...process.env,
       ANDALUCIA_DATA_DIR: developmentStoreDirectory,
       ANDALUCIA_STORE_ROLE: 'development',
+      NODE_ENV: 'test',
+      ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: developmentStoreDirectory,
       ANDALUCIA_REQUIRED_SCHEMA_VERSION: '018',
       APP_ORIGIN: trustedOrigin,
       API_PORT: String(port)
@@ -146,7 +150,5 @@ try {
   }, null, 2))
 } finally {
   await stop()
-  const cleanup = new PGlite(developmentStoreDirectory)
-  try { await cleanup.query('delete from user_accounts where id=any($1::uuid[])', [Object.values(userIds)]) }
-  finally { await cleanup.close() }
+  await fixture.cleanup()
 }

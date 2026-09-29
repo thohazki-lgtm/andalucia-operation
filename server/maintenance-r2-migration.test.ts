@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { createFinancialFinalizationFingerprint } from './database-backup.js'
 import { copyStoreVerified } from './migration-filesystem.js'
 import { compareOperationalFingerprints, createMigrationFingerprint, migrationStatus, runMigrations, runPreflight } from './migration-store.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
+import { createDisposableStoreThrough } from './test-store-fixture.js'
 
-const sourceStore = process.env.ANDALUCIA_MAINTENANCE_R2_SOURCE_STORE
-if (!sourceStore) throw new Error('ANDALUCIA_MAINTENANCE_R2_SOURCE_STORE_REQUIRED')
-const root = await mkdtemp(join(resolve('.tmp'), 'maintenance-r2-migration-')); const migratedPath = join(root, 'migrated', 'postgres'); const rollbackPath = join(root, 'rollback', 'postgres')
+const sourceFixture = process.env.ANDALUCIA_MAINTENANCE_R2_SOURCE_STORE ? undefined : await createDisposableStoreThrough('maintenance-r2-migration-source', '017')
+const sourceStore = process.env.ANDALUCIA_MAINTENANCE_R2_SOURCE_STORE || sourceFixture!.store
+if (sourceFixture) await sourceFixture.db.close()
+const root = await mkdtemp(join(tmpdir(), 'maintenance-r2-migration-')); const migratedPath = join(root, 'migrated', 'postgres'); const rollbackPath = join(root, 'rollback', 'postgres')
 const stable = (value: unknown) => JSON.stringify(value, Object.keys(value as object).sort())
 const digest = (value: unknown) => createHash('sha256').update(stable(value)).digest('hex')
 const coreRows = async (db: PGlite) => (await db.query<any>('select id,issue,priority,assigned_to,reported_at::text,status,created_at::text,updated_at::text,issue_date::text,area_value,reported_by_staff_id,notes,created_by,updated_by from maintenance_issues order by id')).rows
@@ -33,4 +36,4 @@ try {
   await db.close()
   await copyStoreVerified(sourceStore, rollbackPath); const rollback = new PGlite(rollbackPath); await rollback.query('select 1'); const rollbackStatus = await migrationStatus(rollback); assert.equal(rollbackStatus.migrations.find(item => item.version === '018')?.state, 'pending'); assert.equal(compareOperationalFingerprints(before, await createMigrationFingerprint(rollback)).preserved, true); assert.equal(digest(await coreRows(rollback)), maintenanceDigest); assert.equal((await createFinancialFinalizationFingerprint(rollback)).digest, financialBefore.digest); await rollback.close()
   console.log(JSON.stringify({ migration018: true, checksum: migration018?.checksum, sourceCopyVerified: true, schema018Disposable: true, maintenanceRows: maintenanceBefore.length, historicalFactsPreserved: true, noEvidenceFabricated: true, operationalPreserved: true, financialPreserved: true, rollbackRehearsal: true }))
-} finally { await rm(root, { recursive: true, force: true }) }
+} finally { await rm(root, { recursive: true, force: true }); await sourceFixture?.cleanup() }

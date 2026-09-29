@@ -1,17 +1,23 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { validateOperationalCovers, type ProtectedZeroCoverEvidence } from './booking-cover-validation.js'
 import { createFinancialFinalizationFingerprint } from './database-backup.js'
 import { copyStoreVerified } from './migration-filesystem.js'
 import { compareOperationalFingerprints, createMigrationFingerprint, migrationStatus, runMigrations, runPreflight } from './migration-store.js'
+import { createDisposableStoreThrough } from './test-store-fixture.js'
 
-const sourceStore = process.env.ANDALUCIA_BOOKING_INTELLIGENCE_SOURCE_STORE
-if (!sourceStore) throw new Error('ANDALUCIA_BOOKING_INTELLIGENCE_SOURCE_STORE_REQUIRED')
+const sourceFixture = process.env.ANDALUCIA_BOOKING_INTELLIGENCE_SOURCE_STORE ? undefined : await createDisposableStoreThrough('booking-intelligence-source', '016')
+const sourceStore = process.env.ANDALUCIA_BOOKING_INTELLIGENCE_SOURCE_STORE || sourceFixture!.store
+if (sourceFixture) {
+  await sourceFixture.db.query("insert into bookings(id,guest_name,booking_status,covers,reservation_date,venue_key) values($1,'Synthetic Booking','confirmed',2,'2026-09-20','andalucia')", [randomUUID()])
+  await sourceFixture.db.close()
+}
 
-const root = await mkdtemp(join(resolve('.tmp'), 'booking-intelligence-migration-'))
+const root = await mkdtemp(join(tmpdir(), 'booking-intelligence-migration-'))
 const migratedPath = join(root, 'migrated', 'postgres')
 const rollbackPath = join(root, 'rollback', 'postgres')
 const preservedTables = [
@@ -163,4 +169,5 @@ try {
   }, null, 2))
 } finally {
   await rm(root, { recursive: true, force: true })
+  await sourceFixture?.cleanup()
 }

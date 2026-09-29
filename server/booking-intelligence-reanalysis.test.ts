@@ -6,10 +6,9 @@ import type { BookingImportPreview, ConfigOption } from '../src/domain.js'
 import { parseActivityProgramPdf, ACTIVITY_PROGRAM_PARSER_VERSION } from './activity-program-parser.js'
 import { analyzeBookingCandidates, BOOKING_INTELLIGENCE_RULESET_VERSION } from './booking-intelligence-engine.js'
 import { BookingRepository } from './booking-repository.js'
+import { syntheticActivityProgramPdf } from './activity-program-test-fixture.js'
 
-const fixture = process.argv[2]
-if (!fixture) throw new Error('Pass the real Activity Program PDF path.')
-const pdf = await readFile(fixture)
+const pdf = Buffer.from(syntheticActivityProgramPdf('intelligence'))
 const parsed = await parseActivityProgramPdf(new Uint8Array(pdf))
 const occasionTypes: ConfigOption[] = [
   ['honeymoon', ['honeymoon']], ['birthday', ['birthday']], ['anniversary', ['anniversary']],
@@ -42,13 +41,13 @@ assert(source.every(item => item.readiness === 'DUPLICATE'))
 assert(existing.every(item => item.readiness === 'DUPLICATE'))
 const findings = source.reduce((sum, item) => sum + (item.intelligence?.findings.length || 0), 0)
 const reviewRequired = source.filter(item => item.intelligence?.reviewRequired).length
-assert.equal(findings, 27)
-assert.equal(reviewRequired, 4)
-for (const bookingNumber of ['2690707', '2689757']) assert(source.find(item => item.bookingNumber === bookingNumber)?.intelligence?.findings.some(item => item.normalizedKey === 'SEE_YOU_SOON'))
-const joining = source.find(item => item.bookingNumber === '2691158' && item.rooms.includes('554'))
+assert.equal(findings, 8)
+assert.equal(reviewRequired, 1)
+assert(source.find(item => item.bookingNumber === '9100003')?.intelligence?.findings.some(item => item.normalizedKey === 'SEE_YOU_SOON'))
+const joining = source.find(item => item.bookingNumber === '9100001' && item.rooms.includes('501'))
 assert(joining)
-assert.equal(joining.intelligence?.effectiveCandidatePax, 15)
+assert.equal(joining.intelligence?.effectiveCandidatePax, 6)
 for (const key of ['GROUP', 'PAX_RESOLVED']) assert(joining.intelligence?.findings.some(item => item.normalizedKey === key))
 assert.equal((await db.query<{ count: number }>('select count(*)::int count from bookings')).rows[0].count, parsed.bookings.length)
 assert.equal((await db.query<{ count: number }>('select count(*)::int count from booking_guest_members')).rows[0].count, parsed.bookings.reduce((sum, item) => sum + item.guestMembers.length, 0))
-console.log(JSON.stringify({ parsed: parsed.bookings.length, covers: source.reduce((sum, item) => sum + (item.covers || 0), 0), duplicates: repeated.summary.possibleDuplicates, reanalyzedExisting: candidates.length, findings, reviewRequired, ruleset: BOOKING_INTELLIGENCE_RULESET_VERSION, persistedIntelligenceFindings: 0 }, null, 2))
+console.log(JSON.stringify({ fixture: 'synthetic-fictional', parsed: parsed.bookings.length, covers: source.reduce((sum, item) => sum + (item.covers || 0), 0), duplicates: repeated.summary.possibleDuplicates, reanalyzedExisting: candidates.length, findings, reviewRequired, ruleset: BOOKING_INTELLIGENCE_RULESET_VERSION, persistedIntelligenceFindings: 0 }, null, 2))

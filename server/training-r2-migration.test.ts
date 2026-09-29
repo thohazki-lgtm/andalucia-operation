@@ -1,17 +1,25 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { rm, mkdtemp } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { createFinancialFinalizationFingerprint } from './database-backup.js'
 import { copyStoreVerified } from './migration-filesystem.js'
 import { compareOperationalFingerprints, createMigrationFingerprint, migrationStatus, runMigrations, runPreflight } from './migration-store.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
+import { createDisposableStoreThrough } from './test-store-fixture.js'
 
-const sourceStore = process.env.ANDALUCIA_TRAINING_R2_SOURCE_STORE
-if (!sourceStore) throw new Error('ANDALUCIA_TRAINING_R2_SOURCE_STORE_REQUIRED')
+const sourceFixture = process.env.ANDALUCIA_TRAINING_R2_SOURCE_STORE ? undefined : await createDisposableStoreThrough('training-r2-migration-source', '015')
+const sourceStore = process.env.ANDALUCIA_TRAINING_R2_SOURCE_STORE || sourceFixture!.store
+if (sourceFixture) {
+  for (let index = 1; index <= 12; index += 1) {
+    await sourceFixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,$2,$3,'waiter','active','2026-01-01')", [randomUUID(), `TR${String(index).padStart(3, '0')}`, `Synthetic Staff ${String(index).padStart(2, '0')}`])
+  }
+  await sourceFixture.db.close()
+}
 
-const root = await mkdtemp(join(resolve('.tmp'), 'training-r2-migration-'))
+const root = await mkdtemp(join(tmpdir(), 'training-r2-migration-'))
 const migratedPath = join(root, 'migrated', 'postgres')
 const rollbackPath = join(root, 'rollback', 'postgres')
 const counts = async (db:PGlite, tables:string[]) => Object.fromEntries(await Promise.all(tables.map(async table => [table, Number((await db.query<{count:number}>(`select count(*)::int count from ${table}`)).rows[0].count)])))
@@ -138,4 +146,5 @@ try {
   },null,2))
 } finally {
   await rm(root,{recursive:true,force:true})
+  await sourceFixture?.cleanup()
 }

@@ -1,16 +1,13 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { resolve } from 'node:path'
-import { PGlite } from '@electric-sql/pglite'
 import type { AuthPrincipal } from '../src/domain.js'
 import { AuthorizationService } from './authorization-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { MonthlyReportInputRepository, monthlyFinanceComplete, normalizeMonthlyFinancePayload } from './monthly-report-input-repository.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 
-const dataDirectory = process.env.ANDALUCIA_MONTHLY_TEST_DATA_DIR
-if (!dataDirectory) throw new Error('ANDALUCIA_MONTHLY_TEST_DATA_DIR_REQUIRED')
-const db = new PGlite(resolve(dataDirectory))
-await db.query('select 1')
+const fixture = await createDisposableDevelopmentStore('monthly-finance')
+const db = fixture.db
 
 const ownerRow = (await db.query<{id:string;login_identifier:string;display_name:string}>("select id,login_identifier,display_name from user_accounts where status='active' order by created_at limit 1")).rows[0]
 assert.ok(ownerRow, 'An isolated authenticated account fixture is required.')
@@ -106,5 +103,5 @@ try {
 
   console.log(JSON.stringify({ status:'PASS', explicitZero:true, nullNotEntered:true, calculations:true, verified:true, verifiedWithVariance:true, verificationReset:true, concurrency:true, authorization:true, outletScope:true, audit:true, rows }, null, 2))
 } finally {
-  await db.close()
+  await fixture.cleanup()
 }

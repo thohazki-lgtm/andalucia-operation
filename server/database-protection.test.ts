@@ -75,7 +75,8 @@ try {
 
   await assert.rejects(createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot: join(root, 'backups'), exclusiveConfirmed: false, expectedCanonicalDirectory: canonical }), /BACKUP_REQUIRES_OFFLINE_EXCLUSIVE_ACCESS/)
   await assert.rejects(createVerifiedBackup({ sourceDirectory: future, category: 'manual', backupRoot: join(root, 'backups'), exclusiveConfirmed: true, expectedCanonicalDirectory: canonical }), /BACKUP_WRONG_STORE/)
-  const backup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot: join(root, 'backups'), exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, now: new Date() })
+  const backupCreatedAt = new Date()
+  const backup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot: join(root, 'backups'), exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, now: backupCreatedAt })
   assert.equal(backup.metadata.verificationStatus, 'VERIFIED')
   assert.equal(backup.metadata.openTestStatus, 'PASS')
   assert.equal(backup.metadata.preflightStatus, 'READY')
@@ -87,7 +88,8 @@ try {
   await verifyBackupCopy({ backupDirectory: backup.backupDirectory, sourceManifest: backup.metadata.backupManifest, verificationDirectory: join(root, 'second-verification', 'postgres'), copyRole: 'rehearsal' })
   const originalAfterVerification = await createStoreManifest(backup.backupDirectory)
   assert.equal(manifestsMatch(originalBeforeVerification, originalAfterVerification), true)
-  await requireRecentVerifiedBackup({ metadataPath: join(backup.folder, 'backup-metadata.json'), sourceDirectory: canonical, maximumAgeMs: 60_000 })
+  await requireRecentVerifiedBackup({ metadataPath: join(backup.folder, 'backup-metadata.json'), sourceDirectory: canonical, maximumAgeMs: 60_000, now: new Date(backupCreatedAt.getTime() + 30_000) })
+  await assert.rejects(requireRecentVerifiedBackup({ metadataPath: join(backup.folder, 'backup-metadata.json'), sourceDirectory: canonical, maximumAgeMs: 60_000, now: new Date(backupCreatedAt.getTime() + 60_001) }), /VERIFIED_BACKUP_STALE/)
 
   const interrupted = join(root, 'interrupted', 'postgres')
   await cp(backup.backupDirectory, interrupted, { recursive: true })

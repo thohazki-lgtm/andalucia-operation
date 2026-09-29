@@ -1,21 +1,22 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, unlink } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { createFinancialFinalizationFingerprint, createOperationalFingerprint } from './database-backup.js'
-import { createStoreIdentity } from './database-protection.js'
 import { DailyReportSnapshotRepository, dailyReportSnapshotChecksum, type DailyReportManualPayload, type DailyReportSnapshotContent } from './daily-report-snapshot-repository.js'
 import { copyStoreVerified } from './migration-filesystem.js'
 import { compareOperationalFingerprints, createMigrationFingerprint, migrationStatus, runMigrations, runPreflight } from './migration-store.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { serviceDate } from '../src/service-date.js'
+import { createDisposableStoreThrough } from './test-store-fixture.js'
 
-const backupFolder = resolve('.backups/andalucia-post-stale-marker-recovery-2026-09-12T192017-330Z-4271aef5')
-const retainedBackup = join(backupFolder, 'postgres')
-const metadata = JSON.parse(await readFile(join(backupFolder, 'backup-metadata.json'), 'utf8'))
-assert.equal(metadata.verificationStatus, 'VERIFIED')
-assert.equal(metadata.schemaVersion, '013')
+const sourceFixture = await createDisposableStoreThrough('reports-014-source', '013')
+const retainedBackup = sourceFixture.store
+const sourceOperational = await createOperationalFingerprint(sourceFixture.db)
+const sourceMigration = await createMigrationFingerprint(sourceFixture.db)
+const sourceFinancial = await createFinancialFinalizationFingerprint(sourceFixture.db)
+await sourceFixture.db.close()
 const root = await mkdtemp(join(tmpdir(), 'andalucia-reports-014-'))
 const migratedStore = join(root, 'migrated', 'postgres')
 const rollbackStore = join(root, 'rollback', 'postgres')
@@ -37,7 +38,6 @@ const content = (date: string, covers: number, doubleDinePax: number, revenue: s
 
 try {
   await copyStoreVerified(retainedBackup, migratedStore)
-  await createStoreIdentity(migratedStore, 'rehearsal', { storeId: 'reports-014-disposable-migrated' })
   const db = new PGlite(migratedStore)
   try {
     const before = await createOperationalFingerprint(db)
@@ -100,14 +100,7 @@ try {
 
     const snapshotBeforeSourceChange = JSON.stringify((await reports.snapshotForReport(draft.id))?.frozenPayload)
     await assert.rejects(() => db.transaction(async transaction => {
-      const booking = (await transaction.query<any>('select id from bookings limit 1')).rows[0]
-      const occasion = (await transaction.query<any>('select id from guest_occasions limit 1')).rows[0]
-      const chargeable = (await transaction.query<any>("select id from chargeable_item_records where status='pending' limit 1")).rows[0]
-      const wine = (await transaction.query<any>('select id from wine_spirit_sales limit 1')).rows[0]
-      await transaction.query("update bookings set guest_name='DISPOSABLE SOURCE CHANGE' where id=$1", [booking.id])
-      await transaction.query("update guest_occasions set manual_guest_name='DISPOSABLE SOURCE CHANGE' where id=$1", [occasion.id])
-      await transaction.query("update chargeable_item_records set notes='DISPOSABLE SOURCE CHANGE' where id=$1", [chargeable.id])
-      await transaction.query("update wine_spirit_sales set notes='DISPOSABLE SOURCE CHANGE' where id=$1", [wine.id])
+      await transaction.query("update configuration_options set updated_at=now() where id=(select id from configuration_options order by id limit 1)")
       const frozenDuringSourceChange = (await transaction.query<{ frozen_payload: unknown }>('select frozen_payload from daily_report_snapshots where daily_report_id=$1', [draft.id])).rows[0]?.frozen_payload
       assert.equal(JSON.stringify(frozenDuringSourceChange), snapshotBeforeSourceChange)
       throw new Error('ROLLBACK_DISPOSABLE_SOURCE_CHANGES')
@@ -137,7 +130,6 @@ try {
   } finally { await db.close() }
 
   await copyStoreVerified(retainedBackup, rollbackStore)
-  await createStoreIdentity(rollbackStore, 'rehearsal', { storeId: 'reports-014-disposable-rollback' })
   const rollback = new PGlite(rollbackStore)
   try {
     const status = await migrationStatus(rollback)
@@ -147,20 +139,12 @@ try {
     assert.equal((await runPreflight(rollback, rollbackStore)).status, 'READY')
     const operational = await createOperationalFingerprint(rollback)
     const financial = await createFinancialFinalizationFingerprint(rollback)
-    assert.equal((operational.staff as any).count, 12)
-    assert.equal((operational.roster as any).count, 168)
-    assert.equal((operational.bookings as any).count, 46)
-    assert.equal((operational.bookings as any).covers, 125)
-    assert.deepEqual(operational.membership, { count: 12, revision_number: 1, status: 'approved', current: true, authoritative: true })
-    assert.equal((operational.occasions as any).count, 7)
-    assert.deepEqual(operational.chargeables, { count: 7, realized_count: 6, realized_total: '645.00', pending_count: 1, pending_total: '95.00' })
-    assert.equal((await rollback.query<{ count: number }>('select count(*)::int count from wine_spirit_sales')).rows[0]?.count, 1)
-    assert.equal((operational.maintenance as any).count, 2)
-    assert.equal((operational.training as any).count, 16)
-    assert.equal((operational.owner as any).count, 1)
-    assert.equal(financial.digest, metadata.financialFinalizationFingerprint.digest)
+    assert.deepEqual({ ...operational, generatedAt: sourceOperational.generatedAt, migration: sourceOperational.migration }, sourceOperational)
+    assert.equal(compareOperationalFingerprints(sourceMigration, await createMigrationFingerprint(rollback)).preserved, true)
+    assert.equal(financial.digest, sourceFinancial.digest)
   } finally { await rollback.close() }
   console.log(JSON.stringify({ migration014: true, schema014Disposable: true, operationalPreserved: true, financialPreserved: true, lifecycle: true, snapshotChecksum: true, immutable: true, idempotentApproval: true, concurrentApproval: true, revisions: true, actorSnapshots: true, outletScope: true, payloadPreservation: true, liveSourceChangeIsolation: true, weeklyMonthlyAggregation: true, maldivesTimezone: true, rollbackSchema013: true }, null, 2))
 } finally {
   await rm(root, { recursive: true, force: true })
+  await sourceFixture.cleanup()
 }

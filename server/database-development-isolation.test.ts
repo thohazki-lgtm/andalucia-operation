@@ -29,6 +29,9 @@ try {
   const developmentRuntime = resolveRuntimeStore({ ANDALUCIA_DATA_DIR: development, ANDALUCIA_STORE_ROLE: 'development' }, expected)
   assert.equal(developmentRuntime.dataDirectory, development)
   assert.equal(developmentRuntime.role, 'development')
+  const isolatedRuntime = resolveRuntimeStore({ ANDALUCIA_DATA_DIR: development, ANDALUCIA_STORE_ROLE: 'development', NODE_ENV: 'test', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: development }, { canonicalDirectory: canonical })
+  assert.equal(isolatedRuntime.dataDirectory, development)
+  assert.throws(() => resolveRuntimeStore({ ANDALUCIA_DATA_DIR: canonical, ANDALUCIA_STORE_ROLE: 'development', NODE_ENV: 'test', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: canonical }, { canonicalDirectory: canonical }), /TEST_DEVELOPMENT_STORE_MUST_BE_TEMPORARY|CANONICAL_STORE_ROLE_MISMATCH/)
   assert.notEqual(developmentRuntime.dataDirectory, canonicalRuntime.dataDirectory)
   assert.throws(() => resolveRuntimeStore({ ANDALUCIA_DATA_DIR: development, ANDALUCIA_STORE_ROLE: 'canonical', ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION }, expected), /CANONICAL_STORE_PATH_MISMATCH/)
 
@@ -38,5 +41,5 @@ try {
   await repository.close()
   assert.equal(StaffRepository.length, 2)
 
-  console.log(JSON.stringify({ developmentStoreInitialized: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
+  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
 } finally { await rm(root, { recursive: true, force: true }) }
