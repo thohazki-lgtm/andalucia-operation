@@ -3,8 +3,9 @@ import { existsSync } from 'node:fs'
 import { appendFile, mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { AuditActor } from '../src/domain.js'
-import { setBackupOriginalFilesystemProtection, verifyBackupCopy, type BackupCategory } from './database-backup.js'
+import { setBackupOriginalFilesystemProtection, verifyBackupCopy, verifyBackupOriginalFilesystemProtection, type BackupCategory } from './database-backup.js'
 import { operationMarkerPaths, SUPPORTED_SCHEMA_VERSION, type DatabaseHealth, type VerifiedBackupSummary } from './database-protection.js'
+import { DatabaseOperationCoordinator, assessPathStorageHeadroom, deriveEffectiveBackupState } from './database-operation-coordinator.js'
 import { createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
 
 export type BackupRestoreStatus = 'RESTORE_TEST_PENDING' | 'RESTORE_TEST_PASSED' | 'RESTORE_TEST_FAILED'
@@ -78,10 +79,16 @@ export class DatabaseBackupAdminService {
     const item = (await this.inventory()).find(candidate => candidate.backupId === backupId); if (!item) throw new Error('BACKUP_NOT_FOUND')
     const folder = this.folder(backupId); const metadata = await this.json<BackupMetadata>(join(folder, 'backup-metadata.json')); if (!metadata || metadata.verificationStatus !== 'VERIFIED') throw new Error('VERIFIED_BACKUP_REQUIRED')
     const current = await this.json<Protection>(join(folder, 'db2-protection.json')); const automaticReasons = item.protectionReasons.filter(value => value !== current?.reason); if (!pinned && automaticReasons.length) throw new Error('BACKUP_PROTECTION_REQUIRED')
-    const filesystem = await setBackupOriginalFilesystemProtection(metadata.backupDirectory, pinned)
-    await writeJsonAtomic(join(folder, 'db2-protection.json'), { pinned, reason: pinned ? (reason.trim() || 'Owner protected backup') : '', updatedAt: new Date().toISOString(), updatedBy: actor?.displayName || systemActor.displayName, filesystem } satisfies Protection & { filesystem: unknown })
-    await this.audit(pinned ? 'backup_pinned' : 'backup_unpinned', this.actor(actor), backupId, { filesystem })
-    return (await this.inventory()).find(candidate => candidate.backupId === backupId)!
+    const coordinator = new DatabaseOperationCoordinator(join(this.adminRoot, 'operations')); const operation = await coordinator.acquire({ operationType: 'protection_change', resource: { kind: 'backup', id: backupId }, backupId })
+    const before = await createStoreManifest(metadata.backupDirectory)
+    try {
+      const filesystem = await setBackupOriginalFilesystemProtection(metadata.backupDirectory, pinned); const verification = await verifyBackupOriginalFilesystemProtection(metadata.backupDirectory, pinned)
+      if (!verification.verified) throw new Error(`BACKUP_PROTECTION_PARTIAL_FAILURE:${verification.mismatchCount}`)
+      const after = await createStoreManifest(metadata.backupDirectory); if (!manifestsMatch(before, after)) throw new Error('BACKUP_PROTECTION_CHANGED_SOURCE_MANIFEST')
+      await writeJsonAtomic(join(folder, 'db2-protection.json'), { pinned, reason: pinned ? (reason.trim() || 'Owner protected backup') : '', updatedAt: new Date().toISOString(), updatedBy: actor?.displayName || systemActor.displayName, filesystem, verification } satisfies Protection & { filesystem: unknown; verification: unknown })
+      await this.audit(pinned ? 'backup_pinned' : 'backup_unpinned', this.actor(actor), backupId, { filesystem, verification }); await operation.succeed({ pinned, manifest: after.aggregateSha256 })
+      return (await this.inventory()).find(candidate => candidate.backupId === backupId)!
+    } catch (error) { await operation.fail(error); throw error }
   }
   async requestManualBackup(actor: AuditActor) { const id = `backup-request-${new Date().toISOString().replaceAll(':', '').replaceAll('.', '-')}-${randomUUID().slice(0, 8)}`; const request = { id, category: 'manual', state: 'pending', requestedAt: new Date().toISOString(), requestedBy: { userId: actor.userId, displayName: actor.displayName }, instruction: 'Process only during a confirmed offline window with db:backup:job requested.' }; await writeJsonAtomic(join(this.adminRoot, 'requests', `${id}.json`), request); await this.audit('manual_backup_requested', this.actor(actor), undefined, { requestId: id }); return request }
   async inspect(backupId: string, actor: AuditActor) { const item = (await this.inventory()).find(candidate => candidate.backupId === backupId); if (!item) throw new Error('BACKUP_NOT_FOUND'); await this.audit('recovery_candidate_inspected', this.actor(actor), backupId); return item }
@@ -105,9 +112,11 @@ export class DatabaseBackupAdminService {
   async rehearse(backupId: string, actor?: AuditActor): Promise<RestoreResult> {
     if (existsSync(operationMarkerPaths(this.canonicalDirectory).recovery)) throw new Error('RECOVERY_IN_PROGRESS_OPERATION_BLOCKED')
     const folder = this.folder(backupId); const metadata = await this.json<BackupMetadata>(join(folder, 'backup-metadata.json')); if (!metadata || metadata.verificationStatus !== 'VERIFIED') throw new Error('VERIFIED_BACKUP_REQUIRED')
-    const startedAt = new Date().toISOString(); const rehearsalRoot = join(this.adminRoot, 'rehearsals', `${backupId}-${randomUUID()}`); const descendant = join(rehearsalRoot, 'postgres'); await this.audit('restore_rehearsal_started', this.actor(actor), backupId)
-    const originalBefore = await createStoreManifest(metadata.backupDirectory)
+    const coordinator = new DatabaseOperationCoordinator(join(this.adminRoot, 'operations')); const operation = await coordinator.acquire({ operationType: 'restore_rehearsal', resource: { kind: 'backup', id: backupId }, backupId })
+    const startedAt = new Date().toISOString(); const rehearsalRoot = join(this.adminRoot, 'rehearsals', `${backupId}-${randomUUID()}`); const descendant = join(rehearsalRoot, 'postgres')
     try {
+      await this.audit('restore_rehearsal_started', this.actor(actor), backupId)
+      const originalBefore = await createStoreManifest(metadata.backupDirectory)
       if (!manifestsMatch(originalBefore, metadata.backupManifest)) throw new Error('RESTORE_TEST_MANIFEST_MISMATCH')
       const verified = await verifyBackupCopy({ backupDirectory: metadata.backupDirectory, sourceManifest: metadata.backupManifest, verificationDirectory: descendant, copyRole: 'rehearsal' })
       const fingerprintMatch = same(metadata.operationalFingerprint, verified.fingerprint) && (!metadata.financialFinalizationFingerprint || same(metadata.financialFinalizationFingerprint, verified.financialFinalizationFingerprint)); const migrationMatch = same((metadata as any).migrationLedger, verified.migration)
@@ -117,11 +126,16 @@ export class DatabaseBackupAdminService {
       const result: RestoreResult = { status: 'RESTORE_TEST_PASSED', startedAt, completedAt: new Date().toISOString(), backupId, manifestMatch: true, fingerprintMatch, migrationMatch, preflightStatus: verified.preflight.status }
       await writeJsonAtomic(join(folder, 'restore-test.json'), result)
       await writeJsonAtomic(join(folder, 'backup-candidate.json'), { backupId, category: metadata.category, state: 'VERIFIED_REHEARSED', verifiedAt: result.completedAt, sourceDirectory: metadata.sourceDirectory })
-      await this.audit('restore_rehearsal_completed', this.actor(actor), backupId); return result
+      await this.audit('restore_rehearsal_completed', this.actor(actor), backupId); await operation.succeed({ backupId, restoreStatus: result.status }); return result
     } catch (error) {
       const result: RestoreResult = { status: 'RESTORE_TEST_FAILED', startedAt, completedAt: new Date().toISOString(), backupId, manifestMatch: false, fingerprintMatch: false, migrationMatch: false, preflightStatus: 'FAILED', error: safeError(error) }
-      await writeJsonAtomic(join(folder, 'restore-test.json'), result); await this.audit('restore_rehearsal_failed', this.actor(actor), backupId, { error: result.error }); throw error
+      await writeJsonAtomic(join(folder, 'restore-test.json'), result); await this.audit('restore_rehearsal_failed', this.actor(actor), backupId, { error: result.error }); await operation.fail(error); throw error
     } finally { if (resolve(rehearsalRoot).startsWith(resolve(this.adminRoot, 'rehearsals'))) await rm(rehearsalRoot, { recursive: true, force: true }) }
+  }
+  async reconciledState(backupId: string) {
+    const folder = this.folder(backupId); const metadata = await this.json<BackupMetadata>(join(folder, 'backup-metadata.json')); if (!metadata) throw new Error('BACKUP_NOT_FOUND')
+    const candidate = await this.json<{ state?: string }>(join(folder, 'backup-candidate.json')); const restore = await this.json<RestoreResult>(join(folder, 'restore-test.json')); const protection = await this.json<Protection>(join(folder, 'db2-protection.json'))
+    return deriveEffectiveBackupState({ candidateState: candidate?.state, verificationStatus: metadata.verificationStatus, openTestStatus: metadata.openTestStatus, preflightStatus: metadata.preflightStatus, restoreStatus: restore?.status, pinned: protection?.pinned })
   }
   async retentionPlan() {
     const policy = await this.policy(); const items = await this.inventory(); const remove: BackupInventoryItem[] = []
@@ -132,6 +146,22 @@ export class DatabaseBackupAdminService {
     return { generatedAt: new Date().toISOString(), keep: items.filter(item => !remove.some(old => old.backupId === item.backupId)), remove, policy }
   }
   async applyRetention(confirmation: string) { if (confirmation !== 'YES_I_APPROVE_DB2_RETENTION') throw new Error('RETENTION_EXPLICIT_AUTHORIZATION_REQUIRED'); const plan = await this.retentionPlan(); for (const item of plan.remove) { const folder = resolve(this.folder(item.backupId)); if (dirname(folder) !== this.backupRoot || item.protected) throw new Error('RETENTION_PATH_OR_PROTECTION_REJECTED'); await rm(folder, { recursive: true }); await this.audit('retention_cleanup', systemActor, item.backupId) } return plan }
+  async automationHealth() {
+    const coordinator = new DatabaseOperationCoordinator(join(this.adminRoot, 'operations')); const alerts: Array<{ severity: 'INFO' | 'WARNING' | 'CRITICAL'; code: string; detail: string }> = []
+    let reconciliation: Awaited<ReturnType<DatabaseOperationCoordinator['reconcile']>> = []; let activeLeases = [] as Awaited<ReturnType<DatabaseOperationCoordinator['activeLeases']>>
+    try { reconciliation = await coordinator.reconcile(); activeLeases = await coordinator.activeLeases() }
+    catch (error) { alerts.push({ severity: 'CRITICAL', code: 'OPERATION_JOURNAL_CORRUPT', detail: safeError(error) }) }
+    for (const item of reconciliation) if (item.classification === 'REQUIRES_REVIEW' || item.classification === 'INTERRUPTED') alerts.push({ severity: item.classification === 'REQUIRES_REVIEW' ? 'CRITICAL' : 'WARNING', code: `OPERATION_${item.classification}`, detail: `${item.journal.operationType}: ${item.reason}` })
+    const inventory = await this.inventory(); const latest = inventory.find(item => item.verificationStatus === 'VERIFIED') || null
+    const storageHeadroom = latest ? await assessPathStorageHeadroom(this.backupRoot, 'backup', latest.sizeBytes) : null
+    if (storageHeadroom && !storageHeadroom.sufficient) alerts.push({ severity: 'CRITICAL', code: 'INSUFFICIENT_STORAGE_HEADROOM', detail: `${storageHeadroom.availableBytes} available; ${storageHeadroom.requiredBytes} required.` })
+    return {
+      version: 'andalucia-database-protection-health-v2', activeOperation: activeLeases[0] || null, activeLeaseCount: activeLeases.length,
+      interruptedOrReviewRequired: reconciliation.filter(item => ['INTERRUPTED', 'REQUIRES_REVIEW'].includes(item.classification)), storageHeadroom,
+      retentionDryRun: 'NOT_IMPLEMENTED', encryptedExport: 'NOT_IMPLEMENTED', cloudUpload: 'NOT_CONFIGURED', remoteVerification: 'NOT_IMPLEMENTED', cloudOriginRehearsal: 'NOT_CONFIGURED',
+      alerts, status: alerts.some(item => item.severity === 'CRITICAL') ? 'CRITICAL' : alerts.some(item => item.severity === 'WARNING') ? 'WARNING' : 'HEALTHY'
+    }
+  }
   rankRecoveryCandidates(items: BackupInventoryItem[]) { return items.filter(item => item.verificationStatus === 'VERIFIED' && item.restoreTestStatus !== 'RESTORE_TEST_FAILED').map(item => ({ ...item, recoveryScore: (item.restoreTestStatus === 'RESTORE_TEST_PASSED' ? 50 : 0) + (item.schemaVersion === SUPPORTED_SCHEMA_VERSION ? 20 : 0) + (item.operationalFingerprint ? 10 : 0) + (item.protected ? 5 : 0) + Math.max(0, 15 - Math.floor((Date.now() - Date.parse(item.createdAt)) / 86400000)) })).sort((a, b) => b.recoveryScore - a.recoveryScore || b.createdAt.localeCompare(a.createdAt)) }
   async summary(database: DatabaseHealth) {
     const policy = await this.ensurePolicy(); const inventory = await this.inventory(); const storage = await this.storage(); const pending = await this.pendingRequest(); const schedulerOutcomes = await this.schedulerOutcomes(); const verified = inventory.filter(item => item.verificationStatus === 'VERIFIED'); const last = verified[0] || null; const restorePassed = inventory.filter(item => item.restoreTestStatus === 'RESTORE_TEST_PASSED').sort((a, b) => (b.latestRestoreTestAt || '').localeCompare(a.latestRestoreTestAt || ''))[0] || null
@@ -146,6 +176,6 @@ export class DatabaseBackupAdminService {
     for (const outcome of schedulerOutcomes.filter(item => item.result === 'FAILED')) warnings.push(`${outcome.task === 'DailyBackup' ? 'Scheduled backup' : 'Scheduled restore rehearsal'} requires attention.`)
     if (!['HEALTHY', 'BACKUP_RECOMMENDED'].includes(database.status)) warnings.push(`Canonical database state requires attention: ${database.status.replaceAll('_', ' ')}.`)
     const recoveryReady = ['HEALTHY', 'BACKUP_RECOMMENDED'].includes(database.status) && !database.recoveryRequired && backupRecent && restoreRecent
-    return { database, policy, inventory, storage, schedulerOutcomes, pendingBackupRequest: pending?.value || null, lastVerifiedBackup: last, lastRestoreTest: restorePassed, recoveryReadiness: recoveryReady ? 'READY' : 'ATTENTION_REQUIRED', warnings, recoveryCandidates: this.rankRecoveryCandidates(inventory).slice(0, 5) }
+    return { database, policy, inventory, storage, schedulerOutcomes, pendingBackupRequest: pending?.value || null, lastVerifiedBackup: last, lastRestoreTest: restorePassed, recoveryReadiness: recoveryReady ? 'READY' : 'ATTENTION_REQUIRED', warnings, recoveryCandidates: this.rankRecoveryCandidates(inventory).slice(0, 5), automation: await this.automationHealth() }
   }
 }

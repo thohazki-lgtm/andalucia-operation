@@ -24,7 +24,7 @@ const createFixture = async () => {
   await db.close(); await createStoreIdentity(canonical, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: canonical, storeId: 'isolated-db2-canonical' })
 }
 const fakeMetadata = async (id: string, category: string, createdAt: string, overrides: Record<string, unknown> = {}) => {
-  const folder = join(backupRoot, id); await mkdir(join(folder, 'postgres'), { recursive: true }); const manifest = { generatedAt: createdAt, root: join(folder, 'postgres'), files: 1, bytes: 1024, aggregateSha256: id.padEnd(64, '0').slice(0, 64), entries: [] }
+  const folder = join(backupRoot, id); const databaseFolder = join(folder, 'postgres'); await mkdir(databaseFolder, { recursive: true }); const manifest = await createStoreManifest(databaseFolder)
   await writeJsonAtomic(join(folder, 'backup-metadata.json'), { backupId: id, createdAt, category, verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY', sourceDirectory: canonical, backupDirectory: join(folder, 'postgres'), sourceManifest: manifest, backupManifest: manifest, schemaVersion: '014', operationalFingerprint: { staff: { count: 12 } }, migrationLedger: { migrations: [] }, ...overrides })
   return folder
 }

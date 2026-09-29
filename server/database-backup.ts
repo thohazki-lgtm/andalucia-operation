@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { chmod, cp, mkdir, readdir, rm } from 'node:fs/promises'
+import { chmod, cp, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { copyStoreVerified, createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
@@ -60,6 +60,23 @@ export const setBackupOriginalFilesystemProtection = async (databaseDirectoryInp
   }
   await visit(databaseDirectory)
   return { databaseDirectory, readOnly, files, directories: directories + 1 }
+}
+
+export const verifyBackupOriginalFilesystemProtection = async (databaseDirectoryInput: string, readOnly: boolean) => {
+  const databaseDirectory = resolve(databaseDirectoryInput); let files = 0; let directories = 0; const mismatches: string[] = []
+  const visit = async (directory: string): Promise<void> => {
+    const directoryMode = (await stat(directory)).mode
+    if (readOnly ? Boolean(directoryMode & 0o222) : !Boolean(directoryMode & 0o200)) mismatches.push(directory)
+    directories += 1
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) await visit(path)
+      else if (entry.isFile()) { const mode = (await stat(path)).mode; if (readOnly ? Boolean(mode & 0o222) : !Boolean(mode & 0o200)) mismatches.push(path); files += 1 }
+      else mismatches.push(path)
+    }
+  }
+  await visit(databaseDirectory)
+  return { databaseDirectory, readOnly, files, directories, verified: mismatches.length === 0, mismatchCount: mismatches.length, mismatches: mismatches.slice(0, 20) }
 }
 
 type DisposableOpenRole = Extract<DatabaseStoreRole, 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'>

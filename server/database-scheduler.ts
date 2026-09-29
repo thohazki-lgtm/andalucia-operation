@@ -4,8 +4,9 @@ import { appendFile, mkdir, open, readFile, rename, unlink, writeFile } from 'no
 import { basename, join, resolve } from 'node:path'
 import type { FileHandle } from 'node:fs/promises'
 import { operationMarkerPaths } from './database-protection.js'
+import { DatabaseOperationCoordinator, type DatabaseOperationType } from './database-operation-coordinator.js'
 
-export type DatabaseSchedulerJob = 'daily-backup' | 'weekly-restore-rehearsal' | 'retention' | 'requested-backup'
+export type DatabaseSchedulerJob = 'daily-backup' | 'weekly-restore-rehearsal' | 'retention' | 'requested-backup' | 'manual-backup'
 export type DatabaseSchedulerResult = 'SUCCEEDED' | 'FAILED'
 
 export const schedulerRoot = (backupRoot: string) => join(resolve(backupRoot), '.db2', 'scheduler')
@@ -18,17 +19,32 @@ const appendSchedulerLog = async (backupRoot: string, entry: Record<string, unkn
   await appendFile(join(root, 'logs', 'scheduler-events.jsonl'), `${JSON.stringify(entry)}\n`, 'utf8')
 }
 
-export const acquireDatabaseSchedulerLock = async (options: { backupRoot: string; canonicalDirectory: string; job: DatabaseSchedulerJob }) => {
+export const databaseOperationCoordinatorRoot = (backupRoot: string) => join(resolve(backupRoot), '.db2', 'operations')
+
+const operationTypeForJob = (job: DatabaseSchedulerJob): DatabaseOperationType => job === 'daily-backup'
+  ? 'scheduled_backup'
+  : job === 'requested-backup' || job === 'manual-backup'
+    ? 'manual_backup'
+    : job === 'weekly-restore-rehearsal'
+      ? 'restore_rehearsal'
+      : 'local_retention'
+
+export const acquireDatabaseSchedulerLock = async (options: { backupRoot: string; canonicalDirectory: string; job: DatabaseSchedulerJob; periodKey?: string }) => {
   const backupRoot = resolve(options.backupRoot)
   const canonicalDirectory = resolve(options.canonicalDirectory)
   const markers = operationMarkerPaths(canonicalDirectory)
   if (existsSync(markers.migration)) throw new Error('DATABASE_SCHEDULER_MIGRATION_IN_PROGRESS')
   if (existsSync(markers.recovery)) throw new Error('DATABASE_SCHEDULER_RECOVERY_IN_PROGRESS')
+  const coordinator = new DatabaseOperationCoordinator(databaseOperationCoordinatorRoot(backupRoot))
+  const operation = await coordinator.acquire({ operationType: operationTypeForJob(options.job), resource: { kind: 'canonical', id: canonicalDirectory }, periodKey: options.periodKey }).catch(error => {
+    if (error instanceof Error && error.message.startsWith('DATABASE_OPERATION_LEASE_CONFLICT:canonical:')) throw new Error('DATABASE_SCHEDULER_JOB_ALREADY_RUNNING', { cause: error })
+    throw error
+  })
   const root = schedulerRoot(backupRoot)
   await mkdir(root, { recursive: true })
   const path = schedulerLockPath(backupRoot)
   let handle: FileHandle
-  try { handle = await open(path, 'wx') } catch { throw new Error('DATABASE_SCHEDULER_JOB_ALREADY_RUNNING') }
+  try { handle = await open(path, 'wx') } catch { const conflict = new Error('TEMPORARY_PROCESS_CONTENTION:DATABASE_SCHEDULER_JOB_ALREADY_RUNNING'); await operation.fail(conflict); throw new Error('DATABASE_SCHEDULER_JOB_ALREADY_RUNNING') }
   const id = randomUUID()
   const startedAt = new Date().toISOString()
   await handle.writeFile(JSON.stringify({ version: 'andalucia-database-scheduler-lock-v1', id, job: options.job, startedAt, pid: process.pid, host: process.env.COMPUTERNAME || 'unknown' }), 'utf8')
@@ -45,6 +61,8 @@ export const acquireDatabaseSchedulerLock = async (options: { backupRoot: string
       await appendSchedulerLog(backupRoot, { id: randomUUID(), event: 'scheduler_job_finished', jobId: id, job: options.job, startedAt, finishedAt, result, ...details })
       await handle.close()
       await unlink(path).catch(() => undefined)
+      if (result === 'SUCCEEDED') await operation.succeed(details)
+      else await operation.fail(String(details.error || 'DATABASE_SCHEDULER_JOB_FAILED'), details)
     }
   }
 }
@@ -101,4 +119,4 @@ export const startSchedulerShutdownControl = (options: {
   return () => clearInterval(timer)
 }
 
-export const schedulerJobBlocksMigration = (backupRoot: string) => existsSync(schedulerLockPath(backupRoot))
+export const schedulerJobBlocksMigration = (backupRoot: string) => existsSync(schedulerLockPath(backupRoot)) || existsSync(new DatabaseOperationCoordinator(databaseOperationCoordinatorRoot(backupRoot)).leasePath({ kind: 'canonical', id: resolve(backupRoot, '..', '.data', 'postgres') }))

@@ -33,6 +33,7 @@
     "test:database-development-isolation": "tsx server/database-development-isolation.test.ts",
     "test:database-backup-admin": "tsx server/database-backup-admin.test.ts",
     "test:database-scheduler": "tsx server/database-scheduler.test.ts",
+    "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
     "test:migration-tooling": "tsx server/migration-tooling.test.ts",
     "test:migration-live-gate": "tsx server/migration-live-gate.test.ts",
     "test:reports-snapshot-foundation": "tsx server/daily-report-snapshot-foundation.test.ts",
