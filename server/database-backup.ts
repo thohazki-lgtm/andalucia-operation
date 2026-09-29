@@ -147,11 +147,11 @@ export const createVerifiedBackup = async (options: { sourceDirectory: string; c
   }
 }
 
-export const requireRecentVerifiedBackup = async (options: { metadataPath: string; sourceDirectory: string; maximumAgeMs: number; requireSourceManifestMatch?: boolean }) => {
+export const requireRecentVerifiedBackup = async (options: { metadataPath: string; sourceDirectory: string; maximumAgeMs: number; requireSourceManifestMatch?: boolean; now?: Date }) => {
   const metadata = JSON.parse(await import('node:fs/promises').then(module => module.readFile(options.metadataPath, 'utf8'))) as VerifiedBackupSummary
   if (metadata.verificationStatus !== 'VERIFIED' || metadata.openTestStatus !== 'PASS' || metadata.preflightStatus !== 'READY') throw new Error('VERIFIED_BACKUP_REQUIRED')
   if (resolve(metadata.sourceDirectory) !== resolve(options.sourceDirectory)) throw new Error('VERIFIED_BACKUP_SOURCE_MISMATCH')
-  if (Date.now() - Date.parse(metadata.createdAt) > options.maximumAgeMs) throw new Error('VERIFIED_BACKUP_STALE')
+  if ((options.now || new Date()).getTime() - Date.parse(metadata.createdAt) > options.maximumAgeMs) throw new Error('VERIFIED_BACKUP_STALE')
   if (options.requireSourceManifestMatch !== false) {
     const sourceNow = await createStoreManifest(options.sourceDirectory)
     if (!manifestsMatch(sourceNow, metadata.sourceManifest)) throw new Error('VERIFIED_BACKUP_SOURCE_CHANGED')
