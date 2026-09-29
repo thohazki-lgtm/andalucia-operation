@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, readdir } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 import { writeJsonAtomic, type StoreManifest } from './migration-filesystem.js'
@@ -77,7 +78,9 @@ export const resolveRuntimeStore = (environment: NodeJS.ProcessEnv = process.env
   if (!role || !['canonical', 'development', 'backup', 'backup_verification', 'rehearsal', 'test', 'recovery_staging'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_STORE_ROLE_REQUIRED')
   const dataDirectory = resolve(configured)
   const expectedCanonical = resolve(expected.canonicalDirectory || canonicalStoreDirectory)
-  const expectedDevelopment = resolve(expected.developmentDirectory || developmentStoreDirectory)
+  const isolatedTestDevelopment = environment.NODE_ENV === 'test' ? environment.ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR?.trim() : undefined
+  if (isolatedTestDevelopment && (!isAbsolute(isolatedTestDevelopment) || !normalized(isolatedTestDevelopment).startsWith(`${normalized(tmpdir())}/`))) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'TEST_DEVELOPMENT_STORE_MUST_BE_TEMPORARY')
+  const expectedDevelopment = resolve(expected.developmentDirectory || isolatedTestDevelopment || developmentStoreDirectory)
   if (!['canonical', 'development'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'APPLICATION_RUNTIME_ROLE_FORBIDDEN')
   if (role === 'canonical') {
     if (normalized(dataDirectory) !== normalized(expectedCanonical)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'CANONICAL_STORE_PATH_MISMATCH')

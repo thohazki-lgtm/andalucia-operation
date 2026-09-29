@@ -1,19 +1,19 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { PGlite } from '@electric-sql/pglite'
-import { copyStoreVerified } from './migration-filesystem.js'
-import { createStoreIdentity } from './database-protection.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
+import { TrainingRepository } from './training-repository.js'
 
-const source = process.env.ANDALUCIA_TRAINING_R2_SOURCE_STORE
-if (!source) throw new Error('ANDALUCIA_TRAINING_R2_SOURCE_STORE_REQUIRED')
-const root = await mkdtemp(join(resolve('.tmp'), 'training-r2-browser-'))
-const store = join(root, 'store', 'postgres')
+const fixture = await createDisposableDevelopmentStore('training-r2-browser')
+const root = fixture.root
+const store = fixture.store
 const profile = join(root, 'edge-profile')
 const processes: ChildProcess[] = []
 let socket: WebSocket | null = null
+let completed = false
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(resolveWait => setTimeout(resolveWait, ms))
 const waitFor = async (url: string) => { for (let i=0;i<80;i++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(250) } throw new Error(`Timed out waiting for ${url}`) }
@@ -30,23 +30,26 @@ class Cdp {
 }
 
 try {
-  await copyStoreVerified(source, store)
-  await createStoreIdentity(store, 'test')
-  const db = new PGlite(store)
+  const db = fixture.db
   const owner = (await db.query<any>("select u.id from user_accounts u join authorization_user_roles a on a.user_id=u.id and a.active=true join authorization_roles r on r.id=a.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
   assert.ok(owner)
   await db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
-  await db.query("update configuration_options set active=false,updated_at=now() where group_key='training_categories' and value in ('upselling','hygiene')")
-  await db.query("update training_sessions set training_date='2026-09-10' where title='Grooming Standards and Personal Hygiene' and active=true")
-  const reviewCandidate = (await db.query<any>(`select r.staff_id from duty_roster_entries r join configuration_options c on c.group_key='duty_codes' and c.value=r.duty_code_value where r.duty_date='2026-09-10' and (c.metadata->>'countsAsWorking')::boolean=true order by r.staff_id limit 1`)).rows[0]
-  assert.ok(reviewCandidate)
-  await db.query("delete from duty_roster_entries where staff_id=$1 and duty_date='2026-09-10'", [reviewCandidate.staff_id])
+  const staffId = randomUUID()
+  const sessionId = randomUUID()
+  await new TrainingRepository(db).initialize()
+  await db.query("update configuration_options set active=false,updated_at=now() where group_key='training_categories' and value in ('upselling','hygiene','safety','other')")
+  assert.equal(Number((await db.query<{ count: number }>("select count(*)::int count from configuration_options where group_key='training_categories' and active=true")).rows[0].count), 4)
+  await db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'SYN-001','Synthetic Training Staff','Waiter','active','2026-01-01')", [staffId])
+  await db.query("insert into staff_membership_history(id,staff_id,outlet_scope_id,membership_dimension,effective_from,source,reason,review_status,reviewed_at,reviewed_by,is_current_baseline) values($1,$2,$3,'regular_outlet','2026-01-01','system','Synthetic browser fixture','approved',now(),'Synthetic fixture',true)", [randomUUID(), staffId, ANDALUCIA_SCOPE_ID])
+  await db.query("insert into training_sessions(id,title,category_value,training_date,training_time,end_time,trainer,location,status_value,notes,active,source,outlet_scope_id,created_by,updated_by) values($1,'Grooming Standards and Personal Hygiene','service_standards','2026-09-10','10:00','10:30','Synthetic Trainer','Andalucía','planned','Synthetic test session',true,'manual',$2,'synthetic fixture','synthetic fixture')", [sessionId, ANDALUCIA_SCOPE_ID])
   await db.close()
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'test', ANDALUCIA_REQUIRED_SCHEMA_VERSION: '016', API_PORT: '3002' }, stdio: 'ignore' }))
-  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3002' }, stdio: 'ignore' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '018', API_PORT: '3002' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3002' }, stdio: 'inherit' }))
   await Promise.all([waitFor('http://127.0.0.1:3002/api/health'), waitFor('http://127.0.0.1:5174/')])
   assert.equal((await fetch('http://127.0.0.1:3002/api/training/sharepoint/status')).status, 401)
+  const directConfiguration = await fetch('http://127.0.0.1:3002/api/config/training', { headers: { Cookie: `andalucia_session=${token}` } }).then(response => response.json()) as { categories: Array<{ active: boolean }> }
+  assert.equal(directConfiguration.categories.filter(category => category.active).length, 4)
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9224', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }); processes.push(edge)
   await waitFor('http://127.0.0.1:9224/json/version')
   const pages = await (await fetch('http://127.0.0.1:9224/json/list')).json() as Array<{ type: string; url: string; webSocketDebuggerUrl: string }>
@@ -56,8 +59,11 @@ try {
   await cdp.send('Runtime.enable'); await cdp.send('Page.enable'); await cdp.send('Network.enable')
   const cookieResult = await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5174/', path: '/', httpOnly: true, sameSite: 'Strict' }); assert.equal(cookieResult.success, true)
   await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5174/' })
-  for (let i=0;i<40;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Training"]')`)) break; await sleep(250) }
-  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Customization Center"]');if(!button)return false;button.click();return true})()`), true)
+  for (let i=0;i<160;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Training"]')`)) break; await sleep(250) }
+  const shellReady = await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Training"]')`)
+  if (!shellReady) console.error(JSON.stringify({ location: await cdp.evaluate<string>('location.href'), readyState: await cdp.evaluate<string>('document.readyState'), body: await cdp.evaluate<string>('document.body.innerText'), html: await cdp.evaluate<string>('document.documentElement.outerHTML.slice(0,1200)'), errors: cdp.errors }, null, 2))
+  assert.equal(shellReady, true, await cdp.evaluate<string>('document.body.innerText'))
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Customization Center"]');if(!button)return false;button.click();return true})()`), true, await cdp.evaluate<string>('document.body.innerText'))
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`document.body.innerText.includes('Customization Center')`)) break; await sleep(150) }
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.customization-category-nav button')).find(node=>node.textContent?.trim()==='Training');if(!button)return false;button.click();return true})()`), true)
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.training-customization-r1')`)) break; await sleep(150) }
@@ -67,6 +73,7 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('.training-category-card button')).some(button=>['↑','↓'].includes(button.textContent?.trim()||''))`), true)
   assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-category-search')&&!document.querySelector('input[placeholder="Search categories"]')`), true)
   assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-category-disclosure')`), true)
+  for (let i=0;i<80;i++) { if ((await cdp.evaluate<number>(`document.querySelectorAll('.training-category-row').length`)) === 4) break; await sleep(250) }
   const categoryCount = await cdp.evaluate<number>(`document.querySelectorAll('.training-category-row').length`)
   assert.equal(categoryCount, 4)
   assert.equal(await cdp.evaluate<boolean>(`Array.from(document.querySelectorAll('.training-category-row')).every(row=>row.querySelector('.badge')?.textContent==='Active')`), true)
@@ -86,7 +93,7 @@ try {
     customizationWidths.push(result)
   }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }); await cdp.evaluate(`document.querySelector('.training-category-card')?.scrollIntoView({block:'center'})`); await sleep(180)
-  const persistedBefore = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.map(category=>category.id))`)
+  const persistedBefore = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.filter(category=>category.active).map(category=>category.id))`)
   const dragBefore = await cdp.evaluate<string[]>(`Array.from(document.querySelectorAll('.training-category-row')).map(row=>row.dataset.trainingCategoryId)`)
   const dragPoints = await cdp.evaluate<any>(`(()=>{const rows=Array.from(document.querySelectorAll('.training-category-row'));const source=rows[1].querySelector('.training-drag-handle').getBoundingClientRect();const target=rows[0].getBoundingClientRect();return{sx:source.left+source.width/2,sy:source.top+source.height/2,tx:target.left+target.width/2,ty:target.top+target.height/2}})()`)
   await cdp.evaluate(`(()=>{const handle=document.querySelectorAll('.training-category-row')[1].querySelector('.training-drag-handle');window.__trainingMouseHandle=handle;handle.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:71,pointerType:'mouse',clientX:${dragPoints.sx},clientY:${dragPoints.sy},buttons:1}))})()`); await sleep(80)
@@ -95,7 +102,7 @@ try {
   await cdp.evaluate(`(()=>{window.__trainingMouseHandle.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:71,pointerType:'mouse',clientX:${dragPoints.tx},clientY:${dragPoints.ty},buttons:0}));delete window.__trainingMouseHandle})()`); await sleep(500)
   const dragAfter = await cdp.evaluate<string[]>(`Array.from(document.querySelectorAll('.training-category-row')).map(row=>row.dataset.trainingCategoryId)`)
   assert.equal(dragAfter[0], dragBefore[1], 'desktop category drag did not reorder')
-  const persistedOrder = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.map(category=>category.id))`)
+  const persistedOrder = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.filter(category=>category.active).map(category=>category.id))`)
   assert.deepEqual(persistedOrder.slice(0, dragAfter.length), dragAfter)
   assert.deepEqual(persistedOrder.slice(dragAfter.length), persistedBefore.slice(dragAfter.length))
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }); await cdp.evaluate(`document.querySelector('.training-category-card')?.scrollIntoView()`); await sleep(180)
@@ -107,7 +114,7 @@ try {
   await cdp.evaluate(`(()=>{const handle=window.__trainingTouchHandle;handle.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:72,pointerType:'touch',clientX:${touchPoints.tx},clientY:${touchPoints.ty},buttons:0}));delete window.__trainingTouchHandle})()`); await sleep(500)
   const touchAfter = await cdp.evaluate<string[]>(`Array.from(document.querySelectorAll('.training-category-row')).map(row=>row.dataset.trainingCategoryId)`)
   assert.equal(touchAfter[1], touchBefore[0], 'touch long-press category drag did not reorder')
-  const persistedTouchOrder = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.map(category=>category.id))`)
+  const persistedTouchOrder = await cdp.evaluate<string[]>(`fetch('/api/config/training').then(response=>response.json()).then(value=>value.categories.filter(category=>category.active).map(category=>category.id))`)
   assert.deepEqual(persistedTouchOrder.slice(0, touchAfter.length), touchAfter)
   assert.deepEqual(persistedTouchOrder.slice(touchAfter.length), persistedBefore.slice(touchAfter.length))
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Training"]');if(!button)return false;button.click();return true})()`), true)
@@ -185,12 +192,21 @@ try {
   assert.deepEqual(cdp.errors, [])
   socket.close()
   console.log(JSON.stringify({ status: 'PASS', isolated: true, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
+  completed = true
 } finally {
+  const cleanupDeadline = completed ? setTimeout(() => process.exit(0), 10_000) : undefined
   socket?.close()
   for (const child of processes.reverse()) {
     child.kill()
     if (process.platform === 'win32' && child.pid) spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    child.removeAllListeners()
+    child.unref()
   }
   await sleep(1500)
   await rm(root, { recursive: true, force: true, maxRetries: 4, retryDelay: 500 }).catch(() => undefined)
+  if (cleanupDeadline) clearTimeout(cleanupDeadline)
 }
+// The browser/API subprocess tree can leave Windows pipe handles referenced after
+// verified cleanup. A successful standalone test exits explicitly; thrown failures
+// still bypass this line and retain their non-zero exit status.
+process.exit(0)

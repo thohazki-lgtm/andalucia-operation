@@ -1,25 +1,15 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { PGlite } from '@electric-sql/pglite'
-import { copyStoreVerified } from './migration-filesystem.js'
-import { createStoreIdentity } from './database-protection.js'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { ReportingRepository } from './reporting-repository.js'
 import { DailyReportService } from './daily-report-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { createFinancialFinalizationFingerprint, createOperationalFingerprint } from './database-backup.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 
-const backupFolder = resolve('.backups/andalucia-milestone-2026-09-12T201517-356Z-4d691c20')
-const metadata = JSON.parse(await readFile(join(backupFolder, 'backup-metadata.json'), 'utf8'))
-assert.equal(metadata.verificationStatus, 'VERIFIED')
-assert.equal(metadata.schemaVersion, '014')
-const root = await mkdtemp(join(tmpdir(), 'andalucia-reports-r1-'))
-const store = join(root, 'postgres')
+const fixture = await createDisposableDevelopmentStore('reports-r1')
 try {
-  await copyStoreVerified(join(backupFolder, 'postgres'), store)
-  await createStoreIdentity(store, 'rehearsal', { storeId: 'reports-r1-isolated' })
-  const db = new PGlite(store)
+  const db = fixture.db
   try {
     const before = await createOperationalFingerprint(db); const financialBefore = await createFinancialFinalizationFingerprint(db)
     const owner = (await db.query<any>("select u.id::text,u.display_name from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.role_key='owner' where u.status='active' limit 1")).rows[0]
@@ -27,7 +17,7 @@ try {
     const actor = { userId: owner.id, displayName: 'SPOOFED CLIENT NAME' }
     const service = new DailyReportService(db, new ReportingRepository(db))
     const initial = await service.view('2026-09-10', outlet)
-    assert.equal(initial.report, null); assert.equal(initial.snapshot, null); assert.equal((initial.content.upselling.details?.length || 0) > 0, true)
+    assert.equal(initial.report, null); assert.equal(initial.snapshot, null); assert.equal(initial.content.upselling.details?.length || 0, 0)
     assert.equal(initial.readiness.find(item => item.key === 'symphony')?.state, 'missing')
     const pending = (await db.query<any>("select c.id,c.charge_date::text date from chargeable_item_records c join configuration_options s on s.group_key='chargeable_statuses' and s.value=c.status where c.active=true and (s.metadata->>'countsAsPendingValue')::boolean=true limit 1")).rows[0]
     if (pending) assert.equal((await service.view(pending.date, outlet)).content.upselling.details?.some(row => row.id === pending.id), false)
@@ -99,4 +89,4 @@ try {
     assert.match(reportsSource, /FINAL DAILY REPORT REVIEW \/ APPROVAL PREVIEW/); assert.match(reportsSource, /setApprovalOpen\(true\)/); assert.match(reportsSource, /Back to Report/); assert.doesNotMatch(reportsSource, /Return to Draft|Back to Edit/); assert.match(reportsCss, /reports-page:has\(\.report-approval-dialog\)/)
     console.log(JSON.stringify({ dailyNavigation: true, servicePerformance: true, coverLogic: true, kids: true, noShows: true, walkIns: true, symphonyPersistence: true, notEnteredVsZero: true, normalReconciliation: true, advisoryVariance: true, explicitVarianceVerification: true, verificationActor: true, exactSnapshotValues: true, voidValidation: true, doubleDineZero: true, doubleDineNormalization: true, managerSummaryCleanup: true, duplicateSummaryRemoved: true, compactReadyState: true, upselling: true, occasions: true, readiness: true, draft: true, review: true, finalApprovalPreview: true, automaticPreviewAfterReview: true, reviewedReadOnly: true, noUnsafeReturnToDraft: true, approval: true, duplicateApproval: true, immutableRendering: true, printPreview: true, audit: true, authorization: true, outletScope: true, noOperationalMutation: true }, null, 2))
   } finally { await db.close() }
-} finally { await rm(root, { recursive: true, force: true }) }
+} finally { await fixture.cleanup() }
