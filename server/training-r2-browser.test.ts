@@ -6,6 +6,15 @@ import { join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { TrainingRepository } from './training-repository.js'
+import { addCalendarDays, serviceDate } from '../src/service-date.js'
+
+const controlledNowValue = process.env.ANDALUCIA_TRAINING_BROWSER_TEST_NOW || new Date().toISOString()
+const controlledNow = new Date(controlledNowValue)
+assert.equal(Number.isNaN(controlledNow.getTime()), false, `Invalid ANDALUCIA_TRAINING_BROWSER_TEST_NOW: ${controlledNowValue}`)
+const fixtureDate = addCalendarDays(serviceDate(controlledNow), -1)
+const fixtureMonth = fixtureDate.slice(0, 7)
+const defaultMonth = serviceDate().slice(0, 7)
+const monthIndex = (value: string) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5, 7)) - 1
 
 const fixture = await createDisposableDevelopmentStore('training-r2-browser')
 const root = fixture.root
@@ -41,7 +50,7 @@ try {
   assert.equal(Number((await db.query<{ count: number }>("select count(*)::int count from configuration_options where group_key='training_categories' and active=true")).rows[0].count), 4)
   await db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'SYN-001','Synthetic Training Staff','Waiter','active','2026-01-01')", [staffId])
   await db.query("insert into staff_membership_history(id,staff_id,outlet_scope_id,membership_dimension,effective_from,source,reason,review_status,reviewed_at,reviewed_by,is_current_baseline) values($1,$2,$3,'regular_outlet','2026-01-01','system','Synthetic browser fixture','approved',now(),'Synthetic fixture',true)", [randomUUID(), staffId, ANDALUCIA_SCOPE_ID])
-  await db.query("insert into training_sessions(id,title,category_value,training_date,training_time,end_time,trainer,location,status_value,notes,active,source,outlet_scope_id,created_by,updated_by) values($1,'Grooming Standards and Personal Hygiene','service_standards','2026-09-10','10:00','10:30','Synthetic Trainer','Andalucía','planned','Synthetic test session',true,'manual',$2,'synthetic fixture','synthetic fixture')", [sessionId, ANDALUCIA_SCOPE_ID])
+  await db.query("insert into training_sessions(id,title,category_value,training_date,training_time,end_time,trainer,location,status_value,notes,active,source,outlet_scope_id,created_by,updated_by) values($1,'Grooming Standards and Personal Hygiene','service_standards',$2,'10:00','10:30','Synthetic Trainer','Andalucía','planned','Synthetic test session',true,'manual',$3,'synthetic fixture','synthetic fixture')", [sessionId, fixtureDate, ANDALUCIA_SCOPE_ID])
   await db.close()
   const node = process.execPath
   processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '018', API_PORT: '3002' }, stdio: 'inherit' }))
@@ -120,6 +129,19 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Training"]');if(!button)return false;button.click();return true})()`), true)
   await cdp.evaluate(`document.querySelector('button[aria-label="Training"]')?.click()`)
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`document.body.innerText.includes('Sessions Scheduled') || document.body.innerText.includes('Unable to load Training')`)) break; await sleep(250) }
+  const defaultDisplayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period strong')?.textContent || ''`)
+  const expectedDefaultMonth = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${defaultMonth}-01T00:00:00Z`))
+  assert.equal(defaultDisplayedMonth, expectedDefaultMonth, `Training did not retain its current-month default ${defaultMonth}`)
+  const expectedMonth = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${fixtureMonth}-01T00:00:00Z`))
+  const monthOffset = monthIndex(fixtureMonth) - monthIndex(defaultMonth)
+  const monthButton = monthOffset < 0 ? 'Previous month' : 'Next month'
+  for (let index = 0; index < Math.abs(monthOffset); index++) {
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label=${JSON.stringify(monthButton)}]');if(!button)return false;button.click();return true})()`), true, `Unable to navigate to fixture month ${fixtureMonth}`)
+    await sleep(180)
+  }
+  for (let i=0;i<40;i++) { if (await cdp.evaluate<boolean>(`document.querySelector('.training-r2-period strong')?.textContent===${JSON.stringify(expectedMonth)}&&!document.body.innerText.includes('Loading Training performance')`)) break; await sleep(150) }
+  const displayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period strong')?.textContent || ''`)
+  assert.equal(displayedMonth, expectedMonth, `Training did not navigate to the controlled fixture month ${fixtureMonth}`)
   const bodyText = await cdp.evaluate<string>('document.body.innerText')
   const sharePointStatus = await cdp.evaluate<any>(`fetch('/api/training/sharepoint/status').then(async response=>({status:response.status,body:await response.json()}))`)
   assert.equal(sharePointStatus.status, 200)
@@ -164,7 +186,7 @@ try {
     drawerResults.push(result)
   }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }); await sleep(180)
-  const performanceBefore = await cdp.evaluate<any>(`fetch('/api/training/performance?month=2026-09').then(response=>response.json())`)
+  const performanceBefore = await cdp.evaluate<any>(`fetch('/api/training/performance?month=${fixtureMonth}').then(response=>response.json())`)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.training-r2-drawer button')).find(node=>node.textContent?.trim()==='Confirm Training');if(!button)return false;button.click();return true})()`), true)
   for (let i=0;i<20;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.training-confirm-modal')`)) break; await sleep(100) }
   const confirmationWidths: Array<Record<string, unknown>> = []
@@ -184,14 +206,14 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.training-confirm-modal button')).find(node=>node.textContent?.trim()==='Confirm completion');if(!button||button.disabled)return false;button.click();return true})()`), true)
   for (let i=0;i<50;i++) { if (await cdp.evaluate<boolean>(`!document.querySelector('.training-confirm-modal')&&document.body.innerText.includes('Confirmed performance')`)) break; await sleep(150) }
   assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-confirm-modal')&&document.body.innerText.includes('Confirmed performance')&&document.body.innerText.includes('30 min credited')`), true)
-  const performanceAfter = await cdp.evaluate<any>(`fetch('/api/training/performance?month=2026-09').then(response=>response.json())`)
+  const performanceAfter = await cdp.evaluate<any>(`fetch('/api/training/performance?month=${fixtureMonth}').then(response=>response.json())`)
   assert.equal(performanceAfter.sessionsCompleted, performanceBefore.sessionsCompleted + 1)
   assert.ok(performanceAfter.creditedMinutes > performanceBefore.creditedMinutes)
   assert.ok(performanceAfter.trainingHours > performanceBefore.trainingHours)
   assert.ok(performanceAfter.staffCovered >= performanceBefore.staffCovered)
   assert.deepEqual(cdp.errors, [])
   socket.close()
-  console.log(JSON.stringify({ status: 'PASS', isolated: true, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', isolated: true, controlledNow: controlledNow.toISOString(), fixtureDate, fixtureMonth, displayedMonth, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
   completed = true
 } finally {
   const cleanupDeadline = completed ? setTimeout(() => process.exit(0), 10_000) : undefined
