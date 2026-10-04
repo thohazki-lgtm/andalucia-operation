@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { rm } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
@@ -23,9 +23,23 @@ const profile = join(root, 'edge-profile')
 const processes: ChildProcess[] = []
 let socket: WebSocket | null = null
 let completed = false
+let debugPort: number | null = null
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(resolveWait => setTimeout(resolveWait, ms))
 const waitFor = async (url: string) => { for (let i=0;i<80;i++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(250) } throw new Error(`Timed out waiting for ${url}`) }
+const waitForOwnedDevTools = async (edge: ChildProcess) => {
+  const activePortFile = join(profile, 'DevToolsActivePort')
+  for (let attempt = 0; attempt < 200; attempt++) {
+    if (edge.exitCode !== null) throw new Error(`Edge exited before DevTools readiness with code ${edge.exitCode}`)
+    try {
+      const [portLine] = (await readFile(activePortFile, 'utf8')).trim().split(/\r?\n/)
+      const port = Number(portLine)
+      if (Number.isInteger(port) && port > 0 && (await fetch(`http://127.0.0.1:${port}/json/version`)).ok) return port
+    } catch {}
+    await sleep(100)
+  }
+  throw new Error(`Timed out waiting for the profile-bound Edge DevTools endpoint: ${activePortFile}`)
+}
 
 class Cdp {
   private id = 0
@@ -59,9 +73,9 @@ try {
   assert.equal((await fetch('http://127.0.0.1:3002/api/training/sharepoint/status')).status, 401)
   const directConfiguration = await fetch('http://127.0.0.1:3002/api/config/training', { headers: { Cookie: `andalucia_session=${token}` } }).then(response => response.json()) as { categories: Array<{ active: boolean }> }
   assert.equal(directConfiguration.categories.filter(category => category.active).length, 4)
-  const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=9224', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }); processes.push(edge)
-  await waitFor('http://127.0.0.1:9224/json/version')
-  const pages = await (await fetch('http://127.0.0.1:9224/json/list')).json() as Array<{ type: string; url: string; webSocketDebuggerUrl: string }>
+  const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--edge-skip-compat-layer-relaunch', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }); processes.push(edge)
+  debugPort = await waitForOwnedDevTools(edge)
+  const pages = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json() as Array<{ type: string; url: string; webSocketDebuggerUrl: string }>
   const page = pages.find(item => item.type === 'page' && item.url === 'about:blank') || pages.find(item => item.type === 'page'); assert.ok(page)
   socket = new WebSocket(page.webSocketDebuggerUrl); await new Promise<void>((resolveOpen, rejectOpen) => { socket!.onopen = () => resolveOpen(); socket!.onerror = () => rejectOpen(new Error('CDP connection failed')) })
   const cdp = new Cdp(socket)
@@ -213,7 +227,7 @@ try {
   assert.ok(performanceAfter.staffCovered >= performanceBefore.staffCovered)
   assert.deepEqual(cdp.errors, [])
   socket.close()
-  console.log(JSON.stringify({ status: 'PASS', isolated: true, controlledNow: controlledNow.toISOString(), fixtureDate, fixtureMonth, displayedMonth, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', isolated: true, browserEndpoint: { profileBound: true, dynamicPort: debugPort }, controlledNow: controlledNow.toISOString(), fixtureDate, fixtureMonth, displayedMonth, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
   completed = true
 } finally {
   const cleanupDeadline = completed ? setTimeout(() => process.exit(0), 10_000) : undefined
@@ -223,6 +237,15 @@ try {
     if (process.platform === 'win32' && child.pid) spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
     child.removeAllListeners()
     child.unref()
+  }
+  if (debugPort !== null) {
+    let browserStillListening = true
+    for (let attempt = 0; attempt < 50; attempt++) {
+      try { await fetch(`http://127.0.0.1:${debugPort}/json/version`) }
+      catch { browserStillListening = false; break }
+      await sleep(100)
+    }
+    if (browserStillListening) throw new Error(`Training browser cleanup left DevTools port ${debugPort} listening`)
   }
   await sleep(1500)
   await rm(root, { recursive: true, force: true, maxRetries: 4, retryDelay: 500 }).catch(() => undefined)
