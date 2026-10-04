@@ -10,6 +10,8 @@ export type CloudCredential = {
   refreshToken?: string
   expiresAt?: string
   grantedScopes: string[]
+  approvedDestination?: ApprovedDriveDestination
+  destinationApprovedAt?: string
 }
 
 export interface CloudCredentialStore {
