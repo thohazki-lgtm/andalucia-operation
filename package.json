@@ -35,6 +35,8 @@
     "test:database-scheduler": "tsx server/database-scheduler.test.ts",
     "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
     "test:secure-cloud-upload": "tsx server/secure-cloud-upload.test.ts",
+    "test:cloud-provisioning": "tsx server/google-drive-provisioning.test.ts",
+    "cloud:provision": "tsx server/google-drive-provisioning-cli.ts",
     "test:migration-tooling": "tsx server/migration-tooling.test.ts",
     "test:migration-live-gate": "tsx server/migration-live-gate.test.ts",
     "test:reports-snapshot-foundation": "tsx server/daily-report-snapshot-foundation.test.ts",
