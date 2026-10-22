@@ -43,7 +43,7 @@ if (-not $origin) {
 
 $allowedPaths = @(
     '.github', 'database', 'deployment', 'docs', 'public', 'server', 'src',
-    '.gitattributes', '.gitignore', 'ANDALUCIA', 'index.html', 'package-lock.json',
+    '.gitattributes', '.gitignore', 'AGENTS.md', 'ANDALUCIA', 'index.html', 'package-lock.json',
     'package.json', 'README.md', 'tsconfig.json', 'tsconfig.node.json', 'vite.config.ts'
 )
 & git add -- $allowedPaths
