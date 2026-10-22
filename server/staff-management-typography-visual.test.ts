@@ -73,7 +73,7 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: 'ignore' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: 'ignore' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3017/api/health'), waitFor('http://127.0.0.1:5187/')])
 
@@ -116,8 +116,8 @@ try {
     assert.deepEqual(result.tabFontSizes, ['12px'])
     assert.deepEqual(result.tabFontWeights, ['600'])
     assert.equal(result.tabLabelsFit, true)
-    assert.equal(result.nameFontSize, mobile ? '13.5px' : '12.6px')
-    assert.equal(result.nameFontWeight, '600')
+    assert.equal(result.nameFontSize, mobile ? '15px' : '13px')
+    assert.equal(result.nameFontWeight, '650')
     assert.equal(result.nameColor, 'rgb(23, 61, 86)')
     assert.equal(result.nameFits, true)
     measurements[String(width)] = result
@@ -147,9 +147,25 @@ try {
   assert.deepEqual(accountMobileTypography, membershipMobileTypography)
   assert.equal(await cdp.evaluate<boolean>(`document.documentElement.scrollWidth>document.documentElement.clientWidth+1`), false)
   await screenshot(cdp, 'account-management-audit-390.png')
+  const accountWidths = [1440, 1024, 430, 390, 360]
+  const accountMeasurements: Record<string, unknown> = {}
+  for (const width of accountWidths) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    await sleep(100)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,statusFontSize:getComputedStyle(status).fontSize,controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height))}})()`)
+    assert.equal(result.pageOverflow, false, `Account page overflow at ${width}px.`)
+    assert.equal(result.panelOverflow, false, `Account panel overflow at ${width}px.`)
+    assert.equal(result.nameFontSize, mobile ? '15px' : '13px')
+    assert.equal(result.statusFontSize, '9.5px')
+    assert.equal(result.controlsReadable, true)
+    assert.ok(result.minimumControlHeight >= (mobile ? 44 : 40))
+    accountMeasurements[String(width)] = result
+    await screenshot(cdp, `account-management-after-${width}.png`)
+  }
   console.log(JSON.stringify({ membershipTypography, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ measurements, screenshots: widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), runtimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ measurements, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
 } finally {
   try { socket?.close() } catch {}
   for (const process of processes.reverse()) { try { process.kill() } catch {} }

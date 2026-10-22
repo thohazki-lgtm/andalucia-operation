@@ -19,7 +19,7 @@
 .leave-month-navigation .ao-date-control input{height:40px;min-height:40px;border:1px solid #d5bf8d;border-radius:7px;background:#fff;color:#173d56;font-size:13px;font-weight:700}
 .leave-month-navigation .ao-action{height:40px;min-height:40px;border-color:#d5bf8d;background:#fff;color:#173d56}
 .leave-planner-filters{display:grid;grid-template-columns:110px 155px minmax(210px,1fr) minmax(205px,1fr);gap:9px;margin:0}
-.leave-planner-filters label{display:grid;gap:4px;min-width:0;color:#657984;font-size:9.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
+.leave-planner-filters label{display:grid;gap:4px;min-width:0;color:#657984;font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
 .leave-planner-filters select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:0 10px;border:1px solid #d8c89f;border-radius:7px;background:#fff;color:#294b61;font:12px inherit}
 .leave-review-warning{margin:0 16px 14px;padding:10px 12px;border:1px solid #e5c990;border-radius:7px;background:#fff8e8;color:#735b2d;font-size:11px}
 .leave-state{padding:34px;text-align:center;color:#718492}
@@ -49,16 +49,16 @@ button.leave-summary-card{cursor:pointer}
 
 .leave-planner-grid-wrap{max-width:calc(100% - 32px);margin:0 16px;overflow:auto;border:1px solid #dec58f;border-radius:9px;background:#fff;scrollbar-color:#c9a356 #f7f1e5}
 .leave-planner-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;background:#fff}
-.leave-planner-grid th,.leave-planner-grid td{box-sizing:border-box;height:44px;padding:5px;border-right:1px solid #eadfca;border-bottom:1px solid #eadfca;text-align:center;font-size:11px}
+.leave-planner-grid th,.leave-planner-grid td{box-sizing:border-box;height:44px;padding:5px;border-right:1px solid #eadfca;border-bottom:1px solid #eadfca;text-align:center;font-size:11.5px}
 .leave-planner-grid tr>*:last-child{border-right:0}
-.leave-planner-grid thead th{position:sticky;top:0;z-index:3;min-width:44px;height:58px;border-bottom:2px solid #c9a356;background:#fff5df;color:#173d56;font-size:9.5px}
+.leave-planner-grid thead th{position:sticky;top:0;z-index:3;min-width:44px;height:58px;border-bottom:2px solid #c9a356;background:#fff5df;color:#173d56;font-size:10px}
 .leave-planner-grid thead th span,.leave-planner-grid thead th small{display:block}
 .leave-planner-grid thead th .weekday{color:#876b31;font-size:8px;font-weight:800;text-transform:uppercase}
 .leave-planner-grid thead th span{margin-top:2px;font:700 15px/1 'Playfair Display',serif}
 .leave-planner-grid thead th .availability{margin-top:3px;color:#82929c;font-size:7.5px}
 .leave-planner-grid tbody tr:nth-child(even)>td,.leave-planner-grid tbody tr:nth-child(even)>th{background:#fffdf8}
 .leave-planner-grid .identity{position:sticky;z-index:2;background:#fff;text-align:left}
-.leave-planner-grid thead .identity{z-index:5;background:#fff5df;color:#173d56;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.leave-planner-grid thead .identity{z-index:5;background:#fff5df;color:#173d56;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
 .leave-planner-grid .staff{left:0;width:156px;min-width:156px}
 .leave-planner-grid .employee{left:156px;width:90px;min-width:90px}
 .leave-planner-grid .designation{left:246px;width:148px;min-width:148px}
@@ -67,11 +67,11 @@ button.leave-summary-card{cursor:pointer}
 .leave-planner-grid thead .today{background:#173d56!important;color:#fff;border-color:#c9a356;box-shadow:inset 0 0 0 1px #c9a356}
 .leave-planner-grid thead .today .weekday,.leave-planner-grid thead .today .availability{color:#e6cb8e}
 .leave-planner-grid .outside-membership{background:repeating-linear-gradient(135deg,#fafbfb,#fafbfb 5px,#f2f5f6 5px,#f2f5f6 10px)!important}
-.leave-staff-link{padding:0;border:0;background:transparent;color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:12px;font-weight:500;line-height:1.25;text-align:left;cursor:pointer}
+.leave-staff-link{padding:0;border:0;background:transparent;color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:12.5px;font-weight:600;line-height:1.25;text-align:left;cursor:pointer}
 .leave-staff-link:hover{text-decoration:underline}
 .leave-staff-link:focus-visible{outline:2px solid #c9a356;outline-offset:2px}
-.leave-staff-meta{display:none;margin-top:3px;color:#718492;font-size:8px;font-weight:600;line-height:1.3}
-.leave-day-code{display:flex;align-items:center;justify-content:center;width:32px;min-height:27px;margin:auto;border-radius:5px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leave-staff-meta{display:none;margin-top:3px;color:#718492;font-size:10px;font-weight:600;line-height:1.3}
+.leave-day-code{display:flex;align-items:center;justify-content:center;width:32px;min-height:27px;margin:auto;border-radius:5px;font-size:9.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .leave-day-code.booked{border:1px dashed #795594;background:repeating-linear-gradient(135deg,#f8f0fb,#f8f0fb 4px,#eee2f4 4px,#eee2f4 8px);color:#5d3678}
 .leave-planner-grid tfoot th,.leave-planner-grid tfoot td{position:sticky;bottom:0;z-index:2;height:48px;border-top:2px solid #173d56;background:#eef3f5;color:#173d56}
 .leave-planner-grid tfoot .identity{z-index:4;background:#eef3f5}
