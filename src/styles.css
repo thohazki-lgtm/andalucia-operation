@@ -737,9 +737,11 @@ main{min-width:0}
 .planned-leave-history .leave-records-header h3,.confirmed-leave-history h3{color:#173d56;font:700 18px/1.25 'Playfair Display',serif}
 .planned-leave-history .leave-table-wrap{border:1px solid #eadbb8;border-radius:8px;background:#fff}
 .planned-leave-history .leave-records-table th{background:#fff8e8;color:#173d56}
-.planned-leave-table{min-width:760px;table-layout:fixed}
-.planned-leave-table col.planned-staff{width:22%}.planned-leave-table col.planned-status{width:13%}.planned-leave-table col.planned-start,.planned-leave-table col.planned-end{width:14%}.planned-leave-table col.planned-days{width:13%}.planned-leave-table col.planned-reconciliation{width:24%}
+.planned-leave-table{min-width:680px;table-layout:fixed}
+.planned-leave-table col.planned-staff{width:34%}.planned-leave-table col.planned-start,.planned-leave-table col.planned-end{width:20%}.planned-leave-table col.planned-off-days{width:12%}.planned-leave-table col.planned-calendar-days{width:14%}
 .planned-leave-table th,.planned-leave-table td{vertical-align:middle}
+.planned-leave-table th:nth-child(n+4),.planned-leave-table td:nth-child(n+4){text-align:center}
+.planned-leave-table tbody td:first-child .leave-type-chip{margin-top:6px}
 .planned-leave-cards{display:none}
 .confirmed-leave-history{padding:14px;border:1px solid #dec58f;border-radius:9px;background:#fff}
 .confirmed-leave-history>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #eadbb8}
@@ -805,8 +807,10 @@ main{min-width:0}
  .planned-leave-cards article header b,.planned-leave-cards article header small{display:block}
  .planned-leave-cards article header b{color:#173d56;font-size:12px}
  .planned-leave-cards article header small{margin-top:3px;color:#6f8290;font-size:9px}
- .planned-leave-cards article p{color:#36566b;font-size:10px;line-height:1.4}
- .planned-leave-cards article>small{display:block;margin-top:6px;color:#705f38;font-size:9px;font-weight:700}
+ .planned-leave-cards article dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+ .planned-leave-cards article dl>div{padding:7px;border-top:1px solid #eadbb8}
+ .planned-leave-cards article dt{color:#708491;font-size:9px;font-weight:700;text-transform:uppercase}
+ .planned-leave-cards article dd{margin:3px 0 0;color:#173d56;font-size:12px;font-weight:650}
  .confirmed-leave-history>header{align-items:flex-start;flex-direction:column;gap:4px}
  .leave-employee-history>summary{grid-template-columns:minmax(0,1fr) 32px;gap:9px;min-height:0;padding:11px}
  .leave-history-totals{grid-column:1/-1;grid-row:2;justify-content:flex-start}

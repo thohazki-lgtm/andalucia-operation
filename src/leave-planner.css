@@ -67,9 +67,10 @@ button.leave-summary-card{cursor:pointer}
 .leave-planner-grid thead .today{background:#173d56!important;color:#fff;border-color:#c9a356;box-shadow:inset 0 0 0 1px #c9a356}
 .leave-planner-grid thead .today .weekday,.leave-planner-grid thead .today .availability{color:#e6cb8e}
 .leave-planner-grid .outside-membership{background:repeating-linear-gradient(135deg,#fafbfb,#fafbfb 5px,#f2f5f6 5px,#f2f5f6 10px)!important}
-.leave-staff-link{padding:0;border:0;background:transparent;color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:12.5px;font-weight:600;line-height:1.25;text-align:left;cursor:pointer}
+.leave-staff-link{display:inline-flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:12.5px;font-weight:600;line-height:1.25;text-align:left;cursor:pointer}
 .leave-staff-link:hover{text-decoration:underline}
 .leave-staff-link:focus-visible{outline:2px solid #c9a356;outline-offset:2px}
+.leave-staff-chevron{color:#b38b3a;font-size:16px;font-weight:800;line-height:1;transform:translateY(-.5px)}
 .leave-staff-meta{display:none;margin-top:3px;color:#718492;font-size:10px;font-weight:600;line-height:1.3}
 .leave-day-code{display:flex;align-items:center;justify-content:center;width:32px;min-height:27px;margin:auto;border-radius:5px;font-size:9.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .leave-day-code.booked{border:1px dashed #795594;background:repeating-linear-gradient(135deg,#f8f0fb,#f8f0fb 4px,#eee2f4 4px,#eee2f4 8px);color:#5d3678}
@@ -114,6 +115,8 @@ button.leave-summary-card{cursor:pointer}
 .leave-planner-period-list dt{color:#82929c;font-size:8px;text-transform:uppercase}
 .leave-planner-period-list dd{margin:2px 0 0;color:#173d56;font-size:11px;font-weight:750}
 .leave-detail-code{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:27px;padding:0 5px;border-radius:5px;font-size:9px}
+.leave-details-scroll .leave-daily-list>div{grid-template-columns:minmax(0,1fr) auto minmax(112px,auto)}
+.leave-details-scroll .leave-daily-list b,.leave-details-scroll .leave-daily-list span{justify-self:end;text-align:right}
 .booked-periods .leave-type-chip.booked{border-color:#795594;background:#f3e9f7;color:#5d3678}
 .booked-periods .leave-type-chip.cancelled{opacity:.55;text-decoration:line-through}
 .leave-collision-note{color:#8c4f49!important;font-weight:700}
