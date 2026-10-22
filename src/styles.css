@@ -185,30 +185,30 @@ main{min-width:0}
 .staff-account-header p,.staff-account-modal p{max-width:680px;margin:0;color:#687e8d;font-size:12px;line-height:1.55}
 .staff-account-summary{display:grid;grid-template-columns:repeat(3,minmax(76px,auto));margin:0}
 .staff-account-summary>div{min-width:0;padding:1px 14px;border-left:1px solid #dec58f;text-align:center}
-.staff-account-summary dt{color:#7a8c97;font-size:8.5px;font-weight:700;line-height:1.25;text-transform:uppercase;letter-spacing:.05em}
-.staff-account-summary dd{margin:3px 0 0;color:#173d56;font-size:19px;font-weight:800;line-height:1}
+.staff-account-summary dt{color:#7a8c97;font-size:10px;font-weight:700;line-height:1.25;text-transform:uppercase;letter-spacing:.05em}
+.staff-account-summary dd{margin:3px 0 0;color:#173d56;font-size:21px;font-weight:800;line-height:1}
 .staff-account-summary .active dd{color:#347052}.staff-account-summary .disabled dd{color:#936d25}.staff-account-summary .not-created dd{color:#687e8d}
 .staff-account-tools{display:grid;grid-template-columns:minmax(240px,1fr) minmax(160px,210px) auto;align-items:end;gap:10px;padding:10px 18px;border-bottom:1px solid #dec58f;background:#fffcf7}
-.staff-account-tools label{display:grid;gap:4px;color:#657984;font-size:8.5px;font-weight:700;line-height:1.25;text-transform:uppercase;letter-spacing:.05em}
-.staff-account-tools input,.staff-account-tools select{box-sizing:border-box;width:100%;height:40px;padding:0 11px;border:1px solid #d9c496;border-radius:7px;background:#fff;color:#173d56;font-family:inherit;font-size:12px;font-weight:600;outline:none}
+.staff-account-tools label{display:grid;gap:4px;color:#657984;font-size:10px;font-weight:700;line-height:1.25;text-transform:uppercase;letter-spacing:.05em}
+.staff-account-tools input,.staff-account-tools select{box-sizing:border-box;width:100%;height:40px;padding:0 11px;border:1px solid #d9c496;border-radius:7px;background:#fff;color:#173d56;font-family:inherit;font-size:13px;font-weight:600;outline:none}
 .staff-account-tools input:focus,.staff-account-tools select:focus{border-color:#b38b3a;box-shadow:0 0 0 3px #dec58f42}
-.staff-account-tools p{align-self:center;margin:14px 0 0;color:#687e8d;font-size:11px;white-space:nowrap}.staff-account-tools p strong{color:#173d56}
+.staff-account-tools p{align-self:center;margin:14px 0 0;color:#687e8d;font-size:12px;white-space:nowrap}.staff-account-tools p strong{color:#173d56}
 .staff-account-panel>.staff-table-wrap{margin:0;overflow-x:auto;background:#fff}
 .staff-account-table{width:100%;min-width:840px;table-layout:fixed;border-collapse:collapse}
 .staff-account-table col.account-name-column{width:20%}.staff-account-table col.account-id-column{width:10%}.staff-account-table col.account-username-column{width:14%}.staff-account-table col.account-status-column{width:14%}.staff-account-table col.account-login-column{width:18%}.staff-account-table col.account-actions-column{width:24%}
 .staff-account-table th,.staff-account-table td{box-sizing:border-box;padding:8px 10px;vertical-align:middle}
-.staff-account-panel .staff-account-table th{height:38px;border-bottom:2px solid #c7a45c;background:#f8ecd3;color:#526d7d;font-size:9px;font-weight:750;line-height:1.25;text-transform:uppercase;letter-spacing:.04em;white-space:normal}
+.staff-account-panel .staff-account-table th{height:38px;border-bottom:2px solid #c7a45c;background:#f8ecd3;color:#526d7d;font-size:10px;font-weight:800;line-height:1.25;text-transform:uppercase;letter-spacing:.04em;white-space:normal}
 .staff-account-table tbody tr:nth-child(odd){background:#fff}.staff-account-table tbody tr:nth-child(even){background:#fffaf0}
 .staff-account-table tbody tr{border-bottom:1px solid #e8d9b8}.staff-account-table tbody tr:last-child{border-bottom:0}
-.staff-account-panel .staff-account-table td{color:#355265;font-family:'DM Sans',Arial,sans-serif;font-size:10.5px;font-weight:400;line-height:1.35;letter-spacing:normal}.staff-account-panel .staff-account-table td:first-child b{color:#355265;font-family:'DM Sans',Arial,sans-serif;font-size:10.5px;font-weight:700;line-height:1.35;letter-spacing:normal}
-.staff-account-panel .staff-account-table td:nth-child(2),.staff-account-panel .staff-account-table td:nth-child(3){color:#355265;font-size:10.5px;font-weight:400}.staff-account-table td:nth-child(2),.staff-account-table td:nth-child(3),.staff-account-table td:nth-child(4),.staff-account-table td:nth-child(5){white-space:nowrap}
-.staff-account-table td small{display:block;margin-top:3px;color:#866a2c;font-size:8.5px;font-weight:700}.staff-account-table td:last-child{min-width:0}
-.staff-account-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:nowrap;white-space:nowrap}.staff-account-actions button{flex:none;min-height:36px;margin:0;padding:7px 9px;font-size:9.5px;font-weight:750;line-height:1.15}
-.staff-account-status{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:3px 8px;border:1px solid;border-radius:999px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.staff-account-panel .staff-account-table td{color:#315167;font-family:'DM Sans',Arial,sans-serif;font-size:12px;font-weight:500;line-height:1.35;letter-spacing:normal}.staff-account-panel .staff-account-table td:first-child b{color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:650;line-height:1.35;letter-spacing:normal}
+.staff-account-panel .staff-account-table td:nth-child(2){color:#718492;font-size:10.5px;font-weight:500}.staff-account-panel .staff-account-table td:nth-child(3){color:#315167;font-size:12px;font-weight:500}.staff-account-table td:nth-child(2),.staff-account-table td:nth-child(3),.staff-account-table td:nth-child(4),.staff-account-table td:nth-child(5){white-space:nowrap}
+.staff-account-table td small{display:block;margin-top:3px;color:#866a2c;font-size:10px;font-weight:700}.staff-account-table td:last-child{min-width:0}
+.staff-account-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:nowrap;white-space:nowrap}.staff-account-actions button{flex:none;min-height:36px;margin:0;padding:7px 9px;font-size:11px;font-weight:750;line-height:1.15}
+.staff-account-status{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:3px 8px;border:1px solid;border-radius:999px;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 .staff-account-status.active{border-color:#81aa91;color:#2f684c;background:#edf7f1}.staff-account-status.disabled{border-color:#d9b76c;color:#7c5f22;background:#fff4df}.staff-account-status.not_created{border-color:#c6d0d4;color:#647680;background:#f1f4f5}
 .staff-account-error{display:flex;justify-content:space-between;gap:16px;padding:12px 18px;color:#9b4b45;background:#fff5f4;border-bottom:1px solid #f0d8d5;font-size:12px}
 .staff-account-empty{display:grid;place-items:center;gap:4px;min-height:210px;padding:30px;text-align:center;background:#fff}.staff-account-empty strong{color:#173d56}.staff-account-empty span{color:#71848f;font-size:12px}
-.staff-account-guidance{margin:0;padding:11px 18px;border-top:1px solid #dec58f;background:#fff7e7}.staff-account-guidance p{max-width:800px;margin:0;color:#687e8d;font-size:11px;line-height:1.45}
+.staff-account-guidance{margin:0;padding:11px 18px;border-top:1px solid #dec58f;background:#fff7e7}.staff-account-guidance p{max-width:800px;margin:0;color:#687e8d;font-size:12px;line-height:1.45}
 .staff-account-cards{display:none}
 .staff-account-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:18px;background:#0d273c99;backdrop-filter:blur(3px)}
 .staff-account-modal{position:relative;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 36px);overflow-y:auto;padding:28px;border:1px solid #dec58f;border-top:3px solid #b38b3a;border-radius:12px;background:#fffaf0;box-shadow:0 25px 80px #071d2d66}
@@ -216,7 +216,7 @@ main{min-width:0}
 @media(max-width:700px){
  .staff-account-header{display:grid;gap:12px;padding:14px}.staff-account-header h2{font-size:21px}.staff-account-summary{width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}.staff-account-summary>div{padding-inline:8px}.staff-account-summary>div:first-child{border-left:0}.staff-account-summary dd{font-size:18px}
  .staff-account-tools{grid-template-columns:1fr 1fr;padding:10px 12px}.staff-account-tools .staff-account-search{grid-column:1/-1}.staff-account-tools input,.staff-account-tools select{height:44px}.staff-account-tools p{align-self:center;margin:13px 0 0;text-align:right;white-space:normal}
- .staff-account-panel>.staff-table-wrap{display:none}.staff-account-cards{display:grid;gap:8px;padding:10px 12px;background:#fffaf0}.staff-account-cards>article{padding:12px;border:1px solid #dec58f;border-radius:8px;background:#fff}.staff-account-cards header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #eadcbc}.staff-account-cards header b,.staff-account-cards header small{display:block}.staff-account-cards header b{color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:650;line-height:normal}.staff-account-cards header small{margin-top:2px;color:#718591;font-family:'DM Sans',Arial,sans-serif;font-size:10px;font-weight:400;line-height:normal}.staff-account-cards dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:9px 0}.staff-account-cards dt{color:#82929c;font-size:8px;font-weight:400;line-height:1.25;letter-spacing:.04em;text-transform:uppercase}.staff-account-cards dd{margin:3px 0 0;color:#315167;font-size:10.5px;font-weight:400;line-height:normal;overflow-wrap:anywhere}.staff-account-cards .staff-account-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch}.staff-account-cards .staff-account-actions button{width:100%;min-height:44px;white-space:normal}.staff-account-cards .staff-account-actions button:only-child{grid-column:1/-1}.staff-account-guidance{padding:11px 14px}.staff-account-guidance p{font-size:10.5px}.staff-account-modal{padding:24px 18px}.staff-account-modal .form-actions{display:grid;grid-template-columns:1fr}.staff-account-modal .form-actions button{width:100%}
+ .staff-account-panel>.staff-table-wrap{display:none}.staff-account-cards{display:grid;gap:8px;padding:10px 12px;background:#fffaf0}.staff-account-cards>article{padding:12px;border:1px solid #dec58f;border-radius:8px;background:#fff}.staff-account-cards header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #eadcbc}.staff-account-cards header b,.staff-account-cards header small{display:block}.staff-account-cards header b{color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:650;line-height:1.3}.staff-account-cards header small{margin-top:2px;color:#718591;font-family:'DM Sans',Arial,sans-serif;font-size:11px;font-weight:500;line-height:1.3}.staff-account-cards dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:9px 0}.staff-account-cards dt{color:#82929c;font-size:9.5px;font-weight:700;line-height:1.25;letter-spacing:.04em;text-transform:uppercase}.staff-account-cards dd{margin:3px 0 0;color:#315167;font-size:12px;font-weight:500;line-height:1.35;overflow-wrap:anywhere}.staff-account-cards .staff-account-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:stretch}.staff-account-cards .staff-account-actions button{width:100%;min-height:44px;white-space:normal}.staff-account-cards .staff-account-actions button:only-child{grid-column:1/-1}.staff-account-guidance{padding:11px 14px}.staff-account-guidance p{font-size:11.5px}.staff-account-modal{padding:24px 18px}.staff-account-modal .form-actions{display:grid;grid-template-columns:1fr}.staff-account-modal .form-actions button{width:100%}
 }
 
 /* Stage 3 final Staff Management typography and responsive polish. */
@@ -552,7 +552,7 @@ main{min-width:0}
 .staff-directory-page .staff-table th{
  padding:12px 10px;border-bottom:2px solid #c9a358;background:#fff8e8;color:#173d56;font-size:10px;font-weight:800;line-height:1.2;vertical-align:middle
 }
-.staff-directory-page .staff-table td{padding:12px 10px;border-top:0;border-bottom:1px solid #eadfca;color:#315167;vertical-align:middle}
+.staff-directory-page .staff-table td{padding:12px 10px;border-top:0;border-bottom:1px solid #eadfca;color:#315167;font-size:12px;line-height:1.35;vertical-align:middle}
 .staff-directory-page .staff-table tbody tr:nth-child(even){background:#fcfdfd}
 .staff-directory-page .staff-table tbody tr:hover{background:#fffaf0}
 .staff-directory-page .staff-table th:first-child,.staff-directory-page .staff-table td:first-child{width:52px;min-width:52px;max-width:52px}
@@ -563,7 +563,8 @@ main{min-width:0}
 .staff-directory-page .staff-table th:nth-child(6),.staff-directory-page .staff-table td:nth-child(6){width:10%;text-align:center}
 .staff-directory-page .staff-table th:nth-child(7),.staff-directory-page .staff-table td:nth-child(7){width:13%}
 .staff-directory-page .staff-table th:last-child,.staff-directory-page .staff-table td:last-child{width:138px;min-width:138px;text-align:right}
-.staff-directory-page .staff-name-cell b{color:#173d56;font-size:12.6px;font-weight:600;line-height:1.25}
+.staff-directory-page .staff-name-cell b{color:#173d56;font-size:13px;font-weight:650;line-height:1.25}
+.staff-directory-page .staff-name-cell small{font-size:10.5px;line-height:1.3}
 .staff-directory-page .staff-name-cell{padding-left:5px!important}
 .staff-directory-page .staff-table td:nth-child(3){font-weight:600;color:#526d7d}
 .staff-directory-page .staff-status{border-width:1px;border-radius:999px;background:#fff;font-size:10px;font-weight:750}
@@ -574,10 +575,10 @@ main{min-width:0}
 .staff-directory-page .staff-mobile-card{
  border:1px solid #dec58f;border-top:3px solid #c9a358;border-radius:10px;background:linear-gradient(145deg,#fff 70%,#fffaf0);box-shadow:0 5px 14px #173d560b
 }
-.staff-directory-page .staff-mobile-card>header b{color:#173d56;font-size:13.5px;font-weight:600}
+.staff-directory-page .staff-mobile-card>header b{color:#173d56;font-size:15px;font-weight:650}
 .staff-directory-page .staff-mobile-card dl{border-color:#eadfca}
-.staff-directory-page .staff-mobile-card dt{color:#708491;letter-spacing:.045em}
-.staff-directory-page .staff-mobile-card dd{color:#173d56}
+.staff-directory-page .staff-mobile-card dt{color:#708491;font-size:9.5px;font-weight:700;letter-spacing:.045em}
+.staff-directory-page .staff-mobile-card dd{color:#173d56;font-size:12px;line-height:1.35}
 @media(max-width:1100px){
  .staff-section-bar .staff-section-tabs button{flex:0 0 auto;max-width:none;min-height:52px;padding-inline:20px}
 }
@@ -736,9 +737,11 @@ main{min-width:0}
 .planned-leave-history .leave-records-header h3,.confirmed-leave-history h3{color:#173d56;font:700 18px/1.25 'Playfair Display',serif}
 .planned-leave-history .leave-table-wrap{border:1px solid #eadbb8;border-radius:8px;background:#fff}
 .planned-leave-history .leave-records-table th{background:#fff8e8;color:#173d56}
-.planned-leave-table{min-width:760px;table-layout:fixed}
-.planned-leave-table col.planned-staff{width:22%}.planned-leave-table col.planned-status{width:13%}.planned-leave-table col.planned-start,.planned-leave-table col.planned-end{width:14%}.planned-leave-table col.planned-days{width:13%}.planned-leave-table col.planned-reconciliation{width:24%}
+.planned-leave-table{min-width:680px;table-layout:fixed}
+.planned-leave-table col.planned-staff{width:34%}.planned-leave-table col.planned-start,.planned-leave-table col.planned-end{width:20%}.planned-leave-table col.planned-off-days{width:12%}.planned-leave-table col.planned-calendar-days{width:14%}
 .planned-leave-table th,.planned-leave-table td{vertical-align:middle}
+.planned-leave-table th:nth-child(n+4),.planned-leave-table td:nth-child(n+4){text-align:center}
+.planned-leave-table tbody td:first-child .leave-type-chip{margin-top:6px}
 .planned-leave-cards{display:none}
 .confirmed-leave-history{padding:14px;border:1px solid #dec58f;border-radius:9px;background:#fff}
 .confirmed-leave-history>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #eadbb8}
@@ -804,8 +807,10 @@ main{min-width:0}
  .planned-leave-cards article header b,.planned-leave-cards article header small{display:block}
  .planned-leave-cards article header b{color:#173d56;font-size:12px}
  .planned-leave-cards article header small{margin-top:3px;color:#6f8290;font-size:9px}
- .planned-leave-cards article p{color:#36566b;font-size:10px;line-height:1.4}
- .planned-leave-cards article>small{display:block;margin-top:6px;color:#705f38;font-size:9px;font-weight:700}
+ .planned-leave-cards article dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+ .planned-leave-cards article dl>div{padding:7px;border-top:1px solid #eadbb8}
+ .planned-leave-cards article dt{color:#708491;font-size:9px;font-weight:700;text-transform:uppercase}
+ .planned-leave-cards article dd{margin:3px 0 0;color:#173d56;font-size:12px;font-weight:650}
  .confirmed-leave-history>header{align-items:flex-start;flex-direction:column;gap:4px}
  .leave-employee-history>summary{grid-template-columns:minmax(0,1fr) 32px;gap:9px;min-height:0;padding:11px}
  .leave-history-totals{grid-column:1/-1;grid-row:2;justify-content:flex-start}
