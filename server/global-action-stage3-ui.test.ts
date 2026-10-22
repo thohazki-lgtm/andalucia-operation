@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
+
+const action = await read('src/action-system.tsx')
+const actionCss = await read('src/action-system.css')
+const app = await read('src/App.tsx')
+const leave = await read('src/leave-planner.tsx')
+const leaveHistory = await read('src/staff-leave.tsx')
+const membership = await read('src/staff-membership-baseline.tsx')
+const managerTimesheets = await read('src/manager-timesheets.tsx')
+const myTimesheet = await read('src/my-timesheet.tsx')
+const accounts = await read('src/staff-account-management.tsx')
+
+assert.match(action, /\| 'calendar'/)
+assert.match(action, /export function DateControl/)
+assert.match(action, /type\?: 'date' \| 'month' \| 'datetime-local'/)
+assert.match(actionCss, /\.ao-date-control input::-webkit-calendar-picker-indicator/)
+assert.match(actionCss, /opacity:\s*0/)
+assert.match(actionCss, /@media \(max-width: 700px\)[\s\S]*\.ao-icon-action[\s\S]*44px/)
+
+assert.match(app, /dashboard-card-action/)
+assert.match(app, /icon="grip" label={`Move \$\{person\.name\}`}/)
+assert.match(app, /icon="calendar" className="roster-period-label"/)
+assert.match(app, /variant="primary" icon="save" className="roster-save"/)
+assert.match(app, /icon="download" className="roster-export"/)
+assert.match(app, /icon="user" label={`View profile for \$\{person\.name\}`}/)
+assert.match(app, /data-staff-action="edit"/)
+assert.match(app, /data-staff-action="archive"/)
+assert.match(app, /className="staff-filter-toggle" icon="filter"/)
+assert.match(app, /className={`staff-filter-fields\$\{filtersOpen \? ' open' : ''\}`}/)
+assert.doesNotMatch(app, /<button className="secondary" onClick=\{\(\) => setViewer\(person\)\}>View Profile<\/button>/)
+assert.doesNotMatch(app, />←<\/button>|>→<\/button>|>⠿<\/button>|>⌫<\/button>/)
+
+assert.match(leave, /ActionButton, DateControl, IconAction, StatusPill/)
+assert.match(leave, /label="Booked leave start date"/)
+assert.match(leaveHistory, /label="Leave history from date"/)
+assert.match(membership, /type="month" label="Membership month"/)
+assert.match(managerTimesheets, /type="month" label="Manager timesheet month"/)
+assert.match(managerTimesheets, /type="datetime-local" label="Employee editing available until"/)
+assert.match(managerTimesheets, /<IconAction icon="edit" label={`Edit \$\{day\.date\}`}/)
+assert.match(managerTimesheets, /variant="primary" icon="check"[\s\S]*Approve Month/)
+assert.match(myTimesheet, /type="month" label="Selected timesheet month"/)
+assert.match(accounts, /icon="add"[\s\S]*Create Account/)
+
+console.log('Stage 3 global action and calendar integration source validation passed.')

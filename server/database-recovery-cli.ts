@@ -5,7 +5,7 @@ import { defaultExclusiveAccessCheck } from './migration-live-gate.js'
 
 const configured = process.env.ANDALUCIA_DATA_DIR?.trim()
 if (!configured || !isAbsolute(configured) || resolve(configured) !== canonicalStoreDirectory) throw new Error('RECOVERY_WRONG_CANONICAL_STORE')
-const service = new DatabaseRecoveryService({ recoveryRoot: resolve('.recovery'), backupRoot: defaultBackupRoot, canonicalDirectory: configured })
+const service = new DatabaseRecoveryService({ recoveryRoot: resolve('.recovery'), backupRoot: defaultBackupRoot, canonicalDirectory: configured, requiredVersion: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION })
 const command = process.argv[2] || 'history'
 if (command === 'history') console.log(JSON.stringify(await service.history(), null, 2))
 else if (command === 'preview') { const id = process.argv[3]; if (!id) throw new Error('RECOVERY_INCIDENT_REQUIRED'); console.log(JSON.stringify(await service.preview(id), null, 2)) }

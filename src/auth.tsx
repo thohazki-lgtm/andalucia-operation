@@ -30,9 +30,24 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (state === 'loading') return <AuthFrame><div className="auth-loading" role="status">Checking secure session…</div></AuthFrame>
   if (state === 'setup') return <AuthFrame><section className="auth-card setup-required"><p className="eyebrow">FIRST ACCOUNT REQUIRED</p><h1>Secure account setup</h1><p>No platform account has been created. Run the explicit one-time account bootstrap command on the trusted server, then return here.</p><code>npm run auth:bootstrap</code><button className="secondary" onClick={() => void bootstrap()}>Check Again</button></section></AuthFrame>
   if (state === 'login' || !user) return <LoginForm serviceError={error} onLogin={login} />
+  if (user.mustChangePassword) return <RequiredPasswordChange user={user} onCompleted={setUser} onLogout={logout} />
   const can = (permission: AuthorizationPermissionKey) => user.permissionKeys.includes(permission)
   const canForOutlet = (permission: AuthorizationPermissionKey, outletScopeId: string) => can(permission) && (user.globalScope || user.allowedOutletScopeIds.includes(outletScopeId))
   return <AuthContext.Provider value={{ user, logout, can, canForOutlet }}>{children}</AuthContext.Provider>
+}
+
+function RequiredPasswordChange({ user, onCompleted, onLogout }: { user: AuthenticatedUser; onCompleted: (user: AuthenticatedUser) => void; onLogout: () => Promise<void> }) {
+  const [newPassword, setNewPassword] = useState(''); const [confirmation, setConfirmation] = useState(''); const [error, setError] = useState(''); const [submitting, setSubmitting] = useState(false)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setError('')
+    if (newPassword !== confirmation) { setError('The passwords do not match.'); return }
+    if (newPassword.length < 12 || !/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) { setError('Use at least 12 characters with upper-case, lower-case and numeric characters.'); return }
+    setSubmitting(true)
+    try { onCompleted(await authApi.changePassword(newPassword)) }
+    catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'The new password could not be saved.') }
+    finally { setSubmitting(false) }
+  }
+  return <AuthFrame><section className="auth-card password-change-card"><p className="eyebrow">FIRST SIGN-IN SECURITY</p><h1>Create your password</h1><p>Welcome, {user.displayName}. Replace the temporary password before opening My Timesheet.</p><form onSubmit={event => void submit(event)}><label>New Password<input type="password" autoComplete="new-password" required minLength={12} value={newPassword} onChange={event => setNewPassword(event.target.value)} /></label><label>Confirm Password<input type="password" autoComplete="new-password" required minLength={12} value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label><p className="password-requirements">At least 12 characters, including upper-case, lower-case and a number.</p>{error && <p className="auth-error" role="alert">{error}</p>}<button className="primary" disabled={submitting}>{submitting ? 'Saving securely…' : 'Save Password'}</button><button type="button" className="secondary" disabled={submitting} onClick={() => void onLogout()}>Sign Out</button></form></section></AuthFrame>
 }
 
 function LoginForm({ serviceError, onLogin }: { serviceError: string; onLogin: (identifier: string, password: string) => Promise<void> }) {
@@ -46,6 +61,6 @@ function AuthFrame({ children }: { children: ReactNode }) { return <main classNa
 export function AuthUserButton() {
   const { user, logout } = useAuth(); const [open, setOpen] = useState(false)
   const initials = user.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U'
-  const roleLabel = user.isOwner ? 'Owner / Super Admin' : user.roleKeys.includes('outlet_manager') ? 'Outlet Manager' : user.roleKeys.includes('operational_user') ? 'Operational User' : user.roleKeys.includes('viewer') ? 'Viewer' : null
+  const roleLabel = user.isOwner ? 'Owner / Super Admin' : user.roleKeys.includes('outlet_manager') ? 'Outlet Manager' : user.roleKeys.includes('operational_user') ? 'Operational User' : user.roleKeys.includes('employee_self_service') ? 'Employee' : user.roleKeys.includes('viewer') ? 'Viewer' : null
   return <div className="auth-user"><button className="avatar" type="button" aria-label={`${user.displayName} account menu`} title={user.displayName} aria-expanded={open} onClick={() => setOpen(value => !value)}>{initials}</button>{open && <div className="auth-user-menu"><b>{user.displayName}</b><span>{user.loginIdentifier}</span>{roleLabel && <em>{roleLabel}</em>}<button className="secondary" onClick={() => void logout()}>Sign Out</button></div>}</div>
 }

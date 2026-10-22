@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PGlite } from '@electric-sql/pglite'
-import type { ChargeableDuplicateWarning, ChargeableRecord, ChargeableSummary, ChargeableWriteRequest, ConfigOption } from '../src/domain.js'
+import type { ChargeableCorrectionHistory, ChargeableCorrectionRequest, ChargeableDuplicateWarning, ChargeableRecord, ChargeableSummary, ChargeableWriteRequest, ConfigOption } from '../src/domain.js'
+import { IncentivesCalculationService } from './incentives-calculation-service.js'
 
 export type ChargeableConfigGroup = 'items' | 'statuses'
 export type ChargeableWriteContext = { outletScopeId: string; actor: string }
@@ -89,7 +90,7 @@ export class ChargeableRepository {
     return { id: row.id, date: row.charge_date, bookingId: row.booking_id, guestName: row.guest_name, roomNumber: row.room_number || '', checkInvoiceNumber: row.check_invoice_number || '', tableNumber: row.table_number || '', itemValue: row.item_value, itemLabel: row.item_label, itemCategory: row.item_category, quantity: Number(row.quantity), unitPrice: Number(row.unit_price), totalAmount: Number(row.total_amount), waiterId: row.waiter_id, waiter: row.waiter_id ? { name: row.waiter_name, number: row.waiter_number, position: row.waiter_position, employmentStatus: row.waiter_employment_status } : null, status: row.status, notes: row.notes || '', active: row.active, bookingNumber: row.booking_number, covers: row.booking_covers == null ? undefined : Number(row.booking_covers), reservationDate: row.booking_reservation_date || undefined, reservationTime: row.booking_reservation_time ? row.booking_reservation_time.slice(0, 5) : undefined, bookingSource: row.booking_source, importSource: row.import_source, sourceGuestNotes: row.source_guest_notes, createdAt: row.created_at, updatedAt: row.updated_at, createdBy: row.created_by, updatedBy: row.updated_by }
   }
 
-  private select(scoped: boolean, financialProof: boolean) { return `select c.id, ${scoped ? 'c.outlet_scope_id,' : ''} c.charge_date::text, c.booking_id, coalesce(b.guest_name,c.guest_name) guest_name, coalesce(b.room_number,c.room_number) room_number, ${financialProof ? 'c.check_invoice_number' : "''::text check_invoice_number"}, c.table_number, c.item_value, c.item_label, c.item_category, c.quantity, c.unit_price, c.total_amount, c.waiter_id, c.status, c.notes, c.active, c.created_at::text, c.updated_at::text, c.created_by, c.updated_by, b.booking_number, b.covers booking_covers, b.reservation_date::text booking_reservation_date, b.reservation_time::text booking_reservation_time, b.booking_source, b.import_source, b.source_guest_notes, coalesce((select al.after_data->'waiter'->>'name' from audit_logs al where al.entity_type='chargeable_item' and al.entity_id=c.id and al.after_data->'waiter'->>'name' is not null order by al.created_at asc limit 1),s.full_name) waiter_name, coalesce((select al.after_data->'waiter'->>'number' from audit_logs al where al.entity_type='chargeable_item' and al.entity_id=c.id and al.after_data->'waiter'->>'number' is not null order by al.created_at asc limit 1),s.staff_number) waiter_number, s.position_key waiter_position, s.employment_status_key waiter_employment_status from chargeable_item_records c left join bookings b on b.id=c.booking_id left join staff s on s.id=c.waiter_id` }
+  private select(scoped: boolean, financialProof: boolean) { return `select c.id, ${scoped ? 'c.outlet_scope_id,' : ''} c.charge_date::text, c.booking_id, coalesce(nullif(c.guest_name,''),b.guest_name) guest_name, coalesce(nullif(c.room_number,''),b.room_number) room_number, ${financialProof ? 'c.check_invoice_number' : "''::text check_invoice_number"}, c.table_number, c.item_value, c.item_label, c.item_category, c.quantity, c.unit_price, c.total_amount, c.waiter_id, c.status, c.notes, c.active, c.created_at::text, c.updated_at::text, c.created_by, c.updated_by, b.booking_number, b.covers booking_covers, b.reservation_date::text booking_reservation_date, b.reservation_time::text booking_reservation_time, b.booking_source, b.import_source, b.source_guest_notes, coalesce((select al.after_data->'waiter'->>'name' from audit_logs al where al.entity_type='chargeable_item' and al.entity_id=c.id and al.after_data->'waiter'->>'name' is not null order by al.created_at asc limit 1),s.full_name) waiter_name, coalesce((select al.after_data->'waiter'->>'number' from audit_logs al where al.entity_type='chargeable_item' and al.entity_id=c.id and al.after_data->'waiter'->>'number' is not null order by al.created_at asc limit 1),s.staff_number) waiter_number, s.position_key waiter_position, s.employment_status_key waiter_employment_status from chargeable_item_records c left join bookings b on b.id=c.booking_id left join staff s on s.id=c.waiter_id` }
 
   async list(date: string, outletScopeId?: string): Promise<ChargeableRecord[]> {
     const scoped = await this.hasOutletScopeColumn()
@@ -230,6 +231,57 @@ export class ChargeableRepository {
     const auditable = (value: ChargeableRecord) => scoped ? { ...value, outletScopeId: context!.outletScopeId } : value
     await this.db.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'chargeable_item', id, 'archived', JSON.stringify(auditable(previous)), JSON.stringify(auditable(saved)), actor])
     return saved
+  }
+
+  async correctRealized(record: ChargeableCorrectionRequest, context: ChargeableWriteContext): Promise<ChargeableRecord> {
+    if (record.confirmation !== 'CORRECT CHARGED TRANSACTION') throw new Error('Confirm the charged transaction correction explicitly before saving.')
+    const reason = record.correctionReason?.trim() || ''
+    if (reason.length < 8) throw new Error('A clear correction reason of at least 8 characters is required.')
+    return this.db.transaction(async transaction => {
+      const scoped = new ChargeableRepository(transaction as unknown as PGlite)
+      const locked = (await transaction.query<any>('select id,updated_at::text from chargeable_item_records where id=$1 and outlet_scope_id=$2 for update', [record.id, context.outletScopeId])).rows[0]
+      if (!locked) throw new Error('Chargeable record not found.')
+      const previous = await scoped.find(record.id, context.outletScopeId)
+      if (!previous) throw new Error('Chargeable record not found.')
+      const metadata = await scoped.statusMetadata(previous.status)
+      if (metadata.countsAsRealizedRevenue !== true) throw new Error('Only a charged transaction uses the manager correction workflow.')
+      if (record.expectedUpdatedAt && String(locked.updated_at) !== record.expectedUpdatedAt) throw new Error('This transaction changed after the correction form opened. Review the latest values and try again.')
+      if (record.status !== previous.status || record.date !== previous.date || record.bookingId !== previous.bookingId || record.active !== previous.active) throw new Error('Transaction identity, date, status and archive state cannot be changed through a charged correction.')
+      if (!record.guestName?.trim() || !record.roomNumber?.trim() || !record.checkInvoiceNumber?.trim()) throw new Error('Guest, room and check / invoice are required for a charged correction.')
+      const quantity = Number(record.quantity); const unitPrice = Number(record.unitPrice)
+      if (!Number.isInteger(quantity) || quantity < 1) throw new Error('Quantity must be a whole number of at least 1.')
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new Error('Unit price must be a valid non-negative amount.')
+      if (record.waiterId) {
+        const waiter = (await transaction.query<{ employment_status_key: string }>('select employment_status_key from staff where id=$1', [record.waiterId])).rows[0]
+        if (!waiter) throw new Error('The selected waiter no longer exists.')
+        if (waiter.employment_status_key !== 'active' && record.waiterId !== previous.waiterId) throw new Error('Inactive staff cannot receive a corrected transaction assignment.')
+      }
+      const itemRow = (await transaction.query<any>('select label,metadata,active from configuration_options where group_key=$1 and value=$2', [groupKeys.items, record.itemValue])).rows[0]
+      if (!itemRow) throw new Error('The selected chargeable item no longer exists.')
+      if (!itemRow.active && record.itemValue !== previous.itemValue) throw new Error('Inactive chargeable items cannot be selected for a correction.')
+      const itemMetadata = typeof itemRow.metadata === 'string' ? JSON.parse(itemRow.metadata) : itemRow.metadata || {}
+      const financialChanged = record.itemValue !== previous.itemValue || quantity !== previous.quantity || unitPrice !== previous.unitPrice || record.waiterId !== previous.waiterId
+      const finalized = (await transaction.query<{ count: number }>("select count(*)::int count from chargeable_incentive_earnings where source_chargeable_item_id=$1 and status='finalized'", [record.id])).rows[0]?.count || 0
+      if (financialChanged && finalized > 0) throw new Error('This transaction has finalized incentive earnings. Reverse the finalized earning before correcting financial fields.')
+      const approvedReport = (await transaction.query<{ count: number }>('select count(*)::int count from daily_report_snapshots where outlet_scope_id=$1 and service_date=$2', [context.outletScopeId, previous.date])).rows[0]?.count || 0
+      if (approvedReport > 0) throw new Error('This service date has an approved report snapshot. Use the authorized report correction workflow before changing its source transaction.')
+      const totalAmount = Number((quantity * unitPrice).toFixed(2))
+      const update = await transaction.query<any>(`update chargeable_item_records set guest_name=$3,room_number=$4,check_invoice_number=$5,table_number=$6,item_value=$7,item_label=$8,item_category=$9,quantity=$10,unit_price=$11,total_amount=$12,amount=$12,waiter_id=$13,notes=$14,updated_by=$15,updated_at=now() where id=$1 and outlet_scope_id=$2 and updated_at::text=$16 returning id`, [record.id, context.outletScopeId, record.guestName.trim(), record.roomNumber.trim(), record.checkInvoiceNumber.trim(), record.tableNumber || null, record.itemValue, itemRow.label, itemMetadata.category || 'Uncategorized', quantity, unitPrice, totalAmount, record.waiterId || null, record.notes || '', context.actor, locked.updated_at])
+      if (!update.rows[0]) throw new Error('This transaction changed during correction. Review the latest values and try again.')
+      const corrected = await scoped.find(record.id, context.outletScopeId)
+      if (!corrected) throw new Error('Chargeable correction could not be saved.')
+      await transaction.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'chargeable_item', record.id, 'manager_corrected', JSON.stringify({ ...previous, outletScopeId: context.outletScopeId }), JSON.stringify({ ...corrected, outletScopeId: context.outletScopeId, correctionReason: reason }), context.actor])
+      const draft = (await transaction.query<{ count: number }>("select count(*)::int count from chargeable_incentive_earnings where source_chargeable_item_id=$1 and status='draft'", [record.id])).rows[0]?.count || 0
+      if (financialChanged && draft > 0) await new IncentivesCalculationService(transaction as unknown as PGlite).generateDraftEarning(record.id, context.actor)
+      return corrected
+    })
+  }
+
+  async correctionHistory(id: string, outletScopeId: string): Promise<ChargeableCorrectionHistory[]> {
+    const record = await this.find(id, outletScopeId)
+    if (!record) throw new Error('Chargeable record not found.')
+    const result = await this.db.query<any>("select id,action,actor,created_at::text,before_data,after_data from audit_logs where entity_type='chargeable_item' and entity_id=$1 and action in ('manager_corrected','corrected') order by created_at desc", [id])
+    return result.rows.map(row => ({ id: row.id, action: row.action, actor: row.actor, createdAt: row.created_at, reason: row.after_data?.correctionReason || '', before: row.before_data || null, after: row.after_data || null }))
   }
 
   async summary(date: string, outletScopeId?: string): Promise<ChargeableSummary> {

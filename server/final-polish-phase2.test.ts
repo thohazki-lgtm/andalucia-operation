@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { PGlite } from '@electric-sql/pglite'
 import { BookingRepository } from './booking-repository.js'
 import { ChargeableRepository } from './chargeable-repository.js'
 import { GuestOccasionRepository } from './guest-occasion-repository.js'
@@ -9,9 +7,11 @@ import { OperationsRepository } from './operations-repository.js'
 import { ReportingRepository } from './reporting-repository.js'
 import { TrainingRepository } from './training-repository.js'
 import type { BookingRecord, ChargeableRecord, GuestOccasionRecord, TrainingSession } from '../src/domain.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 
-const db = new PGlite()
-await db.exec(await readFile('database/schema.sql', 'utf8'))
+const fixture = await createDisposableDevelopmentStore('final-polish-phase2')
+const db = fixture.db
 const activeId = randomUUID(); const inactiveId = randomUUID()
 await db.query('insert into staff (id,staff_number,full_name,position_key,employment_status_key,join_date) values ($1,$2,$3,$4,$5,$6),($7,$8,$9,$10,$11,$12)', [activeId, 'P2-A', 'Phase Two Active', 'Waiter', 'active', '2026-01-01', inactiveId, 'P2-I', 'Phase Two Inactive', 'Waiter', 'inactive', '2026-01-01'])
 
@@ -34,7 +34,7 @@ assert.deepEqual({ expected: bookingSummary.expectedCovers, arrived: bookingSumm
 
 const item = (await chargeables.configuration()).items.find(option => option.active)!
 const charge: ChargeableRecord = { id: randomUUID(), date: '2026-09-03', bookingId: null, guestName: 'Guest', roomNumber: '100', tableNumber: '', itemValue: item.value, itemLabel: item.label, itemCategory: item.metadata?.category || '', quantity: 1, unitPrice: Number(item.metadata?.price), totalAmount: 0, waiterId: inactiveId, waiter: null, status: 'pending', notes: '', active: true }
-await assert.rejects(() => chargeables.save(charge), /Inactive staff|not eligible/)
+await assert.rejects(() => chargeables.save(charge, { outletScopeId: ANDALUCIA_SCOPE_ID, actor: 'Phase 2 fixture' }), /Inactive staff|not eligible/)
 
 const activeOccasionType = (await occasions.configuration()).types.find(option => option.active)!.value
 const occasion: GuestOccasionRecord = { id: randomUUID(), occasionType: activeOccasionType, bookingId: null, guestName: 'Guest', roomNumber: '100', reservationDate: '2026-09-03', reservationTime: '18:00', tableNumber: '', waiterId: inactiveId, waiter: null, status: 'pending', source: 'manual', sourceText: '', notes: '', active: true }
@@ -52,7 +52,7 @@ await training.saveConfiguration('statuses', { ...completedTraining, label: 'Fin
 const occasionConfiguration = await occasions.configuration()
 const completedOccasion = occasionConfiguration.statuses.find(option => option.value === 'completed')!
 await occasions.save({ ...occasion, id: randomUUID(), waiterId: null, status: completedOccasion.value })
-await occasions.saveConfiguration('statuses', { ...completedOccasion, label: 'Done' })
+await assert.rejects(() => occasions.saveConfiguration('statuses', { ...completedOccasion, label: 'Done' }), /display color changes only/)
 const report = await new ReportingRepository(db).report('custom', '2026-09-03', '2026-09-05')
 assert.deepEqual({ off: report.attendance.off, annualLeave: report.attendance.annualLeave, actualWorking: report.attendance.actualWorking }, { off: 1, annualLeave: 1, actualWorking: 0 })
 assert.deepEqual({ expected: report.bookings.expectedCovers, arrived: report.bookings.arrivedCovers, remaining: report.bookings.remainingCovers, noShow: report.bookings.noShowCovers }, { expected: 9, arrived: 5, remaining: 4, noShow: 5 })
@@ -63,7 +63,8 @@ const renamedAttended = (await training.configuration())['attendance-statuses'].
 assert.equal(renamedAttended.label, 'Participated')
 assert.equal(attended.metadata?.trainingAttendanceOutcome, 'attended')
 const completed = (await occasions.configuration()).statuses.find(option => option.value === 'completed')!
-assert.equal(completed.label, 'Done')
+assert.equal(completed.label, completedOccasion.label)
 assert.equal(completed.metadata?.occasionStage, 'completed')
 
+await fixture.cleanup()
 console.log(JSON.stringify({ inactiveRosterRejected: true, inactiveTrainingRejected: true, inactiveBookingWaiterRejected: true, inactiveChargeableWaiterRejected: true, inactiveOccasionWaiterRejected: true, historicalRosterRetained: true, bookingSummary, dutySemantics: report.attendance, trainingMetadata: attended.metadata, occasionMetadata: completed.metadata }, null, 2))

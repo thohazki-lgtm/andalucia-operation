@@ -13,7 +13,7 @@ const childOnDate = (birthDate: string | null, serviceDate: string) => {
   const birth = new Date(`${birthDate}T00:00:00Z`); const service = new Date(`${serviceDate}T00:00:00Z`)
   let age = service.getUTCFullYear() - birth.getUTCFullYear()
   if (service.getUTCMonth() < birth.getUTCMonth() || (service.getUTCMonth() === birth.getUTCMonth() && service.getUTCDate() < birth.getUTCDate())) age--
-  return age >= 0 && age <= 12
+  return age >= 0 && age < 12
 }
 const mondayFor = (value: string) => { const date = new Date(`${value}T00:00:00Z`); const day = date.getUTCDay(); date.setUTCDate(date.getUTCDate() - (day === 0 ? 6 : day - 1)); return dateValue(date) }
 const metadata = (value: unknown): Record<string, any> => typeof value === 'string' ? JSON.parse(value) : (value || {}) as Record<string, any>
@@ -38,14 +38,17 @@ export class ReportingRepository {
     const [bookingStatuses, attendanceStatuses, dutyCodes, trainingCategories, trainingStatuses, trainingAttendanceStatuses, occasionTypes, occasionStatuses, chargeableStatuses, maintenanceAreas, maintenanceStatuses] = await Promise.all([
       this.options('booking_statuses'), this.options('attendance_statuses'), this.options('duty_codes'), this.options('training_categories'), this.options('training_statuses'), this.options('training_attendance_statuses'), this.options('occasion_types'), this.options('occasion_statuses'), this.options('chargeable_statuses'), this.options('maintenance_areas'), this.options('maintenance_statuses')
     ])
-    const [bookingResult, bookingMemberResult, attendanceResult, trainingResult, occasionResult, chargeableResult, maintenanceResult, maintenanceAuditResult] = await Promise.all([
+    const [bookingResult, bookingMemberResult, attendanceResult, trainingResult, occasionResult, tlcResult, chargeableResult, maintenanceResult, incentiveResult, billTipResult, maintenanceAuditResult] = await Promise.all([
       this.db.query<any>('select id, reservation_date::text date, reservation_time::text time, booking_status status, covers, birth_date::text birth_date, raw_import_payload from bookings where reservation_date between $1 and $2 order by reservation_date,reservation_time', [start, end]),
       this.db.query<any>('select g.booking_id,g.birth_date::text birth_date from booking_guest_members g join bookings b on b.id=g.booking_id where b.reservation_date between $1 and $2 order by g.booking_id,g.source_row_order', [start, end]),
       this.db.query<any>("select s.id staff_id,s.full_name staff_name,s.staff_number,s.employment_status_key,r.duty_date::text date,r.duty_code_value scheduled_duty,a.actual_duty_code actual_duty,a.actual_status attendance_status from duty_roster_entries r join staff s on s.id=r.staff_id left join attendance_records a on a.staff_id=r.staff_id and a.attendance_date=r.duty_date where r.duty_date between $1 and $2 union all select s.id,s.full_name,s.staff_number,s.employment_status_key,a.attendance_date::text,null,a.actual_duty_code,a.actual_status from attendance_records a join staff s on s.id=a.staff_id where a.attendance_date between $1 and $2 and not exists(select 1 from duty_roster_entries r where r.staff_id=a.staff_id and r.duty_date=a.attendance_date) order by date,staff_name", [start, end]),
       this.db.query<any>('select t.id,t.title,t.training_date::text date,t.category_value category,t.status_value status,t.active,a.staff_id,a.attendance_status_value attendance_status,s.full_name staff_name,s.staff_number,s.employment_status_key from training_sessions t left join training_session_attendees a on a.training_id=t.id left join staff s on s.id=a.staff_id where t.active=true and t.training_date between $1 and $2 order by t.training_date,t.title,s.full_name', [start, end]),
       this.db.query<any>('select g.id,g.booking_id,coalesce(b.reservation_date,g.occasion_date)::text date,coalesce(b.guest_name,g.manual_guest_name) guest_name,coalesce(b.room_number,g.manual_room_number) room_number,coalesce(b.covers,0)::int covers,g.occasion_type,g.status_value status from guest_occasions g left join bookings b on b.id=g.booking_id where g.active=true and coalesce(b.reservation_date,g.occasion_date) between $1 and $2 order by date,guest_name', [start, end]),
+      this.db.query<any>("select f.id,b.id booking_id,b.reservation_date::text date,b.guest_name,b.room_number,coalesce(b.covers,0)::int covers from booking_intelligence_findings f join bookings b on b.id=f.booking_id where b.reservation_date between $1 and $2 and f.active=true and f.superseded_by_id is null and f.normalized_key='GUEST_ATTENTION_TLC' order by date,b.reservation_time,b.guest_name", [start, end]),
       this.db.query<any>("select c.id,c.charge_date::text date,c.guest_name,c.room_number,to_jsonb(c)->>'check_invoice_number' check_invoice_number,c.item_value,c.item_label,c.quantity,c.total_amount,c.waiter_id,c.status,s.full_name waiter_name,s.staff_number waiter_number,s.employment_status_key waiter_employment_status from chargeable_item_records c left join staff s on s.id=c.waiter_id where c.active=true and c.charge_date between $1 and $2 order by c.charge_date,c.created_at", [start, end]),
       this.db.query<any>("select id,issue,issue_date::text date,area_value area,status,priority,coalesce(to_jsonb(maintenance_issues)->>'reference_follow_up','') reference_follow_up,to_jsonb(maintenance_issues)->>'completed_at' completed_at,updated_at::text updated_at from maintenance_issues where issue_date <= $1 order by issue_date,created_at", [end]),
+      this.db.query<any>("select status,count(*)::int record_count,coalesce(sum(final_amount),0)::float amount from chargeable_incentive_earnings where service_date between $1 and $2 and status in ('draft','finalized') group by status", [start, end]),
+      this.db.query<any>("select status,count(*)::int month_count,coalesce(sum(pool_amount),0)::float amount from bill_tip_distributions where distribution_month between $1 and $2 and status in ('draft','correction_in_review','finalized') group by status", [start.slice(0, 7), end.slice(0, 7)]),
       this.db.query<any>("select entity_id,action,before_data,after_data,created_at::text created_at from audit_logs where entity_type='maintenance_issue' order by created_at,id")
     ])
 
@@ -95,21 +98,34 @@ export class ReportingRepository {
     const sessionDetails = [...sessions.values()]
     const training = { sessions: sessionDetails.length, participants: sessionDetails.reduce((sum, item) => sum + item.participants, 0), attended: sessionDetails.reduce((sum, item) => sum + item.attended, 0), absent: sessionDetails.reduce((sum, item) => sum + item.absent, 0), excused: sessionDetails.reduce((sum, item) => sum + item.excused, 0), sessionDetails, employeeParticipation: [...employees.values()].sort((a, b) => b.sessions - a.sessions || a.staffName.localeCompare(b.staffName)) }
 
-    const approvedOccasionCategories = [{ key: 'honeymoon', label: 'Honeymoon' }, { key: 'birthday', label: 'Birthday' }, { key: 'anniversary', label: 'Anniversary' }, { key: 'seeYouSoon', label: 'See You Soon' }, { key: 'siyamFamily', label: 'Siyam Family' }, { key: 'famtrip', label: 'Famtrip' }, { key: 'presstrip', label: 'Presstrip' }]
+    const approvedOccasionCategories = [{ key: 'honeymoon', label: 'Honeymoon' }, { key: 'birthday', label: 'Birthday' }, { key: 'anniversary', label: 'Anniversary' }, { key: 'seeYouSoon', label: 'See You Soon' }, { key: 'vip', label: 'VIP' }, { key: 'tlc', label: 'TLC' }, { key: 'siyamFamily', label: 'Siyam Family' }, { key: 'famtrip', label: 'Famtrip' }, { key: 'presstrip', label: 'Presstrip' }]
     const occasionType = (value: string) => occasionTypes.find(option => option.value === value)
     const occasionTypeLabel = (value: string) => occasionType(value)?.label || value
     const occasionCategory = (value: string) => occasionType(value)?.metadata?.occasionCategory || value
     const occasionStatusLabel = (value: string) => occasionStatuses.find(option => option.value === value)?.label || value
     const occasionCompleted = (value: string) => occasionStatuses.find(option => option.value === value)?.metadata?.occasionStage === 'completed'
     const occasionRows = occasionResult.rows
-    const categoryBreakdown = (rows: any[]) => approvedOccasionCategories.map(category => ({ ...category, count: rows.filter(row => occasionCategory(row.occasion_type) === category.key).length }))
-    const byCategory = categoryBreakdown(occasionRows)
-    const occasionByDate = calendarDates(start, end).map(date => { const rows = occasionRows.filter(row => row.date === date); return { date, total: rows.length, byCategory: categoryBreakdown(rows) } })
+    const classifiedOccasionRows = occasionRows.map((row: any) => ({ ...row, categoryKeys: [] as string[] }))
+    const identity = (row: any) => row.booking_id ? `booking:${row.booking_id}` : `occasion:${row.id}`
+    const assignDistinctCategory = (key: string, rows: any[]) => { const seen = new Set<string>(); for (const row of rows) { const rowIdentity = identity(row); if (seen.has(rowIdentity)) continue; seen.add(rowIdentity); if (!row.categoryKeys.includes(key)) row.categoryKeys.push(key) } }
+    for (const category of approvedOccasionCategories.filter(({ key }) => key !== 'vip' && key !== 'tlc')) {
+      assignDistinctCategory(category.key, classifiedOccasionRows.filter((row: any) => occasionCategory(row.occasion_type) === category.key))
+    }
+    assignDistinctCategory('vip', classifiedOccasionRows.filter((row: any) => Boolean(occasionType(row.occasion_type)?.metadata?.countsAsVipSpecial)))
+    for (const tlc of tlcResult.rows) {
+      const rowIdentity = identity(tlc)
+      const existing = classifiedOccasionRows.find((row: any) => identity(row) === rowIdentity)
+      if (existing) { if (!existing.categoryKeys.includes('tlc')) existing.categoryKeys.push('tlc'); continue }
+      classifiedOccasionRows.push({ ...tlc, id: `tlc:${tlc.id}`, occasion_type: null, status: null, categoryKeys: ['tlc'], reporting_only: true })
+    }
+    const categoryBreakdown = (rows: any[]) => approvedOccasionCategories.map(category => ({ ...category, count: rows.filter(row => row.categoryKeys.includes(category.key)).length }))
+    const byCategory = categoryBreakdown(classifiedOccasionRows)
+    const occasionByDate = calendarDates(start, end).map(date => { const rows = classifiedOccasionRows.filter(row => row.date === date); return { date, total: occasionRows.filter(row => row.date === date).length, byCategory: categoryBreakdown(rows) } })
     const occasionWeekStarts = [...new Set(calendarDates(start, end).map(mondayFor))].sort()
-    const occasionByWeek = occasionWeekStarts.map(weekStart => { const weekEnd = addDays(weekStart, 6); const clippedStart = weekStart < start ? start : weekStart; const clippedEnd = weekEnd > end ? end : weekEnd; const rows = occasionRows.filter(row => mondayFor(row.date) === weekStart); return { weekStart: clippedStart, weekEnd: clippedEnd, label: `${clippedStart} – ${clippedEnd}`, total: rows.length, byCategory: categoryBreakdown(rows) } })
+    const occasionByWeek = occasionWeekStarts.map(weekStart => { const weekEnd = addDays(weekStart, 6); const clippedStart = weekStart < start ? start : weekStart; const clippedEnd = weekEnd > end ? end : weekEnd; const rows = classifiedOccasionRows.filter(row => mondayFor(row.date) === weekStart); return { weekStart: clippedStart, weekEnd: clippedEnd, label: `${clippedStart} – ${clippedEnd}`, total: occasionRows.filter(row => mondayFor(row.date) === weekStart).length, byCategory: categoryBreakdown(rows) } })
     const statusWorkflows = [{ key: 'attention', label: 'Attention' }, { key: 'prepared', label: 'Prepared' }, { key: 'completed', label: 'Completed' }]
     const byStatus = statusWorkflows.map(workflow => ({ ...workflow, count: occasionRows.filter(row => occasionStatuses.find(option => option.value === row.status)?.metadata?.occasionWorkflow === workflow.key).length }))
-    const occasions = { total: occasionRows.length, completed: occasionRows.filter(row => occasionCompleted(row.status)).length, pendingActive: occasionRows.filter(row => !occasionCompleted(row.status)).length, requiringAttention: occasionRows.filter(row => occasionStatuses.find(option => option.value === row.status)?.metadata?.countsAsOccasionAttention).length, byType: byCategory, byCategory, byStatus, byDate: occasionByDate, byWeek: occasionByWeek, records: occasionRows.map(row => ({ id: row.id, bookingId: row.booking_id || null, date: row.date, guestName: row.guest_name, roomNumber: row.room_number || '', covers: Number(row.covers || 0), occasionType: occasionTypeLabel(row.occasion_type), category: occasionCategory(row.occasion_type), status: occasionStatusLabel(row.status) })) }
+    const occasions = { total: occasionRows.length, completed: occasionRows.filter(row => occasionCompleted(row.status)).length, pendingActive: occasionRows.filter(row => !occasionCompleted(row.status)).length, requiringAttention: occasionRows.filter(row => occasionStatuses.find(option => option.value === row.status)?.metadata?.countsAsOccasionAttention).length, byType: byCategory, byCategory, byStatus, byDate: occasionByDate, byWeek: occasionByWeek, records: classifiedOccasionRows.map(row => ({ id: row.id, bookingId: row.booking_id || null, date: row.date, guestName: row.guest_name, roomNumber: row.room_number || '', covers: Number(row.covers || 0), occasionType: row.reporting_only ? 'TLC' : occasionTypeLabel(row.occasion_type), category: row.reporting_only ? 'tlc' : occasionCategory(row.occasion_type), categoryKeys: row.categoryKeys, status: row.reporting_only ? 'Attention' : occasionStatusLabel(row.status) })) }
 
     const chargeMetadata = (value: string) => chargeableStatuses.find(option => option.value === value)?.metadata || {}
     const chargeRows = chargeableResult.rows.filter(row => chargeMetadata(row.status).countsAsRealizedRevenue)
@@ -133,6 +149,16 @@ export class ReportingRepository {
     const financialProofRecords = chargeRows.map(row => ({ id: row.id, date: row.date, guestName: row.guest_name, roomNumber: row.room_number || '', checkInvoiceNumber: row.check_invoice_number || '', item: row.item_label || row.item_value, quantity: Number(row.quantity), grossTotal: Number(row.total_amount), status: chargeableStatuses.find(option => option.value === row.status)?.label || row.status, waiter: row.waiter_name || 'Unassigned' }))
     const chargeables = { totalRevenue, realizedRevenue: totalRevenue, pendingValue, pendingItems: pendingRows.reduce((sum, row) => sum + Number(row.quantity), 0), itemsSold: chargeRows.reduce((sum, row) => sum + Number(row.quantity), 0), topSeller: topSeller?.waiter || '—', topSellerRevenue: topSeller?.revenue || 0, mostSoldItem: topItem?.item || '—', topItem: topItem ? { item: topItem.item, quantity: topItem.quantity, revenue: topItem.revenue } : null, topWaiter: topSeller ? { waiterId: topSeller.waiterId, waiter: topSeller.waiter, staffNumber: topSeller.staffNumber, employmentStatus: topSeller.employmentStatus, itemsSold: topSeller.itemsSold, revenue: topSeller.revenue, revenuePercent: topSeller.revenuePercent } : null, financialProofRecords, byItem, byWaiter, byDate: chargeByDate, byWeek: chargeByWeek }
 
+    const incentiveFinalized = incentiveResult.rows.find(row => row.status === 'finalized')
+    const incentiveProvisional = incentiveResult.rows.find(row => row.status === 'draft')
+    const billTipFinalized = billTipResult.rows.find(row => row.status === 'finalized')
+    const billTipProvisionalRows = billTipResult.rows.filter(row => row.status !== 'finalized')
+    const earnings = {
+      incentives: { finalizedAmount: round2(Number(incentiveFinalized?.amount || 0)), provisionalAmount: round2(Number(incentiveProvisional?.amount || 0)), finalizedRecords: Number(incentiveFinalized?.record_count || 0), provisionalRecords: Number(incentiveProvisional?.record_count || 0) },
+      billTips: { finalizedAmount: round2(Number(billTipFinalized?.amount || 0)), provisionalAmount: round2(billTipProvisionalRows.reduce((sum, row) => sum + Number(row.amount || 0), 0)), finalizedMonths: Number(billTipFinalized?.month_count || 0), provisionalMonths: billTipProvisionalRows.reduce((sum, row) => sum + Number(row.month_count || 0), 0) },
+      state: (incentiveProvisional || billTipProvisionalRows.length ? 'provisional' : incentiveFinalized || billTipFinalized ? 'finalized' : 'not_recorded') as 'finalized' | 'provisional' | 'not_recorded'
+    }
+
     const maintenanceStage = (value: string | undefined) => maintenanceStatuses.find(option => option.value === value)?.metadata?.maintenanceStage || 'open'
     const areaLabel = (value: string) => maintenanceAreas.find(option => option.value === value)?.label || value
     const maintenanceAllRows = maintenanceResult.rows
@@ -148,13 +174,16 @@ export class ReportingRepository {
     const maintenanceByDate = calendarDates(start, end).map(date => ({ date, issuesReported: maintenanceRows.filter(row => row.date === date).length, completed: completedRows.filter(row => completionDates.get(row.id) === date).length }))
     const maintenanceWeekStarts = [...new Set(calendarDates(start, end).map(mondayFor))].sort()
     const maintenanceByWeek = maintenanceWeekStarts.map(weekStart => { const weekEnd = addDays(weekStart, 6); const clippedStart = weekStart < start ? start : weekStart; const clippedEnd = weekEnd > end ? end : weekEnd; return { weekStart: clippedStart, weekEnd: clippedEnd, label: `${clippedStart} – ${clippedEnd}`, issuesReported: maintenanceRows.filter(row => mondayFor(row.date) === weekStart).length, completed: completedRows.filter(row => mondayFor(completionDates.get(row.id)!) === weekStart).length } })
-    const open = maintenanceRows.filter(row => maintenanceStage(row.status) === 'open').length
-    const inProgress = maintenanceRows.filter(row => maintenanceStage(row.status) === 'inProgress').length
+    // Report new activity for the selected period, while keeping every still-unresolved
+    // issue visible even when it was reported before that period began.
+    const unresolvedRows = maintenanceAllRows.filter(row => maintenanceStage(row.status) !== 'completed')
+    const open = unresolvedRows.filter(row => maintenanceStage(row.status) === 'open').length
+    const inProgress = unresolvedRows.filter(row => maintenanceStage(row.status) === 'inProgress').length
     const completedDuringPeriod = completedRows.length
-    const unresolvedRows = maintenanceRows.filter(row => maintenanceStage(row.status) !== 'completed')
-    const maintenance = { issuesReported: maintenanceRows.length, open, inProgress, completed: completedDuringPeriod, completedDuringPeriod, completedToday: start === end ? completedDuringPeriod : 0, unresolved: unresolvedRows.length, urgentUnresolved: unresolvedRows.filter(row => row.priority === 'urgent').length, normalUnresolved: unresolvedRows.filter(row => row.priority !== 'urgent').length, byArea: [...areaGroups].map(([key, count]) => ({ key, label: areaLabel(key), count })).sort((a, b) => b.count - a.count), byDate: maintenanceByDate, byWeek: maintenanceByWeek, records: maintenanceRows.map(row => ({ id: row.id, date: row.date, completionDate: completionDates.get(row.id) || null, issue: row.issue, area: areaLabel(row.area), status: maintenanceStatuses.find(option => option.value === row.status)?.label || row.status, priority: row.priority === 'urgent' ? 'Urgent' : 'Normal', referenceFollowUp: row.reference_follow_up || '' })) }
+    const recordRows = [...new Map([...unresolvedRows, ...maintenanceRows].map(row => [row.id, row])).values()]
+    const maintenance = { issuesReported: maintenanceRows.length, open, inProgress, completed: completedDuringPeriod, completedDuringPeriod, completedToday: start === end ? completedDuringPeriod : 0, unresolved: unresolvedRows.length, urgentUnresolved: unresolvedRows.filter(row => row.priority === 'urgent').length, normalUnresolved: unresolvedRows.filter(row => row.priority !== 'urgent').length, byArea: [...areaGroups].map(([key, count]) => ({ key, label: areaLabel(key), count })).sort((a, b) => b.count - a.count), byDate: maintenanceByDate, byWeek: maintenanceByWeek, records: recordRows.map(row => ({ id: row.id, date: row.date, completionDate: completionDates.get(row.id) || null, issue: row.issue, area: areaLabel(row.area), status: maintenanceStatuses.find(option => option.value === row.status)?.label || row.status, priority: row.priority === 'urgent' ? 'Urgent' : 'Normal', referenceFollowUp: row.reference_follow_up || '' })) }
     const executive = { totalBookings: bookings.totalBookings, expectedCovers: bookings.expectedCovers, arrivedCovers: bookings.arrivedCovers, noShows: bookings.noShows, guestOccasions: occasions.total, chargeableRevenue: chargeables.totalRevenue, attendanceExceptions: attendance.exceptions, openMaintenanceIssues: maintenance.open + maintenance.inProgress }
-    return { executive, bookings, attendance, training, occasions, chargeables, maintenance }
+    return { executive, bookings, attendance, training, occasions, chargeables, earnings, maintenance }
   }
 
   async report(type: ReportPeriodType, startDate: string, endDate: string): Promise<OperationalReport> {

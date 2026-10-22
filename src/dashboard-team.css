@@ -1,1 +1,744 @@
-.team-card{min-height:0}.team-groups{gap:14px}.team-duty-group{min-width:0}.team-name-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px;margin-top:7px}.team-name-grid span{min-width:0;overflow-wrap:anywhere;color:#315167;font-size:12px;line-height:1.35}.team-secondary-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding-top:12px;border-top:1px solid #edf1f3}.team-secondary-groups p{margin-top:4px;color:#315167;font-size:12px;line-height:1.45;overflow-wrap:anywhere}@media(min-width:1051px){.team-name-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:420px){.team-secondary-groups{gap:10px}}
+.dashboard-hero {
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  border: 1px solid rgba(222, 197, 143, 0.38);
+  box-shadow: 0 10px 26px rgba(23, 61, 86, 0.13);
+}
+
+.dashboard-page .dashboard-card {
+  border-color: #e3d2aa;
+  border-top: 3px solid #c4a15c;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #fffaf0 0%, #ffffff 58%);
+  box-shadow: 0 7px 20px rgba(23, 61, 86, 0.07);
+}
+
+.dashboard-page .dashboard-card .panel-title {
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(222, 197, 143, 0.55);
+}
+
+.dashboard-page .dashboard-card .panel-title h3 {
+  color: #173d56;
+}
+
+.dashboard-page .dashboard-card .panel-title .eyebrow {
+  color: #8c6a28;
+}
+
+.dashboard-hero-copy,
+.dashboard-manager {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-hero-copy {
+  min-width: 0;
+}
+
+.dashboard-hero h2 {
+  margin: 3px 0 0;
+  font-size: 25px;
+}
+
+.dashboard-manager {
+  display: grid;
+  min-width: 0;
+  justify-items: end;
+  gap: 3px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.dashboard-manager strong {
+  color: #ffffff;
+  font: 700 22px/1.15 "Playfair Display", serif;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-manager span {
+  color: #d9bd82;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.dashboard-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.dashboard-metric-grid > div {
+  display: grid;
+  min-width: 0;
+  min-height: 78px;
+  align-content: center;
+  padding: 12px 13px;
+  border: 1px solid #dec58f;
+  border-top: 3px solid #c4a15c;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.dashboard-metric-grid span {
+  color: #718492;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.dashboard-metric-grid strong {
+  margin-top: 6px;
+  color: #173d56;
+  font: 700 24px/1 "Playfair Display", serif;
+}
+
+.metric-dashboard-card .panel-title {
+  margin-bottom: 10px;
+}
+
+.team-card {
+  min-height: 0;
+}
+
+.team-metrics {
+  margin-top: 2px;
+}
+
+.team-metrics > div {
+  min-height: 62px;
+  padding: 8px 10px;
+}
+
+.team-groups {
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.team-duty-group {
+  min-width: 0;
+}
+
+.team-duty-group > b,
+.team-secondary-groups b {
+  color: #6b7f8e;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.team-name-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.team-staff-pill {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border: 1px solid #dec58f;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #173d56;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.team-name-grid .team-status-empty {
+  min-width: 0;
+  color: #70838f;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.team-secondary-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(222, 197, 143, 0.55);
+}
+
+.team-secondary-panel {
+  min-width: 0;
+  padding: 4px 7px;
+  border: 1px solid #dec58f;
+  border-radius: 9px;
+  background: rgba(255, 250, 240, 0.72);
+}
+
+.team-secondary-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.team-secondary-panel header > span {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9eff2;
+  color: #315167;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.team-secondary-panel header > b {
+  color: #24465d;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+.team-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.team-status-list .team-staff-pill--status {
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+  padding-right: 5px;
+}
+
+.team-status-list strong {
+  min-width: 0;
+  font-weight: 675;
+  overflow-wrap: anywhere;
+}
+
+.team-status-list em {
+  flex: 0 0 auto;
+  min-width: 32px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(196, 161, 92, 0.5);
+  background: #ffffff;
+  color: #173d56;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: center;
+}
+
+.team-status-list .team-status-empty {
+  justify-content: flex-start;
+  color: #70838f;
+}
+
+.team-unassigned {
+  margin-top: 0;
+}
+
+.training-dashboard-card {
+  height: auto;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+
+.training-dashboard-card .panel-title {
+  margin-bottom: 4px;
+}
+
+.training-dashboard-card .dashboard-training-date {
+  margin: 0 0 4px;
+}
+
+.training-dashboard-card .dashboard-training-details {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 6px;
+}
+
+.training-dashboard-card .dashboard-training-details > div {
+  display: grid;
+  min-height: 44px;
+  align-content: center;
+  padding: 6px 8px;
+  border: 1px solid rgba(222, 197, 143, 0.68);
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.training-dashboard-card .dashboard-training-details dt {
+  margin-bottom: 2px;
+  font-size: 8px;
+}
+
+.training-dashboard-card .dashboard-training-details dd {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.dashboard-page .dashboard-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.dashboard-page .dashboard-badges span {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  min-height: 26px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  border: 1px solid #dec58f;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #173d56;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-page .dashboard-badges b {
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  border: 1px solid rgba(196, 161, 92, 0.52);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #173d56;
+  font-size: 10px;
+}
+
+.dashboard-page .dashboard-badges .dashboard-occasion-pill {
+  box-shadow: 0 2px 6px rgba(23, 61, 86, 0.08);
+}
+
+.dashboard-page .dashboard-badges .dashboard-occasion-pill b {
+  border-color: rgba(255, 255, 255, 0.68);
+  background: #ffffff;
+  color: #173d56;
+}
+
+.maintenance-followup-list {
+  display: grid;
+  gap: 3px;
+}
+
+.maintenance-followup-list button {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 9px 5px 11px;
+  border: 1px solid #dec58f;
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #173d56;
+  cursor: pointer;
+  text-align: left;
+}
+
+.maintenance-followup-list button:hover,
+.maintenance-followup-list button:focus-visible {
+  border-color: #b99348;
+  background: #fff7e5;
+}
+
+.maintenance-followup-list button.urgent {
+  border-color: #dcb9b5;
+  border-left-color: #b45f57;
+  background: #fff8f7;
+}
+
+.maintenance-followup-list button > span {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.maintenance-followup-list b {
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.maintenance-followup-list em {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #edf2f4;
+  color: #526a79;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.maintenance-followup-list .urgent em {
+  background: #f7e5e3;
+  color: #94463f;
+}
+
+.tonight-card .panel-title {
+  margin-bottom: 10px;
+}
+
+.hostess-state-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: stretch;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.hostess-state-summary > div.arrived {
+  border-color: #afd0bd;
+  border-top-color: #4d9474;
+  background: #f1f8f4;
+}
+
+.hostess-state-summary > div.noshow {
+  border-color: #dfbeb9;
+  border-top-color: #b45f57;
+  background: #fbf4f3;
+}
+
+.hostess-state-summary span,
+.hostess-state-summary span.arrived,
+.hostess-state-summary span.noshow {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #718492;
+}
+
+.hostess-state-summary > div.arrived strong {
+  color: #347257;
+}
+
+.hostess-state-summary > div.noshow strong {
+  color: #9b4b44;
+}
+
+.tonight-card .next-arrivals .eyebrow {
+  margin-bottom: 3px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.tonight-card .next-arrivals strong {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.tonight-card .next-arrival-groups span {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-color: #dec58f;
+  border-radius: 7px;
+  background: #fffdf8;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.tonight-card .next-arrival-groups {
+  align-items: center;
+  gap: 8px;
+}
+
+.tonight-table th {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.dashboard-page .tonight-table th:first-child,
+.dashboard-page .tonight-table td:first-child {
+  width: 15%;
+  min-width: 124px;
+  max-width: 160px;
+}
+
+.dashboard-page .tonight-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.dashboard-page .tonight-table .tonight-time-column {
+  width: 15%;
+}
+
+.dashboard-page .tonight-table thead th {
+  border-bottom: 2px solid #d2ad5c;
+  background: #fffaf0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tonight-table th + th,
+.tonight-table td + td {
+  border-left: 1px solid #eadfca;
+}
+
+.tonight-table tbody tr + tr td {
+  border-top: 1px solid #eadfca;
+}
+
+.tonight-table th:not(:first-child),
+.tonight-table td:not(:first-child) {
+  text-align: center;
+}
+
+.tonight-table td {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #173d56;
+}
+
+.tonight-count-badge {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #c8a45b;
+  border-radius: 50%;
+  background: #fff7e6;
+  color: #173d56;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(23, 61, 86, 0.08);
+}
+
+.tonight-table td:first-child {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tonight-table tbody tr:nth-child(odd) td {
+  background: #ffffff;
+}
+
+.tonight-table tbody tr:nth-child(even) td {
+  background: #f4f8fa;
+}
+
+.tonight-table tbody tr.current-service-slot td {
+  background: #fff8e7;
+  box-shadow: inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b;
+}
+
+.tonight-table tbody tr.current-service-slot td:first-child {
+  box-shadow: inset 3px 0 #b38b3a, inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b;
+  color: #715822;
+  font-weight: 700;
+}
+
+.tonight-scroll-shell {
+  position: relative;
+  min-width: 0;
+}
+
+.tonight-scroll {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #e4d5b4;
+  background: #fff;
+}
+
+.tonight-card .next-arrivals {
+  border-color: #e2d0aa;
+  border-left-color: #b99043;
+  background: #fffaf0;
+}
+
+@media (max-width: 768px) {
+  .tonight-scroll {
+    padding-bottom: 7px;
+    scrollbar-width: thin;
+    scrollbar-color: #bd9854 #e9f0f3;
+  }
+
+  .tonight-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .tonight-scroll::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: #e9f0f3;
+  }
+
+  .tonight-scroll::-webkit-scrollbar-thumb {
+    border: 2px solid #e9f0f3;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #bd9854, #173d56);
+  }
+
+  .tonight-table th:first-child,
+  .tonight-table td:first-child {
+    border-right: 1px solid #dcc488;
+    box-shadow: 8px 0 13px -10px rgba(23, 61, 86, 0.78);
+  }
+
+  .tonight-table tbody tr.current-service-slot td:first-child {
+    box-shadow: inset 3px 0 #b38b3a, inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b, 8px 0 13px -10px rgba(23, 61, 86, 0.78);
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-hero {
+    display: flex;
+    min-height: 100px;
+    gap: 12px;
+    padding: 17px 18px;
+  }
+
+  .dashboard-hero h2 {
+    font-size: 22px;
+  }
+
+  .dashboard-manager {
+    max-width: 48%;
+  }
+
+  .dashboard-manager strong {
+    font-size: 17px;
+  }
+
+  .dashboard-manager span {
+    font-size: 8px;
+  }
+
+  .dashboard-metric-grid {
+    gap: 6px;
+  }
+
+  .dashboard-metric-grid > div {
+    min-height: 70px;
+    padding: 9px 7px;
+  }
+
+  .dashboard-metric-grid span {
+    font-size: 12px;
+    line-height: 1.25;
+    letter-spacing: normal;
+  }
+
+  .dashboard-metric-grid strong {
+    margin-top: 5px;
+    font-size: 28px;
+  }
+
+  .team-secondary-panel header > b {
+    font-size: 12px;
+  }
+
+  .team-status-list p {
+    font-size: 11.5px;
+  }
+
+  .team-staff-pill {
+    min-height: 28px;
+    padding: 4px 8px;
+  }
+
+  .dashboard-page .dashboard-badges span {
+    min-height: 32px;
+  }
+
+  .maintenance-followup-list button {
+    min-height: 44px;
+  }
+
+  .dashboard-page .tonight-table th:first-child,
+  .dashboard-page .tonight-table td:first-child {
+    width: 112px;
+    min-width: 112px;
+    max-width: 112px;
+  }
+
+  .dashboard-page .tonight-table .tonight-time-column {
+    width: 112px;
+  }
+
+  .tonight-card .next-arrivals .eyebrow,
+  .tonight-table th {
+    font-size: 12px;
+  }
+
+  .tonight-card .next-arrivals strong,
+  .tonight-card .next-arrival-groups span,
+  .tonight-table td,
+  .tonight-table td:first-child {
+    font-size: 13px;
+  }
+
+  .tonight-card .next-arrival-groups {
+    gap: 6px;
+  }
+
+  .tonight-card .next-arrival-groups span {
+    min-height: 30px;
+    padding: 5px 8px;
+  }
+
+  .tonight-count-badge {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .team-secondary-groups {
+    gap: 7px;
+  }
+
+  .team-secondary-panel {
+    padding: 9px;
+  }
+
+  .team-status-list .team-staff-pill--status {
+    align-items: center;
+    flex-direction: row;
+    gap: 6px;
+  }
+}

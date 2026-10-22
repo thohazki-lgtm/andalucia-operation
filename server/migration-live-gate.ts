@@ -78,7 +78,14 @@ export const prepareLiveMigration = async (options: {
   let folder: string; let backupDirectory: string; let sourceManifestAtBackup: StoreManifest; let backupManifest: StoreManifest; let verifiedBackupMetadataPath: string | undefined
   if (isLiveStorePath(sourceDirectory, liveStore)) {
     await readStoreIdentity(sourceDirectory, 'canonical')
-    const verified = await createVerifiedBackup({ sourceDirectory, category: 'pre-migration', backupRoot, exclusiveConfirmed: true, now: options.now })
+    const verified = await createVerifiedBackup({
+      sourceDirectory,
+      category: 'pre-migration',
+      backupRoot,
+      exclusiveConfirmed: true,
+      now: options.now,
+      requiredVersion: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION
+    })
     folder = verified.folder; backupDirectory = verified.backupDirectory; sourceManifestAtBackup = verified.metadata.sourceManifest; backupManifest = verified.metadata.backupManifest
     verifiedBackupMetadataPath = join(folder, 'backup-metadata.json')
   } else {

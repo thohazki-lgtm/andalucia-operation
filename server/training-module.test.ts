@@ -64,6 +64,10 @@ const positionedPdf = (items: Array<{ text: string; x: number; y: number }>) => 
   let body = '%PDF-1.4\n'; const positions: number[] = []; for (const object of objects) { positions.push(Buffer.byteLength(body)); body += object }
   const crossReference = Buffer.byteLength(body); body += `xref\n0 6\n0000000000 65535 f \n${positions.map(offset => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${crossReference}\n%%EOF\n`; return Buffer.from(body)
 }
+const parsedSpacedDatePdf = await parseTrainingCalendar(new Uint8Array(positionedPdf([
+  { text: '14 September 2026', x: 40, y: 720 }, { text: 'Topic: Guest Experience', x: 40, y: 700 }, { text: 'Time: 17:30-18:00', x: 40, y: 688 }, { text: 'Trainer: Thoha / Rahul', x: 40, y: 676 }, { text: 'Location: Andalucia', x: 40, y: 664 }
+])), 'HR Training Calendar.pdf')
+assert.equal(parsedSpacedDatePdf.records.length, 1); assert.equal(parsedSpacedDatePdf.records[0].date, '2026-09-14'); assert.equal(parsedSpacedDatePdf.records[0].readiness, 'READY')
 const columns = [['Monday', 40], ['Tuesday', 120], ['Wednesday', 200], ['Thursday', 280], ['Friday', 360], ['Saturday', 440], ['Sunday', 520]] as const
 const calendarItems = [{ text: 'SEPTEMBER', x: 260, y: 780 }, { text: '2026', x: 285, y: 765 }, ...columns.map(([text, x]) => ({ text, x, y: 740 })),
   ...[[1, 120], [2, 200], [3, 280], [4, 360], [5, 440], [6, 520]].map(([day, x]) => ({ text: String(day), x, y: 720 })),

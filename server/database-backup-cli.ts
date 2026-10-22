@@ -13,7 +13,7 @@ const confirmed = process.env.ANDALUCIA_CONFIRM_LIVE_STORE_EXCLUSIVE === BACKUP_
 const backupRoot = resolve('.backups')
 const lock = await acquireDatabaseSchedulerLock({ backupRoot, canonicalDirectory: configured, job: 'manual-backup' })
 try {
-  const result = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot, exclusiveConfirmed: confirmed })
+  const result = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot, exclusiveConfirmed: confirmed, requiredVersion: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION })
   console.log(JSON.stringify({ backupId: result.metadata.backupId, backupDirectory: result.backupDirectory, manifest: result.metadata.backupManifest.aggregateSha256, verificationStatus: result.metadata.verificationStatus, openTestStatus: result.metadata.openTestStatus, preflightStatus: result.metadata.preflightStatus }, null, 2))
   await lock.release('SUCCEEDED', { category, backupId: result.metadata.backupId, verificationResult: 'VERIFIED' })
 } catch (error) {

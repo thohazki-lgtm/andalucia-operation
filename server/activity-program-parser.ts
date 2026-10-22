@@ -2,11 +2,11 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { BookingGuestMemberPreview, BookingImportPreviewRecord } from '../src/domain.js'
 import { resolveBookingCoverRecords } from './booking-cover-resolver.js'
 
-export const ACTIVITY_PROGRAM_PARSER_VERSION = 'andalucia-activity-program-v2'
+export const ACTIVITY_PROGRAM_PARSER_VERSION = 'andalucia-activity-program-v3'
 
 type PositionedText = { text: string; x: number; y: number; width: number }
 type TextLine = { page: number; y: number; items: PositionedText[]; text: string }
-type Section = { time: string; label: string; bookings: number; covers: number; walkIn: boolean }
+type Section = { time: string; endTime: string | null; kind: 'dinner' | 'celebration'; label: string; bookings: number | null; covers: number | null; walkIn: boolean }
 export type ParsedActivityProgram = { reportDate: string; bookings: BookingImportPreviewRecord[]; validation: { declaredBookingGroups: number; declaredCovers: number; reconciled: boolean; messages: string[] } }
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim()
@@ -62,17 +62,20 @@ export async function parseActivityProgramPdf(data: Uint8Array): Promise<ParsedA
 
   for (const line of lines) {
     const normalized = line.text.toLowerCase()
-    const activityTime = line.text.match(/^(\d{2}:\d{2})\b/)?.[1]
-    const activityTotals = line.text.match(/(\d+)\s+Bookings\s+(\d+)\s+Guests\s*$/i)
-    const isAndaluciaActivity = Boolean(activityTime && activityTotals && /\/\s*Andalucia\b/i.test(line.text))
-    if (isAndaluciaActivity && activityTime && activityTotals) {
+    const activityWindow = line.text.match(/^(\d{2}:\d{2})(?:\s*[-–—]\s*(\d{2}:\d{2}))?\b/)
+    const activityTime = activityWindow?.[1]
+    const activityEndTime = activityWindow?.[2] || null
+    const activityTotals = line.text.match(/(\d+)\s+Bookings?\s+(\d+)\s+Guests?\s*$/i)
+    const celebration = /\bCelebration\s*@\s*Andalucia\b/i.test(line.text)
+    const isAndaluciaActivity = Boolean(activityTime && ((activityTotals && /\/\s*Andalucia\b/i.test(line.text)) || celebration))
+    if (isAndaluciaActivity && activityTime) {
       finish()
-      const label = clean(line.text.replace(/^\d{2}:\d{2}\s*/, '').replace(/\s+\d+\s+Bookings\s+\d+\s+Guests\s*$/i, ''))
-      section = { time: activityTime, label, bookings: Number(activityTotals[1]), covers: Number(activityTotals[2]), walkIn: /walk\s*in|hostess/i.test(label) }
+      const label = clean(line.text.replace(/^\d{2}:\d{2}(?:\s*[-–—]\s*\d{2}:\d{2})?\s*/, '').replace(/\s+\d+\s+Bookings?\s+\d+\s+Guests?\s*$/i, ''))
+      section = { time: activityTime, endTime: celebration ? activityEndTime : null, kind: celebration ? 'celebration' : 'dinner', label, bookings: activityTotals ? Number(activityTotals[1]) : null, covers: activityTotals ? Number(activityTotals[2]) : null, walkIn: /walk\s*in|hostess/i.test(label) }
       sections.push(section)
       continue
     }
-    if (/^\d{2}:\d{2}\s+.+\/\s*(?!Andalucia\b)/i.test(line.text) || (/Dinner at /i.test(line.text) && !/\/\s*Andalucia\b/i.test(line.text))) { finish(); section = null; continue }
+    if (/^\d{2}:\d{2}(?:\s*[-–—]\s*\d{2}:\d{2})?\s+.+\/\s*(?!Andalucia\b)/i.test(line.text) || (/Dinner at /i.test(line.text) && !/\/\s*Andalucia\b/i.test(line.text))) { finish(); section = null; continue }
     if (!section || /^(Room|Name|Birth Date|Arrival|Departure|MP|Guest Notes|Booking no\.|Status|Booked By)\b/i.test(line.text) || /Activity Program\s*-/i.test(line.text) || /Page \d+ (?:of|from) \d+/i.test(line.text)) continue
 
     const roomCell = inColumn(line, 35, 117)
@@ -91,7 +94,7 @@ export async function parseActivityProgramPdf(data: Uint8Array): Promise<ParsedA
 
     if (isStart) {
       finish()
-      current = { venue: 'andalucia', reservationDate: reportDate, reservationTime: section.time, bookingNumber, primaryGuest: '', rooms: [], covers: status?.covers || null, sourceStatus: status?.status || '', bookedBy: bookedByCell.replace(/^(Confirmed|Pending|Cancelled)\s*\(\d+\s*pax\)\s*/i, ''), sourceNotes: '', activityLabel: section.label, walkIn: section.walkIn, guestMembers: [], warnings: status ? [] : ['Booking status or explicit pax could not be read.'], readiness: 'READY' }
+      current = { venue: 'andalucia', reservationDate: reportDate, reservationTime: section.time, serviceEndTime: section.endTime, serviceKind: section.kind, bookingNumber, primaryGuest: '', rooms: [], covers: status?.covers || null, sourceStatus: status?.status || '', bookedBy: bookedByCell.replace(/^(Confirmed|Pending|Cancelled)\s*\(\d+\s*pax\)\s*/i, ''), sourceNotes: '', activityLabel: section.label, walkIn: section.walkIn, guestMembers: [], warnings: status ? [] : ['Booking status or explicit pax could not be read.'], readiness: 'READY' }
     }
     if (!current) continue
 
@@ -111,8 +114,9 @@ export async function parseActivityProgramPdf(data: Uint8Array): Promise<ParsedA
 
   const resolvedBookings = resolveBookingCoverRecords(bookings)
 
-  const declaredBookingGroups = sections.reduce((total, value) => total + value.bookings, 0)
-  const declaredCovers = sections.reduce((total, value) => total + value.covers, 0)
+  const sectionBookings = (value: Section) => resolvedBookings.filter(booking => (booking.serviceKind || 'dinner') === value.kind && booking.reservationTime === value.time && (booking.serviceEndTime || null) === value.endTime)
+  const declaredBookingGroups = sections.reduce((total, value) => total + (value.bookings ?? sectionBookings(value).length), 0)
+  const declaredCovers = sections.reduce((total, value) => total + (value.covers ?? sectionBookings(value).reduce((sum, booking) => sum + (booking.covers || 0), 0)), 0)
   const parsedCovers = resolvedBookings.reduce((total, value) => total + (value.covers || 0), 0)
   const messages: string[] = []
   if (!reportDate) messages.push('Activity Program date could not be read.')

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { link, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { GoogleDesktopOAuthCoordinator, GoogleDriveRestTransport, WindowsCredentialLockerStore, validateDestinationConfiguration, type CredentialLockerBridge } from './google-drive-cloud-client.js'
+import { GoogleDesktopOAuthCoordinator, GoogleDriveRestTransport, WindowsCredentialLockerStore, WindowsOAuthClientSecretStore, WindowsWebPickerConfigurationStore, safeCloudError, validateDestinationConfiguration, type CredentialLockerBridge } from './google-drive-cloud-client.js'
 import { GOOGLE_DRIVE_FILE_SCOPE, OFFDEVICE_EXPORT_FORMAT, SecureCloudUploadCoordinator, assertLeastPrivilegeScopes, sanitizeCloudValue, validateEncryptedRecoveryPair, type ApprovedDriveDestination, type CloudCredential, type CloudCredentialStore, type DriveFolder, type DriveIdentity, type DriveTransport, type FinalizePairRequest, type RemoteRecoveryObject, type RemoteUploadRequest, type UploadSession } from './secure-cloud-upload.js'
 
 const sha256 = (value: Uint8Array) => createHash('sha256').update(value).digest('hex')
@@ -49,7 +49,7 @@ await expectFailure(validateEncryptedRecoveryPair({ approvedRoot: valid.root, ar
 await expectFailure(validateEncryptedRecoveryPair({ approvedRoot: join(valid.root, 'nested'), artifactPath: valid.artifactPath, sidecarPath: valid.sidecarPath }), /PATH_OUTSIDE_APPROVED_ROOT/)
 const linked = await fixture('hardlink'); const outside = join(root, 'outside.age'); await writeFile(outside, 'outside'); await rm(linked.artifactPath); await link(outside, linked.artifactPath); await expectFailure(validateEncryptedRecoveryPair({ approvedRoot: linked.root, artifactPath: linked.artifactPath, sidecarPath: linked.sidecarPath }), /NOT_UNIQUE_REGULAR_FILE/)
 
-const ACCESS = 'CANARY_ACCESS_TOKEN_41F8'; const REFRESH = 'CANARY_REFRESH_TOKEN_B102'; const CODE = 'CANARY_AUTH_CODE_7AA1'; const VERIFIER = 'CANARY_PKCE_VERIFIER_2D91'; const RECOVERY = 'CANARY_RECOVERY_SECRET_7F0C'; const PASSPHRASE = 'CANARY_PASSPHRASE_71D0'
+const ACCESS = 'CANARY_ACCESS_TOKEN_41F8'; const REFRESH = 'CANARY_REFRESH_TOKEN_B102'; const CODE = 'CANARY_AUTH_CODE_7AA1'; const VERIFIER = 'CANARY_PKCE_VERIFIER_2D91'; const CLIENT_SECRET = 'CANARY_CLIENT_SECRET_8C22'; const RECOVERY = 'CANARY_RECOVERY_SECRET_7F0C'; const PASSPHRASE = 'CANARY_PASSPHRASE_71D0'
 class MemoryStore implements CloudCredentialStore {
   value: CloudCredential | null
   constructor(value: CloudCredential | null = { accessToken: ACCESS, refreshToken: REFRESH, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] }) { this.value = value }
@@ -59,22 +59,46 @@ class MemoryStore implements CloudCredentialStore {
 }
 
 const oauthStore = new MemoryStore(null)
-const oauth = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'synthetic-client-id.apps.googleusercontent.com', redirectUri: 'http://127.0.0.1:48192/callback' }, credentials: oauthStore, randomState: () => 'deterministic-state', http: async (_url, init) => {
-  const body = String(init?.body); assert.match(body, new RegExp(`code=${CODE}`)); assert.match(body, /code_verifier=/)
+const oauth = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'synthetic-client-id.apps.googleusercontent.com', clientSecret: CLIENT_SECRET, redirectUri: 'http://127.0.0.1:48192/callback' }, credentials: oauthStore, randomState: () => 'deterministic-state', http: async (_url, init) => {
+  const body = String(init?.body); const params = new URLSearchParams(body); assert.equal(params.get('code'), CODE); assert.equal(params.get('client_secret'), CLIENT_SECRET); assert.match(body, /code_verifier=/)
   return new Response(JSON.stringify({ access_token: ACCESS, refresh_token: REFRESH, expires_in: 3600, scope: GOOGLE_DRIVE_FILE_SCOPE }), { status: 200, headers: { 'Content-Type': 'application/json' } })
 } })
 const pending = oauth.begin('andalucia-cloud:test'); assert.match(pending.authorizationUrl, /code_challenge=/); assert.match(pending.authorizationUrl, /code_challenge_method=S256/); assert.match(pending.authorizationUrl, /drive.file/)
 await expectFailure(oauth.complete({ ...pending, verifier: VERIFIER }, { state: 'wrong-state', code: CODE }), /STATE_MISMATCH/)
 const completed = await oauth.complete({ ...pending, verifier: VERIFIER }, { state: pending.state, code: CODE }); assert.deepEqual(completed.grantedScopes, [GOOGLE_DRIVE_FILE_SCOPE]); assert.equal(oauthStore.value?.accessToken, ACCESS)
-const pkceRejected = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'id', redirectUri: 'http://localhost:9000/callback' }, credentials: new MemoryStore(null), http: async () => new Response('{}', { status: 400 }) })
+const pkceRejected = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'id', clientSecret: CLIENT_SECRET, redirectUri: 'http://localhost:9000/callback' }, credentials: new MemoryStore(null), http: async () => new Response('{}', { status: 400 }) })
 const rejectedPending = pkceRejected.begin('andalucia-cloud:test')
 await expectFailure(pkceRejected.complete({ ...rejectedPending, verifier: 'invalid' }, { state: rejectedPending.state, code: CODE }), /TOKEN_EXCHANGE_FAILED/)
 assert.doesNotThrow(() => assertLeastPrivilegeScopes([GOOGLE_DRIVE_FILE_SCOPE])); assert.throws(() => assertLeastPrivilegeScopes(['https://www.googleapis.com/auth/drive']), /SCOPE_REJECTED/); assert.throws(() => assertLeastPrivilegeScopes([GOOGLE_DRIVE_FILE_SCOPE, 'openid']), /SCOPE_REJECTED/)
 
 const bridgeCalls: unknown[] = []
-const bridge: CredentialLockerBridge = { async request(input) { bridgeCalls.push({ operation: input.operation, reference: input.reference }); return input.operation === 'load' ? { credential: { accessToken: ACCESS, refreshToken: REFRESH, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] } } : {} } }
+const bridge: CredentialLockerBridge = { async request(input) { bridgeCalls.push({ operation: input.operation, reference: input.reference }); return input.operation === 'load' ? { credential: { accessToken: ACCESS, refreshToken: REFRESH, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] } } : input.operation === 'load-client-secret' || input.operation === 'load-web-picker-oauth' ? { clientSecretCredential: { clientId: 'client-id', clientSecret: CLIENT_SECRET } } : input.operation === 'load-web-picker-api-key' ? { webPickerApiKey: `AIza${'C'.repeat(35)}` } : {} } }
 const locker = new WindowsCredentialLockerStore(bridge); assert.equal((await locker.load('andalucia-cloud:test'))?.accessToken, ACCESS); await locker.save('andalucia-cloud:test', { accessToken: ACCESS, refreshToken: REFRESH, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] }); await locker.remove('andalucia-cloud:test')
+const clientSecretStore = new WindowsOAuthClientSecretStore(bridge); assert.equal((await clientSecretStore.load('andalucia-oauth-client-secret:test'))?.clientId, 'client-id')
+const webPickerConfiguration = await new WindowsWebPickerConfigurationStore(bridge).load('andalucia-web-picker-oauth:web-production', 'andalucia-web-picker-api-key:web-production'); assert.equal(webPickerConfiguration.clientId, 'client-id')
 assert.equal(JSON.stringify(bridgeCalls).includes(ACCESS), false); assert.equal(JSON.stringify(bridgeCalls).includes(REFRESH), false)
+const sanitizedFailure = JSON.stringify(safeCloudError(new Error(`${CLIENT_SECRET} ${CODE} ${ACCESS} ${REFRESH} ${VERIFIER}`)))
+for (const canary of [CLIENT_SECRET, CODE, ACCESS, REFRESH, VERIFIER]) assert.equal(sanitizedFailure.includes(canary), false)
+const disabledDrive = new GoogleDriveRestTransport(async () => new Response(JSON.stringify({ error: {
+  code: 403,
+  status: 'PERMISSION_DENIED',
+  message: `Google Drive API disabled; unsafe canaries: ${ACCESS} ${CLIENT_SECRET}`,
+  errors: [{ reason: 'accessNotConfigured' }],
+  details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED' }]
+} }), { status: 403, headers: { 'Content-Type': 'application/json' } }))
+let disabledDriveDiagnostic = ''
+try { await disabledDrive.identity({ accessToken: ACCESS, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] }) } catch (error) { disabledDriveDiagnostic = JSON.stringify(safeCloudError(error)) }
+assert.deepEqual(JSON.parse(disabledDriveDiagnostic), { error: 'DRIVE_IDENTITY_LOOKUP_FAILED', httpStatus: 403, googleStatus: 'PERMISSION_DENIED', googleReason: 'SERVICE_DISABLED', sanitizedMessage: 'Google Drive API is disabled or has not been used in this project.' })
+for (const canary of [CLIENT_SECRET, CODE, ACCESS, REFRESH, VERIFIER]) assert.equal(disabledDriveDiagnostic.includes(canary), false)
+
+let folderLookupUrl = ''
+const folderTransport = new GoogleDriveRestTransport(async input => {
+  folderLookupUrl = input
+  return new Response(JSON.stringify({ id: 'folder-selected', name: 'Encrypted_Database_Backups', mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [{ permissionId: 'permission-1', emailAddress: 'manager@example.invalid' }], capabilities: { canAddChildren: true } }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+})
+const lookedUpFolder = await folderTransport.folder({ accessToken: ACCESS, grantedScopes: [GOOGLE_DRIVE_FILE_SCOPE] }, 'folder-selected')
+assert.equal(lookedUpFolder.name, 'Encrypted_Database_Backups')
+assert.match(decodeURIComponent(folderLookupUrl), /fields=id,name,mimeType/)
 
 const destination: ApprovedDriveDestination = validateDestinationConfiguration({ version: 1, credentialReference: 'andalucia-cloud:test', label: 'Approved disaster recovery', folderId: 'folder-1', account: { permissionId: 'permission-1', emailAddress: 'manager@example.invalid' }, relationship: 'MY_DRIVE' })
 
@@ -82,7 +106,7 @@ class FakeDrive implements DriveTransport {
   objects = new Map<string, RemoteRecoveryObject>(); sessions = new Map<string, RemoteUploadRequest>(); sequence = 0; uploadAttempts = 0
   wrongIdentity = false; wrongFolder = false; inaccessible = false; failRole = ''; transientFailures = 0; checksumMismatchRole = ''; sizeMismatchRole = ''; finalizeFailure = false; cleanupFailure = false
   async identity(): Promise<DriveIdentity> { return this.wrongIdentity ? { permissionId: 'wrong', emailAddress: 'wrong@example.invalid' } : destination.account }
-  async folder(): Promise<DriveFolder> { return { id: this.wrongFolder ? 'wrong-folder' : destination.folderId, mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [destination.account], canAddChildren: !this.inaccessible } }
+  async folder(): Promise<DriveFolder> { return { id: this.wrongFolder ? 'wrong-folder' : destination.folderId, name: 'Encrypted_Database_Backups', mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [destination.account], canAddChildren: !this.inaccessible } }
   async candidates(_credential: CloudCredential, _folderId: string, names: string[], backupId: string) { return [...this.objects.values()].filter(item => names.includes(item.name) && item.appProperties.backupId === backupId) }
   async createSession(_credential: CloudCredential, request: RemoteUploadRequest): Promise<UploadSession> { const id = `remote-${++this.sequence}`; this.sessions.set(id, request); return { url: `fake://${id}`, remoteId: id } }
   async upload(_credential: CloudCredential, session: UploadSession, bytes: Uint8Array) {

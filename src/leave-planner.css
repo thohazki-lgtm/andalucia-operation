@@ -1,4 +1,224 @@
-.leave-planner-shell{min-width:0}.leave-planner-tabs{display:flex;gap:6px;width:max-content;max-width:100%;margin:0 0 12px;padding:4px;border:1px solid #dce5e8;border-radius:9px;background:#f4f7f8}.leave-planner-tabs button{min-height:38px;padding:0 18px;border:0;border-radius:6px;background:transparent;color:#5d7482;font:700 11px inherit;cursor:pointer}.leave-planner-tabs button.selected{background:#173d56;color:#fff;box-shadow:0 3px 9px #173d5622}.leave-planner-panel{min-width:0;padding:20px;overflow:hidden}.leave-planner-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.leave-planner-header h2{margin:2px 0 4px;color:#173d56;font:700 22px 'Playfair Display',serif}.leave-planner-header p:last-child{margin:0;color:#718492;font-size:11px}.leave-confirmed-chip{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border:1px solid #b9d4c7;border-radius:99px;background:#eff8f3;color:#3d745a;font-size:9px;font-weight:750;text-transform:uppercase;white-space:nowrap}.leave-month-navigation{display:grid;grid-template-columns:auto minmax(150px,1fr) auto auto;align-items:center;gap:9px;margin:18px 0 12px}.leave-month-navigation strong{text-align:center;color:#173d56;font:700 18px 'Playfair Display',serif;text-transform:uppercase}.leave-planner-filters{display:grid;grid-template-columns:110px 150px minmax(190px,1fr) minmax(170px,1fr);gap:9px;margin-bottom:16px}.leave-planner-filters label{display:grid;gap:4px;color:#657984;font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}.leave-planner-filters select{width:100%;min-width:0;min-height:38px;padding:0 9px;border:1px solid #d7e1e5;border-radius:6px;background:#fff;color:#294b61;font:11px inherit}.leave-review-warning{padding:10px 12px;border:1px solid #e5c990;border-radius:7px;background:#fff8e8;color:#735b2d;font-size:11px}.leave-planner-grid-wrap{max-width:100%;overflow-x:auto;border:1px solid #dfe7ea;border-radius:9px}.leave-planner-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;background:#fff}.leave-planner-grid th,.leave-planner-grid td{box-sizing:border-box;height:42px;padding:5px;border-right:1px solid #e8edef;border-bottom:1px solid #e8edef;text-align:center;font-size:10px}.leave-planner-grid thead th{position:sticky;top:0;z-index:3;min-width:42px;background:#f7fafb;color:#526c7b;font-size:9px}.leave-planner-grid thead th span,.leave-planner-grid thead th small{display:block}.leave-planner-grid thead th small{margin-top:2px;color:#82929c;font-size:8px}.leave-planner-grid .identity{position:sticky;z-index:2;background:#fff;text-align:left}.leave-planner-grid thead .identity{z-index:5;background:#f7fafb}.leave-planner-grid .staff{left:0;width:152px;min-width:152px}.leave-planner-grid .employee{left:152px;width:88px;min-width:88px}.leave-planner-grid .designation{left:240px;width:148px;min-width:148px}.leave-planner-grid td.designation{color:#5d7482}.leave-planner-grid .today{background:#f1f7fa}.leave-planner-grid .outside-membership{background:repeating-linear-gradient(135deg,#fafbfb,#fafbfb 5px,#f2f5f6 5px,#f2f5f6 10px)}.leave-staff-link{padding:0;border:0;background:transparent;color:#173d56;font:750 11px inherit;text-align:left;cursor:pointer}.leave-staff-link:hover{text-decoration:underline}.leave-day-code{display:flex;align-items:center;justify-content:center;width:32px;min-height:27px;margin:auto;border-radius:5px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.leave-planner-grid tfoot th,.leave-planner-grid tfoot td{position:sticky;bottom:0;background:#f5f8f9;color:#526c7b}.leave-planner-grid tfoot .identity{z-index:4}.leave-planner-grid tfoot td b,.leave-planner-grid tfoot td small{display:block}.leave-planner-grid tfoot td small{font-size:8px}.leave-planner-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px;color:#5d7482;font-size:9px}.leave-planner-legend span{display:flex;align-items:center;gap:5px}.leave-planner-legend i{width:10px;height:10px;border-radius:3px}.leave-planner-mobile,.leave-mobile-empty{display:none}.leave-planner-drawer{width:min(620px,100vw);max-width:620px}.leave-planner-drawer section{height:auto;min-height:0}.leave-planner-period-list{display:grid;gap:8px}.leave-planner-period-list article{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid #e3eaed;border-radius:7px}.leave-planner-period-list article b,.leave-planner-period-list article small{display:block}.leave-planner-period-list article b{color:#294b61;font-size:11px}.leave-planner-period-list article small{margin-top:3px;color:#718492;font-size:9px}.leave-planner-period-list dl{display:grid;grid-template-columns:repeat(2,auto);gap:12px;margin:0}.leave-planner-period-list dt{color:#82929c;font-size:8px;text-transform:uppercase}.leave-planner-period-list dd{margin:2px 0 0;color:#173d56;font-size:11px;font-weight:750}.leave-records-header .eyebrow{margin-bottom:2px}
-@media(max-width:1024px){.leave-planner-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.leave-planner-grid .staff{width:140px;min-width:140px}.leave-planner-grid .employee{left:140px;width:82px;min-width:82px}.leave-planner-grid .designation{left:222px;width:132px;min-width:132px}}
-@media(max-width:700px){.leave-planner-tabs{width:100%}.leave-planner-tabs button{flex:1;min-height:44px}.leave-planner-panel{padding:14px}.leave-planner-header{display:block}.leave-confirmed-chip{margin-top:10px}.leave-month-navigation{grid-template-columns:44px minmax(0,1fr) 44px}.leave-month-navigation .secondary{width:44px;min-width:44px;min-height:44px;padding:0;font-size:0}.leave-month-navigation .secondary:first-child::after{content:'←';font-size:16px}.leave-month-navigation .secondary:nth-of-type(2)::after{content:'→';font-size:16px}.leave-month-navigation .link{grid-column:1/-1;justify-self:center;min-height:36px}.leave-month-navigation strong{font-size:15px}.leave-planner-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.leave-planner-filters select{min-height:44px}.leave-planner-grid-wrap,.leave-planner-legend{display:none}.leave-planner-mobile{display:grid;gap:10px}.leave-planner-mobile article{padding:14px;border:1px solid #dfe7ea;border-radius:9px;background:#fff}.leave-planner-mobile header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.leave-planner-mobile header small{display:block;margin-top:3px;color:#718492;font-size:9px}.leave-planner-mobile h3{margin:12px 0 4px;color:#173d56;font-size:13px}.leave-planner-mobile p{margin:0;color:#526c7b;font-size:11px}.leave-planner-mobile dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}.leave-planner-mobile dt{color:#82929c;font-size:8px;text-transform:uppercase}.leave-planner-mobile dd{margin:3px 0 0;color:#173d56;font-size:11px;font-weight:750}.leave-planner-mobile .secondary{width:100%;min-height:44px}.leave-mobile-empty{display:block;color:#718492;font-size:11px;text-align:center}.leave-planner-drawer{width:100vw;max-width:100vw}.leave-planner-period-list article{grid-template-columns:auto minmax(0,1fr)}.leave-planner-period-list dl{grid-column:1/-1}.leave-staff-link{min-height:28px}}
-@media(max-width:390px){.leave-planner-filters{grid-template-columns:1fr}.leave-planner-period-list article{grid-template-columns:1fr}.leave-planner-period-list dl{grid-column:auto}.leave-planner-period-list .leave-type-chip{width:max-content}}
+.leave-planner-shell{min-width:0}
+.leave-planner-view{min-width:0}
+.leave-planner-tabs{display:grid;grid-template-columns:repeat(2,minmax(170px,1fr));gap:10px;width:min(420px,100%);margin:0 0 14px;padding:0;background:transparent}
+.leave-planner-tabs button{box-sizing:border-box;min-height:50px;padding:0 22px;border:1px solid #dec58f;border-radius:11px;background:#fffdf8;color:#173d56;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s ease,background-color .15s ease,color .15s ease}
+.leave-planner-tabs button:hover{border-color:#c5a25b;background:#fffaf0;color:#173d56}
+.leave-planner-tabs button:focus-visible{outline:2px solid #c9a356;outline-offset:2px}
+.leave-planner-tabs button.selected{border-color:#c9a356;background:#173d56;color:#fff;box-shadow:inset 0 -3px #dec58f,0 3px 9px #173d5622}
+
+.leave-planner-shell .leave-planner-panel{min-width:0;padding:0 0 14px;overflow:hidden;border:1px solid #dec58f;border-radius:12px;background:#fffaf0;box-shadow:0 8px 24px #173d5608}
+.leave-planner-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-top:4px solid #c9a356;border-bottom:1px solid #dec58f;background:linear-gradient(135deg,#fff8e8 0%,#fffdf8 78%)}
+.leave-planner-header h2{margin:2px 0 0;color:#173d56;font:700 26px/1.15 'Playfair Display',serif}
+.leave-planner-header .eyebrow{margin:0;color:#876b31}
+.leave-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none;flex-wrap:wrap}
+.leave-header-actions .ao-action{min-height:40px;white-space:nowrap}
+.leave-command-panel{margin:0 16px;padding:14px 0 12px;border:0;border-bottom:1px solid #dec58f;border-radius:0;background:transparent}
+.leave-month-navigation{display:grid;grid-template-columns:40px minmax(190px,260px) 40px auto;align-items:center;justify-content:start;gap:8px;margin:0 0 11px}
+.leave-month-navigation .ao-icon-action{width:40px;height:40px;flex-basis:40px;border-color:#d5bf8d;background:#fff;color:#173d56}
+.leave-month-navigation .ao-date-control{width:100%}
+.leave-month-navigation .ao-date-control input{height:40px;min-height:40px;border:1px solid #d5bf8d;border-radius:7px;background:#fff;color:#173d56;font-size:13px;font-weight:700}
+.leave-month-navigation .ao-action{height:40px;min-height:40px;border-color:#d5bf8d;background:#fff;color:#173d56}
+.leave-planner-filters{display:grid;grid-template-columns:110px 155px minmax(210px,1fr) minmax(205px,1fr);gap:9px;margin:0}
+.leave-planner-filters label{display:grid;gap:4px;min-width:0;color:#657984;font-size:9.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
+.leave-planner-filters select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:0 10px;border:1px solid #d8c89f;border-radius:7px;background:#fff;color:#294b61;font:12px inherit}
+.leave-review-warning{margin:0 16px 14px;padding:10px 12px;border:1px solid #e5c990;border-radius:7px;background:#fff8e8;color:#735b2d;font-size:11px}
+.leave-state{padding:34px;text-align:center;color:#718492}
+
+.leave-summary-section{margin:0 16px 13px;padding:12px 0 13px;border:0;border-bottom:1px solid #dec58f;border-radius:0;background:transparent}
+.leave-summary-section>header{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:10px}
+.leave-summary-section h3{margin:2px 0 0;color:#173d56;font:700 18px 'Playfair Display',serif}
+.leave-summary-section>header small{color:#718492;font-size:10.5px;text-align:right}
+.leave-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.leave-summary-card{box-sizing:border-box;min-width:0;min-height:82px;padding:11px 13px;border:1px solid #dec58f;border-top:3px solid #b38b3a;border-radius:8px;background:#fff;color:#173d56;text-align:left}
+button.leave-summary-card{cursor:pointer}
+.leave-summary-card.off{border-top-color:#8898a3}
+.leave-summary-card.booked{border-top-color:#8a63a8;background:#fbf8fd}
+.leave-summary-card.other{border-top-color:#6d8796}
+.leave-summary-card.selected{border-color:#173d56;box-shadow:0 0 0 1px #173d56}
+.leave-summary-card span,.leave-summary-card b,.leave-summary-card small{display:block}
+.leave-summary-card span{color:#657984;font-size:10px;font-weight:750;letter-spacing:.035em;text-transform:uppercase}
+.leave-summary-card b{margin-top:5px;color:#173d56;font:700 24px/1 'Playfair Display',serif}
+.leave-summary-card small{margin-top:4px;color:#82929c;font-size:9px}
+.leave-category-details{margin-top:10px;border-top:1px solid #eadbb8}
+.leave-category-details>summary{min-height:40px;padding-top:10px;color:#173d56;font-size:11px;font-weight:750;cursor:pointer;list-style-position:inside}
+.leave-category-details>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding-top:8px}
+.leave-category-details button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;padding:7px 9px;border:1px solid #e3d8bf;border-radius:7px;background:#fff;color:#526c7b;text-align:left;cursor:pointer}
+.leave-category-details button.selected{border-color:#173d56;background:#f1f5f7;color:#173d56;box-shadow:0 0 0 1px #173d56}
+.leave-category-details button span{min-width:0;font-size:9px;font-weight:700;overflow-wrap:anywhere}
+.leave-category-details button b{color:#173d56;font-size:13px}
+
+.leave-planner-grid-wrap{max-width:calc(100% - 32px);margin:0 16px;overflow:auto;border:1px solid #dec58f;border-radius:9px;background:#fff;scrollbar-color:#c9a356 #f7f1e5}
+.leave-planner-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;background:#fff}
+.leave-planner-grid th,.leave-planner-grid td{box-sizing:border-box;height:44px;padding:5px;border-right:1px solid #eadfca;border-bottom:1px solid #eadfca;text-align:center;font-size:11px}
+.leave-planner-grid tr>*:last-child{border-right:0}
+.leave-planner-grid thead th{position:sticky;top:0;z-index:3;min-width:44px;height:58px;border-bottom:2px solid #c9a356;background:#fff5df;color:#173d56;font-size:9.5px}
+.leave-planner-grid thead th span,.leave-planner-grid thead th small{display:block}
+.leave-planner-grid thead th .weekday{color:#876b31;font-size:8px;font-weight:800;text-transform:uppercase}
+.leave-planner-grid thead th span{margin-top:2px;font:700 15px/1 'Playfair Display',serif}
+.leave-planner-grid thead th .availability{margin-top:3px;color:#82929c;font-size:7.5px}
+.leave-planner-grid tbody tr:nth-child(even)>td,.leave-planner-grid tbody tr:nth-child(even)>th{background:#fffdf8}
+.leave-planner-grid .identity{position:sticky;z-index:2;background:#fff;text-align:left}
+.leave-planner-grid thead .identity{z-index:5;background:#fff5df;color:#173d56;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.leave-planner-grid .staff{left:0;width:156px;min-width:156px}
+.leave-planner-grid .employee{left:156px;width:90px;min-width:90px}
+.leave-planner-grid .designation{left:246px;width:148px;min-width:148px}
+.leave-planner-grid td.designation{color:#5d7482}
+.leave-planner-grid .today{position:relative;background:#fff2cf!important;box-shadow:inset 1px 0 #c9a356,inset -1px 0 #c9a356}
+.leave-planner-grid thead .today{background:#173d56!important;color:#fff;border-color:#c9a356;box-shadow:inset 0 0 0 1px #c9a356}
+.leave-planner-grid thead .today .weekday,.leave-planner-grid thead .today .availability{color:#e6cb8e}
+.leave-planner-grid .outside-membership{background:repeating-linear-gradient(135deg,#fafbfb,#fafbfb 5px,#f2f5f6 5px,#f2f5f6 10px)!important}
+.leave-staff-link{padding:0;border:0;background:transparent;color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:12px;font-weight:500;line-height:1.25;text-align:left;cursor:pointer}
+.leave-staff-link:hover{text-decoration:underline}
+.leave-staff-link:focus-visible{outline:2px solid #c9a356;outline-offset:2px}
+.leave-staff-meta{display:none;margin-top:3px;color:#718492;font-size:8px;font-weight:600;line-height:1.3}
+.leave-day-code{display:flex;align-items:center;justify-content:center;width:32px;min-height:27px;margin:auto;border-radius:5px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leave-day-code.booked{border:1px dashed #795594;background:repeating-linear-gradient(135deg,#f8f0fb,#f8f0fb 4px,#eee2f4 4px,#eee2f4 8px);color:#5d3678}
+.leave-planner-grid tfoot th,.leave-planner-grid tfoot td{position:sticky;bottom:0;z-index:2;height:48px;border-top:2px solid #173d56;background:#eef3f5;color:#173d56}
+.leave-planner-grid tfoot .identity{z-index:4;background:#eef3f5}
+.leave-planner-grid tfoot td b,.leave-planner-grid tfoot td small{display:block}
+.leave-planner-grid tfoot td b{font-size:13px}
+.leave-planner-grid tfoot td small{margin-top:2px;color:#7a5c28;font-size:7.5px;white-space:nowrap}
+.leave-planner-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:11px 16px 0;color:#5d7482;font-size:10px}
+.leave-planner-legend span{display:flex;align-items:center;gap:5px}
+.leave-planner-legend i{width:10px;height:10px;border-radius:3px}
+.leave-planner-legend i.booked{border:1px dashed #795594;background:#f3e9f7}
+.leave-planner-mobile,.leave-mobile-empty{display:none}
+.leave-planner-panel>.staff-module-info{margin:16px 16px 0}
+
+.staff-profile-overlay.leave-modal-overlay{position:fixed;inset:0;display:flex;box-sizing:border-box;width:100vw;height:100dvh;align-items:center;justify-content:center;padding:22px;background:#0d273c99;overflow:hidden}
+.staff-profile-overlay.leave-modal-overlay .staff-profile-drawer{position:relative;inset:auto;display:flex;box-sizing:border-box;min-width:0;height:auto;max-height:calc(100dvh - 44px);padding:0;overflow:hidden;flex-direction:column;border:1px solid #dec58f;border-radius:13px;background:#fffaf0;box-shadow:0 24px 70px #071d2d55;outline:none}
+.staff-profile-overlay.leave-modal-overlay .staff-profile-drawer>header{box-sizing:border-box;width:100%;align-self:stretch;flex:none;margin:0;padding:17px 20px 15px;border-top:4px solid #c9a356;border-bottom:1px solid #dec58f;background:linear-gradient(135deg,#fff6df,#fffdf8 76%)}
+.staff-profile-overlay.leave-modal-overlay .staff-profile-drawer>header h2{margin:2px 0 0;color:#173d56;font:700 24px/1.15 'Playfair Display',serif}
+.staff-profile-overlay.leave-modal-overlay .staff-profile-drawer>header>span{display:block;margin:5px 0 0;color:#647b89;font-size:11px}
+.staff-profile-overlay.leave-modal-overlay .leave-planner-drawer>header.leave-details-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.leave-details-header>div{min-width:0}
+.leave-details-header>div>span{display:block;margin-top:5px;color:#647b89;font-size:11px}
+.leave-membership-status{display:inline-flex!important;align-items:center;justify-content:center;flex:none;min-height:27px;margin:1px 0 0!important;padding:4px 10px;border:1px solid #d1b26f;border-radius:999px;background:#fff8e8;color:#755b24!important;font-size:9px!important;font-weight:800;letter-spacing:.045em;text-transform:uppercase;white-space:nowrap}
+.leave-membership-status.approved{border-color:#91bca6;background:#eef8f2;color:#2f7053!important}
+.leave-planner-drawer{width:min(720px,calc(100vw - 44px));max-width:720px}
+.leave-details-scroll{box-sizing:border-box;width:100%;min-height:0;padding:4px 16px 12px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#c9a356 #f7f1e5;background:#fff}
+.leave-details-scroll>section{height:auto;min-height:0;margin:0;padding:13px 0;border:0;border-bottom:1px solid #dec58f;border-radius:0;background:transparent}
+.leave-details-scroll>section:last-child{margin-bottom:0}
+.leave-details-scroll>section:last-child{border-bottom:0}
+.leave-details-scroll>section>.eyebrow{margin:0 0 9px;color:#876b31}
+.leave-details-scroll .staff-profile-grid{gap:5px 14px}
+.leave-details-scroll .staff-profile-grid>div{min-height:0;padding:7px 8px;border:0;border-radius:5px;background:#fffaf0}
+.leave-details-scroll .staff-profile-grid dd{margin-top:3px}
+.leave-planner-period-list{display:grid;gap:8px}
+.leave-planner-period-list article{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 0;border:0;border-bottom:1px solid #eadfca;border-radius:0;background:transparent}
+.leave-planner-period-list article:last-child{border-bottom:0}
+.leave-planner-period-list article b,.leave-planner-period-list article small{display:block}
+.leave-planner-period-list article b{color:#294b61;font-size:11px}
+.leave-planner-period-list article small{margin-top:3px;color:#718492;font-size:9px}
+.leave-planner-period-list dl{display:grid;grid-template-columns:repeat(2,auto);gap:12px;margin:0}
+.leave-planner-period-list dt{color:#82929c;font-size:8px;text-transform:uppercase}
+.leave-planner-period-list dd{margin:2px 0 0;color:#173d56;font-size:11px;font-weight:750}
+.leave-detail-code{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:27px;padding:0 5px;border-radius:5px;font-size:9px}
+.booked-periods .leave-type-chip.booked{border-color:#795594;background:#f3e9f7;color:#5d3678}
+.booked-periods .leave-type-chip.cancelled{opacity:.55;text-decoration:line-through}
+.leave-collision-note{color:#8c4f49!important;font-weight:700}
+.negative{color:#a1413c!important}
+.leave-records-header .eyebrow{margin-bottom:2px}
+
+.booked-leave-drawer{width:min(560px,calc(100vw - 44px));max-width:560px}
+.booked-leave-form{display:flex;min-height:0;flex:1;flex-direction:column;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:#fff!important}
+.booked-leave-scroll{display:grid;min-height:0;gap:9px;padding:12px 16px;overflow-y:auto;overscroll-behavior:contain}
+.booked-leave-scroll>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.booked-leave-form label{display:grid;gap:5px;color:#657984;font-size:9px;font-weight:700;text-transform:uppercase}
+.booked-leave-form input,.booked-leave-form select,.booked-leave-form textarea{box-sizing:border-box;width:100%;min-height:42px;padding:9px;border:1px solid #d8c89f;border-radius:7px;background:#fff;color:#294b61;font:11px inherit;text-transform:none}
+.booked-leave-form textarea{min-height:58px;max-height:104px;resize:vertical}
+.booked-duration{margin:0;padding:8px 10px;border:1px dashed #b89bca;border-radius:6px;background:#f8f2fb;color:#5d3678;font-size:10px}
+.booked-duration b{font-size:15px}
+.booked-disclaimer{margin:0;color:#718492;font-size:10px;line-height:1.5}
+.booked-leave-form footer{display:flex;flex:none;justify-content:flex-end;gap:8px;padding:9px 16px;border-top:1px solid #dec58f;background:#fffaf0}
+.booked-leave-form footer .ao-action{min-height:42px;margin:0}
+.booked-leave-form .ao-date-control{min-width:0}
+.booked-allocation-summary{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
+.booked-allocation-summary span{display:grid;gap:2px;padding:8px;border:1px solid #dec58f;border-radius:7px;background:#fffaf0;color:#657984;font-size:8px;font-weight:700;text-align:center;text-transform:uppercase}
+.booked-allocation-summary b{color:#173d56;font-size:18px;line-height:1}
+.booked-leave-form label>small{color:#718492;font-size:9px;font-weight:600;text-transform:none}
+.accumulated-off-opening{margin-top:9px;border-top:1px solid #eadbb8;padding-top:8px}
+.accumulated-off-opening summary{min-height:34px;color:#173d56;font-size:10px;font-weight:700;cursor:pointer}
+.accumulated-off-opening>div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:8px;border:1px solid #dec58f;border-radius:8px;background:#fffaf0}
+.accumulated-off-opening label{display:grid;gap:4px;color:#657984;font-size:9px;font-weight:700}
+.accumulated-off-opening label:last-of-type{grid-column:1/-1}
+.accumulated-off-opening input,.accumulated-off-opening textarea{box-sizing:border-box;width:100%;min-height:40px;padding:8px;border:1px solid #d8c89f;border-radius:6px;background:#fff;color:#294b61}
+.accumulated-off-opening .ao-action{justify-self:end;grid-column:1/-1}
+.leave-period-actions{display:flex;align-items:center;gap:6px}
+
+@media(max-width:1024px){
+ .leave-planner-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .leave-category-details>div{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .leave-planner-grid .staff{width:146px;min-width:146px}
+ .leave-planner-grid .employee{left:146px;width:84px;min-width:84px}
+ .leave-planner-grid .designation{left:230px;width:136px;min-width:136px}
+}
+@media(max-width:700px){
+ .leave-planner-tabs{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px;overflow:visible}
+ .leave-planner-tabs button{min-height:46px;padding-inline:10px;white-space:nowrap}
+ .leave-planner-panel{padding-bottom:14px}
+ .leave-planner-header{align-items:stretch;flex-direction:column;padding:14px 12px;gap:11px}
+ .leave-planner-header h2{font-size:23px}
+ .leave-header-actions{display:grid;grid-template-columns:1fr;width:100%;gap:7px}
+ .leave-header-actions .ao-status-pill,.leave-header-actions .ao-action{width:100%;min-height:44px}
+ .leave-command-panel{margin:0 10px;padding:10px 0}
+ .leave-month-navigation{grid-template-columns:44px minmax(0,1fr) 44px;gap:7px;margin-bottom:10px}
+ .leave-month-navigation .ao-icon-action{width:44px;height:44px;flex-basis:44px}
+ .leave-month-navigation .ao-date-control input{height:44px;min-height:44px}
+ .leave-month-navigation .ao-action{grid-column:1/-1;width:100%;height:44px;min-height:44px}
+ .leave-planner-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .leave-planner-filters select{min-height:44px}
+ .leave-review-warning{margin:0 10px 10px}
+ .leave-summary-section{margin:0 10px 10px;padding:10px 0}
+ .leave-summary-section>header{display:block}
+ .leave-summary-section>header small{display:block;margin-top:4px;text-align:left}
+ .leave-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .leave-summary-card{min-height:78px;padding:9px 10px}
+ .leave-summary-card span{font-size:9px}
+ .leave-summary-card b{font-size:21px}
+ .leave-category-details>summary{min-height:44px}
+ .leave-category-details>div{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .leave-category-details button{min-height:44px}
+ .leave-planner-grid-wrap{display:block;max-width:calc(100% - 20px);margin:0 10px;overscroll-behavior-inline:contain}
+ .leave-planner-grid .employee,.leave-planner-grid .designation{display:none}
+ .leave-planner-grid .staff{left:0;width:152px;min-width:152px;max-width:152px}
+ .leave-planner-grid thead th{min-width:44px}
+ .leave-planner-grid tbody th.staff,.leave-planner-grid tfoot th.staff{white-space:normal}
+ .leave-staff-meta{display:block}
+ .leave-staff-link{display:flex;align-items:center;min-height:44px;font-size:11px}
+ .leave-planner-legend{margin:10px 10px 0;font-size:9px}
+ .leave-planner-panel>.staff-module-info{margin:12px 10px 0}
+ .staff-profile-overlay.leave-modal-overlay{padding:10px}
+ .staff-profile-overlay.leave-modal-overlay .staff-profile-drawer{width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);flex:0 0 auto;border-radius:10px}
+ .staff-profile-overlay.leave-modal-overlay .staff-profile-drawer>header{padding:11px 13px 10px}
+ .staff-profile-overlay.leave-modal-overlay .staff-profile-drawer>header h2{font-size:22px}
+ .staff-profile-overlay.leave-modal-overlay .leave-planner-drawer>header.leave-details-header{gap:8px}
+ .leave-membership-status{min-height:25px;padding-inline:8px;font-size:8px!important}
+ .leave-details-scroll{padding:2px 8px 8px}
+ .leave-details-scroll>section{margin:0;padding:10px 0}
+ .leave-details-scroll .staff-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .leave-details-scroll .staff-profile-grid>div{padding:7px;overflow-wrap:anywhere}
+ .leave-planner-period-list article{grid-template-columns:auto minmax(0,1fr)}
+ .leave-planner-period-list dl{grid-column:1/-1}
+ .booked-leave-scroll{padding:8px 11px;gap:7px}
+ .booked-leave-scroll>div{grid-template-columns:1fr}
+ .booked-leave-form input,.booked-leave-form select{min-height:44px}
+ .booked-leave-form textarea{min-height:54px}
+ .booked-leave-form footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:7px 11px}
+ .booked-leave-form footer .ao-action{min-width:0;min-height:44px;width:100%}
+ .booked-leave-form footer .ao-action:nth-child(3){grid-column:1/-1}
+ .booked-allocation-summary{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .accumulated-off-opening>div{grid-template-columns:1fr}
+ .accumulated-off-opening label:last-of-type,.accumulated-off-opening .ao-action{grid-column:auto}
+ .leave-period-actions{grid-column:1/-1;flex-wrap:wrap}
+ .leave-planner-panel .ao-action,.leave-planner-panel .ao-icon-action{min-height:44px}
+}
+@media(max-width:390px){
+ .leave-planner-filters{grid-template-columns:1fr}
+ .leave-category-details>div{grid-template-columns:1fr}
+ .leave-summary-card span{overflow-wrap:anywhere}
+ .leave-planner-period-list article{grid-template-columns:1fr}
+ .leave-planner-period-list dl{grid-column:auto}
+ .leave-planner-period-list .leave-type-chip{width:max-content}
+ .leave-details-scroll .staff-profile-grid{grid-template-columns:1fr}
+}

@@ -7,7 +7,8 @@ const roleDefinitions: AuthorizationRole[] = [
   { id: '00000000-0000-4000-8000-000000001001', key: 'owner', displayName: 'Owner / Super Admin', active: true, globalScope: true },
   { id: '00000000-0000-4000-8000-000000001002', key: 'outlet_manager', displayName: 'Outlet Manager', active: true, globalScope: false },
   { id: '00000000-0000-4000-8000-000000001003', key: 'operational_user', displayName: 'Operational User', active: true, globalScope: false },
-  { id: '00000000-0000-4000-8000-000000001004', key: 'viewer', displayName: 'Viewer', active: true, globalScope: false }
+  { id: '00000000-0000-4000-8000-000000001004', key: 'viewer', displayName: 'Viewer', active: true, globalScope: false },
+  { id: '00000000-0000-4000-8000-000000001005', key: 'employee_self_service', displayName: 'Employee Self Service', active: true, globalScope: false }
 ]
 const permissionNames: Array<[AuthorizationPermissionKey, string, string]> = [
   ['manage_platform', 'Manage Platform', 'Administer supported platform-wide settings.'],
@@ -31,13 +32,20 @@ const permissionNames: Array<[AuthorizationPermissionKey, string, string]> = [
   ['view_reports', 'View Reports', 'View operational reports.'],
   ['manage_reports', 'Manage Reports', 'Maintain report commentary and settings.'],
   ['view_audit_history', 'View Audit History', 'View supported audit and history records.'],
-  ['perform_financial_corrections', 'Perform Financial Corrections', 'Use controlled financial correction and reversal workflows.']
+  ['perform_financial_corrections', 'Perform Financial Corrections', 'Use controlled financial correction and reversal workflows.'],
+  ['view_own_roster', 'View Own Roster', 'View only the roster assigned to the linked Staff profile.'],
+  ['view_own_timesheet', 'View Own Timesheet', 'View only timesheets belonging to the linked Staff profile.'],
+  ['edit_own_timesheet', 'Edit Own Timesheet', 'Edit only draft timesheets belonging to the linked Staff profile.'],
+  ['confirm_own_timesheet_days', 'Confirm Own Timesheet Days', 'Confirm only timesheet days belonging to the linked Staff profile.'],
+  ['submit_own_timesheet_month', 'Submit Own Timesheet Month', 'Submit only a monthly timesheet belonging to the linked Staff profile.'],
+  ['manage_timesheets', 'Manage Timesheets', 'Review and reopen employee timesheets within the authorized outlet.']
 ]
 const permissionDefinitions: AuthorizationPermission[] = permissionNames.map(([key, displayName, description], index) => ({ id: `00000000-0000-4000-8000-${String(2001 + index).padStart(12, '0')}`, key, displayName, description, active: true }))
 const initialRolePermissions: Record<Exclude<AuthorizationRoleKey, 'owner'>, AuthorizationPermissionKey[]> = {
-  outlet_manager: ['manage_staff', 'manage_staff_membership', 'manage_staff_membership_baseline', 'approve_staff_membership_baseline', 'manage_duty_roster', 'manage_training', 'manage_bookings', 'manage_guest_occasions', 'manage_chargeables', 'manage_maintenance', 'view_reports', 'manage_reports'],
+  outlet_manager: ['manage_staff', 'manage_staff_membership', 'manage_staff_membership_baseline', 'approve_staff_membership_baseline', 'manage_duty_roster', 'manage_timesheets', 'manage_training', 'manage_bookings', 'manage_guest_occasions', 'manage_chargeables', 'manage_maintenance', 'view_reports', 'manage_reports'],
   operational_user: ['manage_training', 'manage_bookings', 'manage_guest_occasions', 'manage_chargeables', 'manage_maintenance'],
-  viewer: ['view_reports']
+  viewer: ['view_reports'],
+  employee_self_service: ['view_own_roster', 'view_own_timesheet', 'edit_own_timesheet', 'confirm_own_timesheet_days', 'submit_own_timesheet_month']
 }
 
 export class AuthorizationError extends Error {

@@ -11,6 +11,10 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const liveStore = resolve(projectRoot, '.data/postgres')
 const migrationsDirectory = resolve(projectRoot, 'database/migrations')
 const actorSource = 'versioned migration tooling'
+const foundationRoleDefinitionsV009 = roleDefinitions.filter(role => role.key !== 'employee_self_service')
+const postFoundationPermissions = new Set(['view_own_roster','view_own_timesheet','edit_own_timesheet','confirm_own_timesheet_days','submit_own_timesheet_month','manage_timesheets'])
+const foundationPermissionDefinitionsV009 = permissionDefinitions.filter(permission => !postFoundationPermissions.has(permission.key))
+const foundationRolePermissionsV009 = Object.fromEntries(Object.entries(initialRolePermissions).filter(([roleKey]) => roleKey !== 'employee_self_service').map(([roleKey, permissions]) => [roleKey, permissions.filter(permission => !postFoundationPermissions.has(permission))]))
 const operationalTables = [
   'staff', 'staff_entitlements', 'public_holidays', 'configuration_options', 'duty_roster_entries',
   'attendance_records', 'bookings', 'booking_import_batches', 'booking_guest_members', 'guest_occasions',
@@ -161,6 +165,10 @@ export const runPreflight = async (db: PGlite, dataDirectory: string): Promise<P
     const amount = await count(db, 'select count(*)::int count from (select file_hash from training_import_batches where active=true group by file_hash having count(*)>1) duplicates')
     add('duplicates:active_training_import_hash', amount ? 'blocker' : 'pass', amount, 'Required before partial unique-index normalization.')
   }
+  if (await tableExists(db, 'user_accounts')) {
+    const amount = await count(db, "select count(*)::int count from (select staff_id from user_accounts where staff_id is not null and status='active' group by staff_id having count(*)>1) duplicates")
+    add('duplicates:active_user_staff', amount ? 'blocker' : 'pass', amount, 'At most one active account may be linked to each Staff profile before account-security migration.')
+  }
   if (await tableExists(db, 'outlet_scopes')) {
     const otherScopes = await count(db, `select count(*)::int count from outlet_scopes where scope_key<>\'${ANDALUCIA_SCOPE_KEY}\'`)
     add('outlet_scope:only_andalucia', otherScopes ? 'blocker' : 'pass', otherScopes, 'This rehearsal stage permits exactly the Andalucía outlet scope.')
@@ -189,9 +197,18 @@ const migrations: Migration[] = [
   { version: '015', name: 'Monthly Report Finance foundation', sqlFile: '015_monthly_report_finance_foundation.sql' },
   { version: '016', name: 'Training R2 evidence and synchronization foundation', sqlFile: '016_training_r2_foundation.sql' },
   { version: '017', name: 'Booking Intelligence Engine R1 persistence foundation', sqlFile: '017_booking_intelligence_foundation.sql' },
-  { version: '018', name: 'Maintenance R2 scoped evidence foundation', sqlFile: '018_maintenance_r2_foundation.sql' }
+  { version: '018', name: 'Maintenance R2 scoped evidence foundation', sqlFile: '018_maintenance_r2_foundation.sql' },
+  { version: '019', name: 'Booked and future leave planning foundation', sqlFile: '019_planned_leave_foundation.sql' },
+  { version: '020', name: 'Individual employee leave entitlement overrides', sqlFile: '020_employee_leave_entitlements.sql' },
+  { version: '021', name: 'Year-based leave entitlements and annual leave accrual evidence', sqlFile: '021_yearly_leave_entitlements.sql' },
+  { version: '022', name: 'Annual leave service-year entitlement evidence', sqlFile: '022_annual_leave_service_years.sql' },
+  { version: '023', name: 'Employee account security foundation', sqlFile: '023_account_security_foundation.sql' },
+  { version: '024', name: 'Employee timesheet foundation', sqlFile: '024_employee_timesheet_foundation.sql' },
+  { version: '025', name: 'Manager timesheet workflow foundation', sqlFile: '025_manager_timesheet_workflow.sql' },
+  { version: '026', name: 'Accumulated OFF tracking and future leave allocation', sqlFile: '026_accumulated_off_tracking.sql' },
+  { version: '027', name: 'Manual overtime approval workflow', sqlFile: '027_manual_overtime.sql' }
 ]
-const migrationSource = async (migration: Migration) => migration.sqlFile ? await readFile(join(migrationsDirectory, migration.sqlFile), 'utf8') : jsonStable({ roleDefinitions, permissionDefinitions, initialRolePermissions, outlet: { id: ANDALUCIA_SCOPE_ID, key: ANDALUCIA_SCOPE_KEY } })
+const migrationSource = async (migration: Migration) => migration.sqlFile ? await readFile(join(migrationsDirectory, migration.sqlFile), 'utf8') : jsonStable({ roleDefinitions: foundationRoleDefinitionsV009, permissionDefinitions: foundationPermissionDefinitionsV009, initialRolePermissions: foundationRolePermissionsV009, outlet: { id: ANDALUCIA_SCOPE_ID, key: ANDALUCIA_SCOPE_KEY } })
 export const reviewedMigrationSet = async () => {
   const { readdir } = await import('node:fs/promises')
   const declaredFiles = migrations.flatMap(migration => migration.sqlFile ? [migration.sqlFile] : []).sort()
@@ -204,12 +221,12 @@ export const reviewedMigrationSet = async () => {
 }
 const seedFoundation = async (transaction: any) => {
   await transaction.query('insert into outlet_scopes(id,scope_key,display_name,active,outlet_type,created_by,updated_by) values($1,$2,$3,true,$4,$5,$5) on conflict(scope_key) do nothing', [ANDALUCIA_SCOPE_ID, ANDALUCIA_SCOPE_KEY, 'Andalucía', 'restaurant', actorSource])
-  for (const role of roleDefinitions) await transaction.query('insert into authorization_roles(id,role_key,display_name,active,global_scope,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$6) on conflict(role_key) do nothing', [role.id, role.key, role.displayName, role.active, role.globalScope, actorSource])
-  for (const permission of permissionDefinitions) await transaction.query('insert into authorization_permissions(id,permission_key,display_name,description,active,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$6) on conflict(permission_key) do nothing', [permission.id, permission.key, permission.displayName, permission.description, permission.active, actorSource])
-  for (const [roleKey, keys] of Object.entries(initialRolePermissions)) {
-    const role = roleDefinitions.find(item => item.key === roleKey)
+  for (const role of foundationRoleDefinitionsV009) await transaction.query('insert into authorization_roles(id,role_key,display_name,active,global_scope,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$6) on conflict(role_key) do nothing', [role.id, role.key, role.displayName, role.active, role.globalScope, actorSource])
+  for (const permission of foundationPermissionDefinitionsV009) await transaction.query('insert into authorization_permissions(id,permission_key,display_name,description,active,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$6) on conflict(permission_key) do nothing', [permission.id, permission.key, permission.displayName, permission.description, permission.active, actorSource])
+  for (const [roleKey, keys] of Object.entries(foundationRolePermissionsV009)) {
+    const role = foundationRoleDefinitionsV009.find(item => item.key === roleKey)
     if (!role) continue
-    for (const key of keys) { const permission = permissionDefinitions.find(item => item.key === key); if (permission) await transaction.query('insert into authorization_role_permissions(role_id,permission_id,created_by) values($1,$2,$3) on conflict(role_id,permission_id) do nothing', [role.id, permission.id, actorSource]) }
+    for (const key of keys) { const permission = foundationPermissionDefinitionsV009.find(item => item.key === key); if (permission) await transaction.query('insert into authorization_role_permissions(role_id,permission_id,created_by) values($1,$2,$3) on conflict(role_id,permission_id) do nothing', [role.id, permission.id, actorSource]) }
   }
 }
 export const migrationStatus = async (db: PGlite) => {

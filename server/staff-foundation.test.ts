@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import type { BookingRecord, Staff } from '../src/domain.js'
 import { BookingRepository } from './booking-repository.js'
@@ -10,6 +12,8 @@ import { OperationsRepository } from './operations-repository.js'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-staff-foundation-'))
+const snapshotPath = join(tmpdir(), `andalucia-staff-foundation-${randomUUID()}.tgz`)
+const execFileAsync = promisify(execFile)
 const activeStaff: Staff = {
   id: randomUUID(), number: 'STAFF-FOUNDATION-001', name: 'Foundation Validation',
   position: 'F&B Attendant', nationality: 'Maldivian',
@@ -59,17 +63,19 @@ try {
   const audits = await staff.getDatabase().query<{ action: string }>("select action from audit_logs where entity_type='staff' and entity_id=$1 order by created_at", [saved.id])
   assert.deepEqual(audits.rows.map(row => row.action), ['created', 'status_changed', 'designation_changed'])
 
+  const snapshot = await staff.getDatabase().dumpDataDir('gzip')
+  await writeFile(snapshotPath, new Uint8Array(await snapshot.arrayBuffer()))
   await staff.getDatabase().close()
-  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
-  await reopened.initialize()
-  const persisted = await reopened.find(saved.id)
-  assert.equal(persisted?.position, 'Restaurant Supervisor')
-  assert.equal(persisted?.identityDocumentNumber, 'VALIDATION-ID')
-  assert.equal(persisted?.employmentStatus, 'inactive')
-  assert.equal((await reopened.configuration()).positions.find(option => option.value === 'Restaurant Supervisor')?.metadata?.serviceAssignmentEligible, true)
-  await reopened.getDatabase().close()
+  // PGlite's Node filesystem cannot be reopened reliably in the same WASM
+  // process after close. Verify persistence in a fresh process, matching an
+  // application restart without weakening the persisted-data assertion.
+  const tsxCli = join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  const verifier = join(process.cwd(), 'server', 'staff-foundation-reopen-verifier.ts')
+  const { stdout } = await execFileAsync(process.execPath, [tsxCli, verifier, snapshotPath, saved.id], { cwd: process.cwd(), maxBuffer: 1024 * 1024 })
+  assert.deepEqual(JSON.parse(stdout), { position: 'Restaurant Supervisor', identityDocumentNumber: 'VALIDATION-ID', employmentStatus: 'inactive', serviceAssignmentEligible: true })
 
   console.log(JSON.stringify({ uuidIdentity: true, employeeIdUniqueness: true, designationBasedServiceEligibility: true, rosterEligibilityIndependentOfDesignation: true, editAndAudit: true, rosterHistoryPreserved: true, waiterHistoryPreserved: true, inactiveNewAssignmentsBlocked: true, restartPersistence: true }, null, 2))
 } finally {
+  await rm(snapshotPath, { force: true })
   await rm(dataDirectory, { recursive: true, force: true })
 }

@@ -99,7 +99,7 @@ export class MaintenanceRepository {
     if (previous?.completedAt) throw new Error('Completed Maintenance issues are terminal and cannot be casually reopened or edited.')
     const previousStage = previous ? this.stage(configuration.statuses, previous.status) : null; const nextStage = this.stage(configuration.statuses, record.status)
     if (!previous && nextStage !== 'open') throw new Error('New Maintenance issues must begin Open.')
-    if (previousStage === 'open' && !['open', 'inProgress'].includes(nextStage)) throw new Error('Move an Open issue to In Progress before completing it.')
+    if (previousStage === 'open' && !['open', 'inProgress', 'completed'].includes(nextStage)) throw new Error('Reported issues can only remain Reported, move In Progress or be Resolved.')
     if (previousStage === 'inProgress' && !['inProgress', 'completed'].includes(nextStage)) throw new Error('In Progress issues can only remain In Progress or be Completed.')
     let reporter: any = null
     if (record.reportedByStaffId && record.reportedByStaffId !== previous?.reportedByStaffId) {

@@ -1,18 +1,19 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { cp, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { cp, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { spawn } from 'node:child_process'
 import { createStoreManifest, manifestsMatch } from './migration-filesystem.js'
 import { resolveMigrationDataDirectory, reviewedMigrationSet } from './migration-store.js'
 import { createVerifiedBackup, requireRecentVerifiedBackup, verifyBackupCopy } from './database-backup.js'
+import { DatabaseBackupAdminService } from './database-backup-admin.js'
 import { STORE_IDENTITY_AUTHORIZATION, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, resolveRuntimeStore, storeIdentityPath } from './database-protection.js'
+import { createDisposableTestRoot } from './test-store-fixture.js'
 
-const root = await mkdtemp(join(tmpdir(), 'andalucia-db-protection-'))
+const root = await createDisposableTestRoot('db-protection')
 const schema = await readFile('database/schema.sql', 'utf8')
-const createFixture = async (name: string, through = '018') => {
+const createFixture = async (name: string, through = '027') => {
   const path = join(root, name, 'postgres')
   await mkdir(join(root, name), { recursive: true })
   const db = new PGlite(path)
@@ -33,13 +34,37 @@ try {
   assert.throws(() => resolveRuntimeStore({ ANDALUCIA_DATA_DIR: 'relative/postgres', ANDALUCIA_STORE_ROLE: 'canonical' }), /ANDALUCIA_DATA_DIR_MUST_BE_ABSOLUTE/)
 
   const canonical = await createFixture('canonical')
+  assert.equal(resolveRuntimeStore({ NODE_ENV: 'test', ANDALUCIA_DATA_DIR: canonical, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: canonical }).dataDirectory, canonical)
+  const unapprovedTestStore = join(process.cwd(), 'unapproved-isolated-store', 'postgres')
+  assert.throws(() => resolveRuntimeStore({ NODE_ENV: 'test', ANDALUCIA_DATA_DIR: unapprovedTestStore, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: unapprovedTestStore }), /TEST_DEVELOPMENT_STORE_MUST_BE_TEMPORARY/)
   await assert.rejects(openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical' }), /STORE_IDENTITY_MISSING/)
   await createStoreIdentity(canonical, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: canonical, storeId: 'isolated-canonical' })
   await assert.rejects(openVerifiedDatabase({ dataDirectory: canonical, role: 'test' }), /STORE_IDENTITY_MISMATCH/)
   const opened = await openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical', backupRoot: join(root, 'backups') })
-  assert.equal(opened.health.migrationVersion, '018')
+  assert.equal(opened.health.migrationVersion, '027')
   assert.equal(opened.health.recoveryRequired, false)
   await opened.db.close()
+
+  const compatibility = await createFixture('schema-026-compatibility', '026')
+  await createStoreIdentity(compatibility, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: compatibility, storeId: 'isolated-schema-026-canonical' })
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: compatibility, role: 'canonical' }), /DATABASE_MIGRATION_REQUIRED:missing_versions=027/)
+  const compatibilityOpened = await openVerifiedDatabase({ dataDirectory: compatibility, role: 'canonical', requiredVersion: '026', backupRoot: join(root, 'compatibility-backups') })
+  assert.equal(compatibilityOpened.health.migrationVersion, '026')
+  await compatibilityOpened.db.close()
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: compatibility, role: 'canonical', requiredVersion: 'invalid' }), /ANDALUCIA_REQUIRED_SCHEMA_VERSION_UNSUPPORTED:invalid/)
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: compatibility, role: 'canonical', requiredVersion: '025' }), /ANDALUCIA_REQUIRED_SCHEMA_VERSION_UNSUPPORTED:025/)
+  const migrationSource = await createFixture('schema-025-migration-source', '025')
+  await createStoreIdentity(migrationSource, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: migrationSource, storeId: 'isolated-schema-025-migration-source' })
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: migrationSource, role: 'canonical', requiredVersion: '025' }), /ANDALUCIA_REQUIRED_SCHEMA_VERSION_UNSUPPORTED:025/)
+  const compatibilityBackup = await createVerifiedBackup({ sourceDirectory: migrationSource, category: 'pre-migration', backupRoot: join(root, 'compatibility-backups'), exclusiveConfirmed: true, expectedCanonicalDirectory: migrationSource, requiredVersion: '025' })
+  assert.equal(compatibilityBackup.metadata.schemaVersion, '025')
+  assert.equal(compatibilityBackup.metadata.requiredSchemaVersion, '025')
+  const compatibilityVerification = await verifyBackupCopy({ backupDirectory: compatibilityBackup.backupDirectory, sourceManifest: compatibilityBackup.metadata.backupManifest, verificationDirectory: join(root, 'compatibility-second-verification', 'postgres'), copyRole: 'rehearsal', requiredVersion: '025', allowReviewedMigrationSource: true })
+  assert.equal(compatibilityVerification.migration.migrations.find(item => item.version === '025')?.state, 'applied')
+  assert.equal(compatibilityVerification.migration.migrations.find(item => item.version === '026')?.state, 'pending')
+  const compatibilityAdmin = new DatabaseBackupAdminService(join(root, 'compatibility-backups'), migrationSource, '025')
+  const compatibilityRehearsal = await compatibilityAdmin.rehearse(compatibilityBackup.metadata.backupId)
+  assert.equal(compatibilityRehearsal.status, 'RESTORE_TEST_PASSED')
 
   const marker = operationMarkerPaths(canonical).postmaster
   await writeFile(marker, '999999\n', 'utf8')
@@ -65,8 +90,8 @@ try {
 
   const pending = await createFixture('pending', '013')
   await createStoreIdentity(pending, 'test', { storeId: 'pending-test' })
-  await assert.rejects(openVerifiedDatabase({ dataDirectory: pending, role: 'test' }), /DATABASE_MIGRATION_REQUIRED:missing_versions=014,015,016,017,018/)
-  const future = await createFixture('future', '018')
+  await assert.rejects(openVerifiedDatabase({ dataDirectory: pending, role: 'test' }), /DATABASE_MIGRATION_REQUIRED:missing_versions=014,015,016,017,018,019,020,021,022,023,024,025,026,027/)
+  const future = await createFixture('future', '027')
   await createStoreIdentity(future, 'test', { storeId: 'future-test' })
   const futureDb = new PGlite(future)
   await futureDb.query("insert into schema_migrations(version,name,checksum,status,actor_source,notes) values('999','unreviewed future migration','not-reviewed','applied','isolated DB-1 test','')")
@@ -112,7 +137,10 @@ try {
   const outletManagerPermissions = ['manage_staff', 'manage_bookings']
   assert.equal(outletManagerPermissions.includes('manage_platform'), false)
   assert.equal((await readFile(storeIdentityPath(canonical), 'utf8')).includes('isolated-canonical'), true)
-  console.log(JSON.stringify({ explicitPath: true, canonicalIdentity: true, wrongIdentityRejected: true, staleMarkerPreserved: true, crashSimulationDetected: true, recoveryMarkerBlocked: true, pendingMigrationBlockedWithoutWrite: true, unexpectedMigrationBlocked: true, offlineBackupRequired: true, verifiedBackup: true, backupIdentity: true, directBackupOpenRejected: true, backupMigrationRejected: true, disposableVerificationAllowed: true, rehearsalRoleAllowed: true, originalBackupByteStable: true, sqlOpenTest: true, preflight: true, fingerprint: true, interruptedCopyRejected: true, failedPreflightRejected: true, unreadableBackupRejected: true, wrongStoreRejected: true, ownerOnlyHealthFoundation: true }, null, 2))
+  const guardedLauncher = await readFile('deployment/windows/Start-AndaluciaGuardedApplication.ps1', 'utf8')
+  assert.match(guardedLauncher, /if \(-not \$env:ANDALUCIA_REQUIRED_SCHEMA_VERSION\) \{ \$env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027' \}/, 'The live launcher must require the coordinated Schema 027 application after production activation.')
+  assert.doesNotMatch(guardedLauncher, /\$env:ANDALUCIA_REQUIRED_SCHEMA_VERSION\s*=\s*'02[56]'/, 'The live launcher must not fall back to an older production schema after activation.')
+  console.log(JSON.stringify({ explicitPath: true, workspaceDisposableTestRootAllowed: true, arbitraryWorkspaceTestRootRejected: true, canonicalIdentity: true, wrongIdentityRejected: true, schema027DefaultEnforced: true, schema026ExplicitCompatibility: true, schema025RuntimeRejected: true, schema027LauncherActivated: true, liveLauncherDefaultsTo027: true, invalidSchemaOverrideRejected: true, unsupportedSchemaOverrideRejected: true, schema025PreMigrationBackupVerified: true, schema025RestoreRehearsed: true, staleMarkerPreserved: true, crashSimulationDetected: true, recoveryMarkerBlocked: true, pendingMigrationBlockedWithoutWrite: true, unexpectedMigrationBlocked: true, offlineBackupRequired: true, verifiedBackup: true, backupIdentity: true, directBackupOpenRejected: true, backupMigrationRejected: true, disposableVerificationAllowed: true, rehearsalRoleAllowed: true, originalBackupByteStable: true, sqlOpenTest: true, preflight: true, fingerprint: true, interruptedCopyRejected: true, failedPreflightRejected: true, unreadableBackupRejected: true, wrongStoreRejected: true, ownerOnlyHealthFoundation: true }, null, 2))
 } finally {
   await rm(root, { recursive: true, force: true })
 }

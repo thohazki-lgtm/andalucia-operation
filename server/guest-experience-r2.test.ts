@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { BookingRepository } from './booking-repository.js'
 import { analyzeBookingCandidates } from './booking-intelligence-engine.js'
 import { GuestOccasionRepository } from './guest-occasion-repository.js'
+import { ReportingRepository } from './reporting-repository.js'
 import type { AuthPrincipal, BookingImportPreviewRecord, GuestOccasionRecord } from '../src/domain.js'
 
 const db = new PGlite()
@@ -28,6 +29,16 @@ assert.equal((await occasions.detectForBooking(bookingId,outletId,'R2 Manager'))
 const experience = await occasions.experience('2026-09-22',outletId)
 assert.equal(experience.groups.celebrations,1); assert.equal(experience.groups.vipSpecial,1); assert.equal(experience.attention.length,2); assert.equal(experience.groups.attentionNeeded,1); assert.equal(experience.groups.completed,0)
 assert.deepEqual(experience.attention.map(item=>item.normalizedKey).sort(),['ALLERGY','GUEST_ATTENTION_TLC'])
+const reporting = new ReportingRepository(db)
+const operationalReport = await reporting.report('today','2026-09-22','2026-09-22')
+assert.equal(operationalReport.occasions.total,2)
+assert.equal(operationalReport.occasions.byCategory.find(item=>item.key==='birthday')?.count,1)
+assert.equal(operationalReport.occasions.byCategory.find(item=>item.key==='siyamFamily')?.count,1)
+assert.equal(operationalReport.occasions.byCategory.find(item=>item.key==='vip')?.count,1)
+assert.equal(operationalReport.occasions.byCategory.find(item=>item.key==='tlc')?.count,1)
+assert.equal(operationalReport.occasions.records.filter(item=>item.categoryKeys?.includes('vip')).length,1)
+assert.equal(operationalReport.occasions.records.filter(item=>item.categoryKeys?.includes('tlc')).length,1)
+assert.equal(operationalReport.bookings.totalCovers,2)
 const configuration = await occasions.configuration(); const birthday = configuration.types.find(item=>item.value==='birthday')!
 await assert.rejects(occasions.saveConfiguration('types',{...birthday,value:'mutable_attempt',label:'Birthday Recognition'}),/display color changes only/i)
 await assert.rejects(occasions.saveConfiguration('types',{...birthday,active:false}),/display color changes only/i)

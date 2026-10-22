@@ -26,11 +26,13 @@ await db.close()
 const folder = await mkdtemp(join(tmpdir(), 'andalucia-runtime-compatibility-'))
 try {
   const path = join(folder, 'postgres')
-  const fresh = new PGlite(path); await fresh.exec(await readFile('database/schema.sql', 'utf8')); await fresh.close()
-  const incompatible = new StaffRepository(path, new PGlite(path))
-  await assert.rejects(incompatible.assertCompatibleSchema(), /DATABASE_MIGRATION_REQUIRED/)
-  await runMigrations(incompatible.getDatabase())
-  await incompatible.assertCompatibleSchema()
-  await incompatible.getDatabase().close()
+  const fresh = new PGlite(path)
+  try {
+    await fresh.exec(await readFile('database/schema.sql', 'utf8'))
+    const incompatible = new StaffRepository(path, fresh)
+    await assert.rejects(incompatible.assertCompatibleSchema(), /DATABASE_MIGRATION_REQUIRED/)
+    await runMigrations(incompatible.getDatabase())
+    await incompatible.assertCompatibleSchema()
+  } finally { await fresh.close() }
 } finally { await rm(folder, { recursive: true, force: true }) }
 console.log('migration tooling guards, transactional rollback, and runtime compatibility checks passed')

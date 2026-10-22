@@ -8,9 +8,11 @@ import { GoogleDesktopOAuthCoordinator } from './google-drive-cloud-client.js'
 import {
   LoopbackOAuthCallbackServer,
   ManagerControlledCloudProvisioning,
+  PROVISIONING_DESTINATION_NAME,
   assertCredentialPayload,
   assertDestinationFolder,
   assertExistingBindingCompatible,
+  assertPickerSelection,
   maskGoogleIdentity,
   type LoopbackCallbackBoundary,
   type ManagerApprovalBoundary,
@@ -49,8 +51,8 @@ await writeFile(artifactPath, artifact)
 await writeFile(sidecarPath, JSON.stringify(sidecar))
 
 const input: ProvisioningInput = {
-  clientId: 'synthetic-client-id.apps.googleusercontent.com', credentialReference: 'andalucia-cloud:synthetic',
-  destination: { folderId: 'folder-1', label: 'Synthetic disaster recovery', relationship: 'MY_DRIVE' },
+  clientId: 'synthetic-client-id.apps.googleusercontent.com', clientSecret: 'CANARY_CLIENT_SECRET', credentialReference: 'andalucia-cloud:synthetic',
+  destination: { label: 'Synthetic disaster recovery', relationship: 'MY_DRIVE' },
   approvedRoot: pairRoot, artifactPath, sidecarPath, expectedBackupId: 'synthetic-backup', expectedSchema: '018',
   expectedManifestSha256: 'a'.repeat(64), callbackTimeoutMs: 10_000
 }
@@ -79,12 +81,14 @@ class SyntheticDrive implements DriveTransport {
   sessions = new Map<string, RemoteUploadRequest>()
   sequence = 0
   wrongFolderId = false
+  wrongFolderName = false
+  wrongFolderType = false
   wrongOwner = false
   failUploadRole = ''
   remoteHashMismatch = false
   async identity() { return identity }
-  async folder(): Promise<DriveFolder> {
-    return { id: this.wrongFolderId ? 'other-folder' : input.destination.folderId, mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [this.wrongOwner ? { permissionId: 'other', emailAddress: 'other@example.invalid' } : identity], canAddChildren: true }
+  async folder(_credential: CloudCredential, folderId: string): Promise<DriveFolder> {
+    return { id: this.wrongFolderId ? 'other-folder' : folderId, name: this.wrongFolderName ? 'Other_Folder' : PROVISIONING_DESTINATION_NAME, mimeType: this.wrongFolderType ? 'application/octet-stream' : 'application/vnd.google-apps.folder', trashed: false, owners: [this.wrongOwner ? { permissionId: 'other', emailAddress: 'other@example.invalid' } : identity], canAddChildren: true }
   }
   async candidates(_credential: CloudCredential, _folderId: string, names: string[], backupId: string) { return [...this.objects.values()].filter(item => names.includes(item.name) && item.appProperties.backupId === backupId) }
   async createSession(_credential: CloudCredential, request: RemoteUploadRequest) { const id = `remote-${++this.sequence}`; this.sessions.set(id, request); return { url: `synthetic://${id}`, remoteId: id } }
@@ -112,9 +116,10 @@ class SyntheticManager implements ManagerApprovalBoundary {
   destination = true
   publication = true
   localUrl = ''
+  selectedDestination?: { label: string; folderId: string; relationship: 'MY_DRIVE' | 'SHARED_DRIVE'; driveId?: string }
   async authorizationReady(localUrl: string) { this.localUrl = localUrl; if (!this.authorize) throw new Error('MANAGER_AUTHORIZATION_CANCELLED') }
   async approveIdentity() { return this.identity }
-  async approveDestination() { return this.destination }
+  async approveDestination(value: { label: string; folderId: string; relationship: 'MY_DRIVE' | 'SHARED_DRIVE'; driveId?: string }) { this.selectedDestination = value; return this.destination }
   async approvePublication() { return this.publication }
 }
 
@@ -123,7 +128,7 @@ class SyntheticCallback implements LoopbackCallbackBoundary {
   localAuthorizationUrl = 'http://127.0.0.1:49111/authorize'
   authorizationUrl = ''
   closed = false
-  result = { state: 'synthetic-state', code: 'synthetic-code' }
+  result = { state: 'synthetic-state', code: 'synthetic-code', pickedFileIds: ['folder-selected'] }
   setAuthorizationUrl(value: string) { this.authorizationUrl = value }
   async wait() { return this.result }
   async close() { this.closed = true }
@@ -160,7 +165,9 @@ assert.equal(successFixture.manager.localUrl, successFixture.callback.localAutho
 assert.equal(successFixture.callback.closed, true)
 assert.equal(successFixture.store.values.has(input.credentialReference), true)
 assert.equal([...successFixture.store.values.keys()].some(key => key.includes('.pending-')), false)
-assert.equal((await successFixture.store.load(input.credentialReference))?.approvedDestination?.folderId, input.destination.folderId)
+assert.equal((await successFixture.store.load(input.credentialReference))?.approvedDestination?.folderId, 'folder-selected')
+assert.equal(success.destination.folderId, 'folder-selected')
+assert.equal(successFixture.manager.selectedDestination?.folderId, 'folder-selected')
 const idempotent = await successFixture.runner.execute(input)
 assert.equal(idempotent.status, 'ALREADY_PRESENT_VERIFIED')
 assert.equal(successFixture.drive.sequence, 2)
@@ -179,12 +186,20 @@ for (const [stage, configure, pattern] of [
 
 // OAuth state, token, PKCE exchange, callback, and scope failures.
 const oauthStore = new MemoryCredentialStore()
-const oauth = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'client', redirectUri: 'http://127.0.0.1:49112/callback' }, credentials: oauthStore, randomState: () => 'expected-state', http: async (_url, init) => {
+const oauth = new GoogleDesktopOAuthCoordinator({ configuration: { clientId: 'client', clientSecret: 'CANARY_CLIENT_SECRET', redirectUri: 'http://127.0.0.1:49112/callback', picker: { allowFolderSelection: true, selectableMimeType: 'application/vnd.google-apps.folder' } }, credentials: oauthStore, randomState: () => 'expected-state', http: async (_url, init) => {
   const body = String(init?.body)
   assert.match(body, /code_verifier=/)
+  assert.equal(new URLSearchParams(body).get('client_secret'), 'CANARY_CLIENT_SECRET')
   return new Response(JSON.stringify({ access_token: 'synthetic-access', refresh_token: 'synthetic-refresh', expires_in: 3600, scope: GOOGLE_DRIVE_FILE_SCOPE }), { status: 200, headers: { 'Content-Type': 'application/json' } })
 } })
 const oauthPending = oauth.begin('andalucia-cloud:oauth')
+const oauthAuthorization = new URL(oauthPending.authorizationUrl)
+assert.equal(oauthAuthorization.searchParams.get('scope'), GOOGLE_DRIVE_FILE_SCOPE)
+assert.equal(oauthAuthorization.searchParams.get('prompt'), 'consent')
+assert.equal(oauthAuthorization.searchParams.get('trigger_onepick'), 'true')
+assert.equal(oauthAuthorization.searchParams.get('allow_folder_selection'), 'true')
+assert.equal(oauthAuthorization.searchParams.get('mimetypes'), 'application/vnd.google-apps.folder')
+assert.equal(oauthAuthorization.searchParams.has('file_ids'), false)
 await expectFailure(oauth.complete(oauthPending, { state: 'wrong', code: 'code' }), /OAUTH_STATE_MISMATCH/)
 await oauth.complete(oauthPending, { state: oauthPending.state, code: 'code' })
 const tokenFailure = createRunner({ completeFailure: 'OAUTH_TOKEN_EXCHANGE_FAILED' })
@@ -210,11 +225,31 @@ await expectFailure(createRunner({ expiresAt: '2020-01-01T00:00:00Z' }).runner.e
 assert.deepEqual(maskGoogleIdentity(identity), { maskedEmail: 'm***@example.invalid', permissionFingerprint: 'perm...7890' })
 const wrongFolder = new SyntheticDrive(); wrongFolder.wrongFolderId = true
 await expectFailure(createRunner({ drive: wrongFolder }).runner.execute(input), /DESTINATION_FOLDER_UNVERIFIED/)
+const wrongFolderName = new SyntheticDrive(); wrongFolderName.wrongFolderName = true
+await expectFailure(createRunner({ drive: wrongFolderName }).runner.execute(input), /DESTINATION_FOLDER_NAME_MISMATCH/)
+const wrongFolderType = new SyntheticDrive(); wrongFolderType.wrongFolderType = true
+await expectFailure(createRunner({ drive: wrongFolderType }).runner.execute(input), /DESTINATION_FOLDER_UNVERIFIED/)
 const wrongOwner = new SyntheticDrive(); wrongOwner.wrongOwner = true
 await expectFailure(createRunner({ drive: wrongOwner }).runner.execute(input), /DESTINATION_OWNERSHIP_MISMATCH/)
-assert.throws(() => assertDestinationFolder({ id: 'other', mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [identity], canAddChildren: true }, identity, input.destination), /DESTINATION_FOLDER_UNVERIFIED/)
-assert.throws(() => assertExistingBindingCompatible({ ...credential, approvedDestination: { version: 1, credentialReference: input.credentialReference, label: 'Other', folderId: 'other', account: identity, relationship: 'MY_DRIVE' } }, identity, input.destination), /EXISTING_DESTINATION_BINDING_MISMATCH/)
-assert.throws(() => assertExistingBindingCompatible({ ...credential, approvedDestination: { version: 1, credentialReference: input.credentialReference, label: 'Other', folderId: input.destination.folderId, account: { permissionId: 'other', emailAddress: 'other@example.invalid' }, relationship: 'MY_DRIVE' } }, identity, input.destination), /EXISTING_IDENTITY_BINDING_MISMATCH/)
+const selectedDestination = { folderId: 'folder-selected', expectedName: PROVISIONING_DESTINATION_NAME, label: input.destination.label, relationship: input.destination.relationship }
+assert.equal(assertPickerSelection(['folder-selected']), 'folder-selected')
+assert.throws(() => assertPickerSelection(['folder/invalid']), /PICKER_SELECTION_INVALID/)
+assert.throws(() => assertDestinationFolder({ id: 'other', name: PROVISIONING_DESTINATION_NAME, mimeType: 'application/vnd.google-apps.folder', trashed: false, owners: [identity], canAddChildren: true }, identity, selectedDestination), /DESTINATION_FOLDER_UNVERIFIED/)
+assert.throws(() => assertExistingBindingCompatible({ ...credential, approvedDestination: { version: 1, credentialReference: input.credentialReference, label: 'Other', folderId: 'other', account: identity, relationship: 'MY_DRIVE' } }, identity, selectedDestination), /EXISTING_DESTINATION_BINDING_MISMATCH/)
+assert.throws(() => assertExistingBindingCompatible({ ...credential, approvedDestination: { version: 1, credentialReference: input.credentialReference, label: 'Other', folderId: selectedDestination.folderId, account: { permissionId: 'other', emailAddress: 'other@example.invalid' }, relationship: 'MY_DRIVE' } }, identity, selectedDestination), /EXISTING_IDENTITY_BINDING_MISMATCH/)
+
+// Picker cancellation or malformed selection fails before any Drive mutation.
+for (const pickedFileIds of [[], ['folder-a', 'folder-b']]) {
+  const callback = new SyntheticCallback(); callback.result = { ...callback.result, pickedFileIds }
+  const fixture = createRunner({ callback })
+  await expectFailure(fixture.runner.execute(input), /PICKER_SELECTION_(MISSING|AMBIGUOUS)/)
+  assert.equal(fixture.drive.sequence, 0)
+  assert.equal(fixture.store.values.has(input.credentialReference), false)
+}
+const destinationRejected = createRunner(); destinationRejected.manager.destination = false
+await expectFailure(destinationRejected.runner.execute(input), /MANAGER_DESTINATION_APPROVAL_REQUIRED/)
+assert.equal(destinationRejected.drive.sequence, 0)
+assert.equal(destinationRejected.store.values.has(input.credentialReference), false)
 
 // Artifact/sidecar/binding, upload interruption, remote checksum, partial-pair cleanup, and duplicate conflict failures flow through the production coordinator.
 const badManifest = { ...input, expectedManifestSha256: 'b'.repeat(64) }
@@ -228,7 +263,7 @@ assert.equal(partialFailureDrive.objects.size, 0)
 const hashFailureDrive = new SyntheticDrive(); hashFailureDrive.remoteHashMismatch = true
 await expectFailure(createRunner({ drive: hashFailureDrive }).runner.execute(input), /REMOTE_CHECKSUM_MISMATCH/)
 assert.equal(hashFailureDrive.objects.size, 0)
-const conflictDrive = new SyntheticDrive(); conflictDrive.objects.set('conflict', { id: 'conflict', name: artifactName, parents: [input.destination.folderId], bytes: artifact.byteLength, sha256Checksum: sha256(artifact), appProperties: { backupId: input.expectedBackupId } })
+const conflictDrive = new SyntheticDrive(); conflictDrive.objects.set('conflict', { id: 'conflict', name: artifactName, parents: ['folder-selected'], bytes: artifact.byteLength, sha256Checksum: sha256(artifact), appProperties: { backupId: input.expectedBackupId } })
 await expectFailure(createRunner({ drive: conflictDrive }).runner.execute(input), /REMOTE_NAME_CONFLICT/)
 
 // Real loopback listener: safe host, success callback, cancellation, malformed callback, unexpected host, and timeout.
@@ -242,8 +277,14 @@ const get = (url: string, host?: string) => new Promise<{ status: number; body: 
 const callbackSuccess = await LoopbackOAuthCallbackServer.listen(2_000)
 callbackSuccess.setAuthorizationUrl('https://accounts.google.com/o/oauth2/v2/auth?state=synthetic')
 assert.equal((await get(callbackSuccess.localAuthorizationUrl)).status, 200)
-assert.equal((await get(`${callbackSuccess.redirectUri}?state=synthetic-state&code=synthetic-code`)).status, 200)
-assert.deepEqual(await callbackSuccess.wait(), { state: 'synthetic-state', code: 'synthetic-code' })
+assert.equal((await get(`${callbackSuccess.redirectUri}?state=synthetic-state&code=synthetic-code&picked_file_ids=folder-selected`)).status, 200)
+assert.deepEqual(await callbackSuccess.wait(), { state: 'synthetic-state', code: 'synthetic-code', pickedFileIds: ['folder-selected'] })
+const callbackMissingSelection = await LoopbackOAuthCallbackServer.listen(2_000)
+assert.equal((await get(`${callbackMissingSelection.redirectUri}?state=synthetic-state&code=synthetic-code`)).status, 400)
+await expectFailure(callbackMissingSelection.wait(), /PICKER_SELECTION_MISSING/)
+const callbackAmbiguousSelection = await LoopbackOAuthCallbackServer.listen(2_000)
+assert.equal((await get(`${callbackAmbiguousSelection.redirectUri}?state=synthetic-state&code=synthetic-code&picked_file_ids=folder-a,folder-b`)).status, 400)
+await expectFailure(callbackAmbiguousSelection.wait(), /PICKER_SELECTION_AMBIGUOUS/)
 const callbackCancelled = await LoopbackOAuthCallbackServer.listen(2_000)
 assert.equal((await get(`${callbackCancelled.redirectUri}?error=access_denied`)).status, 400)
 await expectFailure(callbackCancelled.wait(), /OAUTH_MANAGER_CANCELLED/)

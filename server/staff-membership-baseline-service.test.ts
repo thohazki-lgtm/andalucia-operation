@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
@@ -9,10 +9,6 @@ import { StaffMembershipBaselineService } from './staff-membership-baseline-serv
 
 const storage = await mkdtemp(join(tmpdir(), 'andalucia-membership-baseline-'))
 const databasePath = join(storage, 'postgres')
-const initial = new PGlite(databasePath)
-await initial.exec(await readFile('database/schema.sql', 'utf8'))
-await initial.close()
-
 const staffRepository = new StaffRepository(databasePath, new PGlite(databasePath))
 try {
   await staffRepository.initialize()
@@ -41,6 +37,7 @@ try {
   assert.equal(previewBeforeReview.availableForManualInclusion.some(candidate => candidate.staffId === staffG.id), true)
   assert.equal(previewBeforeReview.suggestedCandidates.find(candidate => candidate.staffId === staffA.id)?.department, 'F&B Service')
   assert.equal(previewBeforeReview.suggestedCandidates.find(candidate => candidate.staffId === staffB.id)?.proposedEffectiveFrom, '2026-09-12')
+  assert.equal(previewBeforeReview.suggestedCandidates.find(candidate => candidate.staffId === staffA.id)?.proposedEffectiveTo, '2026-09-30')
   assert.equal(previewBeforeReview.suggestedCandidates.find(candidate => candidate.staffId === staffD.id)?.warnings.includes('CURRENT_STATUS_INACTIVE'), true)
   const endedCandidate = [...previewBeforeReview.suggestedCandidates, ...previewBeforeReview.availableForManualInclusion].find(candidate => candidate.staffId === ended.id)!
   assert.equal(endedCandidate.warnings.includes('EMPLOYMENT_ENDED_BEFORE_PROPOSED_START'), true)
@@ -75,6 +72,7 @@ try {
   const membershipRows = await db.query<any>("select staff_id,effective_from::text,effective_to::text,source,review_status,reviewed_at,reviewed_by from staff_membership_history where outlet_scope_id=$1 order by staff_id", [approved.review.outletScopeId])
   assert.equal(membershipRows.rows.length, 4)
   assert.equal(membershipRows.rows.every((row: any) => row.source === 'baseline_manager_review' && row.review_status === 'approved' && row.reviewed_at && row.reviewed_by), true)
+  assert.equal(membershipRows.rows.every((row: any) => row.effective_to === '2026-09-30'), true)
   assert.equal(membershipRows.rows.some((row: any) => row.staff_id === staffC.id), false)
   assert.equal(membershipRows.rows.some((row: any) => row.staff_id === ended.id), false)
 
@@ -99,6 +97,10 @@ try {
 
   const octoberReview = await baseline.beginReview('2026-10', ANDALUCIA_SCOPE_KEY)
   await baseline.saveSelection(octoberReview.id, { staffId: staffC.id, included: true, effectiveFrom: '2026-10-01', effectiveTo: null })
+  const octoberPreview = await baseline.preview('2026-10', ANDALUCIA_SCOPE_KEY)
+  const octoberCandidate = octoberPreview.suggestedCandidates.find(candidate => candidate.staffId === staffC.id)!
+  assert.equal(octoberCandidate.proposedEffectiveTo, '2026-10-31')
+  assert.equal(octoberCandidate.warnings.includes('REGULAR_OUTLET_MEMBERSHIP_OVERLAP'), false)
   await baseline.resetReview(octoberReview.id, 'Restart manager review')
   assert.equal(Number((await db.query<{ count: number }>('select count(*)::int count from staff_membership_baseline_selections where review_id=$1', [octoberReview.id])).rows[0].count), 0)
   assert.equal((await baseline.status('2026-10', ANDALUCIA_SCOPE_KEY)).status, 'in_review')
@@ -111,7 +113,7 @@ try {
   assert.equal(audit.rows.some(row => row.action === 'review_reset'), true)
   assert.equal(audit.rows.some(row => row.action === 'baseline_approved'), true)
 
-  console.log(JSON.stringify({ candidatePreviewReadOnly: true, exactOutletSuggestion: true, manualExistingStaffIncluded: true, excludedSuggestedStaffOmitted: true, defaultJoinDateApplied: true, inactiveHistoricalMemberApproved: true, endedBeforeMonthBlocked: true, invalidApprovalAtomic: true, approvedMemberships: approved.membershipIds.length, duplicateApprovalStatus: repeated.status, resolverMembers: resolved.members.length, augustBlocker: 'STAFF_MEMBERSHIP_HISTORY_PRE_BASELINE', staffOutletUnchanged: true, rosterUnchanged: true, resetUnapprovedReview: true, auditTrail: true }, null, 2))
+  console.log(JSON.stringify({ candidatePreviewReadOnly: true, exactOutletSuggestion: true, manualExistingStaffIncluded: true, excludedSuggestedStaffOmitted: true, defaultJoinDateApplied: true, monthlyEndDateEnforced: true, nextMonthNoFalseOverlap: true, inactiveHistoricalMemberApproved: true, endedBeforeMonthBlocked: true, invalidApprovalAtomic: true, approvedMemberships: approved.membershipIds.length, duplicateApprovalStatus: repeated.status, resolverMembers: resolved.members.length, augustBlocker: 'STAFF_MEMBERSHIP_HISTORY_PRE_BASELINE', staffOutletUnchanged: true, rosterUnchanged: true, resetUnapprovedReview: true, auditTrail: true }, null, 2))
 } finally {
   await staffRepository.getDatabase().close().catch(() => undefined)
   await rm(storage, { recursive: true, force: true })

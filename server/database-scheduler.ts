@@ -72,7 +72,7 @@ export type SchedulerShutdownRequest = {
   requestId: string
   requestedAt: string
   action: 'graceful_shutdown'
-  source: 'windows_task_scheduler'
+  source: 'windows_task_scheduler' | 'guarded_operator'
 }
 
 export const startSchedulerShutdownControl = (options: {
@@ -101,7 +101,7 @@ export const startSchedulerShutdownControl = (options: {
       await rename(source, claimed)
       const request = JSON.parse(await readFile(claimed, 'utf8')) as SchedulerShutdownRequest
       const response = join(responses, `${request.requestId}.json`)
-      if (request.version !== 'andalucia-scheduler-shutdown-v1' || request.action !== 'graceful_shutdown' || request.source !== 'windows_task_scheduler' || basename(`${request.requestId}.json`) !== `${request.requestId}.json` || Date.now() - Date.parse(request.requestedAt) > 2 * 60_000) throw new Error('SCHEDULER_SHUTDOWN_REQUEST_INVALID_OR_STALE')
+      if (request.version !== 'andalucia-scheduler-shutdown-v1' || request.action !== 'graceful_shutdown' || !['windows_task_scheduler', 'guarded_operator'].includes(request.source) || basename(`${request.requestId}.json`) !== `${request.requestId}.json` || Date.now() - Date.parse(request.requestedAt) > 2 * 60_000) throw new Error('SCHEDULER_SHUTDOWN_REQUEST_INVALID_OR_STALE')
       await writeFile(response, JSON.stringify({ requestId: request.requestId, state: 'accepted', acceptedAt: new Date().toISOString() }), 'utf8')
       await options.gracefulShutdown('WINDOWS_SCHEDULER')
       await writeFile(response, JSON.stringify({ requestId: request.requestId, state: 'completed', completedAt: new Date().toISOString() }), 'utf8')

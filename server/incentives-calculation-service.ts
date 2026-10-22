@@ -4,6 +4,7 @@ import type { BillTipDraftCalculation, BillTipRosterDiagnostic, ChargeableIncent
 import { billTipShares, eligibleNetFromGrossUnit, formatFixed, parseFixed, percentageMicroDollars, roundMicroDollarsToCents } from './financial-decimal.js'
 import { IncentivesRepository } from './incentives-repository.js'
 import { assertRecoveryInactive } from './database-recovery.js'
+import { dutyDisplayIdentity, resolvedBillTipEligibility, resolvedWorkedDayUnits } from '../src/duty-financial-policy.js'
 
 const monthPattern = /^([0-9]{4})-(0[1-9]|1[0-2])$/
 const leapYear = (year: number) => year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
@@ -47,8 +48,10 @@ export class IncentivesCalculationService {
         if (!value) { unresolvedDays++; continue }
         rosterDaysFound++
         const duty: any = duties.get(value)
-        if (!duty || typeof duty.metadata.billTipEligible !== 'boolean') { unresolvedDays++; continue }
-        if (duty.metadata.billTipEligible) eligibleDays++
+        const eligible = duty ? resolvedBillTipEligibility(duty) : null
+        const creditedUnits = duty ? resolvedWorkedDayUnits(duty) : null
+        if (!duty || eligible === null || (eligible && creditedUnits === null)) { unresolvedDays++; continue }
+        if (eligible) eligibleDays += creditedUnits!
         else if (duty.metadata.dutyClassification === 'annualLeave' || String(duty.metadata.displayCode || value).toUpperCase() === 'AL') excludedAlDays++
       }
       return { staffId: staff.id, staffName: staff.full_name, staffNumber: staff.staff_number, designation: staff.position_key, expectedDays: expectedDates.length, rosterDaysFound, eligibleDays, excludedAlDays, missingRosterDays: unresolvedDays, reviewRequired: unresolvedDays > 0 }
@@ -59,7 +62,7 @@ export class IncentivesCalculationService {
     if (manualCents > poolCents) throw new Error('External/support allocations cannot exceed the monthly Bill Tip pool.')
     const remainingCents = poolCents - manualCents
     const shares = billTipShares(remainingCents, diagnostics.map(item => item.eligibleDays))
-    const policyMetadata = { eligibilitySource: 'duty_codes.metadata.billTipEligible', dutyEligibility: Object.fromEntries([...duties.entries()].map(([value, duty]: [string, any]) => [value, duty.metadata.billTipEligible])), expectedCoverage: 'explicit staff scope intersected with join/resignation dates', allocationRounding: 'per-day value truncated to 6 decimals; staff payouts rounded half-up to cents; remainder retained', dateSemantics: 'Maldives date-only', staffIds: uniqueStaffIds }
+    const policyMetadata = { eligibilitySource: 'approved duty financial policy plus explicit manager metadata for OFF and custom codes', dutyEligibility: Object.fromEntries([...duties.entries()].map(([value, duty]: [string, any]) => [dutyDisplayIdentity(duty).text, { eligible: resolvedBillTipEligibility(duty), workedDayUnits: resolvedWorkedDayUnits(duty), storedValue: value }])), expectedCoverage: 'explicit staff scope intersected with join/resignation dates', allocationRounding: 'per-day value truncated to 6 decimals; staff payouts rounded half-up to cents; remainder retained', dateSemantics: 'Maldives date-only', staffIds: uniqueStaffIds }
     await this.db.transaction(async transaction => {
       await transaction.query('delete from bill_tip_staff_allocations where distribution_id=$1', [distributionId])
       for (let index = 0; index < diagnostics.length; index++) {
@@ -115,7 +118,9 @@ export class IncentivesCalculationService {
   }
 
   async generateDraftEarning(sourceChargeableItemId: string, actor = 'Venue Manager'): Promise<ChargeableIncentiveEarning> {
-    const sourceResult = await this.db.query<any>("select c.id,c.charge_date::text,c.item_value,c.quantity,c.unit_price::text,c.total_amount::text,c.waiter_id,c.status,coalesce((o.metadata->>'countsAsRealizedRevenue')::boolean,false) realized,s.full_name,s.staff_number,s.position_key from chargeable_item_records c left join configuration_options o on o.group_key='chargeable_statuses' and o.value=c.status left join staff s on s.id=c.waiter_id where c.id=$1", [sourceChargeableItemId])
+    const sourceScoped = Boolean((await this.db.query<{ present: boolean }>("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='chargeable_item_records' and column_name='outlet_scope_id') present")).rows[0]?.present)
+    const earningScoped = Boolean((await this.db.query<{ present: boolean }>("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='chargeable_incentive_earnings' and column_name='outlet_scope_id') present")).rows[0]?.present)
+    const sourceResult = await this.db.query<any>(`select c.id,${sourceScoped ? 'c.outlet_scope_id' : 'null::uuid outlet_scope_id'},c.charge_date::text,c.item_value,c.quantity,c.unit_price::text,c.total_amount::text,c.waiter_id,c.status,coalesce((o.metadata->>'countsAsRealizedRevenue')::boolean,false) realized,s.full_name,s.staff_number,s.position_key from chargeable_item_records c left join configuration_options o on o.group_key='chargeable_statuses' and o.value=c.status left join staff s on s.id=c.waiter_id where c.id=$1`, [sourceChargeableItemId])
     const source = sourceResult.rows[0]
     if (!source) throw new Error('Source Chargeable Item not found.')
     if (!source.realized) throw new Error('Only realized Chargeable Items can generate incentive earnings.')
@@ -134,7 +139,9 @@ export class IncentivesCalculationService {
     if (current.rows[0]) {
       await this.db.query("update chargeable_incentive_earnings set seller_id=$2,seller_name_snapshot=$3,seller_number_snapshot=$4,designation_snapshot=$5,service_date=$6,package_identity=$7,quantity=$8,guest_amount=$9,eligible_net_amount=$10,financial_rate_version_id=$11,financial_rate_version=$12,service_charge_rate=$13,gst_rate=$14,incentive_rule_id=$15,incentive_rule_version=$16,rule_family_snapshot=$17,applied_rate_percent=$18,applied_fixed_amount=$19,applied_tier_minimum=$20,applied_tier_maximum=$21,calculated_amount=$22,final_amount=$23,updated_at=now(),updated_by=$24 where id=$1 and status='draft'", [id, source.waiter_id, source.full_name, source.staff_number, source.position_key, source.charge_date, source.item_value, source.quantity, calculation.grossTotal, calculation.eligibleNetTotal, financialRate.id, financialRate.version, financialRate.serviceChargeRate, financialRate.gstRate, rule.id, rule.version, rule.ruleFamily, calculation.appliedRatePercent, calculation.appliedFixedAmount, calculation.appliedTierMinimum, calculation.appliedTierMaximum, calculation.calculatedAmount, calculation.finalAmount, actor])
     } else {
-      await this.db.query("insert into chargeable_incentive_earnings(id,source_chargeable_item_id,seller_id,seller_name_snapshot,seller_number_snapshot,designation_snapshot,service_date,package_identity,quantity,guest_amount,eligible_net_amount,financial_rate_version_id,financial_rate_version,service_charge_rate,gst_rate,incentive_rule_id,incentive_rule_version,rule_family_snapshot,applied_rate_percent,applied_fixed_amount,applied_tier_minimum,applied_tier_maximum,calculated_amount,final_amount,status,generation_key,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'draft',$25,$26,$26)", [id, sourceChargeableItemId, source.waiter_id, source.full_name, source.staff_number, source.position_key, source.charge_date, source.item_value, source.quantity, calculation.grossTotal, calculation.eligibleNetTotal, financialRate.id, financialRate.version, financialRate.serviceChargeRate, financialRate.gstRate, rule.id, rule.version, rule.ruleFamily, calculation.appliedRatePercent, calculation.appliedFixedAmount, calculation.appliedTierMinimum, calculation.appliedTierMaximum, calculation.calculatedAmount, calculation.finalAmount, generationKey, actor])
+      const values = [id, sourceChargeableItemId, source.waiter_id, source.full_name, source.staff_number, source.position_key, source.charge_date, source.item_value, source.quantity, calculation.grossTotal, calculation.eligibleNetTotal, financialRate.id, financialRate.version, financialRate.serviceChargeRate, financialRate.gstRate, rule.id, rule.version, rule.ruleFamily, calculation.appliedRatePercent, calculation.appliedFixedAmount, calculation.appliedTierMinimum, calculation.appliedTierMaximum, calculation.calculatedAmount, calculation.finalAmount, generationKey, actor]
+      if (earningScoped) await this.db.query("insert into chargeable_incentive_earnings(id,source_chargeable_item_id,seller_id,seller_name_snapshot,seller_number_snapshot,designation_snapshot,service_date,package_identity,quantity,guest_amount,eligible_net_amount,financial_rate_version_id,financial_rate_version,service_charge_rate,gst_rate,incentive_rule_id,incentive_rule_version,rule_family_snapshot,applied_rate_percent,applied_fixed_amount,applied_tier_minimum,applied_tier_maximum,calculated_amount,final_amount,status,generation_key,created_by,updated_by,outlet_scope_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'draft',$25,$26,$26,$27)", [...values, source.outlet_scope_id])
+      else await this.db.query("insert into chargeable_incentive_earnings(id,source_chargeable_item_id,seller_id,seller_name_snapshot,seller_number_snapshot,designation_snapshot,service_date,package_identity,quantity,guest_amount,eligible_net_amount,financial_rate_version_id,financial_rate_version,service_charge_rate,gst_rate,incentive_rule_id,incentive_rule_version,rule_family_snapshot,applied_rate_percent,applied_fixed_amount,applied_tier_minimum,applied_tier_maximum,calculated_amount,final_amount,status,generation_key,created_by,updated_by) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'draft',$25,$26,$26)", values)
     }
     const saved = (await this.repository.earning(id))!
     await this.db.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'chargeable_incentive_earning', id, before ? 'draft_recalculated' : 'draft_generated', before ? json(before) : null, json(saved), actor])

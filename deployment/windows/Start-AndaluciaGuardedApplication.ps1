@@ -17,6 +17,14 @@ Set-Location -LiteralPath $projectRoot
 $env:ANDALUCIA_DATA_DIR = $canonicalData
 $env:ANDALUCIA_STORE_ROLE = 'canonical'
 $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
+# Vite 8 closes its listener when a non-interactive launcher's stdin ends
+# unless CI mode is enabled. The guarded Task Scheduler runtime is intentionally
+# non-interactive, so keep the frontend listener alive without weakening any
+# database or process-ownership guard.
+$env:CI = 'true'
+# Start only against the currently reviewed schema. A caller may explicitly
+# provide the immediately previous reviewed version for a controlled recovery.
+if (-not $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION) { $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027' }
 $startedAtUtc = [DateTime]::UtcNow
 & npm.cmd run dev:canonical
 $runtimeExit = $LASTEXITCODE

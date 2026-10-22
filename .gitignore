@@ -3,13 +3,18 @@
 .backups/
 .recovery/
 .tmp/
+.tmp-runtime/
 tmp/
 .runtime/
 .tools/
+.test-data/
 .npm-cache/
 .pnpm-store/
 node_modules/
 dist/
+output/
+artifacts/
+sources/
 
 .env
 .env.*

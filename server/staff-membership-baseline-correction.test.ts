@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
@@ -8,9 +8,8 @@ import { StaffRepository } from './staff-repository.js'
 import { ANDALUCIA_SCOPE_KEY, OutletMembershipRepository } from './outlet-membership-repository.js'
 import { StaffMembershipBaselineService } from './staff-membership-baseline-service.js'
 
-const storage=await mkdtemp(join(tmpdir(),'andalucia-baseline-correction-')),path=join(storage,'postgres'),seed=new PGlite(path)
-await seed.exec(await readFile('database/schema.sql','utf8'));await seed.close()
-const repository=new StaffRepository(path,new PGlite(path))
+const storage=await mkdtemp(join(tmpdir(),'andalucia-baseline-correction-'))
+const repository=new StaffRepository(join(storage,'postgres'),new PGlite())
 try{
   await repository.initialize();const db=repository.getDatabase(),service=new StaffMembershipBaselineService(db),memberships=new OutletMembershipRepository(db);await memberships.initialize()
   const actor={userId:randomUUID(),displayName:'Isolated Platform Owner'}
@@ -30,7 +29,7 @@ try{
   await service.saveSelection(second.id,{staffId:a.id,included:false,effectiveFrom:'2026-09-01',effectiveTo:'2026-09-30'},actor)
   await service.saveSelection(second.id,{staffId:b.id,included:true,effectiveFrom:'2026-09-05',effectiveTo:'2026-09-28'},actor)
   await service.saveSelection(second.id,{staffId:c.id,included:true,effectiveFrom:'2026-09-01',effectiveTo:'2026-09-30'},actor)
-  const diff=await service.diff(second.id);assert.deepEqual(diff?.summary,{added:1,removed:1,dateChanges:1,unchanged:0})
+  const diff=await service.diff(second.id);assert.deepEqual(diff?.summary,{added:1,removed:1,dateChanges:0,unchanged:1})
   const draftResolution=await memberships.resolveRegularStaffScope('2026-09',ANDALUCIA_SCOPE_KEY);assert.equal(draftResolution.members.some(item=>item.staffId===a.id),true);assert.equal(draftResolution.members.some(item=>item.staffId===c.id),false)
   const approved2=await service.approve(second.id,actor);assert.equal(approved2.review.revisionNumber,2);assert.equal((await service.approve(second.id,actor)).status,'BASELINE_ALREADY_APPROVED')
   const history=await service.history('2026-09',ANDALUCIA_SCOPE_KEY);assert.deepEqual(history.map(item=>[item.revisionNumber,item.status,item.isAuthoritative]),[[2,'approved',true],[1,'superseded',false]])

@@ -16,6 +16,7 @@ create table if not exists user_accounts (
   password_hash text not null,
   status text not null default 'active' check (status in ('active','disabled')),
   staff_id uuid references staff(id) on delete set null,
+  must_change_password boolean not null default false,
   last_login_at timestamptz,
   created_by text,
   updated_by text,
@@ -23,6 +24,7 @@ create table if not exists user_accounts (
   updated_at timestamptz not null default now(),
   check (length(normalized_login_identifier) between 3 and 254)
 );
+create unique index if not exists user_accounts_one_active_per_staff on user_accounts(staff_id) where staff_id is not null and status='active';
 create table if not exists auth_sessions (
   id uuid primary key,
   token_hash text not null unique,
@@ -513,3 +515,60 @@ alter table chargeable_incentive_earnings add column if not exists financial_rat
 alter table chargeable_incentive_earnings add column if not exists financial_rate_version integer check (financial_rate_version is null or financial_rate_version >= 1);
 alter table chargeable_incentive_earnings add column if not exists service_charge_rate numeric(9,4) check (service_charge_rate is null or service_charge_rate >= 0);
 alter table chargeable_incentive_earnings add column if not exists gst_rate numeric(9,4) check (gst_rate is null or gst_rate >= 0);
+
+-- Pending schema 024 foundation. Existing schema-023 stores are upgraded only by the guarded migration runner.
+create table if not exists employee_timesheets (
+  id uuid primary key,
+  staff_id uuid not null references staff(id) on delete restrict,
+  outlet_scope_id uuid not null references outlet_scopes(id) on delete restrict,
+  month_start date not null,
+  status text not null default 'open' check (status in ('open','submitted')),
+  reopened_until timestamptz,
+  reopened_by_user_id uuid references user_accounts(id) on delete set null,
+  reopen_reason text,
+  created_by_user_id uuid references user_accounts(id) on delete set null,
+  updated_by_user_id uuid references user_accounts(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (month_start = date_trunc('month', month_start)::date),
+  check ((reopened_until is null and reopened_by_user_id is null and reopen_reason is null) or (reopened_until is not null and reopened_by_user_id is not null and length(trim(reopen_reason)) > 0)),
+  unique(staff_id, month_start)
+);
+create table if not exists employee_timesheet_days (
+  id uuid primary key,
+  timesheet_id uuid not null references employee_timesheets(id) on delete cascade,
+  work_date date not null,
+  state text not null default 'draft' check (state in ('draft','confirmed')),
+  first_time_in time,
+  first_time_out time,
+  second_time_in time,
+  second_time_out time,
+  total_minutes integer not null default 0 check (total_minutes between 0 and 1440),
+  revision integer not null default 1 check (revision >= 1),
+  confirmed_at timestamptz,
+  updated_by_user_id uuid references user_accounts(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (state <> 'confirmed' or confirmed_at is not null),
+  unique(timesheet_id, work_date)
+);
+create table if not exists employee_timesheet_day_audits (
+  id uuid primary key,
+  timesheet_id uuid not null references employee_timesheets(id) on delete restrict,
+  timesheet_day_id uuid not null references employee_timesheet_days(id) on delete restrict,
+  actor_user_id uuid references user_accounts(id) on delete set null,
+  action text not null check (action in ('created','draft_saved','confirmed','corrected')),
+  before_data jsonb,
+  after_data jsonb not null,
+  created_at timestamptz not null default now()
+);
+create table if not exists employee_timesheet_reopenings (
+  id uuid primary key,
+  timesheet_id uuid not null references employee_timesheets(id) on delete restrict,
+  actor_user_id uuid not null references user_accounts(id) on delete restrict,
+  reason text not null check (length(trim(reason)) > 0),
+  reopened_until timestamptz not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists employee_timesheet_days_date_idx on employee_timesheet_days(work_date);
+create index if not exists employee_timesheet_audits_day_idx on employee_timesheet_day_audits(timesheet_day_id, created_at);

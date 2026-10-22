@@ -16,7 +16,7 @@ export const initializeDevelopmentStore = async (directoryInput = developmentSto
   let migration: Awaited<ReturnType<typeof runMigrations>>
   try {
     await database.exec(await readFile(resolve(projectRoot, 'database', 'schema.sql'), 'utf8'))
-    migration = await runMigrations(database)
+    migration = await runMigrations(database, { throughVersion: SUPPORTED_SCHEMA_VERSION })
     const latest = migration.status.migrations.filter(item => item.state === 'applied').at(-1)?.version || 'none'
     if (latest !== SUPPORTED_SCHEMA_VERSION) throw new Error(`DEVELOPMENT_STORE_SCHEMA_INCOMPLETE:${latest}`)
   } finally { await database.close() }

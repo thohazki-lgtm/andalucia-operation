@@ -13,8 +13,11 @@ for (const binding of [
   'report.chargeables.realizedRevenue',
   "report.chargeables.topItem?.item",
   "report.chargeables.topWaiter?.waiter",
-  'report.maintenance.completedToday',
   'report.maintenance.completedDuringPeriod',
+  'report.maintenance.unresolved',
+  'report.attendance.scheduledStaff',
+  'report.earnings',
+  'view.earnings',
   'bookingTimeWindow(item.time)',
   'window.print()'
 ]) assert.ok(source.includes(binding), `Reports UI is missing authoritative binding: ${binding}`)
