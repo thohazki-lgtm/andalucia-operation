@@ -1,14 +1,39 @@
-import type { AttendanceRecord, AuthenticatedUser, BillTipVersionDiff, BillTipVersionSnapshot, BillTipWorkflowState, BookingGuestMemberPreview, BookingImportPreview, BookingImportResult, BookingImportReviewChanges, BookingImportReviewDecision, BookingImportReviewValidation, BookingIntelligenceReanalysisPreview, BookingRecord, BookingSummary, ChargeableRecord, ChargeableSummary, ConfigOption, DailyReportManualPayload, DailyReportView, DatabaseAdminHealth, DatabaseBackupInventoryItem, FinancialManagerPreview, FinancialPreviewExternalAllocation, GuestExperienceView, GuestOccasionRecord, GuestOccasionSummary, MaintenanceDuplicateWarning, MaintenanceRecord, MaintenanceSummary, MonthlyFinancePayload, MonthlyReportView, OperationalReport, PublicHoliday, RecoveryPreview, ReportManagerSummary, ReportPeriodType, RosterEntry, Staff, StaffEntitlement, StaffEntitlementBalance, StaffLeaveRecord, StaffMembershipBaselineApprovalResult, StaffMembershipBaselineDiff, StaffMembershipBaselinePreview, StaffMembershipBaselineReview, StaffMembershipBaselineSelection, StaffMembershipBaselineStatusRead, StaffTrainingHistory, TrainingCompletionInput, TrainingDefaults, TrainingImportBatch, TrainingImportDecision, TrainingImportPreview, TrainingImportResult, TrainingPerformance, TrainingSession, TrainingSessionDetail, TrainingTargetVersion, TrainingWorkflowOption, WalkInBookingInput, WeeklyReportView, WineSpiritCalculation, WineSpiritSale, WineSpiritSaleInput } from './domain'
-import type { ChargeableDuplicateWarning, ChargeableWriteRequest } from './domain'
+import type { AttendanceRecord, AuthenticatedUser, BillTipVersionDiff, BillTipVersionSnapshot, BillTipWorkflowState, BookingGuestMemberPreview, BookingImportPreview, BookingImportResult, BookingImportReviewChanges, BookingImportReviewDecision, BookingImportReviewValidation, BookingIntelligenceReanalysisPreview, BookingRecord, BookingSummary, ChargeableRecord, ChargeableSummary, ConfigOption, DailyReportManualPayload, DailyReportView, DatabaseAdminHealth, DatabaseBackupInventoryItem, EmployeeTemporaryCredential, EntitlementPolicy, FinancialManagerPreview, FinancialPreviewExternalAllocation, GuestExperienceView, GuestOccasionRecord, GuestOccasionSummary, MaintenanceDuplicateWarning, MaintenanceRecord, MaintenanceSummary, ManagerTimesheetMonthView, ManagerTimesheetOverview, MonthlyFinancePayload, MonthlyReportView, OperationalReport, PublicHoliday, RecoveryPreview, ReportManagerSummary, ReportPeriodType, RosterBatchChange, RosterEntry, Staff, StaffAccountSummary, StaffEntitlement, StaffEntitlementBalance, StaffEntitlementUpdate, StaffLeaveRecord, StaffMembershipBaselineApprovalResult, StaffMembershipBaselineDiff, StaffMembershipBaselinePreview, StaffMembershipBaselineReview, StaffMembershipBaselineSelection, StaffMembershipBaselineStatusRead, StaffTrainingHistory, TimesheetDayInput, TimesheetDayView, TimesheetMonthView, TrainingCompletionInput, TrainingDefaults, TrainingImportBatch, TrainingImportDecision, TrainingImportPreview, TrainingImportResult, TrainingPerformance, TrainingSession, TrainingSessionDetail, TrainingTargetVersion, TrainingWorkflowOption, WalkInBookingInput, WeeklyReportView, WineSpiritCalculation, WineSpiritSale, WineSpiritSaleInput } from './domain'
+import type { ChargeableCorrectionHistory, ChargeableCorrectionRequest, ChargeableDuplicateWarning, ChargeableWriteRequest } from './domain'
 import type { WineSpiritSaleWriteRequest } from './domain'
-import type { LeavePlannerReadModel } from './domain'
+import type { AnnualLeaveCarryForwardDraft, AnnualLeaveCarryForwardPreview, AnnualLeaveCarryForwardWrite, StaffEntitlementReconciliation, StaffYearlyEntitlementBalance, StaffYearlyEntitlementDraft, StaffYearlyEntitlementPreview, StaffYearlyEntitlementRecord, StaffYearlyEntitlementWrite } from './domain'
+import type { AccumulatedOffBalance, LeavePlannerReadModel, PlannedLeavePeriod, PlannedLeaveWriteInput } from './domain'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...init }); if (!response.ok) { const error = await response.json().catch(() => ({})) as { message?: string }; throw new Error(error.message || 'The request could not be completed.') } if (response.status === 204) return undefined as T; const payload = await response.text(); return (payload ? JSON.parse(payload) : undefined) as T }
+async function download(path: string) { const response = await fetch(path); if (!response.ok) { const error = await response.json().catch(() => ({})) as { message?: string }; throw new Error(error.message || 'The official timesheet could not be generated.') } const disposition = response.headers.get('Content-Disposition') || ''; const filename = /filename="([^"]+)"/.exec(disposition)?.[1] || 'Siyam-World-Timesheet.xlsx'; const url = URL.createObjectURL(await response.blob()); try { const link = document.createElement('a'); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove() } finally { URL.revokeObjectURL(url) } }
 export const authApi = {
   bootstrapStatus: () => request<{ accountConfigured: boolean }>('/api/auth/bootstrap-status'),
   me: () => request<AuthenticatedUser>('/api/auth/me'),
   login: (identifier: string, password: string) => request<AuthenticatedUser>('/api/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
+  changePassword: (replacementPassword: string, currentPassword = '') => request<AuthenticatedUser>('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, replacementPassword }) }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) })
+}
+export const employeeAccountApi = {
+  list: () => request<StaffAccountSummary[]>('/api/staff-accounts'),
+  create: (staffId: string, identifier: string) => request<EmployeeTemporaryCredential>(`/api/staff-accounts/${encodeURIComponent(staffId)}`, { method: 'POST', body: JSON.stringify({ identifier }) }),
+  resetPassword: (staffId: string) => request<EmployeeTemporaryCredential>(`/api/staff-accounts/${encodeURIComponent(staffId)}/reset-password`, { method: 'POST', body: JSON.stringify({}) }),
+  setEnabled: (staffId: string, enabled: boolean) => request<StaffAccountSummary>(`/api/staff-accounts/${encodeURIComponent(staffId)}/${enabled ? 'enable' : 'disable'}`, { method: 'POST', body: JSON.stringify({}) })
+}
+export const timesheetApi = {
+  month: (month: string) => request<TimesheetMonthView>(`/api/my-timesheet?month=${encodeURIComponent(month)}`),
+  saveDraft: (date: string, input: TimesheetDayInput) => request<TimesheetDayView>(`/api/my-timesheet/days/${encodeURIComponent(date)}`, { method: 'PUT', body: JSON.stringify(input) }),
+  confirmDay: (date: string, input: TimesheetDayInput) => request<TimesheetDayView>(`/api/my-timesheet/days/${encodeURIComponent(date)}/confirm`, { method: 'POST', body: JSON.stringify(input) }),
+  submitMonth: (month: string) => request<{ staffId: string; month: string; status: string }>('/api/my-timesheet/submit', { method: 'POST', body: JSON.stringify({ month }) })
+}
+export const managerTimesheetApi = {
+  overview: (month: string) => request<ManagerTimesheetOverview>(`/api/timesheets?month=${encodeURIComponent(month)}`),
+  month: (staffId: string, month: string) => request<ManagerTimesheetMonthView>(`/api/timesheets/${encodeURIComponent(staffId)}?month=${encodeURIComponent(month)}`),
+  correctDay: (staffId: string, date: string, input: TimesheetDayInput, reason: string) => request<TimesheetDayView>(`/api/timesheets/${encodeURIComponent(staffId)}/days/${encodeURIComponent(date)}`, { method: 'PUT', body: JSON.stringify({ ...input, reason }) }),
+  reviewOvertime: (staffId: string, date: string, decision: 'approve' | 'reject', expectedRevision: number, reason = '') => request<TimesheetDayView>(`/api/timesheets/${encodeURIComponent(staffId)}/days/${encodeURIComponent(date)}/overtime/${decision}`, { method: 'POST', body: JSON.stringify({ expectedRevision, reason }) }),
+  approve: (staffId: string, month: string) => request(`/api/timesheets/${encodeURIComponent(staffId)}/${encodeURIComponent(month)}/approve`, { method: 'POST', body: JSON.stringify({}) }),
+  lock: (staffId: string, month: string) => request(`/api/timesheets/${encodeURIComponent(staffId)}/${encodeURIComponent(month)}/lock`, { method: 'POST', body: JSON.stringify({}) }),
+  reopen: (staffId: string, month: string, reason: string, reopenedUntil: string) => request(`/api/timesheets/${encodeURIComponent(staffId)}/${encodeURIComponent(month)}/reopen`, { method: 'POST', body: JSON.stringify({ reason, reopenedUntil }) }),
+  downloadOfficial: (staffId: string, month: string) => download(`/api/timesheets/${encodeURIComponent(staffId)}/${encodeURIComponent(month)}/official-export`)
 }
 export const databaseAdminApi = {
   health: () => request<DatabaseAdminHealth>('/api/database/health'),
@@ -25,21 +50,39 @@ export const databaseAdminApi = {
 }
 export const staffApi = {
   list: () => request<Staff[]>('/api/staff'),
+  reorder: (orderedIds: string[]) => request<Staff[]>('/api/staff/reorder', { method: 'POST', body: JSON.stringify({ orderedIds }) }),
   create: (staff: Staff) => request<Staff>('/api/staff', { method: 'POST', body: JSON.stringify(staff) }),
   update: (staff: Staff) => request<Staff>(`/api/staff/${staff.id}`, { method: 'PUT', body: JSON.stringify(staff) }),
   configuration: () => request<{ dutyCodes: ConfigOption[]; employmentStatuses: ConfigOption[]; positions: ConfigOption[] }>('/api/config/staff'),
   leavePlanner: (month: string) => request<LeavePlannerReadModel>(`/api/workforce/leave-planner?month=${encodeURIComponent(month)}`),
+  plannedLeave: (start: string, end: string, staffId?: string, includeCancelled = true) => request<PlannedLeavePeriod[]>(`/api/workforce/planned-leave?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}${staffId ? `&staffId=${encodeURIComponent(staffId)}` : ''}&includeCancelled=${includeCancelled}`),
+  createPlannedLeave: (input: PlannedLeaveWriteInput) => request<PlannedLeavePeriod>('/api/workforce/planned-leave', { method: 'POST', body: JSON.stringify(input) }),
+  updatePlannedLeave: (id: string, input: PlannedLeaveWriteInput) => request<PlannedLeavePeriod>(`/api/workforce/planned-leave/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) }),
+  cancelPlannedLeave: (id: string, revision: number, reason = '') => request<PlannedLeavePeriod>(`/api/workforce/planned-leave/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ revision, reason }) }),
+  accumulatedOffBalance: (staffId: string) => request<AccumulatedOffBalance>(`/api/workforce/accumulated-off/${encodeURIComponent(staffId)}/balance`),
+  addAccumulatedOffOpeningBalance: (input: { staffId: string; days: number; effectiveDate: string; justification: string; evidenceReference: string }) => request<AccumulatedOffBalance>('/api/workforce/accumulated-off/opening-balance', { method: 'POST', body: JSON.stringify(input) }),
+  confirmAccumulatedOffConsumption: (plannedLeaveId: string, dutyDates: string[]) => request<AccumulatedOffBalance>(`/api/workforce/planned-leave/${encodeURIComponent(plannedLeaveId)}/confirm-accumulated-off`, { method: 'POST', body: JSON.stringify({ dutyDates }) }),
   correctPublicHolidaySemantics: () => request<{ changed: boolean; option: ConfigOption }>('/api/workforce/leave-planner/ph-semantics', { method: 'POST', body: JSON.stringify({}) }),
   leaveRecords: (start: string, end: string, staffId?: string) => request<StaffLeaveRecord[]>(`/api/staff/leave-records?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}${staffId ? `&staffId=${encodeURIComponent(staffId)}` : ''}`),
+  entitlementPolicies: () => request<EntitlementPolicy[]>('/api/workforce/entitlement-policies'),
+  saveEntitlementPolicy: (policy: EntitlementPolicy) => request<EntitlementPolicy>(`/api/workforce/entitlement-policies/${encodeURIComponent(policy.classification)}`, { method: 'PUT', body: JSON.stringify(policy) }),
   entitlements: () => request<StaffEntitlement[]>('/api/workforce/staff-entitlements'),
-  saveEntitlement: (entitlement: StaffEntitlement) => request<StaffEntitlement>(`/api/workforce/staff-entitlements/${entitlement.staffId}`, { method: 'PUT', body: JSON.stringify(entitlement) }),
+  saveEntitlement: (entitlement: StaffEntitlementUpdate) => request<StaffEntitlement>(`/api/workforce/staff-entitlements/${entitlement.staffId}`, { method: 'PUT', body: JSON.stringify(entitlement) }),
   entitlementBalance: (staffId: string, year: number, weekDate: string) => request<StaffEntitlementBalance>(`/api/workforce/staff-entitlements/${staffId}/balance?year=${year}&weekDate=${weekDate}`),
+  yearlyEntitlements: (staffId: string, year: number) => request<StaffYearlyEntitlementRecord[]>(`/api/workforce/staff-entitlements/${staffId}/yearly?year=${year}`),
+  previewYearlyEntitlements: (input: StaffYearlyEntitlementDraft) => request<StaffYearlyEntitlementPreview>(`/api/workforce/staff-entitlements/${input.staffId}/yearly/preview`, { method: 'POST', body: JSON.stringify(input) }),
+  saveYearlyEntitlements: (input: StaffYearlyEntitlementWrite) => request<StaffYearlyEntitlementRecord[]>(`/api/workforce/staff-entitlements/${input.staffId}/yearly`, { method: 'PUT', body: JSON.stringify(input) }),
+  yearlyEntitlementBalance: (staffId: string, year: number, weekDate: string) => request<StaffYearlyEntitlementBalance>(`/api/workforce/staff-entitlements/${staffId}/yearly-balance?year=${year}&weekDate=${weekDate}`),
+  entitlementReconciliation: (staffId: string, year: number, weekDate: string) => request<StaffEntitlementReconciliation>(`/api/workforce/staff-entitlements/${staffId}/reconciliation?year=${year}&weekDate=${weekDate}`),
+  previewAnnualLeaveCarryForward: (input: AnnualLeaveCarryForwardDraft) => request<AnnualLeaveCarryForwardPreview>(`/api/workforce/staff-entitlements/${input.staffId}/annual-leave-carry-forward/preview`, { method: 'POST', body: JSON.stringify(input) }),
+  saveAnnualLeaveCarryForward: (input: AnnualLeaveCarryForwardWrite) => request<AnnualLeaveCarryForwardPreview>(`/api/workforce/staff-entitlements/${input.staffId}/annual-leave-carry-forward`, { method: 'PUT', body: JSON.stringify(input) }),
   publicHolidays: (year: number) => request<PublicHoliday[]>(`/api/workforce/public-holidays?year=${year}`),
   createPublicHoliday: (holiday: PublicHoliday) => request<PublicHoliday>('/api/workforce/public-holidays', { method: 'POST', body: JSON.stringify(holiday) }),
   updatePublicHoliday: (holiday: PublicHoliday) => request<PublicHoliday>(`/api/workforce/public-holidays/${holiday.id}`, { method: 'PUT', body: JSON.stringify(holiday) }),
   removePublicHoliday: (id: string) => request<void>(`/api/workforce/public-holidays/${id}`, { method: 'DELETE' }),
+  activateDutyCode: (code: string) => request<ConfigOption>('/api/config/staff/duty-codes/activate', { method: 'POST', body: JSON.stringify({ code }) }),
   saveConfiguration: (group: 'duty-codes' | 'employment-statuses' | 'positions', option: ConfigOption) => request<ConfigOption>(`/api/config/staff/${group}/${option.id}`, { method: 'PUT', body: JSON.stringify(option) }),
-  reorderDutyCode: (id: string, direction: 'up' | 'down') => request<ConfigOption[]>('/api/config/staff/duty-codes/reorder', { method: 'POST', body: JSON.stringify({ id, direction }) }),
+  reorderDutyCodes: (orderedIds: string[]) => request<ConfigOption[]>('/api/config/staff/duty-codes/reorder', { method: 'POST', body: JSON.stringify({ orderedIds }) }),
   removeDutyCode: (id: string) => request<{ mode: 'deleted' | 'retired'; option?: ConfigOption }>(`/api/config/staff/duty-codes/${id}`, { method: 'DELETE' })
 }
 export const staffMembershipBaselineApi = {
@@ -56,6 +99,7 @@ export const staffMembershipBaselineApi = {
 }
 export const operationsApi = {
   roster: (start: string, end: string) => request<RosterEntry[]>(`/api/roster?start=${start}&end=${end}`),
+  updateRosterBatch: (changes: RosterBatchChange[]) => request<{ saved: number }>('/api/roster/batch', { method: 'POST', body: JSON.stringify({ changes }) }),
   updateRoster: (staffId: string, date: string, dutyCode: string) => request<void>(`/api/roster/${staffId}/${date}`, { method: 'PUT', body: JSON.stringify({ dutyCode }) }),
   attendance: (start: string, end: string) => request<AttendanceRecord[]>(`/api/attendance?start=${start}&end=${end}`),
   saveAttendance: (record: AttendanceRecord) => request<void>(`/api/attendance/${record.staffId}/${record.date}`, { method: 'PUT', body: JSON.stringify(record) }),
@@ -70,7 +114,7 @@ export const trainingApi = {
   confirm: (id: string, input: TrainingCompletionInput) => request<TrainingSessionDetail>(`/api/training/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify(input) }),
   create: (training: TrainingSession) => request<TrainingSession>('/api/training', { method: 'POST', body: JSON.stringify(training) }),
   update: (training: TrainingSession) => request<TrainingSession>(`/api/training/${training.id}`, { method: 'PUT', body: JSON.stringify(training) }),
-  archive: (id: string) => request<TrainingSession>(`/api/training/${id}`, { method: 'DELETE' }),
+  archive: (id: string) => request<TrainingSession>(`/api/training/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   previewImport: async (file: File): Promise<TrainingImportPreview> => { const response = await fetch(`/api/training/import-preview?filename=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file }); if (!response.ok) { const error = await response.json().catch(() => ({})) as { message?: string }; throw new Error(error.message || 'The HR calendar could not be parsed.') } return response.json() as Promise<TrainingImportPreview> },
   confirmImport: (batchId: string, decisions: TrainingImportDecision[]) => request<TrainingImportResult>('/api/training/confirm-import', { method: 'POST', body: JSON.stringify({ batchId, decisions }) }),
   importBatch: (id: string) => request<TrainingImportBatch>(`/api/training/import-batches/${id}`),
@@ -106,6 +150,8 @@ export const chargeableApi = {
   summary: (date: string) => request<ChargeableSummary>(`/api/chargeables/summary?date=${date}`),
   create: (record: ChargeableWriteRequest) => request<ChargeableRecord>('/api/chargeables', { method: 'POST', body: JSON.stringify(record) }),
   update: (record: ChargeableWriteRequest) => request<ChargeableRecord>(`/api/chargeables/${record.id}`, { method: 'PUT', body: JSON.stringify(record) }),
+  correct: (record: ChargeableCorrectionRequest) => request<ChargeableRecord>(`/api/chargeables/${record.id}/correct`, { method: 'POST', body: JSON.stringify(record) }),
+  correctionHistory: (id: string) => request<ChargeableCorrectionHistory[]>(`/api/chargeables/${id}/corrections`),
   duplicateReview: (record: ChargeableWriteRequest) => request<ChargeableDuplicateWarning[]>('/api/chargeables/duplicate-review', { method: 'POST', body: JSON.stringify(record) }),
   archive: (id: string) => request<ChargeableRecord>(`/api/chargeables/${id}`, { method: 'DELETE' }),
   configuration: () => request<{ items: ConfigOption[]; statuses: ConfigOption[]; wineCatalog?: ConfigOption[] }>('/api/config/chargeables'),

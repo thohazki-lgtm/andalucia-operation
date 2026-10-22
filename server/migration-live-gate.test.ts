@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { LIVE_MIGRATION_AUTHORIZATION_PHRASE, authorizeLiveExecution, prepareLiveMigration, type LiveMigrationAuthorizationArtifact } from './migration-live-gate.js'
 import { resolveMigrationDataDirectory, runMigrationCommand } from './migration-store.js'
 import { writeJsonAtomic } from './migration-filesystem.js'
 
-const folder = await mkdtemp(join(tmpdir(), 'andalucia-live-gate-'))
+const testRoot = resolve('.tmp-tests')
+await mkdir(testRoot, { recursive: true })
+const folder = await mkdtemp(join(testRoot, 'andalucia-live-gate-'))
 const schema = await readFile('database/schema.sql', 'utf8')
+const gateSource = await readFile('server/migration-live-gate.ts', 'utf8')
 const exclusive = async () => true
 const createFixture = async (name: string, blocked = false) => {
   const path = join(folder, name, 'postgres'); await mkdir(join(folder, name), { recursive: true }); const db = new PGlite(path); await db.exec(schema)
@@ -19,6 +21,7 @@ const createFixture = async (name: string, blocked = false) => {
 const ledgerAbsent = async (path: string) => { const db = new PGlite(path); try { return !(await db.query<{ exists: boolean }>("select exists(select 1 from information_schema.tables where table_name='schema_migrations') exists")).rows[0]?.exists } finally { await db.close() } }
 
 try {
+  assert.match(gateSource, /requiredVersion: process\.env\.ANDALUCIA_REQUIRED_SCHEMA_VERSION/)
   const rehearsal = await createFixture('rehearsal')
   assert.equal(resolveMigrationDataDirectory({ configuredPath: rehearsal }), rehearsal)
   const simulatedLive = await createFixture('simulated-live')

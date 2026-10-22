@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { tmpdir } from 'node:os'
 import { acquireDatabaseSchedulerLock, schedulerLockPath, startSchedulerShutdownControl } from './database-scheduler.js'
+import { createDisposableTestRoot } from './test-store-fixture.js'
 
-const root = await mkdtemp(join(tmpdir(), 'andalucia-windows-scheduler-'))
+const root = await createDisposableTestRoot('windows-scheduler')
 const backupRoot = join(root, 'backups')
 const canonical = join(root, 'data', 'postgres')
 await mkdir(canonical, { recursive: true })
@@ -33,7 +33,7 @@ try {
   const requestId = 'isolated-scheduler-request'
   const requestRoot = join(backupRoot, '.db2', 'scheduler', 'control', 'requests')
   await mkdir(requestRoot, { recursive: true })
-  await writeFile(join(requestRoot, `${requestId}.json`), JSON.stringify({ version: 'andalucia-scheduler-shutdown-v1', requestId, requestedAt: new Date().toISOString(), action: 'graceful_shutdown', source: 'windows_task_scheduler' }), 'utf8')
+  await writeFile(join(requestRoot, `${requestId}.json`), JSON.stringify({ version: 'andalucia-scheduler-shutdown-v1', requestId, requestedAt: new Date().toISOString(), action: 'graceful_shutdown', source: 'guarded_operator' }), 'utf8')
   const deadline = Date.now() + 5_000
   const response = join(backupRoot, '.db2', 'scheduler', 'control', 'responses', `${requestId}.json`)
   while ((!existsSync(response) || JSON.parse(await readFile(response, 'utf8')).state !== 'completed' || exitCode === null) && Date.now() < deadline) await new Promise(resolveWait => setTimeout(resolveWait, 50))
@@ -51,6 +51,7 @@ try {
   assert.match(jobWrapper, /npm\.cmd run db:restore:rehearse/)
   assert.match(jobWrapper, /exit 1/)
   assert.match(jobWrapper, /gracefulShutdown=CONFIRMED/)
+  assert.match(jobWrapper, /source='windows_task_scheduler'/)
   assert.match(jobWrapper, /api\/health/)
   assert.match(jobWrapper, /src\/main\.tsx/)
   assert.match(jobWrapper, /src\/App\.tsx/)

@@ -1,8 +1,15 @@
-import type { BookingRecord, BookingSummary, ConfigOption, MaintenanceSummary, OperationalReport, RosterEntry, Staff } from './domain'
+import { isLeaveClassification, type BookingRecord, type BookingSummary, type ConfigOption, type MaintenanceSummary, type OperationalReport, type RosterEntry, type Staff, type TrainingSession } from './domain'
 import { bookingTimeWindow } from './booking-time.js'
 import { serviceDate, serviceTime } from './service-date.js'
 
 type ServiceParty = { id: string; time: string; covers: number; state: 'upcoming' | 'arrived' | 'noShow'; tables: string[] }
+
+const readableOccasionText = (color: string) => { const match = /^#([0-9a-f]{6})$/i.exec(color); if (!match) return '#ffffff'; const value = Number.parseInt(match[1], 16); const red = value >> 16; const green = value >> 8 & 255; const blue = value & 255; return (red * 299 + green * 587 + blue * 114) / 1000 >= 150 ? '#173247' : '#ffffff' }
+export function dashboardOccasionStyle(key: string, occasionTypes: ConfigOption[]) {
+  const option = occasionTypes.find(item => item.metadata?.occasionCategory === key)
+  const backgroundColor = option?.color || (key === 'vip' ? '#6c63a8' : key === 'tlc' ? '#e4eff4' : '#fffaf0')
+  return { backgroundColor, borderColor: backgroundColor, color: key === 'tlc' ? '#23678c' : option || key === 'vip' ? readableOccasionText(backgroundColor) : '#173d56' }
+}
 
 export function buildTeamToday(staff: Staff[], roster: RosterEntry[], dutyOptions: ConfigOption[]) {
   const duty = (value?: string | null) => dutyOptions.find(option => option.value === value)
@@ -12,8 +19,18 @@ export function buildTeamToday(staff: Staff[], roster: RosterEntry[], dutyOption
     totalStaff: activeStaff.length,
     working: assigned.filter(item => duty(item.entry?.dutyCode)?.metadata?.countsAsWorking),
     off: assigned.filter(item => duty(item.entry?.dutyCode)?.metadata?.dutyClassification === 'off'),
-    leave: assigned.filter(item => ['annualLeave', 'publicHoliday', 'sickLeave'].includes(duty(item.entry?.dutyCode)?.metadata?.dutyClassification || ''))
+    leave: assigned.filter(item => { const classification = duty(item.entry?.dutyCode)?.metadata?.dutyClassification; return isLeaveClassification(classification) && classification !== 'off' }),
+    unassigned: assigned.filter(item => !item.entry?.dutyCode || !duty(item.entry.dutyCode))
   }
+}
+
+export function buildDailyTraining(sessions: TrainingSession[], selectedDate: string) {
+  const eligible = sessions
+    .filter(session => session.active && (session.operationalStatus || session.status) !== 'cancelled')
+    .sort((left, right) => `${left.date}T${left.startTime || left.time}`.localeCompare(`${right.date}T${right.startTime || right.time}`))
+  const today = eligible.find(session => session.date === selectedDate)
+  if (today) return { mode: 'today' as const, session: today }
+  return { mode: 'upcoming' as const, session: eligible.find(session => session.date > selectedDate) || null }
 }
 
 const minutesFor = (time: string) => { const match = /^(\d{2}):(\d{2})/.exec(time); return match ? Number(match[1]) * 60 + Number(match[2]) : -1 }
@@ -25,20 +42,10 @@ function authoritativeServiceParties(bookings: BookingRecord[], statuses: Config
     const metadata = statusMetadata(booking.bookingStatus)
     return metadata?.serviceStage !== 'excluded' && !(metadata?.excludesFromExpectedCovers && metadata?.bookingMetric !== 'noShow' && !metadata?.serviceStage)
   })
-  const grouped = new Map<string, BookingRecord[]>()
-  const ungrouped: BookingRecord[][] = []
-  for (const booking of included) {
-    const groupId = booking.coverResolution?.groupId
-    const groupTotal = booking.coverResolution?.groupTotal
-    if (!groupId || !groupTotal) { ungrouped.push([booking]); continue }
-    const key = `${booking.reservationDate}|${booking.reservationTime.slice(0, 5)}|${groupId}`
-    grouped.set(key, [...(grouped.get(key) || []), booking])
-  }
-  return [...ungrouped, ...grouped.values()].map(group => {
-    const first = group[0]
-    const stages = group.map(booking => statusMetadata(booking.bookingStatus)?.serviceStage || (statusMetadata(booking.bookingStatus)?.bookingMetric === 'arrived' ? 'arrived' : statusMetadata(booking.bookingStatus)?.bookingMetric === 'noShow' ? 'noShow' : 'remaining'))
-    const state = stages.some(stage => ['arrived', 'completed'].includes(stage)) ? 'arrived' : stages.some(stage => stage === 'noShow') ? 'noShow' : 'upcoming'
-    return { id: group.length > 1 ? `${first.reservationDate}|${first.reservationTime.slice(0, 5)}|${first.coverResolution!.groupId}` : first.id, time: first.reservationTime.slice(0, 5), covers: first.coverResolution?.groupTotal || first.covers, state, tables: [...new Set(group.map(booking => booking.tableNumber).filter(Boolean))] }
+  return included.map(booking => {
+    const stage = statusMetadata(booking.bookingStatus)?.serviceStage || (statusMetadata(booking.bookingStatus)?.bookingMetric === 'arrived' ? 'arrived' : statusMetadata(booking.bookingStatus)?.bookingMetric === 'noShow' ? 'noShow' : 'remaining')
+    const state = ['arrived', 'completed'].includes(stage) ? 'arrived' : stage === 'noShow' ? 'noShow' : 'upcoming'
+    return { id: booking.id, time: booking.reservationTime.slice(0, 5), covers: booking.covers, state, tables: booking.tableNumber ? [booking.tableNumber] : [] }
   })
 }
 
@@ -51,13 +58,14 @@ export function buildHostessServiceBoard(bookings: BookingRecord[], statuses: Co
   const noShows = parties.filter(party => party.state === 'noShow')
   const partySizes = [...new Set(upcoming.map(party => party.covers))].sort((a, b) => a - b)
   const times = [...new Set(upcoming.map(party => party.time).filter(Boolean))].sort()
+  const live = selectedDate === serviceDate(now)
+  const currentMinutes = minutesFor(serviceTime(now))
   const rows = times.map(time => ({
     time,
     label: bookingTimeWindow(time),
-    counts: Object.fromEntries(partySizes.map(size => [size, upcoming.filter(party => party.time === time && party.covers === size).length])) as Record<number, number>
+    counts: Object.fromEntries(partySizes.map(size => [size, upcoming.filter(party => party.time === time && party.covers === size).length])) as Record<number, number>,
+    active: live && minutesFor(time) <= currentMinutes && currentMinutes < minutesFor(time) + 30
   }))
-  const live = selectedDate === serviceDate(now)
-  const currentMinutes = minutesFor(serviceTime(now))
   const future = upcoming.filter(party => minutesFor(party.time) >= currentMinutes)
   const nextThirty = live ? future.filter(party => minutesFor(party.time) < currentMinutes + 30) : []
   const nextTime = (live ? future : upcoming).map(party => party.time).sort()[0]
@@ -76,18 +84,14 @@ export function buildPartySizeGrid(bookings: BookingRecord[], statuses: ConfigOp
   return { rows: board.rows, partySizes: board.partySizes, includedBookings: board.summary.upcomingParties }
 }
 
-export function buildDashboardData(report: OperationalReport | null, bookingSummary: BookingSummary, maintenanceSummary: MaintenanceSummary) {
+export function buildDashboardData(report: OperationalReport | null, _bookingSummary?: BookingSummary, maintenanceSummary: MaintenanceSummary = { openIssues: 0, inProgress: 0, completedToday: 0 }) {
   const bookings = report?.bookings
-  const attentionCategories = [
-    { key: 'maintenance', label: 'Urgent maintenance', count: maintenanceSummary.urgentUnresolved || 0 },
-    { key: 'tables', label: 'Unassigned tables', count: bookingSummary.unassignedTables },
-    { key: 'waiters', label: 'Unassigned waiters', count: bookingSummary.unassignedWaiters },
-    { key: 'occasions', label: 'Guest occasions', count: report?.occasions.requiringAttention || 0 }
-  ]
+  const unresolvedMaintenance = maintenanceSummary.unresolved ?? maintenanceSummary.openIssues + maintenanceSummary.inProgress
+  const attentionCategories = [{ key: 'maintenance', label: 'Maintenance follow-up', count: unresolvedMaintenance }]
   return {
     bookings: { totalCovers: bookings?.totalCovers || 0, adults: bookings?.totalAdults || 0, kids: bookings?.totalKids || 0 },
     serviceProgress: { arrivedCovers: bookings?.arrivedCovers || 0, remainingCovers: bookings?.remainingCovers || 0, noShowCovers: bookings?.noShowCovers || 0 },
-    occasions: { total: report?.occasions.total || 0, categories: report?.occasions.byCategory || [] },
+    occasions: { total: report?.occasions.total || 0, categories: (report?.occasions.byCategory || []).filter(category => category.count > 0) },
     chargeables: { realizedRevenue: report?.chargeables.realizedRevenue || 0, itemsSold: report?.chargeables.itemsSold || 0, topItem: report?.chargeables.topItem?.item || '—' },
     attention: { total: attentionCategories.reduce((sum, category) => sum + category.count, 0), categories: attentionCategories.filter(category => category.count > 0) }
   }

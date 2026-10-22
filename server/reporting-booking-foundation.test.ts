@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { PGlite } from '@electric-sql/pglite'
 import { BookingRepository } from './booking-repository.js'
 import { ReportingRepository } from './reporting-repository.js'
 import type { BookingRecord } from '../src/domain.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 
-const db = new PGlite()
-await db.exec(await readFile('database/schema.sql', 'utf8'))
+const fixture = await createDisposableDevelopmentStore('reporting-booking-foundation')
+const db = fixture.db
 const bookings = new BookingRepository(db)
 await bookings.initialize()
 const makeBooking = (date: string, time: string, status: string, covers: number): BookingRecord => ({ id: randomUUID(), guestName: 'Reporting guest', roomNumber: '101', birthDate: null, arrivalDate: null, departureDate: null, mealPeriod: 'Dinner', reservationDate: date, reservationTime: time, bookingNumber: randomUUID(), covers, bookingStatus: status, bookingSource: 'manual', bookedBy: 'Test', guestNotes: '', tableNumber: '', waiterId: null, waiter: null })
@@ -24,14 +23,14 @@ await db.query('update bookings set raw_import_payload=$2 where id=$1', [explici
 
 const reporting = new ReportingRepository(db)
 const week = await reporting.report('week', '2026-09-07', '2026-09-13')
-assert.deepEqual({ covers: week.bookings.expectedCovers, adults: week.bookings.adults, kids: week.bookings.kids, noShowCovers: week.bookings.noShowCovers, arrivalPercent: week.bookings.arrivalPercent }, { covers: 12, adults: 9, kids: 3, noShowCovers: 4, arrivalPercent: 16.67 })
+assert.deepEqual({ covers: week.bookings.expectedCovers, adults: week.bookings.adults, kids: week.bookings.kids, noShowCovers: week.bookings.noShowCovers, arrivalPercent: week.bookings.arrivalPercent }, { covers: 12, adults: 10, kids: 2, noShowCovers: 4, arrivalPercent: 16.67 })
 assert.equal(week.bookings.adults + week.bookings.kids, week.bookings.expectedCovers)
-assert.deepEqual({ covers: week.bookings.totalCovers, adults: week.bookings.totalAdults, kids: week.bookings.totalKids }, { covers: 16, adults: 12, kids: 4 })
+assert.deepEqual({ covers: week.bookings.totalCovers, adults: week.bookings.totalAdults, kids: week.bookings.totalKids }, { covers: 16, adults: 13, kids: 3 })
 assert.equal(week.bookings.totalAdults + week.bookings.totalKids, week.bookings.totalCovers)
 assert.equal(week.bookings.arrivedCovers + week.bookings.remainingCovers + week.bookings.noShowCovers, week.bookings.totalCovers)
 assert.equal(week.bookings.byDate.length, 7)
 for (const row of week.bookings.byDate) { assert.equal(row.adults + row.kids, row.expectedCovers); assert.equal(row.totalAdults + row.totalKids, row.totalCovers); assert.equal(row.arrivedCovers + row.remainingCovers + row.noShowCovers, row.totalCovers) }
-assert.deepEqual(week.comparison.map(item => [item.key, item.current, item.previous]), [['covers', 16, 2], ['adults', 12, 2], ['kids', 4, 0], ['no_show_covers', 4, 0]])
+assert.deepEqual(week.comparison.map(item => [item.key, item.current, item.previous]), [['covers', 16, 2], ['adults', 13, 2], ['kids', 3, 0], ['no_show_covers', 4, 0]])
 
 const month = await reporting.report('month', '2026-09-01', '2026-09-30')
 assert.equal(month.bookings.adults + month.bookings.kids, month.bookings.expectedCovers)
@@ -40,9 +39,10 @@ for (const row of month.bookings.byWeek) assert.equal(row.adults + row.kids, row
 for (const row of month.bookings.byWeek) assert.equal(row.totalAdults + row.totalKids, row.totalCovers)
 assert.equal(month.bookings.byWeek[0].weekStart, '2026-09-01')
 assert.equal(month.bookings.byWeek.at(-1)?.weekEnd, '2026-09-30')
-assert.deepEqual(month.comparison.map(item => [item.key, item.current, item.previous, item.changePercent]), [['covers', 18, 0, null], ['adults', 14, 0, null], ['kids', 4, 0, null], ['no_show_covers', 4, 0, null]])
+assert.deepEqual(month.comparison.map(item => [item.key, item.current, item.previous, item.changePercent]), [['covers', 18, 0, null], ['adults', 15, 0, null], ['kids', 3, 0, null], ['no_show_covers', 4, 0, null]])
 
 const custom = await reporting.report('custom', '2026-09-08', '2026-09-08')
-assert.deepEqual({ covers: custom.bookings.expectedCovers, adults: custom.bookings.adults, kids: custom.bookings.kids, noShowCovers: custom.bookings.noShowCovers }, { covers: 12, adults: 9, kids: 3, noShowCovers: 4 })
-assert.deepEqual({ covers: custom.bookings.totalCovers, adults: custom.bookings.totalAdults, kids: custom.bookings.totalKids, noShowCovers: custom.bookings.noShowCovers }, { covers: 16, adults: 12, kids: 4, noShowCovers: 4 })
+assert.deepEqual({ covers: custom.bookings.expectedCovers, adults: custom.bookings.adults, kids: custom.bookings.kids, noShowCovers: custom.bookings.noShowCovers }, { covers: 12, adults: 10, kids: 2, noShowCovers: 4 })
+assert.deepEqual({ covers: custom.bookings.totalCovers, adults: custom.bookings.totalAdults, kids: custom.bookings.totalKids, noShowCovers: custom.bookings.noShowCovers }, { covers: 16, adults: 13, kids: 3, noShowCovers: 4 })
+await fixture.cleanup()
 console.log(JSON.stringify({ week: week.bookings, monthWeeks: month.bookings.byWeek, comparison: week.comparison }, null, 2))

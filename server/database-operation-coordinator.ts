@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, open, readFile, readdir, rename, stat, statfs, unlink, writeFile } from 'node:fs/promises'
+import { setTimeout as delay } from 'node:timers/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { StoreManifest } from './migration-filesystem.js'
 
@@ -64,12 +65,27 @@ export type DatabaseOperationPeriodRecord = {
 const safeName = (value: string) => createHash('sha256').update(value).digest('hex')
 const hostName = () => process.env.COMPUTERNAME || process.env.HOSTNAME || 'unknown'
 const json = async <T>(path: string) => JSON.parse(await readFile(path, 'utf8')) as T
+const replaceWithRetry = async (temporary: string, path: string) => {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      await rename(temporary, path)
+      return
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (!['EACCES', 'EBUSY', 'EPERM'].includes(code ?? '') || attempt === 7) throw error
+      await delay(25 * (attempt + 1))
+    }
+  }
+}
 const durableJson = async (path: string, value: unknown) => {
   await mkdir(dirname(path), { recursive: true })
   const temporary = `${path}.${randomUUID()}.tmp`
   const handle = await open(temporary, 'wx')
   try { await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, 'utf8'); await handle.sync() } finally { await handle.close() }
-  await rename(temporary, path)
+  try { await replaceWithRetry(temporary, path) } catch (error) {
+    await unlink(temporary).catch(() => undefined)
+    throw error
+  }
 }
 const isProcessAlive = (pid: number) => {
   if (!Number.isInteger(pid) || pid <= 0) return false

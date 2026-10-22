@@ -28,6 +28,9 @@ const completed = await repository.save({ ...inProgress, status: 'completed' }, 
 assert.equal(completed.revision, 3); assert.ok(completed.completedAt); assert.equal(completed.completedByUserId, actorId); assert.equal(completed.completedByNameSnapshot, 'Maintenance Manager (maintenance.manager)')
 await assert.rejects(repository.save({ ...completed, status: 'open' }, context), /terminal/)
 const summary = await repository.summary(serviceDate(new Date(completed.completedAt!)), ANDALUCIA_SCOPE_ID); assert.equal(summary.completedToday, 1); assert.equal(summary.urgentUnresolved, 0)
+const direct = await repository.save({ ...input, id: randomUUID(), issue: 'Broken service light', referenceFollowUp: 'Replacement requested' }, context)
+const directResolved = await repository.save({ ...direct, status: 'completed' }, context)
+assert.ok(directResolved.completedAt, 'A manager must be able to resolve a reported issue directly')
 
 const areaCreated = await repository.saveConfiguration('areas', { id: randomUUID(), value: '', label: 'Cold Store', active: true }, actor)
 assert.match(areaCreated.value, /^maintenance_area_/)
@@ -44,5 +47,5 @@ const records = await repository.list(ANDALUCIA_SCOPE_ID); const historical = re
 assert.equal(historical.priority, 'Operational'); assert.equal(historical.reporterNameSnapshot, null); assert.equal(historical.completedAt, null)
 assert.equal((await repository.list(randomUUID())).length, 0)
 assert.ok(Number((await db.query<{ count: number }>("select count(*)::int count from audit_logs where entity_type in ('maintenance_issue','maintenance_configuration')")).rows[0].count) >= 8)
-console.log(JSON.stringify({ creation: true, snapshots: true, duplicateWarning: true, concurrency: true, completion: true, protectedWorkflow: true, areaArchiveRestore: true, outletScope: true, audit: true, legacyPriorityPreserved: true }))
+console.log(JSON.stringify({ creation: true, snapshots: true, duplicateWarning: true, concurrency: true, completion: true, directResolution: true, protectedWorkflow: true, areaArchiveRestore: true, outletScope: true, audit: true, legacyPriorityPreserved: true }))
 await db.close()

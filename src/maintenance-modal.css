@@ -16,7 +16,7 @@
   color: #183e53;
 }
 
-.maintenance-modal .modal-title .icon-button {
+.maintenance-modal .modal-title .maintenance-modal-close {
   flex: none;
 }
 

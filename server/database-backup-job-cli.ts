@@ -8,7 +8,8 @@ import { assessPathStorageHeadroom, databaseOperationPeriodKey, directorySizeByt
 
 const configured = process.env.ANDALUCIA_DATA_DIR?.trim()
 if (!configured || !isAbsolute(configured) || resolve(configured) !== canonicalStoreDirectory) throw new Error('BACKUP_WRONG_STORE')
-const admin = new DatabaseBackupAdminService(resolve('.backups'), configured)
+const requiredVersion = process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION
+const admin = new DatabaseBackupAdminService(resolve('.backups'), configured, requiredVersion)
 const command = process.argv[2] || 'status'
 if (command === 'status') console.log(JSON.stringify({ policy: await admin.ensurePolicy(), inventory: await admin.inventory(), retention: await admin.retentionPlan(), storage: await admin.storage() }, null, 2))
 else {
@@ -31,7 +32,7 @@ else {
         const sourceBytes = await directorySizeBytes(configured)
         const storage = await assessPathStorageHeadroom(resolve('.backups'), 'backup', sourceBytes)
         if (!storage.sufficient) throw new Error(`INSUFFICIENT_STORAGE_HEADROOM:${storage.availableBytes}:${storage.requiredBytes}`)
-        const backup = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot: resolve('.backups'), exclusiveConfirmed: true })
+        const backup = await createVerifiedBackup({ sourceDirectory: configured, category, backupRoot: resolve('.backups'), exclusiveConfirmed: true, requiredVersion })
         await admin.recordBackup(category, backup.metadata.backupId, true)
         if (request) await admin.completeRequest(request.path, backup.metadata.backupId)
         const rehearsal = await admin.rehearse(backup.metadata.backupId)

@@ -4,10 +4,10 @@
   .maintenance-table td:first-child {
     position: sticky;
     left: 0;
-    min-width: 260px;
-    max-width: 340px;
+    min-width: 220px;
+    max-width: 320px;
     background: #fff;
-    box-shadow: 1px 0 0 #dce5e9, 7px 0 12px -12px rgba(24, 62, 83, .55);
+    box-shadow: 1px 0 0 #dce5e9;
     z-index: 1;
   }
 

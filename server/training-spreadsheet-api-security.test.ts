@@ -82,7 +82,7 @@ try {
       ANDALUCIA_STORE_ROLE: 'development',
       NODE_ENV: 'test',
       ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: developmentStoreDirectory,
-      ANDALUCIA_REQUIRED_SCHEMA_VERSION: '018',
+      ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026',
       APP_ORIGIN: trustedOrigin,
       API_PORT: String(port)
     },

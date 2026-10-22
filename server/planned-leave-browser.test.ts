@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict'
+import { createHash, randomUUID } from 'node:crypto'
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
+import { readFile, rm } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import type { AuthPrincipal } from '../src/domain.js'
+import { addCalendarDays, serviceDate } from '../src/service-date.js'
+import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
+import { OperationsRepository } from './operations-repository.js'
+import { PlannedLeaveRepository } from './planned-leave-repository.js'
+import { StaffRepository } from './staff-repository.js'
+import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+
+const fixture = await createDisposableDevelopmentStore('planned-leave-browser')
+const profile = join(fixture.root, 'edge-profile'); const processes: ChildProcess[] = []; let socket: WebSocket | null = null; let debugPort: number | null = null
+const token = `isolated-${randomUUID()}`; const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
+const controlledNow = new Date()
+const controlledServiceDate = serviceDate(controlledNow)
+const plannedStartDate = addCalendarDays(controlledServiceDate, 1)
+const plannedCollisionDate = addCalendarDays(controlledServiceDate, 2)
+const plannedEndDate = addCalendarDays(controlledServiceDate, 3)
+const waitFor = async (url: string) => { for (let i=0;i<100;i++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(200) } throw new Error(`Timed out waiting for ${url}`) }
+class Cdp { private id=0; private pending=new Map<number,{resolve:(v:any)=>void;reject:(e:unknown)=>void}>(); readonly errors:string[]=[]; constructor(private ws:WebSocket){ws.onmessage=e=>{const m=JSON.parse(String(e.data));if(m.id){const p=this.pending.get(m.id);if(!p)return;this.pending.delete(m.id);m.error?p.reject(new Error(m.error.message)):p.resolve(m.result)}else if(m.method==='Runtime.exceptionThrown')this.errors.push(m.params?.exceptionDetails?.exception?.description||m.params?.exceptionDetails?.text||'Runtime exception')}} send(method:string,params:Record<string,unknown>={}){const id=++this.id;this.ws.send(JSON.stringify({id,method,params}));return new Promise<any>((resolveCall,rejectCall)=>this.pending.set(id,{resolve:resolveCall,reject:rejectCall}))} evaluate<T>(expression:string){return this.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true}).then(r=>r.result.value as T)} }
+try {
+  const db=fixture.db; await new StaffRepository(fixture.store,db).initialize(); const owner=(await db.query<any>("select u.id,u.display_name from user_accounts u join authorization_user_roles ur on ur.user_id=u.id join authorization_roles r on r.id=ur.role_id where r.role_key='owner' limit 1")).rows[0]
+  await db.query("insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval '1 hour')",[randomUUID(),createHash('sha256').update(token).digest('hex'),owner.id])
+  const person=(await db.query<any>("select id,full_name from staff where employment_status_key='active' order by full_name limit 1")).rows[0]
+  await db.query("insert into staff_membership_history(id,staff_id,outlet_scope_id,membership_dimension,effective_from,source,reason,review_status,reviewed_at,reviewed_by,is_current_baseline) values($1,$2,$3,'regular_outlet','2026-09-01','baseline_manager_review','Browser fixture','approved',now(),'Browser fixture',true)",[randomUUID(),person.id,ANDALUCIA_SCOPE_ID])
+  const actor:AuthPrincipal={userId:owner.id,displayName:owner.display_name,sessionId:randomUUID(),loginIdentifier:'browser-owner',staffId:null,roleKeys:['owner'],permissionKeys:['manage_duty_roster'],globalScope:true,allowedOutletScopeIds:[ANDALUCIA_SCOPE_ID],isOwner:true}
+  const period=await new PlannedLeaveRepository(db).create({staffId:person.id,startDate:plannedStartDate,endDate:plannedEndDate,leaveType:'annual_leave',managerNote:'Browser fixture future plan'},{outletScopeId:ANDALUCIA_SCOPE_ID,actor})
+  const annual=(await db.query<any>("select value from configuration_options where group_key='duty_codes' and metadata->>'dutyClassification'='annualLeave' limit 1")).rows[0]
+  await new OperationsRepository(db).updateRoster(person.id,plannedCollisionDate,annual.value,'Browser fixture')
+  await db.close()
+  const node=process.execPath
+  processes.push(spawn(node,['node_modules/tsx/dist/cli.mjs','server/index.ts'],{cwd:resolve('.'),env:{...process.env,NODE_ENV:'test',ANDALUCIA_DATA_DIR:fixture.store,ANDALUCIA_STORE_ROLE:'development',ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR:fixture.store,ANDALUCIA_REQUIRED_SCHEMA_VERSION:'027',API_PORT:'3003'},stdio:'ignore'}))
+  processes.push(spawn(node,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5175'],{cwd:resolve('.'),env:{...process.env,API_PORT:'3003'},stdio:'ignore'}))
+  await Promise.all([waitFor('http://127.0.0.1:3003/api/health'),waitFor('http://127.0.0.1:5175/')])
+  const edge=spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',['--headless=new','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});processes.push(edge)
+  const active=join(profile,'DevToolsActivePort');for(let i=0;i<200;i++){try{const [line]=(await readFile(active,'utf8')).trim().split(/\r?\n/);const value=Number(line);if(value>0&&(await fetch(`http://127.0.0.1:${value}/json/version`)).ok){debugPort=value;break}}catch{}await sleep(100)}assert.ok(debugPort)
+  const pages=await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json() as any[];const page=pages.find(item=>item.type==='page');assert.ok(page)
+  socket=new WebSocket(page.webSocketDebuggerUrl);await new Promise<void>((done,fail)=>{socket!.onopen=()=>done();socket!.onerror=()=>fail(new Error('CDP connection failed'))});const cdp=new Cdp(socket)
+  await cdp.send('Runtime.enable');await cdp.send('Page.enable');await cdp.send('Network.enable');assert.equal((await cdp.send('Network.setCookie',{name:'andalucia_session',value:token,url:'http://127.0.0.1:5175/',path:'/',httpOnly:true,sameSite:'Strict'})).success,true)
+  await cdp.send('Page.navigate',{url:'http://127.0.0.1:5175/'});for(let i=0;i<100;i++){if(await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Staff Management"]')`))break;await sleep(150)}
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const b=document.querySelector('button[aria-label="Staff Management"]');if(!b)return false;b.click();return true})()`),true)
+  for(let i=0;i<40;i++){if(await cdp.evaluate<boolean>(`!!document.querySelector('.staff-section-tabs')`))break;await sleep(150)}
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const b=Array.from(document.querySelectorAll('.staff-section-tabs button')).find(x=>x.textContent?.trim()==='Leave Planner');if(!b)return false;b.click();return true})()`),true)
+  for(let i=0;i<60;i++){if(await cdp.evaluate<boolean>(`!!document.querySelector('.leave-planner-panel')&&!document.body.innerText.includes('Loading confirmed roster availability')`))break;await sleep(150)}
+  const baseText=await cdp.evaluate<string>('document.body.innerText');assert.ok(baseText.includes('Book Future Leave'));assert.ok(baseText.includes('B · Booked future leave'));assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.leave-day-code.booked').length`),2);assert.equal(await cdp.evaluate<boolean>(`Array.from(document.querySelectorAll('.leave-day-code')).some(x=>x.textContent==='AL')`),true)
+  const widths=[] as any[];for(const width of [360,390,430,768,820,1024,1280,1440]){await cdp.send('Emulation.setDeviceMetricsOverride',{width,height:width<=430?844:width<=1024?900:1000,deviceScaleFactor:1,mobile:width<=430});await sleep(150);const result=await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-planner-panel');const grid=document.querySelector('.leave-planner-grid-wrap');const action=Array.from(document.querySelectorAll('button')).find(b=>b.textContent?.trim()==='Book Future Leave');const actionRect=action?.getBoundingClientRect();return{width:innerWidth,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:panel.scrollWidth>panel.clientWidth+1,actionVisible:!!actionRect&&actionRect.left>=-1&&actionRect.right<=document.documentElement.clientWidth+1,calendarVisible:getComputedStyle(grid).display!=='none',calendarScrollContained:grid.scrollWidth>grid.clientWidth?getComputedStyle(grid).overflowX!=='visible':true,legacyMobileCardsHidden:getComputedStyle(document.querySelector('.leave-planner-mobile')).display==='none',bookedSummary:document.body.innerText.includes('Browser fixture future plan')}})()`);assert.equal(result.pageOverflow,false,`page overflow at ${width}`);assert.equal(result.panelOverflow,false,`panel overflow at ${width}`);assert.equal(result.actionVisible,true,`primary action clipped at ${width}`);assert.equal(result.calendarVisible,true,`calendar hidden at ${width}: ${JSON.stringify(result)}`);assert.equal(result.calendarScrollContained,true,`calendar scrolling escaped its container at ${width}: ${JSON.stringify(result)}`);assert.equal(result.legacyMobileCardsHidden,true,`retired mobile cards unexpectedly visible at ${width}: ${JSON.stringify(result)}`);widths.push(result)}
+  await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await cdp.evaluate(`document.querySelector('.leave-staff-link')?.click()`);await sleep(200);const details=await cdp.evaluate<string>(`document.querySelector('.leave-planner-drawer')?.textContent||''`);assert.ok(details.includes('Booked / Future'));assert.ok(details.includes('Available after booked'));assert.ok(details.includes('Duty Roster wins on 1 date'))
+  await cdp.evaluate(`document.querySelector('.leave-planner-drawer .close')?.click()`);await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-tabs button')).find(b=>b.textContent?.trim()==='Leave History')?.click()`);await sleep(300);const history=await cdp.evaluate<string>('document.body.innerText');assert.ok(history.includes('BOOKED / FUTURE PLANNING'));assert.ok(history.includes('Separate from confirmed leave'));assert.deepEqual(cdp.errors,[])
+  console.log(JSON.stringify({status:'PASS',isolated:true,fixturePeriodId:period.id,widths,confirmedRosterWins:true,bookedPillsVisible:2,leaveDetails:true,leaveHistorySeparation:true,fatalRuntimeErrors:0},null,2))
+} finally {socket?.close();for(const child of processes.reverse()){child.kill();if(process.platform==='win32'&&child.pid)spawnSync('taskkill',['/pid',String(child.pid),'/T','/F'],{stdio:'ignore'});child.removeAllListeners();child.unref()}await sleep(1000);await Promise.race([rm(fixture.root,{recursive:true,force:true,maxRetries:4,retryDelay:300}).catch(()=>undefined),sleep(5000)])}
+process.exit(0)

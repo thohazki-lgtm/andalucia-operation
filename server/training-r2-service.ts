@@ -5,6 +5,7 @@ import { serviceDate, monthRange } from '../src/service-date.js'
 import { auditActorLabel } from './authorization-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { TrainingRepository } from './training-repository.js'
+import { completedTrainingAggregate } from './training-reporting-aggregate.js'
 
 const metadata = (value: unknown): Record<string, unknown> => typeof value === 'string' ? JSON.parse(value) : (value as Record<string, unknown> || {})
 const round = (value: number, places = 2) => Number(value.toFixed(places))
@@ -154,8 +155,8 @@ export class TrainingR2Service {
     const stages = await this.statusStages()
     const sessions = (await this.repository.list()).filter(item => item.active && item.date >= start && item.date <= end)
     const scheduled = sessions.filter(item => stages.get(item.status) !== 'cancelled').length
-    const metrics = (await this.db.query<any>(`select m.* from training_completed_session_metrics m where m.outlet_scope_id=$1 and m.training_date between $2 and $3 and m.outcome='completed'`, [ANDALUCIA_SCOPE_ID, start, end])).rows
-    const creditedMinutes = metrics.reduce((sum: number, row: any) => sum + Number(row.credited_minutes || 0), 0)
+    const completed = await completedTrainingAggregate(this.db, start, end)
+    const creditedMinutes = completed.creditedMinutes
     const membership = (await this.db.query<any>(`select distinct s.id,s.full_name,s.staff_number,s.position_key from staff s join staff_membership_history h on h.staff_id=s.id and h.outlet_scope_id=$1 and h.membership_dimension='regular_outlet' and h.review_status='approved' and h.effective_from<=$3 and coalesce(h.effective_to,$3)>=$2 order by s.full_name`, [ANDALUCIA_SCOPE_ID, start, end])).rows
     const evidence = (await this.db.query<any>(`select e.staff_id,count(*) filter(where e.participation_state='participated')::int attended,coalesce(sum(e.credited_minutes),0)::int credited from training_session_staff_evidence e join training_session_completion_evidence c on c.id=e.completion_evidence_id join training_sessions s on s.id=e.training_session_id where c.outcome='completed' and s.training_date between $1 and $2 group by e.staff_id`, [start, end])).rows
     const evidenceByStaff = new Map(evidence.map((row: any) => [row.staff_id, row]))
@@ -165,10 +166,10 @@ export class TrainingR2Service {
     const eligibleHeadcount = membership.length
     return {
       month, target: { monthlyMinutes: monthlyTarget, monthlyHours: round(monthlyTarget / 60), perHeadMinutes: perHeadTarget, perHeadHours: round(perHeadTarget / 60), creditCapMinutes: Number(target.participant_credit_cap_minutes) },
-      sessionsScheduled: scheduled, sessionsCompleted: metrics.length, creditedMinutes, trainingHours: round(creditedMinutes / 60), eligibleHeadcount,
+      sessionsScheduled: scheduled, sessionsCompleted: completed.sessionsCompleted, participantAttendances: completed.participantAttendances, creditedMinutes, trainingHours: completed.trainingHours, eligibleHeadcount,
       hoursPerHead: eligibleHeadcount ? round(creditedMinutes / eligibleHeadcount / 60) : 0,
       staffCovered: staffCoverage.filter(item => item.sessionsAttended > 0).length, remainingMinutes: Math.max(0, monthlyTarget - creditedMinutes), remainingHours: round(Math.max(0, monthlyTarget - creditedMinutes) / 60),
-      targetAchieved: creditedMinutes >= monthlyTarget, requiresReview: Math.max(0, sessions.filter(item => item.date < serviceDate() && stages.get(item.status) !== 'cancelled').length - metrics.length),
+      targetAchieved: creditedMinutes >= monthlyTarget, requiresReview: Math.max(0, sessions.filter(item => item.date < serviceDate() && stages.get(item.status) !== 'cancelled').length - completed.sessionsCompleted),
       staffCoverage
     }
   }

@@ -14,7 +14,7 @@ export const canonicalStoreDirectory = resolve(projectRoot, '.data/postgres')
 export const developmentStoreDirectory = resolve(projectRoot, '.data-development/postgres')
 export const defaultBackupRoot = resolve(projectRoot, '.backups')
 export const STORE_IDENTITY_VERSION = 'andalucia-store-identity-v1'
-export const SUPPORTED_SCHEMA_VERSION = '018'
+export const SUPPORTED_SCHEMA_VERSION = '027'
 export const STORE_IDENTITY_AUTHORIZATION = 'YES_I_APPROVE_CANONICAL_STORE_IDENTITY'
 export const CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
 export type DatabaseStoreRole = 'canonical' | 'development' | 'backup' | 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'
@@ -79,7 +79,8 @@ export const resolveRuntimeStore = (environment: NodeJS.ProcessEnv = process.env
   const dataDirectory = resolve(configured)
   const expectedCanonical = resolve(expected.canonicalDirectory || canonicalStoreDirectory)
   const isolatedTestDevelopment = environment.NODE_ENV === 'test' ? environment.ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR?.trim() : undefined
-  if (isolatedTestDevelopment && (!isAbsolute(isolatedTestDevelopment) || !normalized(isolatedTestDevelopment).startsWith(`${normalized(tmpdir())}/`))) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'TEST_DEVELOPMENT_STORE_MUST_BE_TEMPORARY')
+  const approvedTestRoots = [normalized(tmpdir()), normalized(resolve('.tmp-tests'))]
+  if (isolatedTestDevelopment && (!isAbsolute(isolatedTestDevelopment) || !approvedTestRoots.some(root => normalized(isolatedTestDevelopment).startsWith(`${root}/`)))) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'TEST_DEVELOPMENT_STORE_MUST_BE_TEMPORARY')
   const expectedDevelopment = resolve(expected.developmentDirectory || isolatedTestDevelopment || developmentStoreDirectory)
   if (!['canonical', 'development'].includes(role)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'APPLICATION_RUNTIME_ROLE_FORBIDDEN')
   if (role === 'canonical') {
@@ -136,6 +137,17 @@ const classifyOpenFailure = (error: unknown) => {
 }
 
 const appliedLedger = async (db: PGlite) => (await db.query<{ version: string; checksum: string; status: string }>('select version,checksum,status from schema_migrations order by version')).rows
+export const resolveRequiredSchemaVersion = async (configured?: string, options?: { allowReviewedMigrationSource?: boolean }) => {
+  const requiredVersion = configured?.trim() || SUPPORTED_SCHEMA_VERSION
+  const reviewed = await reviewedMigrationSet()
+  const supportedIndex = reviewed.versions.findIndex(item => item.version === SUPPORTED_SCHEMA_VERSION)
+  if (supportedIndex < 0) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'SUPPORTED_SCHEMA_VERSION_NOT_REVIEWED', SUPPORTED_SCHEMA_VERSION)
+  const allowed = options?.allowReviewedMigrationSource
+    ? new Set(reviewed.versions.map(item => item.version))
+    : new Set([SUPPORTED_SCHEMA_VERSION, reviewed.versions[supportedIndex - 1]?.version].filter((value): value is string => Boolean(value)))
+  if (!/^\d{3}$/.test(requiredVersion) || !allowed.has(requiredVersion)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'ANDALUCIA_REQUIRED_SCHEMA_VERSION_UNSUPPORTED', requiredVersion)
+  return { requiredVersion, reviewed }
+}
 const findLastVerifiedBackup = async (backupRoot = defaultBackupRoot) => {
   if (!existsSync(backupRoot)) return null
   const candidates: VerifiedBackupSummary[] = []
@@ -151,7 +163,7 @@ const findLastVerifiedBackup = async (backupRoot = defaultBackupRoot) => {
   return candidates.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] || null
 }
 
-export const openVerifiedDatabase = async (options: { dataDirectory: string; role: DatabaseStoreRole; requiredVersion?: string; backupRoot?: string; requireOwner?: boolean }) => {
+export const openVerifiedDatabase = async (options: { dataDirectory: string; role: DatabaseStoreRole; requiredVersion?: string; backupRoot?: string; requireOwner?: boolean; allowReviewedMigrationSource?: boolean }) => {
   const dataDirectory = resolve(options.dataDirectory)
   const identity = await readStoreIdentity(dataDirectory, options.role)
   if (identity.role === 'backup') throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'BACKUP_ORIGINAL_OPEN_FORBIDDEN')
@@ -159,6 +171,7 @@ export const openVerifiedDatabase = async (options: { dataDirectory: string; rol
   if (existsSync(markers.migration)) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'MIGRATION_IN_PROGRESS')
   if (existsSync(markers.recovery)) throw new DatabaseProtectionError('DATABASE_RECOVERY_REQUIRED', 'RECOVERY_IN_PROGRESS')
   if (existsSync(markers.postmaster)) throw new DatabaseProtectionError('DATABASE_RECOVERY_REQUIRED', 'DATABASE_PROCESS_MARKER_PRESENT')
+  const { requiredVersion, reviewed } = await resolveRequiredSchemaVersion(options.requiredVersion, { allowReviewedMigrationSource: options.allowReviewedMigrationSource })
   let db: PGlite
   try { db = new PGlite(dataDirectory); await db.query('select 1') } catch (error) { throw classifyOpenFailure(error) }
   try {
@@ -166,10 +179,8 @@ export const openVerifiedDatabase = async (options: { dataDirectory: string; rol
     const tables = new Set((await db.query<{ table_name: string }>("select table_name from information_schema.tables where table_schema='public'")).rows.map(row => row.table_name))
     const missingTables = requiredTables.filter(table => !tables.has(table))
     if (missingTables.length) throw new DatabaseProtectionError('MIGRATION_REQUIRED', 'DATABASE_MIGRATION_REQUIRED', `missing_tables=${missingTables.join(',')}`)
-    const reviewed = await reviewedMigrationSet()
     const known = new Map(reviewed.versions.map(item => [item.version, item]))
     const ledger = await appliedLedger(db)
-    const requiredVersion = options.requiredVersion || SUPPORTED_SCHEMA_VERSION
     const expected = reviewed.versions.filter(item => item.version <= requiredVersion)
     const missingVersions = expected.filter(item => !ledger.some(row => row.version === item.version && row.status === 'applied')).map(item => item.version)
     if (missingVersions.length) throw new DatabaseProtectionError('MIGRATION_REQUIRED', 'DATABASE_MIGRATION_REQUIRED', `missing_versions=${missingVersions.join(',')}`)

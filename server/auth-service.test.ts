@@ -4,7 +4,7 @@ import type { IncomingMessage } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
-import { AuthError, AuthService, clearSessionCookie, LoginAttemptLimiter, parseSessionToken, sessionCookie, verifyPassword } from './auth-service.js'
+import { AuthError, AuthService, clearSessionCookie, LoginAttemptLimiter, parseSessionToken, requireAuthenticatedUser, sessionCookie, verifyPassword } from './auth-service.js'
 
 const folder = await mkdtemp(join(tmpdir(), 'andalucia-auth-'))
 const db = new PGlite(join(folder, 'postgres'))
@@ -15,7 +15,7 @@ try {
 
   const account = await auth.createFirstAccount({ identifier: 'Owner.Example', displayName: 'Platform User', password: 'SafePassword2026' })
   assert.match(account.userId, /^[0-9a-f-]{36}$/)
-  assert.deepEqual(account, { userId: account.userId, loginIdentifier: 'Owner.Example', displayName: 'Platform User', status: 'active', staffId: null })
+  assert.deepEqual(account, { userId: account.userId, loginIdentifier: 'Owner.Example', displayName: 'Platform User', status: 'active', staffId: null, mustChangePassword: false })
   const stored = (await db.query<any>('select password_hash,normalized_login_identifier from user_accounts where id=$1', [account.userId])).rows[0]
   assert.notEqual(stored.password_hash, 'SafePassword2026')
   assert.match(stored.password_hash, /^scrypt\$/)
@@ -32,6 +32,24 @@ try {
   }
   assert.equal(new Set(invalidMessages).size, 1)
   assert.equal(Number((await db.query<{ count: number }>('select count(*)::int count from auth_sessions')).rows[0].count), 0)
+
+  const linkedStaffId = '00000000-0000-4000-8000-000000009001'
+  await db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date,nationality,division,department,outlet,identity_document_number) values($1,'AUTH-EMP','Linked Employee','Waiter','active','2026-01-01','','Food & Beverage','F&B Service','Andalucía','')", [linkedStaffId])
+  const employee = await auth.createAccount({ identifier: 'linked.employee', displayName: 'Linked Employee', password: 'EmployeePassword2026', staffId: linkedStaffId }, account)
+  await assert.rejects(() => auth.createAccount({ identifier: 'duplicate.employee', displayName: 'Duplicate Employee', password: 'DuplicatePassword2026', staffId: linkedStaffId }, account), (error: unknown) => error instanceof AuthError && error.code === 'STAFF_ACCOUNT_ALREADY_ACTIVE')
+  const employeeSession = await auth.login('linked.employee', 'EmployeePassword2026')
+  await auth.resetPassword(employee.userId, 'ReplacementPassword2026', account)
+  assert.equal(await auth.principalForToken(employeeSession.token), null)
+  await assert.rejects(() => auth.login('linked.employee', 'EmployeePassword2026'), (error: unknown) => error instanceof AuthError && error.code === 'INVALID_LOGIN')
+  const replacementSession = await auth.login('linked.employee', 'ReplacementPassword2026')
+  assert.equal(replacementSession.user.staffId, linkedStaffId)
+  assert.equal(replacementSession.user.mustChangePassword, true)
+  const replacementRequest = { headers: { cookie: `andalucia_session=${encodeURIComponent(replacementSession.token)}` } } as IncomingMessage
+  await assert.rejects(() => requireAuthenticatedUser(replacementRequest, auth), (error: unknown) => error instanceof AuthError && error.code === 'PASSWORD_CHANGE_REQUIRED')
+  assert.equal((await requireAuthenticatedUser(replacementRequest, auth, { allowPasswordChangeRequired: true })).staffId, linkedStaffId)
+  await auth.changeOwnPassword(employee.userId, 'ReplacementPassword2026', 'FinalPassword2026')
+  assert.equal(await auth.principalForToken(replacementSession.token), null)
+  assert.equal((await auth.login('linked.employee', 'FinalPassword2026')).user.mustChangePassword, false)
 
   const signedIn = await auth.login(' owner.EXAMPLE ', 'SafePassword2026')
   assert.equal(signedIn.user.userId, account.userId)
@@ -69,6 +87,6 @@ try {
   limiter.succeeded('client'); limiter.assertAllowed('client', 1003)
 
   const events = (await db.query<{ event_type: string }>('select event_type from auth_security_events')).rows.map(row => row.event_type)
-  for (const expected of ['account_created', 'login_failed', 'login_success', 'logout', 'account_disabled']) assert(events.includes(expected), expected)
-  console.log(JSON.stringify({ stableUserUuid: true, plaintextExcluded: true, normalizedIdentifierUnique: true, genericInvalidLogin: true, serverSession: true, tokenHashOnly: true, expiryRejected: true, logoutIdempotent: true, disabledImmediateRevalidation: true, secureProductionCookie: true, devCookieSupported: true, trustedPrincipal: true, securityEvents: true, loginRateLimit: true }, null, 2))
+  for (const expected of ['account_created', 'login_failed', 'login_success', 'logout', 'account_disabled', 'password_reset', 'password_changed']) assert(events.includes(expected), expected)
+  console.log(JSON.stringify({ stableUserUuid: true, plaintextExcluded: true, normalizedIdentifierUnique: true, oneActiveAccountPerStaffServiceBoundary: true, managerPasswordResetRevokesSessions: true, firstLoginPasswordChangeEnforced: true, firstLoginRestrictionClearedByOwnPasswordChange: true, genericInvalidLogin: true, serverSession: true, tokenHashOnly: true, expiryRejected: true, logoutIdempotent: true, disabledImmediateRevalidation: true, secureProductionCookie: true, devCookieSupported: true, trustedPrincipal: true, securityEvents: true, loginRateLimit: true }, null, 2))
 } finally { await db.close(); await rm(folder, { recursive: true, force: true }) }

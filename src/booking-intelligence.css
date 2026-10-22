@@ -4,7 +4,7 @@
 .intelligence-pills span.review{background:#f7e4e1;color:#a44740}
 .intelligence-pax{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
 .intelligence-pax span{display:grid;gap:2px;min-width:0;border:1px solid #dfe7eb;border-radius:6px;padding:7px 8px;background:#f9fbfc}
-.intelligence-pax small{font-size:8px;color:#657c8a;text-transform:uppercase;letter-spacing:.3px}
+.intelligence-pax small{font-size:8px;color:#657c8a;text-transform:uppercase;letter-spacing:.3px;overflow-wrap:anywhere}
 .intelligence-pax b{font-size:12px;color:#173d56}
 .intelligence-detail{margin:18px 0;border:1px solid #d9e5ea;border-radius:9px;padding:14px;background:#fbfdfe}
 .intelligence-detail-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -87,7 +87,7 @@
   .occasion-projection-parity p{grid-column:auto}
 }
 
-@media(max-width:380px){
+@media(max-width:520px){
   .intelligence-pax{grid-template-columns:1fr}
   .intelligence-pills span{white-space:normal}
 }

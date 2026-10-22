@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { copyStoreVerified, createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
 import { createMigrationFingerprint, migrationStatus, runPreflight } from './migration-store.js'
-import { canonicalStoreDirectory, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, readStoreIdentity, type DatabaseStoreRole, type VerifiedBackupSummary } from './database-protection.js'
+import { canonicalStoreDirectory, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, readStoreIdentity, resolveRequiredSchemaVersion, type DatabaseStoreRole, type VerifiedBackupSummary } from './database-protection.js'
 
 export const BACKUP_EXCLUSIVE_PHRASE = 'YES_I_CONFIRM_ANDALUCIA_APP_IS_STOPPED'
 export type BackupCategory = 'automatic-daily' | 'automatic-weekly' | 'manual' | 'pre-migration' | 'pre-finalization' | 'milestone' | 'recovery' | 'post-recovery-baseline' | 'post-db1-protection-baseline' | 'post-stale-marker-recovery'
@@ -81,7 +81,7 @@ export const verifyBackupOriginalFilesystemProtection = async (databaseDirectory
 
 type DisposableOpenRole = Extract<DatabaseStoreRole, 'backup_verification' | 'rehearsal' | 'test' | 'recovery_staging'>
 
-export const verifyBackupCopy = async (options: { backupDirectory: string; sourceManifest: Awaited<ReturnType<typeof createStoreManifest>>; verificationDirectory: string; copyRole?: DisposableOpenRole }) => {
+export const verifyBackupCopy = async (options: { backupDirectory: string; sourceManifest: Awaited<ReturnType<typeof createStoreManifest>>; verificationDirectory: string; copyRole?: DisposableOpenRole; requiredVersion?: string; allowReviewedMigrationSource?: boolean }) => {
   const backupManifest = await createStoreManifest(options.backupDirectory)
   if (!manifestsMatch(options.sourceManifest, backupManifest)) throw new Error('BACKUP_INVALID:MANIFEST_MISMATCH')
   if (existsSync(options.verificationDirectory)) throw new Error('BACKUP_INVALID:VERIFICATION_TARGET_EXISTS')
@@ -94,7 +94,7 @@ export const verifyBackupCopy = async (options: { backupDirectory: string; sourc
   await createStoreIdentity(options.verificationDirectory, role, { storeId: `andalucia-${role}-${randomUUID()}` })
   let db: PGlite | null = null
   try {
-    const opened = await openVerifiedDatabase({ dataDirectory: options.verificationDirectory, role })
+    const opened = await openVerifiedDatabase({ dataDirectory: options.verificationDirectory, role, requiredVersion: options.requiredVersion, allowReviewedMigrationSource: options.allowReviewedMigrationSource })
     db = opened.db
     await db.query('select 1')
     const preflight = await runPreflight(db, options.verificationDirectory)
@@ -107,13 +107,15 @@ export const verifyBackupCopy = async (options: { backupDirectory: string; sourc
   finally { await db?.close().catch(() => undefined) }
 }
 
-export const createVerifiedBackup = async (options: { sourceDirectory: string; category: BackupCategory; backupRoot: string; exclusiveConfirmed: boolean; now?: Date; expectedCanonicalDirectory?: string }) => {
+export const createVerifiedBackup = async (options: { sourceDirectory: string; category: BackupCategory; backupRoot: string; exclusiveConfirmed: boolean; now?: Date; expectedCanonicalDirectory?: string; requiredVersion?: string }) => {
   const sourceDirectory = resolve(options.sourceDirectory)
   if (existsSync(operationMarkerPaths(sourceDirectory).recovery)) throw new Error('RECOVERY_IN_PROGRESS_OPERATION_BLOCKED')
   if (sourceDirectory !== resolve(options.expectedCanonicalDirectory || canonicalStoreDirectory)) throw new Error('BACKUP_WRONG_STORE')
   if (!options.exclusiveConfirmed) throw new Error('BACKUP_REQUIRES_OFFLINE_EXCLUSIVE_ACCESS')
+  const allowReviewedMigrationSource = options.category === 'pre-migration'
+  const requiredVersion = (await resolveRequiredSchemaVersion(options.requiredVersion, { allowReviewedMigrationSource })).requiredVersion
   const identity = await readStoreIdentity(sourceDirectory, 'canonical')
-  const opened = await openVerifiedDatabase({ dataDirectory: sourceDirectory, role: 'canonical', backupRoot: options.backupRoot })
+  const opened = await openVerifiedDatabase({ dataDirectory: sourceDirectory, role: 'canonical', backupRoot: options.backupRoot, requiredVersion, allowReviewedMigrationSource })
   await opened.db.close()
   const createdAt = (options.now || new Date()).toISOString()
   const backupId = `andalucia-${options.category}-${createdAt.replaceAll(':', '').replaceAll('.', '-')}-${randomUUID().slice(0, 8)}`
@@ -125,14 +127,14 @@ export const createVerifiedBackup = async (options: { sourceDirectory: string; c
     const copied = await copyStoreVerified(sourceDirectory, backupDirectory)
     const backupStoreIdentity = await createStoreIdentity(backupDirectory, 'backup', { storeId: `${backupId}-original`, now: options.now })
     const verificationDirectory = join(folder, 'verification', 'postgres')
-    const verified = await verifyBackupCopy({ backupDirectory, sourceManifest: copied.sourceManifest, verificationDirectory })
+    const verified = await verifyBackupCopy({ backupDirectory, sourceManifest: copied.sourceManifest, verificationDirectory, requiredVersion, allowReviewedMigrationSource })
     const metadata: VerifiedBackupSummary & Record<string, unknown> = {
       backupId, createdAt, category: options.category, verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY',
       sourceDirectory, backupDirectory, sourceManifest: copied.sourceManifest, backupManifest: copied.backupManifest,
       operationalFingerprint: verified.fingerprint,
       financialFinalizationFingerprint: verified.financialFinalizationFingerprint,
       applicationVersion: '0.1.0', schemaVersion: verified.migration.migrations.filter(item => item.state === 'applied').at(-1)?.version || 'none',
-      migrationLedger: verified.migration, storeIdentity: identity, backupStoreIdentity,
+      migrationLedger: verified.migration, requiredSchemaVersion: requiredVersion, storeIdentity: identity, backupStoreIdentity,
       verificationCopyManifest: verified.verificationManifest
     }
     await writeJsonAtomic(join(folder, 'backup-metadata.json'), metadata)

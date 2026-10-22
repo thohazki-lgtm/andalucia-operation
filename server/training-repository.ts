@@ -329,7 +329,19 @@ export class TrainingRepository {
   }
 
   async staffHistory(staffId: string): Promise<StaffTrainingHistory[]> {
-    const result = await this.db.query<any>('select t.id training_id, t.title, t.training_date::text, t.category_value, a.attendance_status_value, t.status_value, t.active from training_session_attendees a join training_sessions t on t.id=a.training_id where a.staff_id=$1 order by t.training_date desc, t.training_time desc', [staffId])
-    return result.rows.map((row: any) => ({ trainingId: row.training_id, title: row.title, date: row.training_date, category: row.category_value, attendanceStatus: row.attendance_status_value, status: row.status_value, active: row.active }))
+    const result = await this.db.query<any>(`select
+      t.id training_id,t.title,t.training_date::text,t.category_value,t.status_value,t.active,
+      m.actual_duration_minutes,e.credited_minutes,e.participation_state,e.confirmed_at
+      from training_session_staff_evidence e
+      join training_completed_session_metrics m on m.completion_evidence_id=e.completion_evidence_id and m.outcome='completed'
+      join training_sessions t on t.id=e.training_session_id
+      where e.staff_id=$1 and e.participation_state='participated'
+      order by t.training_date desc,t.training_time desc,e.confirmed_at desc`, [staffId])
+    return result.rows.map((row: any) => ({
+      trainingId: row.training_id, title: row.title, date: row.training_date, category: row.category_value,
+      attendanceStatus: null, status: row.status_value, active: row.active,
+      actualDurationMinutes: Number(row.actual_duration_minutes || 0), creditedMinutes: Number(row.credited_minutes || 0),
+      participationStatus: 'participated', confirmedAt: row.confirmed_at
+    }))
   }
 }

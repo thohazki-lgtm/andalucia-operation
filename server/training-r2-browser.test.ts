@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { readFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { TrainingRepository } from './training-repository.js'
@@ -25,6 +25,8 @@ let socket: WebSocket | null = null
 let completed = false
 let debugPort: number | null = null
 const token = `isolated-${randomUUID()}`
+const visualPhase = process.env.ANDALUCIA_TRAINING_VISUAL_PHASE || 'after'
+const visualOutput = resolve('artifacts', 'training-action-system')
 const sleep = (ms: number) => new Promise(resolveWait => setTimeout(resolveWait, ms))
 const waitFor = async (url: string) => { for (let i=0;i<80;i++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(250) } throw new Error(`Timed out waiting for ${url}`) }
 const waitForOwnedDevTools = async (edge: ChildProcess) => {
@@ -52,6 +54,13 @@ class Cdp {
   evaluate<T>(expression: string) { return this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }).then(result => result.result.value as T) }
 }
 
+const screenshot = async (cdp: Cdp, name: string) => {
+  const capture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  const target = join(visualOutput, name)
+  await mkdir(dirname(target), { recursive: true })
+  await writeFile(target, Buffer.from(capture.data, 'base64'))
+}
+
 try {
   const db = fixture.db
   const owner = (await db.query<any>("select u.id from user_accounts u join authorization_user_roles a on a.user_id=u.id and a.active=true join authorization_roles r on r.id=a.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
@@ -67,7 +76,7 @@ try {
   await db.query("insert into training_sessions(id,title,category_value,training_date,training_time,end_time,trainer,location,status_value,notes,active,source,outlet_scope_id,created_by,updated_by) values($1,'Grooming Standards and Personal Hygiene','service_standards',$2,'10:00','10:30','Synthetic Trainer','Andalucía','planned','Synthetic test session',true,'manual',$3,'synthetic fixture','synthetic fixture')", [sessionId, fixtureDate, ANDALUCIA_SCOPE_ID])
   await db.close()
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '018', API_PORT: '3002' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', API_PORT: '3002' }, stdio: 'inherit' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3002' }, stdio: 'inherit' }))
   await Promise.all([waitFor('http://127.0.0.1:3002/api/health'), waitFor('http://127.0.0.1:5174/')])
   assert.equal((await fetch('http://127.0.0.1:3002/api/training/sharepoint/status')).status, 401)
@@ -143,19 +152,17 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Training"]');if(!button)return false;button.click();return true})()`), true)
   await cdp.evaluate(`document.querySelector('button[aria-label="Training"]')?.click()`)
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`document.body.innerText.includes('Sessions Scheduled') || document.body.innerText.includes('Unable to load Training')`)) break; await sleep(250) }
-  const defaultDisplayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period strong')?.textContent || ''`)
-  const expectedDefaultMonth = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${defaultMonth}-01T00:00:00Z`))
-  assert.equal(defaultDisplayedMonth, expectedDefaultMonth, `Training did not retain its current-month default ${defaultMonth}`)
-  const expectedMonth = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${fixtureMonth}-01T00:00:00Z`))
+  const defaultDisplayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period input[aria-label="Training month"]')?.value || ''`)
+  assert.equal(defaultDisplayedMonth, defaultMonth, `Training did not retain its current-month default ${defaultMonth}`)
   const monthOffset = monthIndex(fixtureMonth) - monthIndex(defaultMonth)
   const monthButton = monthOffset < 0 ? 'Previous month' : 'Next month'
   for (let index = 0; index < Math.abs(monthOffset); index++) {
     assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label=${JSON.stringify(monthButton)}]');if(!button)return false;button.click();return true})()`), true, `Unable to navigate to fixture month ${fixtureMonth}`)
     await sleep(180)
   }
-  for (let i=0;i<40;i++) { if (await cdp.evaluate<boolean>(`document.querySelector('.training-r2-period strong')?.textContent===${JSON.stringify(expectedMonth)}&&!document.body.innerText.includes('Loading Training performance')`)) break; await sleep(150) }
-  const displayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period strong')?.textContent || ''`)
-  assert.equal(displayedMonth, expectedMonth, `Training did not navigate to the controlled fixture month ${fixtureMonth}`)
+  for (let i=0;i<40;i++) { if (await cdp.evaluate<boolean>(`document.querySelector('.training-r2-period input[aria-label="Training month"]')?.value===${JSON.stringify(fixtureMonth)}&&!document.body.innerText.includes('Loading Training performance')`)) break; await sleep(150) }
+  const displayedMonth = await cdp.evaluate<string>(`document.querySelector('.training-r2-period input[aria-label="Training month"]')?.value || ''`)
+  assert.equal(displayedMonth, fixtureMonth, `Training did not navigate to the controlled fixture month ${fixtureMonth}`)
   const bodyText = await cdp.evaluate<string>('document.body.innerText')
   const sharePointStatus = await cdp.evaluate<any>(`fetch('/api/training/sharepoint/status').then(async response=>({status:response.status,body:await response.json()}))`)
   assert.equal(sharePointStatus.status, 200)
@@ -171,14 +178,38 @@ try {
   const results: Array<Record<string, unknown>> = []
   for (const width of widths) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 844 : width <= 1024 ? 900 : 1000, deviceScaleFactor: 1, mobile: width <= 430 }); await sleep(180)
-    const result = await cdp.evaluate<any>(`(()=>{const k=document.querySelector('.training-r2-kpis strong');const add=Array.from(document.querySelectorAll('button')).find(b=>b.textContent?.includes('Add Training'));return{width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth+1,kpi:parseFloat(getComputedStyle(k).fontSize),addVisible:!!add&&add.getBoundingClientRect().right<=innerWidth+1}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const k=document.querySelector('.training-r2-kpis strong');const add=Array.from(document.querySelectorAll('button')).find(b=>b.textContent?.includes('Add Training'));const header=document.querySelector('.training-page-header');const toolbar=document.querySelector('.training-r2-toolbar');const tabs=document.querySelector('.training-r2-toolbar>.view-switch');const actions=document.querySelector('.training-r2-actions');const actionButtons=Array.from(actions.querySelectorAll('button'));const period=document.querySelector('.training-r2-period');const periodButtons=Array.from(period.querySelectorAll('button'));const monthInput=period.querySelector('input[aria-label="Training month"]');const filters=document.querySelector('.training-r2>.training-r2-filters');const calendar=document.querySelector('.training-r2-calendar');const tabsRect=tabs.getBoundingClientRect();const actionsRect=actions.getBoundingClientRect();const interactive=[...toolbar.querySelectorAll('button'),...periodButtons,monthInput].filter(Boolean);return{width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth+1,kpi:parseFloat(getComputedStyle(k).fontSize),addVisible:!!add&&add.getBoundingClientRect().right<=innerWidth+1,descriptionRemoved:!document.body.innerText.includes('Plan local training, confirm delivery and monitor staff coverage.'),headerGap:Math.round(toolbar.getBoundingClientRect().top-header.getBoundingClientRect().bottom),filtersBeforeCalendar:filters.getBoundingClientRect().bottom<=calendar.getBoundingClientRect().top,tabsFullWidth:Math.abs(tabsRect.width-toolbar.getBoundingClientRect().width)<2,actionsSameRow:Math.abs(actionButtons[0].getBoundingClientRect().top-actionButtons[1].getBoundingClientRect().top)<2,actionsEqualWidth:Math.abs(actionButtons[0].getBoundingClientRect().width-actionButtons[1].getBoundingClientRect().width)<2,desktopAligned:Math.abs((tabsRect.top+tabsRect.height/2)-(actionsRect.top+actionsRect.height/2))<2,actionsRightAligned:Math.abs(actionsRect.right-toolbar.getBoundingClientRect().right)<2,sharedActions:[...toolbar.querySelectorAll('button'),...periodButtons].every(button=>button.classList.contains('ao-action')||button.classList.contains('ao-icon-action')),monthControl:!!monthInput&&!!period.querySelector('.ao-date-control__icon'),monthValue:monthInput?.value,legacySymbols:/[⇧＋←→]/.test(toolbar.textContent+period.textContent),allLabelled:interactive.every(control=>control.getAttribute('aria-label')||control.textContent?.trim()),minTouchHeight:Math.min(...interactive.map(control=>control.getBoundingClientRect().height)),keyboardReachable:interactive.every(control=>control.tabIndex>=0)}})()`)
     assert.equal(result.overflow, false, `horizontal overflow at ${width}px`); assert.equal(result.addVisible, true, `Add Training clipped at ${width}px`)
+    assert.equal(result.descriptionRemoved, true, 'Training description was not removed')
+    assert.ok(result.headerGap <= 8, `Training header gap is not compact at ${width}px`)
+    assert.equal(result.filtersBeforeCalendar, true, `Training filters are not aligned above the calendar at ${width}px`)
+    assert.equal(result.sharedActions, true, `Training toolbar did not use the shared action system at ${width}px`)
+    assert.equal(result.monthControl, true, `Shared Training month control was not rendered at ${width}px`)
+    assert.equal(result.monthValue, fixtureMonth, `Training month control lost its selected value at ${width}px`)
+    assert.equal(result.legacySymbols, false, `Legacy Training toolbar symbols remain at ${width}px`)
+    assert.equal(result.allLabelled, true, `Training toolbar has an inaccessible action at ${width}px`)
+    assert.equal(result.keyboardReachable, true, `Training toolbar has an action outside keyboard navigation at ${width}px`)
+    if (width <= 700) { assert.ok(result.minTouchHeight >= 44, `Training touch target is below 44px at ${width}px`); assert.equal(result.tabsFullWidth, true, `Training tabs are not full width at ${width}px`); assert.equal(result.actionsSameRow, true, `Training actions do not share a row at ${width}px`); assert.equal(result.actionsEqualWidth, true, `Training actions are not equally sized at ${width}px`) }
+    else if (width >= 1024) { assert.equal(result.desktopAligned, true, `Training tabs and actions are not aligned at ${width}px`); assert.equal(result.actionsRightAligned, true, `Training actions are not right aligned at ${width}px`) }
     results.push(result)
+    if (width === 1440 || width === 390) await screenshot(cdp, `${visualPhase}-${width}.png`)
   }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }); await sleep(150)
   await cdp.evaluate(`Array.from(document.querySelectorAll('.view-switch button')).find(b=>b.textContent?.trim()==='List')?.click()`); await sleep(200)
   assert.equal(await cdp.evaluate<boolean>(`getComputedStyle(document.querySelector('.training-r2-table')).display==='none' && getComputedStyle(document.querySelector('.training-r2-cards')).display!=='none'`), true)
   const managerSessionTitle = 'Grooming Standards and Personal Hygiene'
+  const setListFilter = async (selector: string, value: string) => {
+    await cdp.evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)});const setter=Object.getOwnPropertyDescriptor(input instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('change',{bubbles:true}));input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+    await sleep(180)
+  }
+  await setListFilter('.training-r2-list input[aria-label="Search Training"]', managerSessionTitle)
+  assert.equal(await cdp.evaluate<boolean>(`document.querySelectorAll('.training-r2-cards>article').length===1&&document.body.innerText.includes(${JSON.stringify(managerSessionTitle)})`), true, 'Training search did not retain the matching October session')
+  await setListFilter('.training-r2-list input[aria-label="Search Training"]', 'no matching training session')
+  assert.equal(await cdp.evaluate<boolean>(`document.body.innerText.includes('No Training sessions match this view.')`), true, 'Training search empty state did not render')
+  await setListFilter('.training-r2-list input[aria-label="Search Training"]', '')
+  await setListFilter('.training-r2-list select[aria-label="Filter operational Training status"]', 'scheduled')
+  assert.equal(await cdp.evaluate<boolean>(`document.body.innerText.includes('No Training sessions match this view.')`), true, 'Training status filter did not exclude the awaiting-confirmation fixture')
+  await setListFilter('.training-r2-list select[aria-label="Filter operational Training status"]', 'all')
   const openedManagerSession = await cdp.evaluate<boolean>(`(()=>{const card=Array.from(document.querySelectorAll('.training-r2-cards>article')).find(node=>node.textContent?.includes(${JSON.stringify('Grooming Standards and Personal Hygiene')}));const button=card?.querySelector('button');if(!button)return false;button.click();return true})()`)
   assert.equal(openedManagerSession, true, `${managerSessionTitle} was not available in the rendered Training list`); await sleep(700)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer') && document.body.innerText.includes('Eligibility preview')`), true)
@@ -225,9 +256,12 @@ try {
   assert.ok(performanceAfter.creditedMinutes > performanceBefore.creditedMinutes)
   assert.ok(performanceAfter.trainingHours > performanceBefore.trainingHours)
   assert.ok(performanceAfter.staffCovered >= performanceBefore.staffCovered)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{window.confirm=()=>true;const button=Array.from(document.querySelectorAll('.training-r2-drawer button')).find(node=>node.textContent?.trim()==='Delete');if(!button)return false;button.click();return true})()`), true, 'Training details did not expose Delete')
+  for (let i=0;i<40;i++) { if (await cdp.evaluate<boolean>(`!document.querySelector('.training-r2-drawer')`)) break; await sleep(150) }
+  assert.equal(await cdp.evaluate<boolean>(`fetch('/api/training').then(response=>response.json()).then(records=>records.some(record=>record.id===${JSON.stringify(sessionId)}&&record.active===false))`), true, 'Deleted Training session remained active after refresh')
   assert.deepEqual(cdp.errors, [])
   socket.close()
-  console.log(JSON.stringify({ status: 'PASS', isolated: true, browserEndpoint: { profileBound: true, dynamicPort: debugPort }, controlledNow: controlledNow.toISOString(), fixtureDate, fixtureMonth, displayedMonth, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', isolated: true, browserEndpoint: { profileBound: true, dynamicPort: debugPort }, controlledNow: controlledNow.toISOString(), fixtureDate, fixtureMonth, displayedMonth, customizationWidths, widths: results, drawerWidths: drawerResults, confirmationWidths, sessionDetail: true, archiveWorkflow: true, completionWorkflow: { sessionsCompletedBefore: performanceBefore.sessionsCompleted, sessionsCompletedAfter: performanceAfter.sessionsCompleted, creditedMinutesBefore: performanceBefore.creditedMinutes, creditedMinutesAfter: performanceAfter.creditedMinutes, trainingHoursBefore: performanceBefore.trainingHours, trainingHoursAfter: performanceAfter.trainingHours, staffCoveredBefore: performanceBefore.staffCovered, staffCoveredAfter: performanceAfter.staffCovered }, fatalRuntimeErrors: cdp.errors.length }, null, 2))
   completed = true
 } finally {
   const cleanupDeadline = completed ? setTimeout(() => process.exit(0), 10_000) : undefined

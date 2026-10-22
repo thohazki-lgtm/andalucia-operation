@@ -33,14 +33,8 @@ try {
   const annualLeave = dutyCodes.find(option => option.metadata?.dutyClassification === 'annualLeave')!
   const off = dutyCodes.find(option => option.metadata?.dutyClassification === 'off')!
   const working = dutyCodes.find(option => option.metadata?.countsAsWorking)!
-  const publicHoliday = await repository.saveConfiguration('duty-codes', {
-    id: randomUUID(), value: '', label: 'Public Holiday', color: '#e6c833', active: true,
-    metadata: { displayCode: 'PH', dutyClassification: 'publicHoliday', countsAsWorking: false, countsAsPublicHoliday: true, billTipEligible: true, billTipWorkedDayUnits: 1 }
-  })
-  const sickLeave = await repository.saveConfiguration('duty-codes', {
-    id: randomUUID(), value: '', label: 'Sick Leave', color: '#a45b57', active: true,
-    metadata: { displayCode: 'SK', dutyClassification: 'sickLeave', countsAsWorking: false, countsAsSickLeave: true, billTipEligible: true }
-  })
+  const publicHoliday = dutyCodes.find(option => option.metadata?.displayCode === 'PH')!
+  const sickLeave = dutyCodes.find(option => option.metadata?.displayCode === 'SL')!
 
   const assignments = [
     ['2026-09-01', annualLeave.value], ['2026-09-02', annualLeave.value], ['2026-09-03', off.value],
@@ -59,6 +53,9 @@ try {
     'annualLeave:2026-09-01:2026-09-02', 'off:2026-09-03:2026-09-03', 'annualLeave:2026-09-04:2026-09-04',
     'publicHoliday:2026-09-05:2026-09-05', 'annualLeave:2026-09-06:2026-09-06', 'sickLeave:2026-09-07:2026-09-07'
   ])
+  assert.deepEqual(first.days.map(day => `${day.date}:${day.dutyCode}`), [
+    '2026-09-01:AL', '2026-09-02:AL', '2026-09-03:OFF', '2026-09-04:AL', '2026-09-05:PH', '2026-09-06:AL', '2026-09-07:SL'
+  ])
   assert.deepEqual({ start: second.membershipStart, end: second.membershipEnd, days: second.days.length }, { start: '2026-09-15', end: '2026-09-30', days: 1 })
   assert.deepEqual({ entitlement: first.entitlement.annualLeave.entitlement, used: first.entitlement.annualLeave.used, remaining: first.entitlement.annualLeave.remaining }, { entitlement: 30, used: 4, remaining: 26 })
   assert.deepEqual({ entitlement: first.entitlement.publicHoliday.entitlement, used: first.entitlement.publicHoliday.used, remaining: first.entitlement.publicHoliday.remaining }, { entitlement: 11, used: 1, remaining: 10 })
@@ -71,7 +68,7 @@ try {
   assert.deepEqual(publicHoliday.metadata, expectMetadata(publicHoliday.metadata))
   await assert.rejects(() => new LeavePlannerService(repository, memberships).view('2026-13'), /valid Leave Planner month/)
 
-  console.log(JSON.stringify({ conservativeGrouping: true, annualLeaveSeparatedByOff: true, annualLeaveSeparatedByPublicHoliday: true, publicHolidayNonWorking: true, publicHolidayEntitlement: true, billTipWorkedDayUnit: true, sickLeavePreserved: true, approvedMembershipScope: true, membershipStartEnd: true, factualDailyAvailability: true, defaultEntitlementsReadOnly: true }, null, 2))
+  console.log(JSON.stringify({ authoritativeDailyRosterPreserved: true, consecutiveDaysRemainIndividuallyAvailable: true, conservativeGrouping: true, annualLeaveSeparatedByOff: true, annualLeaveSeparatedByPublicHoliday: true, publicHolidayNonWorking: true, publicHolidayEntitlement: true, billTipWorkedDayUnit: true, sickLeavePreserved: true, approvedMembershipScope: true, membershipStartEnd: true, factualDailyAvailability: true, defaultEntitlementsReadOnly: true }, null, 2))
 } finally {
   await repository.getDatabase().close().catch(() => undefined)
   await rm(dataDirectory, { recursive: true, force: true })
@@ -81,7 +78,7 @@ function expectMetadata(metadata: Record<string, unknown> | undefined) {
   assert.equal(metadata?.dutyClassification, 'publicHoliday')
   assert.equal(metadata?.countsAsWorking, false)
   assert.equal(metadata?.countsAsPublicHoliday, true)
-  assert.equal(metadata?.billTipEligible, true)
-  assert.equal(metadata?.billTipWorkedDayUnits, 1)
+  assert.equal(metadata?.billTipEligible, undefined, 'Public Holiday Bill Tip eligibility remains manager-controlled.')
+  assert.equal(metadata?.billTipWorkedDayUnits, undefined, 'Public Holiday day credit remains manager-controlled.')
   return metadata
 }

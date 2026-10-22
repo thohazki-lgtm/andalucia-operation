@@ -1,0 +1,223 @@
+.ao-action,
+.ao-icon-action,
+.ao-overflow > summary,
+.ao-overflow__menu button {
+  -webkit-tap-highlight-color: transparent;
+  font: inherit;
+}
+
+.ao-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.ao-action--primary {
+  border-color: #bd9854;
+  background: #bd9854;
+  color: #102f43;
+}
+
+.ao-action--primary:hover:not(:disabled) { background: #c9a65f; }
+
+.ao-action--secondary {
+  border-color: #cbd9df;
+  background: #fff;
+  color: #173b52;
+}
+
+.ao-action--secondary:hover:not(:disabled) {
+  border-color: #bd9854;
+  background: #fffaf0;
+}
+
+.ao-action--compact {
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 12px;
+}
+
+.ao-action:disabled,
+.ao-icon-action:disabled,
+.ao-overflow__menu button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.ao-action:focus-visible,
+.ao-icon-action:focus-visible,
+.ao-overflow > summary:focus-visible,
+.ao-overflow__menu button:focus-visible,
+.ao-status-select:focus-visible {
+  outline: 3px solid rgba(27, 98, 136, .34);
+  outline-offset: 2px;
+}
+
+.ao-icon {
+  display: block;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.ao-icon-action,
+.ao-overflow > summary {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid #cbd9df;
+  border-radius: 9px;
+  background: #fff;
+  color: #173b52;
+  cursor: pointer;
+  list-style: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.ao-icon-action:hover:not(:disabled),
+.ao-overflow > summary:hover {
+  border-color: #bd9854;
+  background: #fffaf0;
+}
+
+.ao-icon-action--danger { color: #a84943; }
+
+.ao-status-pill {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid #d8e1e5;
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: #f4f7f8;
+  color: #536a76;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.15;
+  cursor: default;
+}
+
+.ao-status-pill--navy { border-color: #aac0cb; background: #edf4f7; color: #173b52; }
+.ao-status-pill--gold { border-color: #dcc082; background: #fff8e8; color: #80601f; }
+.ao-status-pill--lagoon { border-color: #a8cfca; background: #edf8f6; color: #27695f; }
+.ao-status-pill--danger { border-color: #e3aca7; background: #fbedeb; color: #9b3e38; }
+.ao-status-pill--success { border-color: #9dcab8; background: #eef8f3; color: #27694f; }
+
+.ao-status-select {
+  min-height: 38px;
+  box-sizing: border-box;
+  border: 1px solid #bd9854;
+  border-radius: 999px;
+  background-color: #f8fbfc;
+  color: #173b52;
+  padding: 6px 32px 6px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.ao-status-select:disabled { cursor: not-allowed; opacity: .6; }
+
+.ao-overflow { position: relative; }
+.ao-overflow > summary::-webkit-details-marker { display: none; }
+
+.ao-overflow__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 180px;
+  overflow: hidden;
+  border: 1px solid #d8e1e5;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(20, 53, 72, .16);
+}
+
+.ao-overflow__menu button {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-bottom: 1px solid #edf1f3;
+  background: #fff;
+  padding: 9px 12px;
+  color: #173b52;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ao-overflow__menu button:last-child { border-bottom: 0; }
+.ao-overflow__menu button:hover:not(:disabled) { background: #f7fafb; }
+.ao-overflow__menu button.danger { color: #a84943; }
+
+.ao-date-control {
+  position: relative;
+  display: inline-grid;
+  width: 100%;
+  min-width: 0;
+}
+
+.ao-date-control input {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding-right: 46px;
+}
+
+.ao-date-control__icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  z-index: 1;
+  color: #173b52;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.ao-date-control input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.ao-date-control input:focus-visible {
+  outline: 3px solid rgba(27, 98, 136, .34);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .ao-action { min-height: 44px; }
+  .ao-action--compact { min-height: 44px; }
+  .ao-icon-action,
+  .ao-overflow > summary { width: 44px; height: 44px; flex-basis: 44px; }
+  .ao-status-select { min-height: 44px; }
+  .ao-overflow__menu button { min-height: 44px; }
+  .ao-date-control input { min-height: 44px; }
+  .ao-date-control__icon { width: 20px; height: 20px; }
+}

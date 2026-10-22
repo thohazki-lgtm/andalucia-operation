@@ -14,7 +14,7 @@ export type DailyReportManualPayload = {
     voidDetails: Array<{ amount: string; reason: string; checkInvoiceNumber: string }>
   }
   serviceVerification: { doubleDinePax: number | null; details: Array<{ roomNumber: string; pax: number; sourceOutlet: string; note: string }> }
-  manager: { operationSummary: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
+  manager: { operationSummary: string; operatingSummary?: string; operationsIssues?: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
   revenueVerification?: DailyReportRevenueVerification
   completion?: Record<string, 'complete' | 'warning' | 'missing'>
 }
@@ -22,7 +22,7 @@ export type DailyReportManualPayload = {
 export type DailyReportFrozenPayload = {
   servicePerformance: {
     totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number
-    noShowCovers: number; noShowRooms: string[]; walkIns: number
+    noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInRooms?: string[]
     bookingByTimeSlot: Array<Record<string, unknown>>
   }
   symphony: DailyReportManualPayload['symphony']
@@ -115,7 +115,7 @@ export class DailyReportSnapshotRepository {
       const current = (await transaction.query('select id from daily_reports where outlet_scope_id=$1 and service_date=$2 and is_current_authority=true for update', [input.outletScopeId, input.serviceDate])).rows[0]
       if (current) throw new Error('A current Daily Report revision already exists for this service date.')
       await transaction.query(`insert into daily_reports(id,outlet_scope_id,service_date,revision_number,status,is_current_authority,manual_payload,prepared_by_user_id,prepared_by_name_snapshot,created_by_user_id,created_by_name_snapshot,updated_by_user_id,updated_by_name_snapshot) values($1,$2,$3,1,'draft',true,$4,$5,$6,$5,$6,$5,$6)`, [id, input.outletScopeId, input.serviceDate, JSON.stringify(input.manualPayload), resolvedActor.userId, resolvedActor.displayName])
-      await transaction.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,null,$5,$6)', [randomUUID(), 'daily_report', id, 'draft_created', JSON.stringify({ outletScopeId: input.outletScopeId, serviceDate: input.serviceDate, revisionNumber: 1 }), actorLabel(resolvedActor)])
+      await transaction.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,null,$5,$6)', [randomUUID(), 'daily_report', id, 'draft_created', JSON.stringify({ outletScopeId: input.outletScopeId, serviceDate: input.serviceDate, revisionNumber: 1, manualPayload: input.manualPayload }), actorLabel(resolvedActor)])
     })
     return (await this.byId(id))!
   }
@@ -125,7 +125,7 @@ export class DailyReportSnapshotRepository {
     const resolvedActor = await this.authorizedActor(actor, current.outletScopeId)
     const updated = await this.db.query<any>(`update daily_reports set manual_payload=$2,updated_by_user_id=$3,updated_by_name_snapshot=$4,updated_at=now() where id=$1 and status='draft' returning ${this.reportColumns}`, [id, JSON.stringify(manualPayload), resolvedActor.userId, resolvedActor.displayName])
     if (!updated.rows[0]) throw new Error('Only Draft reports can be edited.')
-    await this.db.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,null,$5,$6)', [randomUUID(), 'daily_report', id, 'manual_payload_updated', JSON.stringify({ manualPayload }), actorLabel(resolvedActor)])
+    await this.db.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'daily_report', id, 'manual_payload_updated', JSON.stringify({ manualPayload: current.manualPayload }), JSON.stringify({ manualPayload }), actorLabel(resolvedActor)])
     return this.report(updated.rows[0])
   }
   async review(id: string, actor: DailyReportActor) {
@@ -190,6 +190,6 @@ export class DailyReportSnapshotRepository {
   }
   async aggregateApproved(outletScopeId: string, startDate: string, endDate: string) {
     const snapshots = await this.currentApprovedSnapshots(outletScopeId, startDate, endDate)
-    return snapshots.reduce((total, item) => ({ days: total.days + 1, covers: total.covers + item.frozenPayload.servicePerformance.totalCovers, doubleDinePax: total.doubleDinePax + Number(item.frozenPayload.serviceVerification.doubleDinePax || 0), totalRevenue: (Number(total.totalRevenue) + Number(item.frozenPayload.symphony.totalRevenue)).toFixed(2), totalUpsellRevenue: (Number(total.totalUpsellRevenue) + Number(item.frozenPayload.upselling.totalUpsellRevenue)).toFixed(2), guestOccasions: total.guestOccasions + item.frozenPayload.guestOccasions.categories.reduce((sum, category) => sum + Number(category.count || 0), 0) }), { days: 0, covers: 0, doubleDinePax: 0, totalRevenue: '0.00', totalUpsellRevenue: '0.00', guestOccasions: 0 })
+    return snapshots.reduce((total, item) => { const details = item.frozenPayload.guestOccasions.roomDetails; const distinct = details.some(row => Array.isArray(row.categoryKeys) && row.categoryKeys.length) ? new Set(details.map(row => row.bookingId ? `booking:${row.bookingId}` : `occasion:${row.occasionId}`)).size : item.frozenPayload.guestOccasions.categories.reduce((sum, category) => sum + Number(category.count || 0), 0); return { days: total.days + 1, covers: total.covers + item.frozenPayload.servicePerformance.totalCovers, doubleDinePax: total.doubleDinePax + Number(item.frozenPayload.serviceVerification.doubleDinePax || 0), totalRevenue: (Number(total.totalRevenue) + Number(item.frozenPayload.symphony.totalRevenue)).toFixed(2), totalUpsellRevenue: (Number(total.totalUpsellRevenue) + Number(item.frozenPayload.upselling.totalUpsellRevenue)).toFixed(2), guestOccasions: total.guestOccasions + distinct } }, { days: 0, covers: 0, doubleDinePax: 0, totalRevenue: '0.00', totalUpsellRevenue: '0.00', guestOccasions: 0 })
   }
 }

@@ -18,7 +18,8 @@ let snapshots = [...calendarDates('2026-08-17','2026-08-30').map((date,index)=>s
 let reportRows: Array<{id:string;service_date:string;status:string}> = []
 let saved: unknown = null
 const db = { query: async () => ({ rows: reportRows }) }
-const reporting = { getManagerSummary: async () => null, saveManagerSummary: async (input: unknown, actor: string) => { saved = { input, actor }; return input } }
+const emptyEarnings={incentives:{finalizedAmount:0,provisionalAmount:0,finalizedRecords:0,provisionalRecords:0},billTips:{finalizedAmount:0,provisionalAmount:0,finalizedMonths:0,provisionalMonths:0},state:'not_recorded'} as const
+const reporting = { report: async () => ({earnings:emptyEarnings}), getManagerSummary: async () => null, saveManagerSummary: async (input: unknown, actor: string) => { saved = { input, actor }; return input } }
 const service = new WeeklyReportService(db as never, reporting as never, () => '2026-09-10')
 ;(service as unknown as { snapshots: { currentApprovedSnapshots: (_outlet:string,start:string,end:string)=>Promise<typeof snapshots> } }).snapshots = { currentApprovedSnapshots: async (_outlet,start,end) => snapshots.filter(item=>item.serviceDate>=start&&item.serviceDate<=end) }
 
@@ -42,9 +43,11 @@ await assert.rejects(()=>service.saveCommentary('2026-09-08','No',outlet,'Owner'
 assert.deepEqual(weekRange('2027-01-01'),['2026-12-28','2027-01-03']); assert.equal(addCalendarDays('2028-02-28',1),'2028-02-29')
 
 const ui = await readFile(new URL('../src/reports.tsx', import.meta.url),'utf8'); const css = await readFile(new URL('../src/reports.css', import.meta.url),'utf8')
-for (const required of ['Weekly Performance','Service Performance by Day','Previous Week Comparison','Save Commentary','View Daily','Approved Daily snapshots']) assert.ok(ui.includes(required),`missing UI: ${required}`)
+for (const required of ['Weekly Performance','Service Performance by Day','Previous Week Comparison','Save Commentary','View Daily','ANDALUCÍA WEEKLY REPORT']) assert.ok(ui.includes(required),`missing UI: ${required}`)
 assert.ok(css.includes('@media(max-width:650px)')); assert.ok(css.includes('@media print')); assert.ok(!ui.includes('approveWeekly'))
 assert.ok(ui.includes('const allOccasions=view?.occasions||[]'), 'Weekly must render zero-value occasion categories.')
-for (const section of ['Weekly Performance','Service Performance by Day','Weekly Revenue','Chargeable Items / Upselling','Guest Experience','Service Attention','Previous Week Comparison','Weekly Commentary','Weekly Report Completeness']) assert.ok(ui.includes(`title="${section}"`),`missing aligned section: ${section}`)
-assert.ok(ui.includes('aria-label="Previous week"'));assert.ok(ui.includes('aria-label="Next week"'));assert.ok(!ui.includes('>← Previous Week</button>'));assert.ok(!ui.includes('>Next Week →</button>'));assert.ok(css.includes('.report-header-nav'));assert.ok(css.includes('.weekly-commentary'))
+for (const section of ['Weekly Performance','Service Performance by Day','Weekly Revenue','Chargeable Items / Upselling','Incentives & Bill Tips','Guest Experience','Service Attention','Previous Week Comparison','Weekly Commentary','Weekly Report Completeness']) assert.ok(ui.includes(`title="${section}"`),`missing aligned section: ${section}`)
+assert.ok(ui.includes('IconAction icon="chevron-left" label="Previous week"'));assert.ok(ui.includes('IconAction icon="chevron-right" label="Next week"'));assert.ok(ui.includes('DateControl label="Select weekly report date"'));assert.ok(!ui.includes('ANDALUCÍA WEEKLY MANAGEMENT REPORT'));assert.ok(!ui.includes('>← Previous Week</button>'));assert.ok(!ui.includes('>Next Week →</button>'));assert.ok(css.includes('.weekly-header-nav'));assert.ok(css.includes('#weekly-performance'));assert.ok(css.includes('.weekly-commentary'))
+assert.ok(!ui.includes('elapsed service days'),'weekly header must not expose completeness detail text')
+for(const shared of ['<WeeklyStatus status=','<ActionButton icon="refresh"','className="weekly-view-daily"','icon="print"','icon="save"'])assert.ok(ui.includes(shared),`Weekly Report shared action adoption missing: ${shared}`)
 console.log('Weekly R2 authority aggregation, comparison, numbered design alignment, compact navigation, responsive tables/commentary and print checks: PASS')

@@ -21,6 +21,7 @@ import type { DesktopOAuthConfiguration, PendingDesktopAuthorization } from './g
 export const PROVISIONING_CONFIRM_IDENTITY = 'APPROVE GOOGLE IDENTITY' as const
 export const PROVISIONING_CONFIRM_DESTINATION = 'APPROVE DRIVE DESTINATION' as const
 export const PROVISIONING_CONFIRM_PUBLICATION = 'PUBLISH VERIFIED PAIR' as const
+export const PROVISIONING_DESTINATION_NAME = 'Encrypted_Database_Backups' as const
 
 const referencePattern = /^andalucia-cloud:[A-Za-z0-9._-]+$/
 const sha256Pattern = /^[0-9a-f]{64}$/i
@@ -30,8 +31,9 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({ 
 
 export type ProvisioningInput = {
   clientId: string
+  clientSecret: string
   credentialReference: string
-  destination: { folderId: string; label: string; relationship: 'MY_DRIVE' | 'SHARED_DRIVE'; driveId?: string }
+  destination: { label: string; relationship: 'MY_DRIVE' | 'SHARED_DRIVE'; driveId?: string }
   approvedRoot: string
   artifactPath: string
   sidecarPath: string
@@ -57,7 +59,7 @@ export type LoopbackCallbackBoundary = {
   redirectUri: string
   localAuthorizationUrl: string
   setAuthorizationUrl(url: string): void
-  wait(): Promise<{ state: string; code: string }>
+  wait(): Promise<{ state: string; code: string; pickedFileIds: string[] }>
   close(): Promise<void>
 }
 
@@ -70,8 +72,9 @@ export const maskGoogleIdentity = (identity: DriveIdentity) => {
 
 export const assertProvisioningInput = (input: ProvisioningInput) => {
   if (!input.clientId.trim()) throw new Error('OAUTH_CLIENT_ID_MISSING')
+  if (!input.clientSecret.trim()) throw new Error('OAUTH_CLIENT_SECRET_MISSING')
   if (!referencePattern.test(input.credentialReference)) throw new Error('CREDENTIAL_REFERENCE_INVALID')
-  if (!input.destination.folderId.trim() || !input.destination.label.trim()) throw new Error('DESTINATION_BINDING_MALFORMED')
+  if (!input.destination.label.trim()) throw new Error('DESTINATION_BINDING_MALFORMED')
   if (input.destination.relationship === 'SHARED_DRIVE' && !input.destination.driveId?.trim()) throw new Error('DESTINATION_DRIVE_ID_MISSING')
   if (!input.expectedBackupId.trim() || !input.expectedSchema.trim() || !sha256Pattern.test(input.expectedManifestSha256)) throw new Error('RECOVERY_EVIDENCE_INPUT_INVALID')
   const timeout = input.callbackTimeoutMs ?? 300_000
@@ -86,13 +89,23 @@ export const assertCredentialPayload = (credential: CloudCredential | null, now 
   return credential
 }
 
-export const assertDestinationFolder = (folder: DriveFolder, identity: DriveIdentity, destination: ProvisioningInput['destination']) => {
+export const assertPickerSelection = (pickedFileIds: string[]) => {
+  if (pickedFileIds.length === 0) throw new Error('PICKER_SELECTION_MISSING')
+  if (pickedFileIds.length !== 1) throw new Error('PICKER_SELECTION_AMBIGUOUS')
+  if (!/^[A-Za-z0-9_-]+$/.test(pickedFileIds[0])) throw new Error('PICKER_SELECTION_INVALID')
+  return pickedFileIds[0]
+}
+
+type SelectedDestination = { folderId: string; expectedName: string; label: string; relationship: 'MY_DRIVE' | 'SHARED_DRIVE'; driveId?: string }
+
+export const assertDestinationFolder = (folder: DriveFolder, identity: DriveIdentity, destination: SelectedDestination) => {
   if (folder.id !== destination.folderId || folder.trashed || folder.mimeType !== 'application/vnd.google-apps.folder' || !folder.canAddChildren) throw new Error('DESTINATION_FOLDER_UNVERIFIED')
+  if (folder.name !== destination.expectedName) throw new Error('DESTINATION_FOLDER_NAME_MISMATCH')
   if (destination.relationship === 'MY_DRIVE' && !folder.owners.some(owner => sameIdentity(owner, identity))) throw new Error('DESTINATION_OWNERSHIP_MISMATCH')
   if (destination.relationship === 'SHARED_DRIVE' && (!destination.driveId || folder.driveId !== destination.driveId)) throw new Error('DESTINATION_DRIVE_MISMATCH')
 }
 
-export const assertExistingBindingCompatible = (credential: CloudCredential | null, identity: DriveIdentity, destination: ProvisioningInput['destination']) => {
+export const assertExistingBindingCompatible = (credential: CloudCredential | null, identity: DriveIdentity, destination: SelectedDestination) => {
   const binding = credential?.approvedDestination
   if (!binding) return
   if (!sameIdentity(binding.account, identity)) throw new Error('EXISTING_IDENTITY_BINDING_MISMATCH')
@@ -104,8 +117,8 @@ export class LoopbackOAuthCallbackServer implements LoopbackCallbackBoundary {
   localAuthorizationUrl = ''
   private authorizationUrl = ''
   private server: Server
-  private callbackPromise: Promise<{ state: string; code: string }>
-  private resolveCallback!: (value: { state: string; code: string }) => void
+  private callbackPromise: Promise<{ state: string; code: string; pickedFileIds: string[] }>
+  private resolveCallback!: (value: { state: string; code: string; pickedFileIds: string[] }) => void
   private rejectCallback!: (error: Error) => void
   private timer?: NodeJS.Timeout
   private settled = false
@@ -152,7 +165,7 @@ export class LoopbackOAuthCallbackServer implements LoopbackCallbackBoundary {
     void this.close()
   }
 
-  private resolve(value: { state: string; code: string }) {
+  private resolve(value: { state: string; code: string; pickedFileIds: string[] }) {
     if (this.settled) return
     this.settled = true
     this.resolveCallback(value)
@@ -177,8 +190,15 @@ export class LoopbackOAuthCallbackServer implements LoopbackCallbackBoundary {
     const state = url.searchParams.get('state') || ''
     const code = url.searchParams.get('code') || ''
     if (!state || !code) { this.respond(response, 400, '<h1>Authorization callback is incomplete.</h1>'); return this.reject(new Error('OAUTH_CALLBACK_INVALID')) }
+    const rawPickedFileIds = url.searchParams.get('picked_file_ids') || ''
+    const pickedFileIds = rawPickedFileIds.split(',').map(value => value.trim()).filter(Boolean)
+    try { assertPickerSelection(pickedFileIds) } catch (error) {
+      const message = error instanceof Error && error.message === 'PICKER_SELECTION_MISSING' ? 'No Drive folder was selected.' : error instanceof Error && error.message === 'PICKER_SELECTION_AMBIGUOUS' ? 'Select exactly one Drive folder.' : 'The selected Drive folder is invalid.'
+      this.respond(response, 400, `<h1>${message}</h1>`)
+      return this.reject(error instanceof Error ? error : new Error('PICKER_SELECTION_INVALID'))
+    }
     this.respond(response, 200, '<h1>Authorization received.</h1><p>You may return to the terminal. No credential value is displayed here.</p>')
-    this.resolve({ state, code })
+    this.resolve({ state, code, pickedFileIds })
   }
 }
 
@@ -213,22 +233,25 @@ export class ManagerControlledCloudProvisioning {
     const callback = await this.dependencies.createCallback(input.callbackTimeoutMs)
     let pendingStored = false
     try {
-      const oauth = this.dependencies.createOAuth({ clientId: input.clientId, redirectUri: callback.redirectUri })
+      const oauth = this.dependencies.createOAuth({ clientId: input.clientId, clientSecret: input.clientSecret, redirectUri: callback.redirectUri, picker: { allowFolderSelection: true, selectableMimeType: 'application/vnd.google-apps.folder' } })
       const pending = oauth.begin(pendingReference)
       callback.setAuthorizationUrl(pending.authorizationUrl)
       await this.dependencies.manager.authorizationReady(callback.localAuthorizationUrl, GOOGLE_DRIVE_FILE_SCOPE)
       const callbackResult = await callback.wait()
+      const selectedFolderId = assertPickerSelection(callbackResult.pickedFileIds)
       const completed = await oauth.complete(pending, callbackResult)
       assertLeastPrivilegeScopes(completed.grantedScopes)
       pendingStored = true
       const credential = assertCredentialPayload(await this.dependencies.credentials.load(pendingReference), this.dependencies.now?.() || new Date())
       const identity = await this.dependencies.drive.identity(credential)
-      assertExistingBindingCompatible(existing, identity, input.destination)
       if (!await this.dependencies.manager.approveIdentity(maskGoogleIdentity(identity))) throw new Error('MANAGER_IDENTITY_APPROVAL_REQUIRED')
-      const folder = await this.dependencies.drive.folder(credential, input.destination.folderId)
-      assertDestinationFolder(folder, identity, input.destination)
-      if (!await this.dependencies.manager.approveDestination(input.destination)) throw new Error('MANAGER_DESTINATION_APPROVAL_REQUIRED')
-      const approvedDestination: ApprovedDriveDestination = { version: 1, credentialReference: input.credentialReference, ...input.destination, account: identity }
+      const selectedDestination: SelectedDestination = { folderId: selectedFolderId, expectedName: PROVISIONING_DESTINATION_NAME, label: input.destination.label, relationship: input.destination.relationship, driveId: input.destination.driveId }
+      assertExistingBindingCompatible(existing, identity, selectedDestination)
+      const folder = await this.dependencies.drive.folder(credential, selectedDestination.folderId)
+      assertDestinationFolder(folder, identity, selectedDestination)
+      const approvedSelection = { label: selectedDestination.label, folderId: selectedDestination.folderId, relationship: selectedDestination.relationship, driveId: selectedDestination.driveId }
+      if (!await this.dependencies.manager.approveDestination(approvedSelection)) throw new Error('MANAGER_DESTINATION_APPROVAL_REQUIRED')
+      const approvedDestination: ApprovedDriveDestination = { version: 1, credentialReference: input.credentialReference, ...approvedSelection, account: identity }
       await this.dependencies.credentials.save(input.credentialReference, { ...credential, approvedDestination, destinationApprovedAt: (this.dependencies.now?.() || new Date()).toISOString() })
       const persisted = assertCredentialPayload(await this.dependencies.credentials.load(input.credentialReference), this.dependencies.now?.() || new Date())
       if (!persisted.approvedDestination || persisted.approvedDestination.folderId !== approvedDestination.folderId || !sameIdentity(persisted.approvedDestination.account, identity)) throw new Error('CREDENTIAL_BINDING_READBACK_FAILED')
@@ -246,7 +269,7 @@ export class ManagerControlledCloudProvisioning {
         expectedManifestSha256: input.expectedManifestSha256
       })
       if (!['SUCCEEDED', 'ALREADY_PRESENT_VERIFIED'].includes(upload.state)) throw new Error(upload.errorCode || 'CLOUD_UPLOAD_FAILED')
-      return sanitizeCloudValue({ status: upload.state, scope: GOOGLE_DRIVE_FILE_SCOPE, identity: maskGoogleIdentity(identity), destination: input.destination, pair: pairSummary, upload }) as ProvisioningResult
+      return sanitizeCloudValue({ status: upload.state, scope: GOOGLE_DRIVE_FILE_SCOPE, identity: maskGoogleIdentity(identity), destination: approvedSelection, pair: pairSummary, upload }) as ProvisioningResult
     } finally {
       await callback.close().catch(() => undefined)
       if (pendingStored) await this.dependencies.credentials.remove(pendingReference).catch(() => undefined)

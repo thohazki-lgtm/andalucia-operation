@@ -3,6 +3,7 @@ import { bookingApi, guestOccasionApi } from './api'
 import type { BookingRecord, ConfigOption, GuestExperienceAttentionRecord, GuestOccasionRecord, Staff } from './domain'
 import './guest-occasions.css'
 import { addCalendarDays, serviceDate } from './service-date'
+import { ActionButton, DateControl, IconAction, StatusPill, StatusSelect, SvgIcon } from './action-system'
 
 export interface GuestOccasionConfiguration { types: ConfigOption[]; statuses: ConfigOption[]; tables: ConfigOption[] }
 const optionLabel = (options: ConfigOption[], value: string) => options.find(option => option.value === value)?.label || value || '—'
@@ -12,6 +13,8 @@ const sourceLabel = (record: GuestOccasionRecord) => ['manual', 'manager_created
 const celebrationTypes = new Set(['honeymoon', 'see_you_soon', 'birthday', 'anniversary'])
 type ExperienceGroup = 'all' | 'celebrations' | 'vip' | 'attention'
 const evidencePreview = (value: string, maximum = 120) => { const compact = value.replace(/\s+/g, ' ').trim(); return compact.length > maximum ? `${compact.slice(0, maximum - 1).trimEnd()}…` : compact || 'No source evidence recorded.' }
+const attentionLabel = (record: GuestExperienceAttentionRecord) => record.normalizedKey === 'ALLERGY' ? 'Allergy' : record.normalizedKey === 'GUEST_ATTENTION_TLC' ? 'TLC / Guest Attention' : record.label || record.normalizedKey
+const guestPreferenceAlert = (record: GuestOccasionRecord) => /\b(allerg(?:y|ies|ic)|dietary|vegetarian|vegan|gluten|nuts?|shellfish|lactose|preference|special request)\b/i.test(record.sourceText) ? evidencePreview(record.sourceText, 220) : ''
 
 export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: Staff[]; configuration: GuestOccasionConfiguration; onToast: (message: string) => void }) {
   const [date, setDate] = useState(serviceDate())
@@ -33,16 +36,14 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
   const quickStatus = async (record: GuestOccasionRecord, nextStatus: string) => { try { await save({ ...record, status: nextStatus }) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to update occasion status.') } }
   return <>
     <section className="occasion-toolbar">
-<div>
-<button className="secondary" onClick={() => setDate(value => addCalendarDays(value, -1))}>← Previous</button>
-<label>Occasion date<input aria-label="Guest occasion date" type="date" value={date} onChange={event => setDate(event.target.value)} />
-</label>
-<button className="secondary" onClick={() => setDate(value => addCalendarDays(value, 1))}>Next →</button>
-<button className="secondary" onClick={() => setDate(serviceDate())}>Today</button>
+<div className="occasion-date-controls">
+<IconAction className="occasion-date-previous" icon="chevron-left" label="Previous guest occasion date" onClick={() => setDate(value => addCalendarDays(value, -1))} />
+<div className="occasion-date-picker"><DateControl label="Guest occasion date" value={date} onChange={event => setDate(event.target.value)} /></div>
+<IconAction className="occasion-date-next" icon="chevron-right" label="Next guest occasion date" onClick={() => setDate(value => addCalendarDays(value, 1))} />
+<ActionButton className="occasion-date-today" icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
-<div>
-<span>{formatDate(date)}</span>
-<button className="primary" onClick={() => setEditing('new')}>＋ Add Manual Occasion</button>
+<div className="occasion-date-summary">
+<ActionButton variant="primary" className="occasion-add-manual" icon="add" onClick={() => setEditing('new')}>Add Manual Occasion</ActionButton>
 </div>
 </section>
     <section className="occasion-summary">
@@ -66,8 +67,8 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <select aria-label="Filter occasion waiter" value={waiter} onChange={event => setWaiter(event.target.value)}><option value="all">All waiters</option><option value="unassigned">Unassigned waiter</option>{staff.map(person => <option key={person.id} value={person.id}>{person.name}{person.employmentStatus !== 'active' ? ' (Inactive)' : ''}</option>)}</select>
 </div>{loading && <div className="inline-state">Loading Guest Experience…</div>}{error && <div className="inline-state error-state">
 <p>{error}</p>
-<button className="secondary" onClick={() => void load()}>Try again</button>
-</div>}{!loading && !error && <>{visibleAttention.length > 0 && <AttentionRecords records={visibleAttention} staff={staff} configuration={configuration} onView={setViewingAttention} />}{visible.length > 0 && <div className="occasion-table-wrap" tabIndex={0} aria-label="Guest Experience records table">
+<ActionButton icon="refresh" onClick={() => void load()}>Try again</ActionButton>
+</div>}{!loading && !error && <>{visibleAttention.length > 0 && <AttentionRecords records={visibleAttention} staff={staff} configuration={configuration} onView={setViewingAttention} />}{visible.length > 0 && <section className="occasion-records" aria-label="Guest Occasions records"><header><div><p className="eyebrow">GUEST OCCASIONS</p><h3>Recognition & celebration service</h3></div><span className="badge">{visible.length}</span></header><div className="occasion-table-wrap" tabIndex={0} aria-label="Guest Occasions records table">
 <table className="occasion-table">
 <thead>
 <tr>
@@ -78,15 +79,14 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <th>Table</th>
 <th>Waiter</th>
 <th>Status</th>
-<th>Source</th>
 <th>
 </th>
 </tr>
 </thead>
-<tbody>{visible.map(record => { const occasion = configuration.types.find(option => option.value === record.occasionType); return <tr key={record.id}>
+<tbody>{visible.map(record => { const occasion = configuration.types.find(option => option.value === record.occasionType); const workflowStatus = configuration.statuses.find(option => option.value === record.status); const workflow = String(workflowStatus?.metadata?.occasionWorkflow || 'attention'); return <tr key={record.id} className={`occasion-workflow-${workflow}`}>
 <td className="occasion-time"><b>{record.reservationTime}</b></td>
 <td>
-<b>{record.guestName}</b>
+<button className="occasion-guest-trigger" type="button" onClick={() => setViewing(record)} aria-label={`View occasion details for ${record.guestName}`}><span>{record.guestName}</span><SvgIcon name="chevron-right" size={18} /></button>
 <small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ''}</small>
 </td>
 <td>
@@ -96,17 +96,13 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <td>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</td>
 <td>{record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' (Inactive)' : ''}` : 'Unassigned'}</td>
 <td>
-<select aria-label={`Status for ${record.guestName}`} value={record.status} onChange={event => void quickStatus(record, event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
-</td>
-<td>
-<span className={record.source === 'booking_intelligence' || record.source.startsWith('automatic') ? 'badge blue' : 'badge'}>{sourceLabel(record)}</span>
+<StatusSelect className={`occasion-status-select occasion-status-${workflow}`} style={{ borderColor: workflowStatus?.color }} label={`Status for ${record.guestName}`} value={record.status} onChange={event => void quickStatus(record, event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect>
 </td>
 <td className="row-actions">
-<button className="link" onClick={() => setViewing(record)}>View</button>
-<button className="link" onClick={() => setEditing(record)}>Edit</button>
+<IconAction icon="edit" label={`Edit occasion for ${record.guestName}`} onClick={() => setEditing(record)} />
 </td>
 </tr>})}</tbody>
-</table><div className="mobile-occasion-list">{visible.map(record => <MobileOccasionCard key={record.id} record={record} configuration={configuration} onStatus={nextStatus => void quickStatus(record, nextStatus)} onView={() => setViewing(record)} onEdit={() => setEditing(record)} />)}</div></div>}{visible.length === 0 && visibleAttention.length === 0 && <div className="inline-empty">No Guest Experience records match this date and filters.</div>}</>}</section>
+</table><div className="mobile-occasion-list">{visible.map(record => <MobileOccasionCard key={record.id} record={record} configuration={configuration} onStatus={nextStatus => void quickStatus(record, nextStatus)} onView={() => setViewing(record)} onEdit={() => setEditing(record)} />)}</div></div></section>}{visible.length === 0 && visibleAttention.length === 0 && <div className="inline-empty">No Guest Experience records match this date and filters.</div>}</>}</section>
     {editing && <GuestOccasionForm record={editing === 'new' ? undefined : editing} date={date} bookings={bookings} staff={staff} configuration={configuration} onClose={() => setEditing(null)} onSave={async record => { await save(record); setEditing(null) }} />}
     {viewing && <GuestOccasionDetails record={viewing} configuration={configuration} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null) }} onStatus={nextStatus => void quickStatus(viewing, nextStatus)} />}
     {viewingAttention && <AttentionDetails record={viewingAttention} staff={staff} configuration={configuration} onClose={() => setViewingAttention(null)} />}
@@ -115,7 +111,7 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 
 function AttentionRecords({ records, staff, configuration, onView }: { records: GuestExperienceAttentionRecord[]; staff: Staff[]; configuration: GuestOccasionConfiguration; onView: (record: GuestExperienceAttentionRecord) => void }) {
   const waiterName = (id: string | null) => staff.find(person => person.id === id)?.name || 'Unassigned'
-  return <section className="attention-records" aria-label="Attention Needed records"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h3>TLC & allergy follow-up</h3></div><span className="badge">{records.length}</span></header><div className="attention-table-wrap"><table className="attention-table"><thead><tr><th>Time</th><th>Guest / Room</th><th>Attention</th><th>Evidence</th><th>Table</th><th>Waiter</th><th>Status</th><th /></tr></thead><tbody>{records.map(record => <tr key={record.id}><td className="occasion-time"><b>{record.reservationTime}</b></td><td><b>{record.guestName}</b><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ''}</small></td><td><span className={`badge ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{record.normalizedKey === 'ALLERGY' ? 'Allergy' : 'TLC'}</span></td><td className="attention-evidence">{evidencePreview(record.rawEvidence)}</td><td>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</td><td>{waiterName(record.waiterId)}</td><td><span className="badge attention-state">Attention</span></td><td><button className="link" onClick={() => onView(record)}>View</button></td></tr>)}</tbody></table></div><div className="mobile-attention-list">{records.map(record => <article className="mobile-operation-card mobile-attention-card" key={record.id}><header><div><span className="occasion-card-time">{record.reservationTime}</span><span className={`badge ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{record.normalizedKey === 'ALLERGY' ? 'Allergy' : 'TLC'}</span><h4>{record.guestName}</h4><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ''}</small></div><span className="attention-flag">Attention</span></header><p>{evidencePreview(record.rawEvidence, 90)}</p><div className="mobile-card-facts"><span><small>Table</small><b>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</b></span><span><small>Waiter</small><b>{waiterName(record.waiterId)}</b></span></div><div className="mobile-card-actions"><button className="secondary" onClick={() => onView(record)}>View Details</button></div></article>)}</div></section>
+  return <section className="attention-records" aria-label="Attention Needed records"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h3>TLC & allergy follow-up</h3></div><StatusPill tone="gold">{records.length}</StatusPill></header><div className="attention-table-wrap"><table className="attention-table"><thead><tr><th>Time</th><th>Guest / Room</th><th>Attention</th><th>Evidence</th><th>Table</th><th>Waiter</th><th>Status</th></tr></thead><tbody>{records.map(record => <tr key={record.id}><td className="occasion-time"><b>{record.reservationTime}</b></td><td><button className="occasion-guest-trigger" type="button" onClick={() => onView(record)} aria-label={`View attention details for ${record.guestName}`}><span>{record.guestName}</span><SvgIcon name="chevron-right" size={18} /></button><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ''}</small></td><td><span className={`badge ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{attentionLabel(record)}</span></td><td className="attention-evidence">{evidencePreview(record.rawEvidence)}</td><td>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</td><td>{waiterName(record.waiterId)}</td><td><StatusPill tone="gold" className="attention-state">Attention</StatusPill></td></tr>)}</tbody></table></div><div className="mobile-attention-list">{records.map(record => <article className="mobile-operation-card mobile-attention-card" key={record.id}><header><div><span className="occasion-card-time">{record.reservationTime}</span><span className={`badge ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{attentionLabel(record)}</span><h4><button className="occasion-guest-trigger mobile-attention-guest-trigger" type="button" onClick={() => onView(record)} aria-label={`View attention details for ${record.guestName}`}><span>{record.guestName}</span><SvgIcon name="chevron-right" size={18} /></button></h4><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ''}</small></div><StatusPill tone="gold" className="attention-flag">Attention</StatusPill></header><p>{evidencePreview(record.rawEvidence, 90)}</p><div className="mobile-card-facts"><span><small>Table</small><b>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</b></span><span><small>Waiter</small><b>{waiterName(record.waiterId)}</b></span></div></article>)}</div></section>
 }
 
 function MobileOccasionCard({ record, configuration, onStatus, onView, onEdit }: { record: GuestOccasionRecord; configuration: GuestOccasionConfiguration; onStatus: (status: string) => void; onView: () => void; onEdit: () => void }) {
@@ -124,8 +120,8 @@ function MobileOccasionCard({ record, configuration, onStatus, onView, onEdit }:
   return <article className="mobile-operation-card mobile-occasion-card">
     <header><div><span className="occasion-card-time">{record.reservationTime}</span><span className="occasion-chip" style={{ background: occasion?.color }}>{occasion?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span><h4>{record.guestName}</h4><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ' · Manual occasion'}</small></div>{status?.metadata?.occasionWorkflow === 'attention' && <span className="attention-flag">Attention required</span>}</header>
     <div className="mobile-card-facts"><span><small>Table</small><b>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</b></span><span><small>Waiter</small><b>{record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive' : ''}` : 'Unassigned'}</b></span><span><small>Source</small><b>{sourceLabel(record)}</b></span><span><small>Covers</small><b>{record.covers || '—'}</b></span></div>
-    <label className="mobile-card-status">Status<select aria-label={`Mobile occasion status for ${record.guestName}`} value={record.status} style={{ borderColor: status?.color }} onChange={event => onStatus(event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select></label>
-    <div className="mobile-card-actions"><button className="secondary" onClick={onView}>View Details</button><button className="secondary" onClick={onEdit}>Edit</button></div>
+    <label className="mobile-card-status">Status<StatusSelect className={`occasion-status-select occasion-status-${String(status?.metadata?.occasionWorkflow || 'attention')}`} label={`Mobile occasion status for ${record.guestName}`} value={record.status} style={{ borderColor: status?.color }} onChange={event => onStatus(event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></label>
+    <div className="mobile-card-actions"><ActionButton icon="chevron-right" iconPosition="end" onClick={onView}>View Details</ActionButton><ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton></div>
   </article>
 }
 
@@ -151,7 +147,7 @@ function GuestOccasionForm({ record, date, bookings, staff, configuration, onClo
 </label>
 <label>Room number<input value={form.roomNumber} readOnly={Boolean(form.bookingId)} onChange={event => update('roomNumber', event.target.value)} />
 </label>
-<label>Reservation date<input type="date" value={form.reservationDate} readOnly={Boolean(form.bookingId)} onChange={event => update('reservationDate', event.target.value)} />
+<label>Reservation date<DateControl label="Reservation date" value={form.reservationDate} readOnly={Boolean(form.bookingId)} onChange={event => update('reservationDate', event.target.value)} />
 </label>
 <label>Reservation time<input type="time" value={form.reservationTime} readOnly={Boolean(form.bookingId)} onChange={event => update('reservationTime', event.target.value)} />
 </label>
@@ -166,8 +162,8 @@ function GuestOccasionForm({ record, date, bookings, staff, configuration, onClo
 </div>{form.bookingId && <p className="linked-booking-note">Guest, room, date, time, table and waiter stay synchronized with the linked booking.</p>}{record?.source.startsWith('automatic') && <label>Detection evidence<textarea readOnly rows={3} value={form.sourceText} />
 </label>}<label>Manager notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} />
 </label>{error && <p className="save-error">{error}</p>}<div className="form-actions">
-<button type="button" className="secondary" onClick={onClose}>Cancel</button>
-<button className="primary" disabled={saving}>{saving ? 'Saving…' : 'Save occasion'}</button>
+<ActionButton onClick={onClose}>Cancel</ActionButton>
+<ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save occasion'}</ActionButton>
 </div>
 </form>
 </OccasionModal>
@@ -178,27 +174,28 @@ function GuestOccasionDetails({ record, configuration, onClose, onEdit, onStatus
   const groupLabel = type?.metadata?.countsAsVipSpecial ? 'VIP / SPECIAL GUEST' : celebrationTypes.has(record.occasionType) ? 'CELEBRATION' : 'GUEST EXPERIENCE'
   const prepared = configuration.statuses.find(option => option.active && option.metadata?.occasionWorkflow === 'prepared')
   const completed = configuration.statuses.find(option => option.active && option.metadata?.occasionWorkflow === 'completed')
+  const preferenceAlert = guestPreferenceAlert(record)
+  const hasVisitRecognition = Boolean(record.visitNumber || record.knownVisits || record.previousAndaluciaVisits)
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
   return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
 <aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Occasion Details">
-<header><div><p className="eyebrow">{groupLabel}</p><h2>{record.guestName}</h2><span className="occasion-chip" style={{ background: type?.color }}>{type?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span></div><button className="close" aria-label="Close guest details" title="Close" onClick={onClose}>×</button></header>
+<header><div><p className="eyebrow">{groupLabel}</p><h2>{record.guestName}</h2><span className="occasion-chip" style={{ background: type?.color }}>{type?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span></div><IconAction className="close" icon="close" label="Close guest details" onClick={onClose} /></header>
 <div className="occasion-drawer-body">
 <DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || 'Manual / walk-in'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection>
-<DrawerSection title="Recognition"><Detail label="Occasion" value={type?.label || record.occasionType} /><Detail label="VIP / Special" value={type?.metadata?.countsAsVipSpecial ? 'Yes' : 'No'} />{type?.metadata?.occasionCategory === 'siyamFamily' && <><Detail label="Explicit visit" value={record.visitNumber ? `${record.visitNumber}${ordinal(record.visitNumber)} visit` : 'Not stated'} /><Detail label="Known visits" value={record.knownVisits ? String(record.knownVisits) : 'Not safely known'} /><Detail label="Previous Andalucía visits" value={String(record.previousAndaluciaVisits || 0)} /></>}</DrawerSection>
-<DrawerSection title="Booking Information"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /><Detail label="Source" value={sourceLabel(record)} /><Detail label="Evidence summary" value={evidencePreview(record.sourceText)} />{record.sourceText && <EvidenceDisclosure evidence={record.sourceText} />}</DrawerSection>
-<DrawerSection title="Occasion Details"><Detail label="Status" value={optionLabel(configuration.statuses, record.status)} /><Detail label="Preparation notes" value={record.notes || '—'} /><Detail label="Created" value={`${record.createdAt ? new Date(record.createdAt).toLocaleString() : '—'} · ${record.createdBy || '—'}`} /><Detail label="Updated" value={`${record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '—'} · ${record.updatedBy || '—'}`} /></DrawerSection>
-{type?.metadata?.occasionCategory === 'siyamFamily' && <DrawerSection title="Guest Profile"><p className="drawer-help">Recognition history uses conservative exact normalized guest-name matching only. Room number is never used as identity.</p><Detail label="Preferences / notes" value={record.notes || 'No manager notes recorded'} /></DrawerSection>}
-</div><footer><button className="secondary" onClick={onEdit}>Edit</button>{prepared && record.status !== prepared.value && <button className="secondary" onClick={() => onStatus(prepared.value)}>Mark as Prepared</button>}{completed && record.status !== completed.value && <button className="primary" onClick={() => onStatus(completed.value)}>Mark as Completed</button>}</footer>
+<DrawerSection title="Reservation"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /></DrawerSection>
+{hasVisitRecognition && <DrawerSection title="Visit Recognition">{record.visitNumber && <Detail label="Recognized visit" value={`${record.visitNumber}${ordinal(record.visitNumber)} visit`} />}{record.knownVisits && <Detail label="Known visits" value={String(record.knownVisits)} />}{Boolean(record.previousAndaluciaVisits) && <Detail label="Previous visits" value={String(record.previousAndaluciaVisits)} />}</DrawerSection>}
+{preferenceAlert && <DrawerSection title="Guest Preferences & Alerts"><p className="occasion-alert-copy">{preferenceAlert}</p></DrawerSection>}
+<DrawerSection title="Operational Status"><Detail label="Status" value={optionLabel(configuration.statuses, record.status)} />{record.notes.trim() && <Detail label="Preparation notes" value={record.notes} />}</DrawerSection>
+</div><footer><ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton>{prepared && record.status !== prepared.value && <ActionButton icon="check" onClick={() => onStatus(prepared.value)}>Mark as Prepared</ActionButton>}{completed && record.status !== completed.value && <ActionButton variant="primary" icon="check" onClick={() => onStatus(completed.value)}>Mark as Completed</ActionButton>}</footer>
 </aside></div>
 }
 
 function AttentionDetails({ record, staff, configuration, onClose }: { record: GuestExperienceAttentionRecord; staff: Staff[]; configuration: GuestOccasionConfiguration; onClose: () => void }) {
   const waiter = staff.find(person => person.id === record.waiterId)
+  const classification = attentionLabel(record)
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
-  return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Attention Details"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h2>{record.guestName}</h2><span className={`badge ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{record.normalizedKey === 'ALLERGY' ? 'Allergy' : 'TLC / Guest Attention'}</span></div><button className="close" aria-label="Close guest attention details" title="Close" onClick={onClose}>×</button></header><div className="occasion-drawer-body"><DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || '—'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection><DrawerSection title="Attention"><Detail label="Classification" value={record.normalizedKey === 'ALLERGY' ? 'Allergy' : 'TLC / Guest Attention'} /><Detail label="Attention message" value={evidencePreview(record.rawEvidence)} /><Detail label="Status" value="Attention" /><EvidenceDisclosure evidence={record.rawEvidence} /></DrawerSection><DrawerSection title="Service"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={waiter ? `${waiter.name} · ${waiter.number}` : 'Unassigned'} /><Detail label="Source" value="Booking Intelligence" /></DrawerSection><DrawerSection title="Evidence Provenance"><Detail label="Evidence location" value={record.evidenceLocation} /><Detail label="Rule" value={`${record.ruleKey} · ${record.ruleVersion}`} /></DrawerSection></div><footer><button className="secondary" onClick={onClose}>Close</button></footer></aside></div>
+  return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Attention Details"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h2>{record.guestName}</h2><span className={`badge attention-detail-type ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{classification}</span></div><IconAction className="close" icon="close" label="Close guest attention details" onClick={onClose} /></header><div className="occasion-drawer-body"><DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || '—'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection><DrawerSection title="Reservation"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={waiter ? `${waiter.name} · ${waiter.number}` : 'Unassigned'} /></DrawerSection><DrawerSection title="Attention & Source Notes"><Detail label="Attention type" value={classification} /><p className={`occasion-alert-copy ${record.normalizedKey === 'ALLERGY' ? 'danger' : ''}`}>{record.rawEvidence.trim() || 'No source notes recorded.'}</p><Detail label="Status" value="Attention" /></DrawerSection></div><footer><ActionButton icon="close" onClick={onClose}>Close</ActionButton></footer></aside></div>
 }
-
-function EvidenceDisclosure({ evidence }: { evidence: string }) { return <details className="evidence-disclosure"><summary>View full source evidence</summary><p>{evidence}</p></details> }
 
 function DrawerSection({ title, children }: { title: string; children: ReactNode }) { return <section className="drawer-section"><h3>{title}</h3><div>{children}</div></section> }
 function Detail({ label, value }: { label: string; value: string }) { return <div className="drawer-detail"><span>{label}</span><b>{value}</b></div> }
@@ -272,7 +269,7 @@ function GuestOccasionConfigForm({ group, option, onClose, onSave }: { group: 't
 
 function OccasionModal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) { return <div className="modal-backdrop">
 <section className={`modal${wide ? ' booking-modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-<button type="button" className="close" aria-label="Close dialog" title="Close" onClick={onClose}>×</button>
+<IconAction className="close" icon="close" label="Close dialog" onClick={onClose} />
 <h2>{title}</h2>{children}</section>
 </div> }
 

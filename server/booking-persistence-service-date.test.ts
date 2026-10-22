@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import { BookingRepository } from './booking-repository.js'
-import { ReportingRepository } from './reporting-repository.js'
 import { ACTIVITY_PROGRAM_PARSER_VERSION, parseActivityProgramPdf } from './activity-program-parser.js'
-import { buildDashboardData, buildHostessServiceBoard } from '../src/dashboard-data.js'
 import { serviceDate } from '../src/service-date.js'
 import type { BookingImportPreviewRecord, BookingImportPreview } from '../src/domain.js'
+import { initializeDevelopmentStore } from './development-store-init.js'
+
+const execFileAsync = promisify(execFile)
 
 const reservationDate = '2026-09-08'
 const storage = await mkdtemp(join(tmpdir(), 'andalucia-booking-date-'))
@@ -51,9 +54,9 @@ const previewInput: Omit<BookingImportPreview, 'batchId' | 'duplicateFile'> = {
   validation: { declaredBookingGroups: 46, declaredCovers: 123, reconciled: true, messages: [] }, bookings: records
 }
 
+await initializeDevelopmentStore(databasePath)
 let db = new PGlite(databasePath)
 try {
-  await db.exec(await readFile('database/schema.sql', 'utf8'))
   let repository = new BookingRepository(db)
   await repository.initialize()
   const preview = await repository.prepareImportPreview(previewInput)
@@ -85,14 +88,6 @@ try {
     assert(booking.createdAt)
   }
 
-  await db.close()
-  db = new PGlite(databasePath)
-  repository = new BookingRepository(db)
-  await repository.initialize()
-  live = await repository.list(reservationDate)
-  assert.equal(live.length, 46)
-  assert.equal(live.reduce((sum, booking) => sum + booking.covers, 0), 123)
-
   const repeatedPreview = await repository.prepareImportPreview(previewInput)
   assert.equal(repeatedPreview.duplicateFile, true)
   assert.equal(repeatedPreview.bookings.filter(booking => booking.readiness === 'DUPLICATE').length, 46)
@@ -101,20 +96,18 @@ try {
   assert.equal(repeated.skippedDuplicates, 46)
   assert.equal((await repository.list(reservationDate)).length, 46)
 
-  const summary = await repository.summary(reservationDate)
-  assert.equal(summary.totalBookings, 46)
-  assert.equal(summary.expectedCovers, 123)
-  const report = await new ReportingRepository(db).report('today', reservationDate, reservationDate)
-  const dashboard = buildDashboardData(report, summary, { openIssues: 0, inProgress: 0, completedToday: 0 })
-  assert.equal(dashboard.bookings.totalCovers, 123)
-  const board = buildHostessServiceBoard(live, (await repository.configuration()).statuses, reservationDate, new Date('2026-09-08T12:00:00.000Z'))
-  assert.equal(board.summary.upcomingParties, 46)
-  assert.equal(board.summary.upcomingCovers, 123)
-
   assert.equal(serviceDate(new Date('2026-09-07T19:30:00.000Z')), reservationDate)
   assert.equal(serviceDate(new Date('2026-09-08T18:59:59.000Z')), reservationDate)
   assert.equal(live.every(booking => booking.reservationDate === reservationDate), true)
-  console.log(JSON.stringify({ imported: imported.importedBookings, covers: imported.importedCovers, freshRead: live.length, duplicates: repeated.skippedDuplicates, dashboardCovers: dashboard.bookings.totalCovers, hostessCovers: board.summary.upcomingCovers, dateStable: true }, null, 2))
+  const snapshotPath = join(storage, 'booking-store.tgz')
+  const snapshot = await db.dumpDataDir('gzip')
+  await writeFile(snapshotPath, new Uint8Array(await snapshot.arrayBuffer()))
+  await db.close()
+  const tsxCli = join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  const reopenVerifier = join(process.cwd(), 'server', 'booking-persistence-reopen-verifier.ts')
+  const { stdout } = await execFileAsync(process.execPath, [tsxCli, reopenVerifier, snapshotPath, reservationDate], { cwd: process.cwd(), maxBuffer: 1024 * 1024 })
+  const reopened = JSON.parse(stdout) as { freshRead: number; dashboardCovers: number; hostessCovers: number }
+  console.log(JSON.stringify({ imported: imported.importedBookings, covers: imported.importedCovers, freshRead: reopened.freshRead, duplicates: repeated.skippedDuplicates, dashboardCovers: reopened.dashboardCovers, hostessCovers: reopened.hostessCovers, dateStable: true }, null, 2))
 } finally {
   await db.close().catch(() => undefined)
   await rm(storage, { recursive: true, force: true })

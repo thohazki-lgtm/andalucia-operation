@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { initializeDevelopmentStore } from './development-store-init.js'
 import { createStoreIdentity } from './database-protection.js'
 import { runMigrations } from './migration-store.js'
+
+const testStoresRoot = resolve('.tmp-tests')
+export const createDisposableTestRoot = async (name: string) => { await mkdir(testStoresRoot, { recursive: true }); return mkdtemp(join(testStoresRoot, `andalucia-${name}-`)) }
 
 async function seedOwner(db: PGlite, name: string) {
   const ownerId = randomUUID()
@@ -15,7 +17,7 @@ async function seedOwner(db: PGlite, name: string) {
 }
 
 export async function createDisposableDevelopmentStore(name: string) {
-  const root = await mkdtemp(join(tmpdir(), `andalucia-${name}-`))
+  const root = await createDisposableTestRoot(name)
   const store = join(root, 'development', 'postgres')
   await initializeDevelopmentStore(store)
   const db = new PGlite(store)
@@ -27,7 +29,7 @@ export async function createDisposableDevelopmentStore(name: string) {
 }
 
 export async function createDisposableStoreThrough(name: string, throughVersion: string) {
-  const root = await mkdtemp(join(tmpdir(), `andalucia-${name}-`))
+  const root = await createDisposableTestRoot(name)
   const store = join(root, 'development', 'postgres')
   await mkdir(join(root, 'development'), { recursive: true })
   const db = new PGlite(store)

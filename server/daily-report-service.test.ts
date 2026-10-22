@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { ReportingRepository } from './reporting-repository.js'
@@ -6,18 +7,73 @@ import { DailyReportService } from './daily-report-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { createFinancialFinalizationFingerprint, createOperationalFingerprint } from './database-backup.js'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+import { managerReviewWasPersisted } from '../src/daily-report-save-integrity.js'
+import { BookingRepository } from './booking-repository.js'
+import { GuestOccasionRepository } from './guest-occasion-repository.js'
 
 const fixture = await createDisposableDevelopmentStore('reports-r1')
 try {
   const db = fixture.db
   try {
-    const before = await createOperationalFingerprint(db); const financialBefore = await createFinancialFinalizationFingerprint(db)
+    const birthdayBasicId = randomUUID()
+    const birthdayWaiterId = (await db.query<any>('select id from staff order by created_at limit 1')).rows[0]?.id
+    let realizedChargeableStatus = (await db.query<any>("select value from configuration_options where group_key='chargeable_statuses' and coalesce((metadata->>'countsAsRealizedRevenue')::boolean,false)=true order by sort_order limit 1")).rows[0]?.value
+    if (!realizedChargeableStatus) {
+      realizedChargeableStatus = 'charged'
+      const statusOption = (await db.query<any>("select id from configuration_options where group_key='chargeable_statuses' and value=$1", [realizedChargeableStatus])).rows[0]
+      if (statusOption) await db.query('update configuration_options set metadata=$2 where id=$1', [statusOption.id, JSON.stringify({ countsAsRealizedRevenue: true, countsAsPendingValue: false })])
+      else await db.query("insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,'chargeable_statuses',$2,'Charged',$3,true,1)", [randomUUID(), realizedChargeableStatus, JSON.stringify({ countsAsRealizedRevenue: true, countsAsPendingValue: false })])
+    }
+    await db.query("insert into chargeable_item_records(id,outlet_scope_id,booking_id,item_value,amount,waiter_id,status,charge_date,guest_name,room_number,table_number,item_label,item_category,quantity,unit_price,total_amount,notes,active,check_invoice_number) values($1,$2,null,'birthday_basic',75,$3,$4,'2026-09-10','Birthday Fixture Guest','708','table_1','Birthday Basic','Celebration',1,75,75,'Disposable report persistence fixture',true,'BIRTHDAY-708')", [birthdayBasicId, ANDALUCIA_SCOPE_ID, birthdayWaiterId, realizedChargeableStatus])
     const owner = (await db.query<any>("select u.id::text,u.display_name from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.role_key='owner' where u.status='active' limit 1")).rows[0]
     const outlet = { id: ANDALUCIA_SCOPE_ID, scopeKey: 'andalucia', displayName: 'Andalucía' }
     const actor = { userId: owner.id, displayName: 'SPOOFED CLIENT NAME' }
     const service = new DailyReportService(db, new ReportingRepository(db))
+    const bookingRepository = new BookingRepository(db); await bookingRepository.initialize()
+    const occasionRepository = new GuestOccasionRepository(db); await occasionRepository.initialize()
+    const guestExperienceDate = '2026-10-16'
+    const booking406Id = randomUUID(); const booking470Id = randomUUID(); const booking709Id = randomUUID(); const booking248Id = randomUUID(); const allergyOnlyBookingId = randomUUID()
+    const bookingFixture = (id:string,guestName:string,roomNumber:string,covers:number) => ({ id, guestName, roomNumber, birthDate:null, arrivalDate:null, departureDate:null, mealPeriod:'dinner', reservationDate:guestExperienceDate, reservationTime:'19:00', bookingNumber:`REPORT-${roomNumber}`, covers, bookingStatus:'confirmed', bookingSource:'manual', bookedBy:'R2 test', guestNotes:'', tableNumber:'', waiterId:null, waiter:null })
+    await bookingRepository.save(bookingFixture(booking406Id,'A Room 406 Guest','406',2),'R2 test')
+    await bookingRepository.save(bookingFixture(booking470Id,'B Room 470 Guest','470',8),'R2 test')
+    await bookingRepository.save(bookingFixture(booking709Id,'C Room 709 Guest','709',3),'R2 test')
+    await bookingRepository.save(bookingFixture(booking248Id,'D TLC Guest','248',4),'R2 test')
+    await bookingRepository.save(bookingFixture(allergyOnlyBookingId,'E Allergy Only Guest','502',3),'R2 test')
+    const occasion = async (bookingId:string,guestName:string,roomNumber:string,occasionType:'siyam_family'|'famtrip') => occasionRepository.save({id:randomUUID(),occasionType,bookingId,guestName,roomNumber,reservationDate:guestExperienceDate,reservationTime:'19:00',tableNumber:'',waiterId:null,waiter:null,status:'pending',source:'manual',sourceText:`${occasionType} overlap fixture`,notes:'',active:true},'R2 test')
+    await occasion(booking406Id,'A Room 406 Guest','406','siyam_family')
+    await occasion(booking470Id,'B Room 470 Guest','470','siyam_family')
+    await occasion(booking470Id,'B Room 470 Guest','470','famtrip')
+    await occasion(booking709Id,'C Room 709 Guest','709','siyam_family')
+    const finding = async (bookingId:string,key:'GUEST_ATTENTION_TLC'|'ALLERGY') => { const evidence=`${key} evidence for ${bookingId}`; await db.query("insert into booking_intelligence_findings(id,outlet_scope_id,booking_id,finding_type,normalized_key,raw_evidence_text,evidence_location,evidence_sha256,rule_key,rule_version,source_payload,detected_payload,effective_payload,resolution_method,confidence,review_state,review_required,active,created_by_user_id,created_by_actor,updated_by_user_id,updated_by_actor) values($1,$2,$3,$4,$5,$6,'guest_notes',$7,$8,'booking-intelligence-r1',$9,$10,$11,'bounded_token_match',0.99,'not_required',false,true,$12,'R2 test',$12,'R2 test')",[randomUUID(),ANDALUCIA_SCOPE_ID,bookingId,key==='ALLERGY'?'allergy':'guest_attention',key,evidence,createHash('sha256').update(evidence).digest('hex'),key==='ALLERGY'?'allergy.explicit':'attention.tlc',JSON.stringify({guestNotes:evidence}),JSON.stringify({displayLabel:key==='ALLERGY'?'Allergy':'TLC'}),JSON.stringify({classification:key}),owner.id]) }
+    await finding(booking248Id,'GUEST_ATTENTION_TLC'); await finding(booking406Id,'ALLERGY'); await finding(allergyOnlyBookingId,'ALLERGY')
+    const guestExperience = await service.view(guestExperienceDate,outlet)
+    const category = (key:string) => guestExperience.content.guestOccasions.categories.find(item=>item.key===key)!
+    const rooms = (key:string) => guestExperience.content.guestOccasions.roomDetails.filter(item=>Array.isArray(item.categoryKeys)&&item.categoryKeys.includes(key)).map(item=>item.roomNumber).sort()
+    assert.deepEqual([category('vip').count,category('vip').covers],[3,13], 'VIP must count each qualifying booking once')
+    assert.deepEqual([category('siyamFamily').count,category('siyamFamily').covers],[3,13], 'Siyam Family must include all three repeat bookings')
+    assert.deepEqual([category('famtrip').count,category('famtrip').covers],[1,8], 'Famtrip must overlap without replacing VIP or Siyam Family')
+    assert.deepEqual([category('tlc').count,category('tlc').covers],[1,4], 'explicit TLC must be included while allergy-only attention stays excluded')
+    assert.deepEqual(rooms('vip'),['406','470','709'])
+    assert.deepEqual(rooms('siyamFamily'),['406','470','709'])
+    assert.deepEqual(rooms('famtrip'),['470'])
+    assert.deepEqual(rooms('tlc'),['248'])
+    assert.equal(guestExperience.content.servicePerformance.totalBookings,5, 'classification overlap must not inflate booking count')
+    assert.equal(guestExperience.content.servicePerformance.totalCovers,20, 'classification overlap must not inflate booking covers')
+    const performanceDate = '2026-10-17'
+    const noShowStatus = (await db.query<any>("select value from configuration_options where group_key='booking_statuses' and (metadata->>'serviceStage'='noShow' or metadata->>'bookingMetric'='noShow') order by sort_order limit 1")).rows[0]?.value
+    assert.ok(noShowStatus, 'disposable Schema 025 must expose the authoritative no-show status')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'No-show Room Pair','301, 302',3), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-1', bookingStatus:noShowStatus },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Duplicate No-show Room','301',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-2', bookingStatus:noShowStatus },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Roomed Walk-in','401',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-1', bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Unroomed Walk-in','',1), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-2', bookingSource:'walk_in' },'R2 test')
+    const performance = await service.view(performanceDate,outlet)
+    assert.equal(performance.content.servicePerformance.noShowCovers,5, 'no-show metric must remain a cover total')
+    assert.deepEqual(performance.content.servicePerformance.noShowRooms,['301','302'], 'no-show room evidence must be distinct and complete')
+    assert.equal(performance.content.servicePerformance.walkIns,2, 'walk-in metric definition must remain booking based')
+    assert.deepEqual(performance.content.servicePerformance.walkInRooms,['401'], 'walk-ins without a room must not receive fabricated room evidence')
+    const before = await createOperationalFingerprint(db); const financialBefore = await createFinancialFinalizationFingerprint(db)
     const initial = await service.view('2026-09-10', outlet)
-    assert.equal(initial.report, null); assert.equal(initial.snapshot, null); assert.equal(initial.content.upselling.details?.length || 0, 0)
+    assert.equal(initial.report, null); assert.equal(initial.snapshot, null); assert.equal(initial.content.upselling.details?.some(row => row.id === birthdayBasicId && row.item === 'Birthday Basic' && row.amount === '75.00'), true)
     assert.equal(initial.readiness.find(item => item.key === 'symphony')?.state, 'missing')
     const pending = (await db.query<any>("select c.id,c.charge_date::text date from chargeable_item_records c join configuration_options s on s.group_key='chargeable_statuses' and s.value=c.status where c.active=true and (s.metadata->>'countsAsPendingValue')::boolean=true limit 1")).rows[0]
     if (pending) assert.equal((await service.view(pending.date, outlet)).content.upselling.details?.some(row => row.id === pending.id), false)
@@ -28,13 +84,47 @@ try {
     await assert.rejects(() => service.review('2026-09-10', outlet, actor), /not ready/)
     const manual = {
       symphony: { foodRevenue: '100.00', beverageRevenue: '50.00', wineRevenue: '20.00', liquorRevenue: '10.00', totalSale: '150.00', totalDiscount: '10.00', totalVoid: '5.00', netSale: '135.00', totalRevenue: '135.00', voidDetails: [{ amount: '5.00', reason: 'Manager approved void', checkInvoiceNumber: '41034457' }] },
-      serviceVerification: { doubleDinePax: 0, details: [] }, manager: { operationSummary: 'Isolated R1 validation only.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
+      serviceVerification: { doubleDinePax: 0, details: [] }, manager: { operationSummary: '', operatingSummary: 'Service ran smoothly with strong guest feedback.', operationsIssues: 'Ice machine follow-up remains open for tomorrow.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
     }
     const saved = await service.saveDraft('2026-09-10', manual, outlet, actor)
     assert.equal(saved.report?.preparedByName, owner.display_name)
     assert.equal(saved.readiness.some(item => item.blocking), false)
     assert.equal(saved.revenueReconciliation.status, 'reconciled')
     assert.equal(saved.readiness.find(item => item.key === 'voids')?.state, 'complete')
+    assert.equal(saved.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
+    assert.equal(saved.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.equal(saved.readiness.find(item => item.key === 'manager')?.label, 'Operating Summary')
+    const reloadedService = new DailyReportService(db, new ReportingRepository(db))
+    const reloaded = await reloadedService.view('2026-09-10', outlet)
+    assert.equal(reloaded.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
+    assert.equal(reloaded.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.equal(reloaded.content.upselling.details?.some(row => row.id === birthdayBasicId && row.item === 'Birthday Basic' && row.roomNumber === '708' && row.checkInvoiceNumber === 'BIRTHDAY-708' && row.amount === '75.00'), true)
+    const independentlyEdited = await reloadedService.saveDraft('2026-09-10', { ...reloaded.report!.manualPayload, manager: { ...reloaded.report!.manualPayload.manager, operationsIssues: 'Updated independently after reload.' } }, outlet, actor)
+    assert.equal(independentlyEdited.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
+    assert.equal(independentlyEdited.report?.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
+    assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, independentlyEdited.report?.manualPayload.manager), true)
+    assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, { operatingSummary: '', operationsIssues: '' }), false)
+    const managerAudit = (await db.query<any>("select before_data,after_data from audit_logs where entity_type='daily_report' and entity_id=$1 and action='manual_payload_updated' order by created_at desc,id desc limit 1", [independentlyEdited.report!.id])).rows[0]
+    assert.equal(managerAudit.before_data.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.equal(managerAudit.after_data.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
+    const independentlyEditedSummary = await reloadedService.saveDraft('2026-09-10', { ...independentlyEdited.report!.manualPayload, manager: { ...independentlyEdited.report!.manualPayload.manager, operatingSummary: 'Updated operating summary independently.' } }, outlet, actor)
+    assert.equal(independentlyEditedSummary.report?.manualPayload.manager.operatingSummary, 'Updated operating summary independently.')
+    assert.equal(independentlyEditedSummary.report?.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
+    assert.equal((await reloadedService.view('2026-09-11', outlet)).report, null)
+    const returned = await reloadedService.view('2026-09-10', outlet)
+    assert.equal(returned.report?.manualPayload.manager.operatingSummary, 'Updated operating summary independently.')
+    assert.equal(returned.report?.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
+    const storedManager = (await db.query<any>('select manual_payload->\'manager\' manager from daily_reports where id=$1', [returned.report!.id])).rows[0].manager
+    assert.equal(storedManager.operatingSummary, 'Updated operating summary independently.')
+    assert.equal(storedManager.operationsIssues, 'Updated independently after reload.')
+    const legacyManual = service.normalizeManual({ ...manual, manager: { operationSummary: 'Preserved historical summary.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' } })
+    assert.equal(legacyManual.manager.operatingSummary, '')
+    assert.equal(legacyManual.manager.operationsIssues, '')
+    assert.equal(legacyManual.manager.operationSummary, 'Preserved historical summary.')
+    assert.equal(service.readiness(legacyManual, saved.content).find(item => item.key === 'manager')?.state, 'complete')
+    assert.match(service.readiness(legacyManual, saved.content).find(item => item.key === 'manager')?.message || '', /Preserved historical/)
+    const noIssuesManual = service.normalizeManual({ ...manual, manager: { operationSummary: '', operatingSummary: 'All service objectives met.', operationsIssues: '' } })
+    assert.equal(service.readiness(noIssuesManual, saved.content).find(item => item.key === 'manager')?.blocking, false)
     const zeroManual = service.normalizeManual({ ...manual, symphony: { ...manual.symphony, foodRevenue: '0', beverageRevenue: '0', wineRevenue: '0', liquorRevenue: '0', totalSale: '0', totalDiscount: '0', totalVoid: '0', netSale: '0', totalRevenue: '0', voidDetails: [] } })
     assert.equal(service.readiness(zeroManual, saved.content).some(item => item.blocking), false)
     const invalidMoney = service.normalizeManual({ ...manual, symphony: { ...manual.symphony, foodRevenue: '1.2.3' } })
@@ -67,6 +157,8 @@ try {
     assert.equal(approved.report?.status, 'approved'); assert.equal(approved.editable, false); assert.ok(approved.snapshot)
     assert.equal(approved.content.symphony.netSale, '140.00'); assert.equal(approved.content.symphony.totalRevenue, '135.00')
     assert.equal(approved.content.revenueVerification?.acknowledged, true); assert.equal(approved.content.revenueVerification?.verifiedByName, owner.display_name)
+    assert.equal(approved.content.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
+    assert.equal(approved.content.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
     const retry = await service.approve('2026-09-10', 'reports-r1-isolated-approval', outlet, actor); assert.equal(retry.snapshot?.id, approved.snapshot?.id)
     await assert.rejects(() => service.approve('2026-09-10', 'reports-r1-different-key', outlet, actor), /already approved/)
     const snapshotJson = JSON.stringify(approved.content)
@@ -83,10 +175,17 @@ try {
     assert.doesNotMatch(reportsSource, /className="entered-values"/)
     const reportsCss = await readFile(resolve('src/reports.css'), 'utf8')
     assert.match(reportsSource, /REPORT READY/); assert.match(reportsSource, /Verified against Symphony/); assert.match(reportsSource, /double-dine-compact/); assert.match(reportsSource, /window\.print/)
-    assert.match(reportsSource, /aria-label="Previous day"/); assert.match(reportsSource, /aria-label="Next day"/); assert.doesNotMatch(reportsSource, />← Previous Day<\/button>/); assert.doesNotMatch(reportsSource, />Next Day →<\/button>/)
-    for (const section of ['Performance Overview','Booking by Time Slot','Symphony / Revenue','Service Verification','Chargeable Items / Upselling','Guest Experience',"Manager's Operation Summary",'Report Readiness / Approval']) assert.match(reportsSource, new RegExp(`title="${section.replace('/','\\/')}`))
+    assert.match(reportsSource, /<IconAction icon="chevron-left" label="Previous day"/); assert.match(reportsSource, /<IconAction icon="chevron-right" label="Next day"/); assert.match(reportsSource, /<DateControl label="Select Daily Report service date"/); assert.doesNotMatch(reportsSource, />← Previous Day<\/button>/); assert.doesNotMatch(reportsSource, />Next Day →<\/button>/)
+    for (const section of ['Performance Overview','Booking by Time Slot','Symphony / Revenue','Service Verification','Chargeable Items / Upselling','Guest Experience',"Manager's Daily Review",'Report Readiness / Approval']) assert.match(reportsSource, new RegExp(`title="${section.replace('/','\\/')}`))
+    assert.match(reportsSource, /Operating Summary/); assert.match(reportsSource, /Operations Issues/); assert.match(reportsSource, /Preserved Previous Manager Summary/)
+    assert.doesNotMatch(reportsSource, /Daily service performance, guest and team experience, achievements and overall outcome\./); assert.doesNotMatch(reportsSource, /Challenges, incidents, complaints, maintenance concerns, follow-ups and next-day priorities\./)
+    assert.match(reportsSource, /daily-readiness-evidence/); assert.match(reportsSource, /Reconciliation evidence/); assert.match(reportsSource, /item\.state !== 'complete'/)
+    assert.match(reportsSource, /managerReviewWasPersisted/); assert.match(reportsSource, /setManual\(submitted\)/); assert.match(reportsSource, /Daily Report save was not confirmed/)
+    assert.match(reportsCss, /daily-manager-review/); assert.match(reportsCss, /approval-manager-review/); assert.match(reportsCss, /#daily-occasions \.occasion-room-grid/); assert.match(reportsCss, /#daily-readiness \.daily-readiness/)
+    assert.match(reportsSource, /className="revenue-pair"/); assert.match(reportsSource, /className="beverage-pair"/); assert.match(reportsSource, /className="reconciliation-grid"/)
+    assert.match(reportsSource, /className="detail-editor void-editor"/); assert.match(reportsSource, /<details open=\{expanded\}/); assert.match(reportsCss, /Compact Daily Report sections 3 and 4/)
     assert.match(reportsCss, /report-header-nav/); assert.match(reportsCss, /final-report-actions/); assert.match(reportsCss, /font-size:17px/)
     assert.match(reportsSource, /FINAL DAILY REPORT REVIEW \/ APPROVAL PREVIEW/); assert.match(reportsSource, /setApprovalOpen\(true\)/); assert.match(reportsSource, /Back to Report/); assert.doesNotMatch(reportsSource, /Return to Draft|Back to Edit/); assert.match(reportsCss, /reports-page:has\(\.report-approval-dialog\)/)
-    console.log(JSON.stringify({ dailyNavigation: true, servicePerformance: true, coverLogic: true, kids: true, noShows: true, walkIns: true, symphonyPersistence: true, notEnteredVsZero: true, normalReconciliation: true, advisoryVariance: true, explicitVarianceVerification: true, verificationActor: true, exactSnapshotValues: true, voidValidation: true, doubleDineZero: true, doubleDineNormalization: true, managerSummaryCleanup: true, duplicateSummaryRemoved: true, compactReadyState: true, upselling: true, occasions: true, readiness: true, draft: true, review: true, finalApprovalPreview: true, automaticPreviewAfterReview: true, reviewedReadOnly: true, noUnsafeReturnToDraft: true, approval: true, duplicateApproval: true, immutableRendering: true, printPreview: true, audit: true, authorization: true, outletScope: true, noOperationalMutation: true }, null, 2))
+    console.log(JSON.stringify({ dailyNavigation: true, servicePerformance: true, coverLogic: true, kids: true, noShows: true, walkIns: true, symphonyPersistence: true, managerDraftReloadPersistence: true, independentFieldEditing: true, dateSwitchPersistence: true, birthdayBasicChargeableRegression: true, notEnteredVsZero: true, normalReconciliation: true, advisoryVariance: true, explicitVarianceVerification: true, verificationActor: true, exactSnapshotValues: true, compactSymphonyLayout: true, expandableVoidDetails: true, voidValidation: true, doubleDineZero: true, doubleDineNormalization: true, compactServiceVerification: true, managerDailyReview: true, independentSummaryFields: true, legacySummaryPreserved: true, optionalOperationsIssues: true, duplicateSummaryRemoved: true, compactReadyState: true, upselling: true, occasions: true, readiness: true, draft: true, review: true, finalApprovalPreview: true, automaticPreviewAfterReview: true, reviewedReadOnly: true, noUnsafeReturnToDraft: true, approval: true, duplicateApproval: true, immutableRendering: true, printPreview: true, audit: true, authorization: true, outletScope: true, noOperationalMutation: true }, null, 2))
   } finally { await db.close() }
 } finally { await fixture.cleanup() }

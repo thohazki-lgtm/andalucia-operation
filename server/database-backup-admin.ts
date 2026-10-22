@@ -39,7 +39,7 @@ const systemActor = { source: 'system_job' as const, userId: null, displayName: 
 
 export class DatabaseBackupAdminService {
   readonly adminRoot: string
-  constructor(readonly backupRoot: string, readonly canonicalDirectory: string) { this.backupRoot = resolve(backupRoot); this.canonicalDirectory = resolve(canonicalDirectory); this.adminRoot = join(this.backupRoot, '.db2') }
+  constructor(readonly backupRoot: string, readonly canonicalDirectory: string, readonly requiredVersion?: string) { this.backupRoot = resolve(backupRoot); this.canonicalDirectory = resolve(canonicalDirectory); this.adminRoot = join(this.backupRoot, '.db2') }
   private async json<T>(path: string): Promise<T | null> { try { return JSON.parse(await readFile(path, 'utf8')) as T } catch { return null } }
   private folder(backupId: string) { if (basename(backupId) !== backupId || backupId.includes('..')) throw new Error('BACKUP_ID_INVALID'); return join(this.backupRoot, backupId) }
   private async audit(action: string, actor: AuditEvent['actor'], backupId?: string, details?: Record<string, unknown>) { await mkdir(this.adminRoot, { recursive: true }); await appendFile(join(this.adminRoot, 'audit.jsonl'), `${JSON.stringify({ id: randomUUID(), occurredAt: new Date().toISOString(), action, backupId, actor, details } satisfies AuditEvent)}\n`, 'utf8') }
@@ -118,7 +118,7 @@ export class DatabaseBackupAdminService {
       await this.audit('restore_rehearsal_started', this.actor(actor), backupId)
       const originalBefore = await createStoreManifest(metadata.backupDirectory)
       if (!manifestsMatch(originalBefore, metadata.backupManifest)) throw new Error('RESTORE_TEST_MANIFEST_MISMATCH')
-      const verified = await verifyBackupCopy({ backupDirectory: metadata.backupDirectory, sourceManifest: metadata.backupManifest, verificationDirectory: descendant, copyRole: 'rehearsal' })
+      const verified = await verifyBackupCopy({ backupDirectory: metadata.backupDirectory, sourceManifest: metadata.backupManifest, verificationDirectory: descendant, copyRole: 'rehearsal', requiredVersion: this.requiredVersion, allowReviewedMigrationSource: metadata.category === 'pre-migration' })
       const fingerprintMatch = same(metadata.operationalFingerprint, verified.fingerprint) && (!metadata.financialFinalizationFingerprint || same(metadata.financialFinalizationFingerprint, verified.financialFinalizationFingerprint)); const migrationMatch = same((metadata as any).migrationLedger, verified.migration)
       if (!fingerprintMatch) throw new Error('RESTORE_TEST_FINGERPRINT_MISMATCH')
       if (!migrationMatch) throw new Error('RESTORE_TEST_MIGRATION_MISMATCH')

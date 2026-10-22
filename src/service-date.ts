@@ -36,6 +36,11 @@ export const weekRange = (value: string): [string, string] => {
   return [monday, addCalendarDays(monday, 6)]
 }
 
+export const rosterWeekRange = (value: string): [string, string] => {
+  const sunday = addCalendarDays(value, -asUtcDate(value).getUTCDay())
+  return [sunday, addCalendarDays(sunday, 6)]
+}
+
 export const monthRange = (value: string): [string, string] => {
   const { year, month } = dateParts(value)
   const start = `${year}-${String(month).padStart(2, '0')}-01`

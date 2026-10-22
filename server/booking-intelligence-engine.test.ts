@@ -59,15 +59,18 @@ assert.equal(correctedSolo.intelligence?.effectiveCandidatePax, 3)
 assert(!keys(correctedSolo).includes('PAX_REVIEW_REQUIRED'))
 
 const joining = analyzed(booking('JOIN', 4, 'I: joining with family, 15 pax'))
-assert.equal(joining.covers, 15)
-assert.equal(joining.intelligence?.effectiveCandidatePax, 15)
-assert(keys(joining).includes('GROUP'))
+assert.equal(joining.covers, 4)
+assert.equal(joining.intelligence?.detectedPax, 15)
+assert.equal(joining.intelligence?.effectiveCandidatePax, 4)
+assert(keys(joining).includes('GROUP_REVIEW_REQUIRED'))
+assert.equal(joining.readiness, 'REVIEW_REQUIRED')
 for (const sourcePax of [1, 2, 4]) for (const note of ['I: joining with 15 pax', 'I: joining family with 15 pax', 'I: joining another room, total 15 pax', 'I: joining group 15 pax', 'I: joining 15 pax']) {
   const record = analyzed(booking(`JOIN-${sourcePax}-${note}`, sourcePax, note))
-  assert.equal(record.covers, 15)
-  assert.equal(record.intelligence?.effectiveCandidatePax, 15)
-  assert(keys(record).includes('GROUP'))
-  assert(!keys(record).includes('GROUP_REVIEW_REQUIRED'))
+  assert.equal(record.covers, sourcePax)
+  assert.equal(record.intelligence?.detectedPax, 15)
+  assert.equal(record.intelligence?.effectiveCandidatePax, sourcePax)
+  assert(keys(record).includes('GROUP_REVIEW_REQUIRED'))
+  assert.equal(record.readiness, 'REVIEW_REQUIRED')
 }
 for (const note of ['I: add 2 more people', 'I: 2 additional guests', 'I: +2 pax']) {
   const incremental = analyzed(booking(`ADD-${note}`, 4, note))
@@ -75,29 +78,33 @@ for (const note of ['I: add 2 more people', 'I: 2 additional guests', 'I: +2 pax
   assert.equal(incremental.coverResolution?.source, 'incremental_addition')
 }
 const incremental = analyzed(booking('ADD', 4, 'I: add 2 more people'))
-for (const note of ['15 pax group', '15 pax dinner together', 'table for 15', 'booking for 15 people']) assert.equal(analyzed(booking(`GROUP-${note}`, 4, note)).covers, 15)
+for (const note of ['15 pax group', '15 pax dinner together', 'table for 15', 'booking for 15 people']) {
+  const record = analyzed(booking(`GROUP-${note}`, 4, note))
+  assert.equal(record.covers, 4)
+  assert.equal(record.coverResolution?.groupTotal, 15)
+  assert(keys(record).includes('GROUP_REVIEW_REQUIRED'))
+}
 const plainTotal = analyzed(booking('PLAIN-TOTAL', 2, 'I: 15 pax'))
 assert.equal(plainTotal.covers, 15)
-assert.equal(plainTotal.intelligence?.paxSemantic, 'GROUP_TOTAL')
-assert(keys(plainTotal).includes('GROUP'))
+assert.equal(plainTotal.intelligence?.paxSemantic, 'SOURCE_PAX')
+assert(keys(plainTotal).includes('PAX_RESOLVED'))
 
 const repeatedUnlinked = analyzeBookingCandidates(resolveBookingCoverRecords([booking('G1', 4, '15 pax dinner together'), booking('G2', 3, '15 pax dinner together')]), occasionTypes)
-assert(repeatedUnlinked.every(item => keys(item).includes('GROUP')))
-assert(repeatedUnlinked.every(item => !keys(item).includes('GROUP_REVIEW_REQUIRED')))
-assert(repeatedUnlinked.every(item => item.readiness === 'READY'))
-assert.equal(repeatedUnlinked.reduce((sum, item) => sum + (item.intelligence?.operationalContributionPax || 0), 0), 30)
+assert(repeatedUnlinked.every(item => keys(item).includes('GROUP_REVIEW_REQUIRED')))
+assert(repeatedUnlinked.every(item => item.readiness === 'REVIEW_REQUIRED'))
+assert.equal(repeatedUnlinked.reduce((sum, item) => sum + (item.intelligence?.operationalContributionPax || 0), 0), 7)
 
 const linkedGroup = analyzeBookingCandidates(resolveBookingCoverRecords([
   booking('LINKED-1', 2, 'I: joining with 15 pax, rooms 809, 810'),
   booking('LINKED-2', 4, 'I: joining group 15 pax, rooms 809, 810')
 ]), occasionTypes)
-assert.equal(linkedGroup.reduce((sum, item) => sum + (item.covers || 0), 0), 15)
+assert.equal(linkedGroup.reduce((sum, item) => sum + (item.covers || 0), 0), 6)
 assert(linkedGroup.every(item => item.coverResolution?.groupTotal === 15))
-assert(linkedGroup.every(item => !keys(item).includes('GROUP_REVIEW_REQUIRED')))
+assert(linkedGroup.every(item => keys(item).includes('GROUP_REVIEW_REQUIRED')))
 
 const joiningMultiFlag = analyzed(booking('JOIN-MULTI', 2, 'I: joining with 15 pax', [member(1, 'G: Siyam World Family Members - 2nd Visit')]))
-assert.equal(joiningMultiFlag.covers, 15)
-assert(keys(joiningMultiFlag).includes('GROUP'))
+assert.equal(joiningMultiFlag.covers, 2)
+assert(keys(joiningMultiFlag).includes('GROUP_REVIEW_REQUIRED'))
 assert(keys(joiningMultiFlag).includes('SIYAM_FAMILY'))
 
 const kids = analyzed(booking('KIDS', 1, '2 adults + 1 kid'))
@@ -115,7 +122,7 @@ for (const note of ['This showroom is harmonious', 'systematic service', 'system
   assert(!keys(record).includes('GUEST_ATTENTION_TLC'))
 }
 assert(!keys(analyzed(booking('FALSE-ALLERGY', 2, 'Guest enjoys nutmeg and seafood restaurant views'))).includes('ALLERGY'))
-assert.equal(joining.covers, 15)
+assert.equal(joining.covers, 4)
 assert.equal(incremental.covers, 6)
 
 const occasions = analyzed(booking('OCCASIONS', 2, 'Birthday. Anniversary. Fam trip. Press trip. Siyam World Family Members - 2nd Visit.'))
@@ -167,12 +174,11 @@ if (realPdfFixture) {
   assert(parsed.reportDate)
   assert(analyzedRecords.length > 0)
   assert(analyzedRecords.every(record => record.intelligence?.rulesetVersion === BOOKING_INTELLIGENCE_RULESET_VERSION))
-  const target = analyzedRecords.find(record => record.intelligence?.findings.some(item => item.normalizedKey === 'GROUP') && record.intelligence.effectiveCandidatePax === 15)
+  const target = analyzedRecords.find(record => record.intelligence?.findings.some(item => item.normalizedKey === 'GROUP_REVIEW_REQUIRED') && record.intelligence.detectedPax === 15)
   assert(target)
-  assert.equal(target.covers, 15)
-  assert.equal(target.intelligence?.effectiveCandidatePax, 15)
-  assert(keys(target).includes('GROUP'))
-  assert.equal(target.intelligence?.findings.filter(item => item.normalizedKey === 'GROUP').length, 1)
+  assert.equal(target.intelligence?.effectiveCandidatePax, target.intelligence?.sourcePax)
+  assert(keys(target).includes('GROUP_REVIEW_REQUIRED'))
+  assert.equal(target.intelligence?.findings.filter(item => item.normalizedKey === 'GROUP_REVIEW_REQUIRED').length, 1)
   const findingCounts: Record<string, number> = {}
   for (const record of analyzedRecords) for (const item of record.intelligence?.findings || []) findingCounts[item.normalizedKey] = (findingCounts[item.normalizedKey] || 0) + 1
   realPdf = { bookings: analyzedRecords.length, covers: analyzedRecords.reduce((sum, record) => sum + (record.intelligence?.operationalContributionPax ?? record.covers ?? 0), 0), findings: analyzedRecords.reduce((sum, record) => sum + (record.intelligence?.findings.length || 0), 0), reviewRequired: analyzedRecords.filter(record => record.intelligence?.reviewRequired).length, findingCounts, occasionDiscrepancies: analyzedRecords.reduce((sum, record) => sum + (record.intelligence?.occasionDiscrepancies.length || 0), 0) }

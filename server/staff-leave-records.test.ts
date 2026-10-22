@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import { OperationsRepository } from './operations-repository.js'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-staff-leave-'))
+const snapshotPath = join(tmpdir(), `andalucia-staff-leave-${randomUUID()}.tgz`)
+const execFileAsync = promisify(execFile)
 try {
   const repository = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
   await repository.initialize()
@@ -17,8 +21,8 @@ try {
   const dutyCodes = (await repository.configuration()).dutyCodes
   const annualLeave = dutyCodes.find(option => option.metadata?.dutyClassification === 'annualLeave')!
   const off = dutyCodes.find(option => option.metadata?.dutyClassification === 'off')!
-  const publicHoliday = await repository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: 'Public Holiday', color: '#587f98', active: true, metadata: { displayCode: 'PH', dutyClassification: 'publicHoliday', countsAsWorking: false } })
-  const sickLeave = await repository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: 'Sick Leave', color: '#a45b57', active: true, metadata: { displayCode: 'SK', dutyClassification: 'sickLeave', countsAsWorking: false } })
+  const publicHoliday = dutyCodes.find(option => option.metadata?.dutyClassification === 'publicHoliday')!
+  const sickLeave = dutyCodes.find(option => option.metadata?.displayCode === 'SL')!
   assert.deepEqual([annualLeave.metadata?.countsAsLeave, off.metadata?.countsAsOffDay, publicHoliday.metadata?.countsAsPublicHoliday, sickLeave.metadata?.countsAsSickLeave], [true, true, true, true])
 
   const assignments = [
@@ -51,13 +55,15 @@ try {
   const rosterRows = await repository.getDatabase().query<{ count: number }>('select count(*)::int count from duty_roster_entries where staff_id=$1', [staff.id])
   assert.equal(rosterRows.rows[0].count, assignments.length)
 
+  const snapshot = await repository.getDatabase().dumpDataDir('gzip')
+  await writeFile(snapshotPath, new Uint8Array(await snapshot.arrayBuffer()))
   await repository.getDatabase().close()
-  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
-  await reopened.initialize()
-  const persisted = await reopened.leaveRecords('2026-09-01', '2026-09-30', staff.id)
-  assert.equal(persisted.flatMap(record => record.entries).filter(day => day.classification === 'sickLeave').length, 2)
-  await reopened.getDatabase().close()
+  const tsxCli = join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  const verifier = join(process.cwd(), 'server', 'staff-leave-reopen-verifier.ts')
+  const { stdout } = await execFileAsync(process.execPath, [tsxCli, verifier, snapshotPath, staff.id], { cwd: process.cwd(), maxBuffer: 1024 * 1024 })
+  assert.deepEqual(JSON.parse(stdout), { sickLeaveDays: 2 })
   console.log(JSON.stringify({ annualLeaveDetection: true, offDetection: true, publicHolidayDetection: true, sickLeaveDetection: true, conservativeContiguousGrouping: true, annualLeaveSeparatedByOffAndPublicHoliday: true, monthYearCustomRanges: true, rosterEditRecalculation: true, noDuplicatedLeaveRows: true, employmentStatusIndependent: true, reopenPersistence: true }, null, 2))
 } finally {
+  await rm(snapshotPath, { force: true })
   await rm(dataDirectory, { recursive: true, force: true })
 }

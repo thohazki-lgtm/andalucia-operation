@@ -80,4 +80,7 @@ try {
 
   const successJournal = JSON.parse(await readFile(scheduled.journalPath, 'utf8')); assert.equal(successJournal.version, DATABASE_OPERATION_JOURNAL_VERSION); assert.equal(successJournal.state, 'SUCCEEDED')
   console.log(JSON.stringify({ stateTransitions: true, journalAtomicity: true, retryClassification: true, atomicLeaseCollision: true, ownershipVerification: true, periodKeys: [dailyKey, weeklyKey], duplicatePeriodBlocked: true, scheduledManualCollision: true, backupMigrationCollision: true, backupRecoveryCollision: true, rehearsalExportCollision: true, verificationDeletionCollision: true, protectionVerificationCollision: true, unrelatedBackupsCanCoexist: true, interruptedDetected: true, interruptedTemporaryPreservedForReview: true, ambiguousRemoteOwnerRequiresReview: true, corruptJournalFailsClosed: true, storageGate: true, sourceDriftBlocked: true, historicalStateDerivedWithoutRewrite: true, retentionDependencies: true, partialProtectionDetected: true }, null, 2))
-} finally { await rm(root, { recursive: true, force: true }) }
+} finally {
+  await setBackupOriginalFilesystemProtection(root, false).catch(() => undefined)
+  await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 })
+}

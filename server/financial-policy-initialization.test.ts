@@ -30,7 +30,10 @@ const duties = [
   ['training', 'Training', 'TRN', 'working', true],
   ['custom_setup', 'Setup Andalucía', 'SET', 'working', true],
 ] as const
-for (const [index, duty] of duties.entries()) await db.query("insert into configuration_options(id,group_key,value,label,color,metadata,active,sort_order) values($1,'duty_codes',$2,$3,$4,$5,true,$6)", [randomUUID(), duty[0], duty[1], '#123456', JSON.stringify({ displayCode: duty[2], dutyClassification: duty[3], countsAsWorking: duty[4], unrelatedSemantic: `preserved-${index}` }), index])
+for (const [index, duty] of duties.entries()) {
+  const managerRule = duty[2] === 'AL' ? {} : { billTipEligible: true, billTipWorkedDayUnits: duty[2] === 'OFF' ? 0 : 1 }
+  await db.query("insert into configuration_options(id,group_key,value,label,color,metadata,active,sort_order) values($1,'duty_codes',$2,$3,$4,$5,true,$6)", [randomUUID(), duty[0], duty[1], '#123456', JSON.stringify({ displayCode: duty[2], dutyClassification: duty[3], countsAsWorking: duty[4], unrelatedSemantic: `preserved-${index}`, ...managerRule }), index])
+}
 
 const packages = [
   ['lobster_paella', 'Lobster Paella'], ['birthday_basic', 'Birthday Basic'], ['birthday_premium', 'Birthday Premium'],
@@ -53,7 +56,7 @@ await db.query("insert into chargeable_item_records(id,outlet_scope_id,item_valu
 const beforeDuty = (await db.query<any>("select id,value,label,color,active,sort_order,metadata-'billTipEligible'-'billTipWorkedDayUnits' metadata from configuration_options where group_key='duty_codes' order by sort_order")).rows
 const service = new FinancialPolicyInitializationService(db)
 const first = await service.initialize(ANDALUCIA_SCOPE_ID, principal)
-assert.equal(first.dutyCodesUpdated, duties.length)
+assert.equal(first.dutyCodesUpdated, 1)
 assert.equal(first.rateCreated, true)
 assert.equal(first.rulesCreated, 6)
 assert.equal(first.tiersCreated, 9)
@@ -97,7 +100,7 @@ const countsAfterRetry = {
 assert.deepEqual(countsAfterRetry, countsBeforeRetry)
 for (const table of ['bill_tip_distributions', 'bill_tip_staff_allocations', 'bill_tip_manual_allocations', 'chargeable_incentive_earnings']) assert.equal(Number((await db.query<any>(`select count(*)::int count from ${table}`)).rows[0].count), 0)
 const audits = (await db.query<any>("select actor,after_data from audit_logs where action in ('bill_tip_eligibility_initialized','initial_policy_version_created')")).rows
-assert(audits.length >= 14)
+assert(audits.length >= 8)
 assert(audits.every(row => row.actor.includes(ownerId) && row.actor.includes('Isolated Owner')))
 assert(audits.every(row => parsed(row.after_data).actorUserId === ownerId && parsed(row.after_data).outletScopeId === ANDALUCIA_SCOPE_ID))
 

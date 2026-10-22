@@ -11,10 +11,9 @@ import { IncentivesRepository } from './incentives-repository.js'
 import type { BillTipManualAllocation, ChargeableIncentiveEarning, ChargeableRecord, IncentiveRule, IncentiveRuleTier } from '../src/domain.js'
 
 const storage = await mkdtemp(join(tmpdir(), 'andalucia-incentives-foundation-'))
-const databasePath = join(storage, 'postgres')
 const schema = await readFile('database/schema.sql', 'utf8')
-const initial = new PGlite(databasePath)
-await initial.exec(schema)
+const database = new PGlite()
+await database.exec(schema)
 for (const option of [
   { value: 'ON', label: 'Duty', displayCode: 'ON', classification: 'working', working: true },
   { value: 'OFF', label: 'Off', displayCode: 'OFF', classification: 'off', working: false },
@@ -23,10 +22,13 @@ for (const option of [
   { value: 'DUTY_SK', label: 'Sick Leave', displayCode: 'SK', classification: 'sickLeave', working: false },
   { value: 'DUTY_TRN', label: 'Training', displayCode: 'TRN', classification: 'working', working: true },
   { value: 'DUTY_CUSTOM', label: 'Custom Support', displayCode: 'CUS', classification: 'other', working: false }
-]) await initial.query('insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,$2,$3,$4,$5,true,$6)', [randomUUID(), 'duty_codes', option.value, option.label, JSON.stringify({ displayCode: option.displayCode, dutyClassification: option.classification, countsAsWorking: option.working }), 50])
-await initial.close()
+]) {
+  const billTipEligible = option.displayCode !== 'AL'
+  const billTipWorkedDayUnits = option.displayCode === 'AL' || option.displayCode === 'OFF' || option.displayCode === 'CUS' ? 0 : 1
+  await database.query('insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,$2,$3,$4,$5,true,$6)', [randomUUID(), 'duty_codes', option.value, option.label, JSON.stringify({ displayCode: option.displayCode, dutyClassification: option.classification, countsAsWorking: option.working, billTipEligible, billTipWorkedDayUnits }), 50])
+}
 
-const staffRepository = new StaffRepository(databasePath, new PGlite(databasePath))
+const staffRepository = new StaffRepository(storage, database)
 try {
   await staffRepository.initialize()
   await staffRepository.getDatabase().exec('alter table chargeable_item_records add column if not exists check_invoice_number text')
@@ -40,7 +42,8 @@ try {
   const eligibility = Object.fromEntries(dutyCodes.map(option => [option.metadata?.displayCode || option.value, option.metadata?.billTipEligible]))
   assert.equal(eligibility.AL, false)
   for (const code of ['ON', 'OFF', 'PH', 'SK', 'TRN', 'CUS']) assert.equal(eligibility[code], true, `${code} should be Bill Tip eligible`)
-  const custom = await staffRepository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: 'Future Custom', color: '#456789', active: true, metadata: { displayCode: 'FTR', dutyClassification: 'other', countsAsWorking: false } })
+  await assert.rejects(() => staffRepository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: 'Future Custom', color: '#456789', active: true, metadata: { displayCode: 'FTR', dutyClassification: 'other', countsAsWorking: false } }), /Choose whether FTR · Future Custom is eligible for Bill Tips/)
+  const custom = await staffRepository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: 'Future Custom', color: '#456789', active: true, metadata: { displayCode: 'FTR', dutyClassification: 'other', countsAsWorking: false, billTipEligible: true, billTipWorkedDayUnits: 0 } })
   assert.equal(custom.metadata?.billTipEligible, true)
 
   const staff = (await staffRepository.list()).filter(person => person.employmentStatus === 'active')

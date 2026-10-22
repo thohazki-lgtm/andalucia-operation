@@ -3,7 +3,7 @@ import type { BookingCoverLedgerEntry, BookingCoverReconciliation, BookingImport
 import { detectBookingAllergyEvidence } from '../src/booking-allergy.js'
 import { interpretBookingOccasions, type BookingOccasionEvidence } from './booking-occasion-interpreter.js'
 
-export const BOOKING_INTELLIGENCE_RULESET_VERSION = 'booking-intelligence-r1.3.1'
+export const BOOKING_INTELLIGENCE_RULESET_VERSION = 'booking-intelligence-r1.3.2'
 
 type Evidence = BookingOccasionEvidence
 type FindingInput = Omit<BookingIntelligenceFinding, 'sourceCandidateIdentity' | 'evidenceSha256' | 'ruleVersion'>
@@ -78,13 +78,15 @@ function analyzeOne(record: BookingImportPreviewRecord, _occasionTypes: ConfigOp
 
   const resolution = record.coverResolution
   const sourcePax = resolution?.baseCovers ?? record.covers
-  const detectedPax = resolution?.totalCovers ?? record.covers
-  const effectiveCandidatePax = blockedCapacity ? 0 : detectedPax
+  const detectedPax = resolution?.groupTotal ?? resolution?.totalCovers ?? record.covers
+  const individualPax = resolution?.totalCovers ?? record.covers
+  const effectiveCandidatePax = blockedCapacity ? 0 : individualPax
+  if (resolution?.groupTotal) reviews.push(`Mentioned combined group size (${resolution.groupTotal} pax) is review-only; this booking retains its source PAX (${sourcePax ?? 'missing'}).`)
   if (sourcePax === 1 && detectedPax === 1) {
     const reason = 'Source PAX is 1 with no stronger deterministic evidence; manager review is required.'
     reviews.push(reason)
     push({ findingType: 'pax_review', normalizedKey: 'PAX_REVIEW_REQUIRED', displayLabel: 'PAX REVIEW', rawEvidence: `${record.sourceStatus || 'Source'} (1 pax)`, detectedPhrase: '1 pax', evidenceLocation: 'booking.sourceStatus', ruleKey: 'pax.single-source-review', sourceValue: 1, detectedValue: 1, effectiveCandidate: 1, resolutionMethod: 'single_pax_without_stronger_evidence', confidence: 0.5, reviewState: 'REVIEW_REQUIRED' })
-  } else if (sourcePax !== detectedPax && detectedPax !== null) {
+  } else if (!resolution?.groupTotal && sourcePax !== detectedPax && detectedPax !== null) {
     const phrase = resolution?.evidence || `${detectedPax} pax`
     const item = evidenceContaining(evidence, phrase) || evidence[0]
     push({ memberIdentity: item?.memberIdentity, findingType: 'pax_resolution', normalizedKey: 'PAX_RESOLVED', displayLabel: 'PAX', rawEvidence: item?.text || phrase, detectedPhrase: phrase, evidenceLocation: item?.location || 'booking.coverResolution', ruleKey: `pax.${resolution?.source || 'resolved'}`, sourceValue: sourcePax, detectedValue: detectedPax, effectiveCandidate: effectiveCandidatePax, resolutionMethod: resolution?.source || 'existing_pax_resolver', confidence: 0.98, reviewState: 'NOT_REQUIRED' })
@@ -93,7 +95,7 @@ function analyzeOne(record: BookingImportPreviewRecord, _occasionTypes: ConfigOp
   if (resolution?.groupTotal) {
     const phrase = resolution.evidence
     const item = evidenceContaining(evidence, phrase) || evidence[0]
-    push({ memberIdentity: item?.memberIdentity, findingType: 'group', normalizedKey: 'GROUP', displayLabel: 'GROUP', rawEvidence: item?.text || phrase, detectedPhrase: phrase, evidenceLocation: item?.location || 'booking.coverResolution', ruleKey: 'pax.group-total', sourceValue: sourcePax, detectedValue: resolution.groupTotal, effectiveCandidate: detectedPax, resolutionMethod: resolution.source, confidence: 0.96, reviewState: 'NOT_REQUIRED' })
+    push({ memberIdentity: item?.memberIdentity, findingType: 'group_review', normalizedKey: 'GROUP_REVIEW_REQUIRED', displayLabel: 'GROUP REVIEW', rawEvidence: item?.text || phrase, detectedPhrase: phrase, evidenceLocation: item?.location || 'booking.coverResolution', ruleKey: 'pax.group-total-review', sourceValue: sourcePax, detectedValue: resolution.groupTotal, effectiveCandidate: effectiveCandidatePax, resolutionMethod: 'preserve_individual_source_pax', confidence: 0.99, reviewState: 'REVIEW_REQUIRED' })
   }
   const ambiguousGroup = !resolution?.groupTotal ? firstPattern(evidence, /\b(?:joining\s+(?:another|other)\s+room|joining\s+(?:family|group)(?!\s+(?:with\s+)?\d+\s*pax)|joining\s+with(?!\s+(?:family\s*[,\-]?\s*)?\d+\s*pax)|dinner\s+together(?!\s*\d))\b/i) : undefined
   if (ambiguousGroup) {
@@ -138,7 +140,7 @@ function analyzeOne(record: BookingImportPreviewRecord, _occasionTypes: ConfigOp
   const operationalContributionPax = Number(effectiveCandidatePax || 0)
   const coverReason = blockedCapacity ? 'Deterministic BLOCKED capacity record contributes zero guest covers.'
     : paxSemantic === 'MANAGER_REVIEW' ? reviews.find(reason => /PAX|group|cover|blocked/i.test(reason)) || 'Cover evidence requires manager review.'
-    : resolution?.groupTotal ? `Explicit total-party PAX ${resolution.groupTotal} replaces source PAX for this booking.`
+    : resolution?.groupTotal ? `Mentioned combined group size ${resolution.groupTotal} is review-only; source PAX ${sourcePax ?? 'missing'} remains this booking's operational contribution.`
     : resolution?.source === 'incremental_addition' ? `${resolution.evidence} is an explicit incremental addition.`
     : resolution?.source === 'structured_member_count' ? 'No source PAX was present; structured guest rows provide the candidate total.'
     : 'Source/header PAX remains authoritative for this booking.'

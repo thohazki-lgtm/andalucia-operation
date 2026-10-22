@@ -44,3 +44,13 @@ The entry point accepts these named arguments:
 - optional `--callback-timeout-seconds` (10–600; default 300)
 
 R2.4F.2 source validation uses synthetic identities, credentials, files, callback traffic, and Drive transport only. It does not perform real Google OAuth, access Google Drive, provision a real credential, decrypt recovery material, or modify the canonical database or protected backups.
+
+## R2.4G live provisioning checkpoint
+
+**Status: DEFERRED — FINAL LIVE GOOGLE PICKER FOLDER-LISTING VALIDATION PENDING**
+
+The existing R2.4G implementation and tests remain preserved. The Web OAuth and Google Web Picker flow continues to use Windows Credential Locker, the exact `https://www.googleapis.com/auth/drive.file` scope, the configured Picker project/App ID, the protected restricted API key, explicit manager destination approval, and all existing fail-closed security boundaries.
+
+Live validation reached a correctly rendered Google Web Picker using `ViewId.FOLDERS`, folder inclusion, folder selection, and list mode with no MIME, parent, file-ID, query, ownership, or other narrowing filter. The Picker displayed an empty folder result set. Current diagnostics cannot prove whether this represents a Google-side empty result, authorization visibility behavior, or another Picker listing condition. The root cause is therefore **not yet proven**, and no speculative source correction is authorized.
+
+Final live folder-listing validation is deferred to the final Phase 1 infrastructure and production-readiness stage. This unresolved validation does not block continued Phase 1 application development. Until that stage, do not broaden the OAuth scope, replace the existing credentials or Picker architecture, retain a new durable OAuth credential, or perform a Google Drive upload through this incomplete provisioning flow.

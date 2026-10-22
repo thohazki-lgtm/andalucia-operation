@@ -2,3 +2,118 @@
 @media(max-width:1200px){.membership-status-card dl{grid-template-columns:repeat(2,minmax(0,1fr))}.membership-approval-card{grid-template-columns:1fr}.membership-approval-card dl{grid-template-columns:repeat(5,minmax(0,1fr));grid-column:1/-1}.membership-approval-card button{width:100%}}
 @media(max-width:900px){.membership-approved-banner dl{grid-template-columns:repeat(2,minmax(0,1fr))}.membership-review-card>header{align-items:flex-start}.membership-approval-card dl{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.team-membership-page{gap:11px}.membership-intro{display:grid;gap:10px}.membership-intro h2{font-size:19px}.membership-intro .membership-status{justify-self:start}.membership-status-card{grid-template-columns:1fr;padding:14px}.membership-status-card dl{grid-template-columns:repeat(2,minmax(0,1fr))}.membership-status-card>button{width:100%;min-height:44px}.membership-review-card>header{display:grid;padding:14px}.membership-review-card>header .secondary{width:100%;min-height:44px}.membership-table-wrap{display:none}.membership-mobile-list{display:grid;gap:9px;padding:10px;background:#f6f8f9}.membership-mobile-list article{min-width:0;padding:13px;border:1px solid #dfe7ea;border-radius:9px;background:#fff}.membership-mobile-list article.selected-candidate{border-left:4px solid #c19a43}.membership-mobile-list header{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}.membership-mobile-list header b,.membership-mobile-list header small{display:block}.membership-mobile-list header b{color:#173d56}.membership-mobile-list header small{margin-top:3px;color:#7a8d98;font-size:9px}.membership-mobile-list dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0;padding:10px 0;border-block:1px solid #edf1f3}.membership-mobile-list dt{color:#82929c;font-size:8px;text-transform:uppercase}.membership-mobile-list dd{margin:3px 0 0;color:#315167;font-size:10px;font-weight:650;overflow-wrap:anywhere}.membership-mobile-list .membership-date-pair{grid-template-columns:repeat(2,minmax(0,1fr))}.membership-mobile-list .membership-date-pair .secondary{grid-column:1/-1;width:100%;min-height:40px}.membership-mobile-list .membership-warnings{margin-top:10px}.membership-mobile-list>.membership-correction-note{margin:8px 3px}.membership-approval-card{padding:14px}.membership-approval-card dl{grid-template-columns:repeat(2,minmax(0,1fr))}.membership-approval-card button{min-height:46px;white-space:normal}.membership-approved-banner{padding:14px}.membership-approved-banner dl{grid-template-columns:1fr}.membership-dialog{max-height:calc(100dvh - 24px);padding:20px 16px}.membership-manual-list{max-height:50dvh}}
+.membership-intro-actions{display:flex;align-items:flex-end;gap:10px}.membership-month-control{display:grid;gap:4px;color:#657984;font-size:8px;font-weight:750;letter-spacing:.05em;text-transform:uppercase}.membership-month-control input{min-height:36px;padding:6px 9px;border:1px solid #d7e1e5;border-radius:7px;background:#fff;color:#24475e;font:600 11px inherit}.membership-intro-actions .membership-status{margin-bottom:4px}
+@media(max-width:700px){.membership-intro-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;width:100%}.membership-month-control input{width:100%;min-height:44px}}
+
+/* Stage 3 final: readable membership review and collision-free month control. */
+.membership-intro{align-items:center}.membership-intro h2,.membership-review-card h3,.membership-approval-card h3{font-size:25px;line-height:1.15}
+.membership-intro p:last-child,.membership-review-card header p{font-size:12px;line-height:1.5}
+.membership-intro-actions{align-items:center}.membership-month-control{min-width:174px;font-size:9.5px}
+.membership-intro-actions.membership-month-only{justify-content:flex-end}
+.membership-month-control .ao-date-control input{min-height:42px;padding:7px 46px 7px 12px;font-size:12px}
+.membership-month-control .ao-date-control__icon{right:14px;width:18px;height:18px}
+.membership-status{font-size:10px}.membership-status-card dt,.membership-approved-banner dt,.membership-approval-card dt{font-size:9.5px}
+.membership-status-card dd,.membership-approved-banner dd,.membership-approval-card dd{font-size:13px}
+.membership-review-card>header{padding:20px 22px}.membership-review-card>header>span{font-size:11px}
+.membership-table{min-width:1080px;table-layout:fixed}.membership-table th,.membership-table td{padding:12px 11px;vertical-align:middle;font-size:11.5px;line-height:1.35}
+.membership-table th{font-size:9.5px;font-weight:800;line-height:1.25}.membership-table td>small{font-size:9.5px}
+.membership-include{font-size:10.5px}.membership-warnings span,.membership-ready{font-size:9px}
+.membership-mobile-list header b{font-size:15px}.membership-mobile-list header small{font-size:10.5px}
+.membership-mobile-list dt{font-size:9px;font-weight:700}.membership-mobile-list dd{font-size:11.5px}
+@media(max-width:700px){
+ .membership-intro{align-items:stretch}.membership-intro h2{font-size:22px}.membership-intro p:last-child{font-size:11.5px}
+ .membership-intro-actions{grid-template-columns:minmax(0,1fr) auto;gap:9px}.membership-month-control{min-width:0;font-size:9px}
+ .membership-intro-actions.membership-month-only{display:flex;justify-content:flex-end}
+ .membership-month-only .membership-month-control{width:min(100%,270px)}
+ .membership-month-control .ao-date-control input{min-height:44px;padding-right:46px;font-size:12px}
+ .membership-review-card>header{padding:15px}.membership-review-card>header h3{font-size:21px}
+ .membership-mobile-list article{padding:12px}.membership-mobile-list dl{margin:10px 0;padding:9px 0}
+}
+
+/* Final membership spacing values must follow the Stage 3 typography rules. */
+.team-membership-page{gap:20px}
+.team-membership-page>.panel,.team-membership-page>.staff-module-info{margin:0}
+.membership-intro,.membership-review-card>header{margin-bottom:0}
+.membership-approved-banner{gap:12px;padding:16px 18px}
+.membership-approved-banner dl div{padding:9px 11px}
+.membership-review-card>header{padding:16px 18px}
+.membership-table.approved-table{min-width:0;table-layout:fixed}
+.membership-table.approved-table th:nth-child(1){width:25%}
+.membership-table.approved-table th:nth-child(2){width:16%}
+.membership-table.approved-table th:nth-child(3){width:25%}
+.membership-table.approved-table th:nth-child(4){width:20%}
+.membership-table.approved-table th:nth-child(5){width:14%}
+.membership-table.approved-table th,.membership-table.approved-table td{vertical-align:middle;overflow-wrap:anywhere}
+.team-membership-page>.membership-history{margin-top:4px;padding:16px 18px}
+@media(max-width:700px){
+ .team-membership-page{gap:16px}
+ .membership-approved-banner{gap:11px;padding:13px}
+ .membership-approved-banner dl div{padding:9px 10px}
+ .membership-review-card>header{padding:13px}
+ .team-membership-page>.membership-history{margin-top:2px;padding:13px}
+}
+
+/* Approved membership: one compact premium surface with shared month authority. */
+.membership-approved-page{gap:0;padding:0 16px 14px;border:1px solid #dec58f;border-top:3px solid #b38b3a;border-radius:12px;background:#fffaf0;overflow:hidden}
+.membership-approved-page>.panel,.membership-approved-page>.staff-module-info{border:0;border-radius:0;background:transparent;box-shadow:none}
+.membership-command-header{margin:0 -16px;padding:13px 16px;background:#fff7e7;border-bottom:1px solid #dec58f}
+.membership-command-header h2{margin-bottom:4px;font-size:22px}
+.membership-header-context{display:flex;align-items:center;gap:8px;margin:0!important;color:#506b7b!important;font-size:11px!important;font-weight:650}
+.membership-header-context span+span{padding-left:8px;border-left:1px solid #dec58f}
+.membership-command-header .membership-intro-actions{align-items:end}
+.membership-command-header .membership-status{margin:0 0 3px;min-height:30px;padding-inline:12px}
+.membership-approved-page>.membership-approved-banner{grid-template-columns:minmax(150px,.6fr) minmax(0,1.8fr) auto;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #dec58f}
+.membership-summary-title b{display:block;color:#173d56;font:700 16px 'Playfair Display',serif}
+.membership-summary-title .eyebrow{margin:0 0 3px}
+.membership-approved-page .membership-approved-banner dl{grid-column:auto;grid-template-columns:repeat(4,minmax(100px,1fr));gap:7px}
+.membership-approved-page .membership-approved-banner dl div{padding:7px 9px;background:rgba(255,255,255,.72);border-left:2px solid #caa64e}
+.membership-approved-page .membership-approved-banner dt{font-size:8.5px}
+.membership-approved-page .membership-approved-banner dd{font-size:12px}
+.membership-approved-page>.membership-review-card{overflow:hidden;border-bottom:1px solid #dec58f}
+.membership-approved-page .membership-review-card>header{padding:13px 0;background:transparent;border-bottom:1px solid #dec58f}
+.membership-approved-page .membership-review-card h3{font-size:19px}
+.membership-approved-page .membership-table.approved-table{min-width:0;table-layout:fixed}
+.membership-approved-page .membership-table.approved-table th:nth-child(1){width:42%}
+.membership-approved-page .membership-table.approved-table th:nth-child(2){width:22%}
+.membership-approved-page .membership-table.approved-table th:nth-child(3){width:36%}
+.membership-approved-page .membership-table.approved-table th,.membership-approved-page .membership-table.approved-table td{padding:9px 10px;border-bottom:1px solid #eadfca;font-size:10.5px;vertical-align:middle}
+.membership-approved-page .membership-table.approved-table th{background:#f8efd9;color:#526d7d;font-size:9px;font-weight:750}
+.membership-approved-page .membership-table.approved-table tbody tr:nth-child(even){background:rgba(255,255,255,.58)}
+.membership-approved-page .membership-table.approved-table tbody tr:last-child td{border-bottom:0}
+.membership-approved-page>.membership-history{margin:0;padding:0;border-bottom:1px solid #dec58f}
+.membership-history-disclosure summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;cursor:pointer;list-style:none}
+.membership-history-disclosure summary::-webkit-details-marker{display:none}
+.membership-history-disclosure summary::after{content:'+';display:grid;place-items:center;width:28px;height:28px;margin-left:auto;border:1px solid #dec58f;border-radius:50%;color:#173d56;font-size:18px;font-weight:600}
+.membership-history-disclosure[open] summary::after{content:'−'}
+.membership-history-disclosure summary h3{margin:2px 0 0;font-size:17px}
+.membership-history-disclosure summary>span{color:#667d8b;font-size:10px;font-weight:700;white-space:nowrap}
+.membership-history-disclosure .membership-history-list{padding:0 0 13px}
+.membership-approved-page>.staff-module-info{padding:12px 0 0;border-left:0;color:#607987}
+
+@media(max-width:1100px){
+ .membership-approved-page>.membership-approved-banner{grid-template-columns:minmax(0,1fr) auto}
+ .membership-approved-page .membership-approved-banner dl{grid-column:1/-1;grid-row:2}
+}
+@media(max-width:700px){
+ .membership-approved-page{gap:0;padding:0 12px 12px}
+ .membership-command-header{margin:0 -12px;padding:12px}
+ .membership-command-header h2{font-size:20px}
+ .membership-header-context{font-size:10.5px!important}
+ .membership-command-header .membership-intro-actions{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+ .membership-approved-page>.membership-approved-banner{grid-template-columns:1fr;gap:10px;padding:12px 0}
+ .membership-approved-page .membership-approved-banner dl{grid-column:auto;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .membership-approved-page .membership-approved-banner dl div{padding:7px 8px}
+ .membership-approved-page .membership-approved-banner>button{width:100%;min-height:44px}
+ .membership-approved-page .membership-review-card>header{display:flex;align-items:center;padding:12px 0}
+ .membership-approved-page .membership-review-card h3{font-size:18px}
+ .membership-approved-page .membership-mobile-list{gap:0;padding:0;background:transparent}
+ .membership-approved-page .membership-mobile-list article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 2px;border:0;border-bottom:1px solid #eadfca;border-radius:0;background:transparent}
+ .membership-approved-page .membership-mobile-list article:last-child{border-bottom:0}
+ .membership-approved-page .membership-mobile-list article>b{color:#173d56;font-size:13px;font-weight:650}
+ .membership-approved-page .membership-mobile-list article>small{grid-row:2;color:#718591;font-size:10px}
+ .membership-approved-page .membership-mobile-list article>span{grid-column:2;grid-row:1/3;align-self:center;color:#315167;font-size:10.5px;text-align:right}
+ .membership-history-disclosure summary{padding:12px 0}
+ .membership-history-disclosure summary>span{display:none}
+ .membership-history-disclosure summary h3{font-size:16px}
+ .membership-history-disclosure .membership-history-list{padding-bottom:12px}
+}

@@ -1,10 +1,33 @@
 export type ConfigGroup = 'dutyCodes' | 'employmentStatuses' | 'attendanceStatuses' | 'bookingStatuses' | 'bookingSources' | 'restaurantTables' | 'restaurantTableRanges' | 'bookingWalkInFields' | 'positions' | 'chargeableItems' | 'chargeableStatuses' | 'wineSpiritCatalog' | 'occasionTypes' | 'occasionStatuses' | 'maintenanceAreas' | 'maintenanceStatuses' | 'trainingTypes' | 'trainingCategories' | 'trainingStatuses' | 'trainingAttendanceStatuses'
 export type WalkInFieldMode = 'required' | 'optional' | 'hidden' | 'system'
-export interface ConfigOption { id: string; value: string; label: string; color?: string; active: boolean; sortOrder?: number; metadata?: { displayCode?: string; countsAsWorking?: boolean; billTipEligible?: boolean; billTipWorkedDayUnits?: number; dutyClassification?: 'working' | 'off' | 'annualLeave' | 'publicHoliday' | 'sickLeave' | 'other'; countsAsLeave?: boolean; countsAsOffDay?: boolean; countsAsPublicHoliday?: boolean; countsAsSickLeave?: boolean; countsAsException?: boolean; eligibleForAssignments?: boolean; serviceAssignmentEligible?: boolean; employmentStage?: 'active' | 'temporarilyUnavailable' | 'inactive'; price?: number; category?: string; description?: string; trainingStage?: 'planned' | 'upcoming' | 'completed' | 'cancelled'; trainingAttendanceOutcome?: 'attended' | 'absent' | 'excused' | 'other'; bookingMetric?: 'arrived' | 'noShow'; excludesFromExpectedCovers?: boolean; serviceStage?: 'remaining' | 'arrived' | 'completed' | 'noShow' | 'excluded'; operationalAction?: 'waiting' | 'arrived' | 'noShow'; systemControlled?: boolean; protected?: boolean; manualOnly?: boolean; walkInFieldMode?: WalkInFieldMode; recommendedMode?: WalkInFieldMode; tableRangeStart?: number; tableRangeEnd?: number; chargeableStage?: 'pending' | 'charged' | 'cancelled'; countsAsRealizedRevenue?: boolean; countsAsPendingValue?: boolean; excludesFromChargeableTotals?: boolean; detectionKeywords?: string[]; defaultStatus?: string; countsAsOccasionAttention?: boolean; occasionStage?: 'active' | 'completed'; occasionWorkflow?: 'attention' | 'prepared' | 'completed'; occasionCategory?: 'honeymoon' | 'birthday' | 'anniversary' | 'seeYouSoon' | 'siyamFamily' | 'famtrip' | 'presstrip' | 'other'; countsAsVipSpecial?: boolean; maintenanceStage?: 'open' | 'inProgress' | 'completed'; outletScopeId?: string; durationMinutes?: number; trainerMode?: 'venue_manager' | 'staff'; trainerStaffId?: string | null; location?: string; categoryValue?: string | null; participantSelection?: 'eligible_staff'; workflowState?: TrainingOperationalStatus } }
+export type DutyClassification = 'working' | 'off' | 'annualLeave' | 'publicHoliday' | 'sickLeave' | 'emergencyLeave' | 'paternityLeave' | 'businessTrip' | 'circumcisionLeave' | 'hajjLeave' | 'restAndRecuperation' | 'other'
+export const LEAVE_CLASSIFICATIONS = ['annualLeave', 'sickLeave', 'emergencyLeave', 'paternityLeave', 'businessTrip', 'circumcisionLeave', 'hajjLeave', 'restAndRecuperation', 'off', 'publicHoliday'] as const
+export type LeaveClassification = typeof LEAVE_CLASSIFICATIONS[number]
+export const EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS = ['sickLeave', 'emergencyLeave', 'paternityLeave', 'businessTrip', 'circumcisionLeave', 'hajjLeave', 'restAndRecuperation'] as const
+export type EmployeeOverrideLeaveClassification = typeof EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS[number]
+export const YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS = ['annualLeave', ...EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, 'publicHoliday'] as const
+export type YearlyEntitlementLeaveClassification = typeof YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS[number]
+export const LEAVE_CLASSIFICATION_LABELS: Record<LeaveClassification, string> = { annualLeave: 'Annual Leave', sickLeave: 'Sick Leave', emergencyLeave: 'Emergency Leave', paternityLeave: 'Paternity Leave', businessTrip: 'Business Trip', circumcisionLeave: 'Circumcision Leave', hajjLeave: 'Hajj Leave', restAndRecuperation: 'R&R1', off: 'Day Off', publicHoliday: 'Public Holiday' }
+export const CORE_DUTY_CODES: ReadonlyArray<{ code: string; label: string; classification: LeaveClassification; color: string }> = [
+  { code: 'AL', label: 'Annual Leave', classification: 'annualLeave', color: '#b38b3a' },
+  { code: 'SL', label: 'Sick Leave', classification: 'sickLeave', color: '#a45b57' },
+  { code: 'EL', label: 'Emergency Leave', classification: 'emergencyLeave', color: '#b86845' },
+  { code: 'PAT', label: 'Paternity Leave', classification: 'paternityLeave', color: '#5d7694' },
+  { code: 'BT', label: 'Business Trip', classification: 'businessTrip', color: '#2f8063' },
+  { code: 'CIR', label: 'Circumcision Leave', classification: 'circumcisionLeave', color: '#856c96' },
+  { code: 'HAJ', label: 'Hajj Leave', classification: 'hajjLeave', color: '#687b52' },
+  { code: 'RR', label: 'R&R1', classification: 'restAndRecuperation', color: '#4f7c8d' },
+  { code: 'OFF', label: 'Day Off', classification: 'off', color: '#a7b0ba' },
+  { code: 'PH', label: 'Public Holiday', classification: 'publicHoliday', color: '#587f98' }
+]
+export const coreDutyCode = (code?: string) => CORE_DUTY_CODES.find(item => item.code === String(code || '').trim().toUpperCase())
+export const leaveClassificationForCode = (code?: string): LeaveClassification | undefined => String(code || '').trim().toUpperCase() === 'SK' ? 'sickLeave' : coreDutyCode(code)?.classification
+export const isLeaveClassification = (value?: string): value is LeaveClassification => LEAVE_CLASSIFICATIONS.includes(value as LeaveClassification)
+export interface ConfigOption { id: string; value: string; label: string; color?: string; active: boolean; sortOrder?: number; metadata?: { displayCode?: string; countsAsWorking?: boolean; billTipEligible?: boolean; billTipWorkedDayUnits?: number; dutyClassification?: DutyClassification; countsAsLeave?: boolean; countsAsOffDay?: boolean; countsAsPublicHoliday?: boolean; countsAsSickLeave?: boolean; countsAsException?: boolean; eligibleForAssignments?: boolean; serviceAssignmentEligible?: boolean; employmentStage?: 'active' | 'temporarilyUnavailable' | 'inactive'; price?: number; category?: string; description?: string; trainingStage?: 'planned' | 'upcoming' | 'completed' | 'cancelled'; trainingAttendanceOutcome?: 'attended' | 'absent' | 'excused' | 'other'; bookingMetric?: 'arrived' | 'noShow'; excludesFromExpectedCovers?: boolean; serviceStage?: 'remaining' | 'arrived' | 'completed' | 'noShow' | 'excluded'; operationalAction?: 'waiting' | 'arrived' | 'noShow'; systemControlled?: boolean; protected?: boolean; legacyCompatibility?: boolean; manualOnly?: boolean; walkInFieldMode?: WalkInFieldMode; recommendedMode?: WalkInFieldMode; tableRangeStart?: number; tableRangeEnd?: number; chargeableStage?: 'pending' | 'charged' | 'cancelled'; countsAsRealizedRevenue?: boolean; countsAsPendingValue?: boolean; excludesFromChargeableTotals?: boolean; detectionKeywords?: string[]; defaultStatus?: string; countsAsOccasionAttention?: boolean; occasionStage?: 'active' | 'completed'; occasionWorkflow?: 'attention' | 'prepared' | 'completed'; occasionCategory?: 'honeymoon' | 'birthday' | 'anniversary' | 'seeYouSoon' | 'siyamFamily' | 'famtrip' | 'presstrip' | 'other'; countsAsVipSpecial?: boolean; maintenanceStage?: 'open' | 'inProgress' | 'completed'; outletScopeId?: string; durationMinutes?: number; trainerMode?: 'venue_manager' | 'staff'; trainerStaffId?: string | null; location?: string; categoryValue?: string | null; participantSelection?: 'eligible_staff'; workflowState?: TrainingOperationalStatus } }
 export type Configuration = Record<ConfigGroup, ConfigOption[]>
 export interface Staff { id: string; name: string; number: string; position: string; joinDate: string; nationality: string; division: string; department: string; outlet: string; identityDocumentNumber: string; employmentStatus: string; assignmentEligible?: boolean; serviceAssignmentEligible?: boolean; resignationDate?: string; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export type UserAccountStatus = 'active' | 'disabled'
-export type AuthorizationRoleKey = 'owner' | 'outlet_manager' | 'operational_user' | 'viewer'
+export type AuthorizationRoleKey = 'owner' | 'outlet_manager' | 'operational_user' | 'viewer' | 'employee_self_service'
 export type AuthorizationPermissionKey =
   | 'manage_platform' | 'manage_outlets' | 'manage_users' | 'manage_roles_permissions'
   | 'manage_staff' | 'manage_staff_membership' | 'manage_staff_membership_baseline'
@@ -13,11 +36,57 @@ export type AuthorizationPermissionKey =
   | 'manage_chargeables' | 'manage_maintenance' | 'manage_bill_tips' | 'manage_incentives'
   | 'manage_financial_rules' | 'view_reports' | 'manage_reports' | 'view_audit_history'
   | 'perform_financial_corrections'
+  | 'manage_timesheets'
+  | 'view_own_roster' | 'view_own_timesheet' | 'edit_own_timesheet'
+  | 'confirm_own_timesheet_days' | 'submit_own_timesheet_month'
 export interface AuthorizationSummary { roleKeys: AuthorizationRoleKey[]; permissionKeys: AuthorizationPermissionKey[]; globalScope: boolean; allowedOutletScopeIds: string[]; isOwner: boolean }
-export interface UserAccountIdentity { userId: string; loginIdentifier: string; displayName: string; status: UserAccountStatus; staffId: string | null }
+export interface UserAccountIdentity { userId: string; loginIdentifier: string; displayName: string; status: UserAccountStatus; staffId: string | null; mustChangePassword: boolean }
 export interface AuthenticatedUser extends UserAccountIdentity, AuthorizationSummary {}
+export interface StaffAccountSummary {
+  staffId: string
+  staffName: string
+  staffNumber: string
+  staffEligible: boolean
+  userId: string | null
+  loginIdentifier: string | null
+  status: UserAccountStatus | 'not_created'
+  lastLoginAt: string | null
+  mustChangePassword: boolean
+}
+export interface EmployeeTemporaryCredential { account: StaffAccountSummary; temporaryPassword: string }
 export interface AuditActor { userId: string; displayName: string }
-export interface AuthPrincipal extends AuditActor, AuthorizationSummary { sessionId: string; loginIdentifier: string; staffId: string | null }
+export interface AuthPrincipal extends AuditActor, AuthorizationSummary { sessionId: string; loginIdentifier: string; staffId: string | null; mustChangePassword?: boolean }
+export type TimesheetDayState = 'draft' | 'confirmed'
+export type TimesheetMonthStatus = 'open' | 'submitted' | 'approved' | 'locked'
+export interface TimesheetShiftInput { timeIn: string | null; timeOut: string | null }
+export type TimesheetOvertimeStatus = 'pending' | 'approved' | 'rejected'
+export interface TimesheetOvertimeInput { duration: string; expectedRevision: number }
+export interface TimesheetDayInput { firstShift: TimesheetShiftInput; secondShift: TimesheetShiftInput; overtime?: TimesheetOvertimeInput }
+export interface TimesheetOvertimeView {
+  duration: string; durationMinutes: number; status: TimesheetOvertimeStatus | null; revision: number
+  submittedAt: string | null; reviewedAt: string | null; rejectionReason: string | null; editable: boolean
+}
+export interface TimesheetScheduledDuty { code: string; name: string; color: string | null; countsAsWorking: boolean; classification: DutyClassification | null }
+export interface TimesheetDayView {
+  date: string; weekday: string; scheduledDuty: TimesheetScheduledDuty | null; state: TimesheetDayState | null
+  firstShift: TimesheetShiftInput; secondShift: TimesheetShiftInput; totalMinutes: number; revision: number; confirmedAt: string | null; editable: boolean; rosterConflict: boolean; overtime: TimesheetOvertimeView
+}
+export interface TimesheetMonthView {
+  staff: { id: string; name: string; number: string }; month: string; status: TimesheetMonthStatus; locked: boolean; reopenedUntil: string | null; days: TimesheetDayView[]
+}
+export type TimesheetExceptionCode = 'MISSING_WORKING_HOURS' | 'INCOMPLETE_SHIFT' | 'UNCONFIRMED_WORKING_DAY' | 'INVALID_OR_OVERLAPPING_HOURS' | 'WORK_RECORDED_ON_NON_WORKING_DUTY' | 'UNUSUALLY_LONG_HOURS'
+export interface TimesheetException { date: string; code: TimesheetExceptionCode; label: string; blocking: boolean }
+export interface ManagerTimesheetSummary {
+  staff: { id: string; name: string; number: string }; month: string; status: TimesheetMonthStatus
+  workingDays: number; offOrLeaveDays: number; totalMinutes: number; confirmedDays: number
+  missingEntries: number; incompleteEntries: number; exceptionCount: number; blockingExceptionCount: number
+}
+export interface ManagerTimesheetOverview { month: string; employees: ManagerTimesheetSummary[] }
+export interface TimesheetWorkflowAudit { id: string; action: string; previousStatus: TimesheetMonthStatus | null; newStatus: TimesheetMonthStatus; reason: string | null; actorName: string; createdAt: string }
+export interface ManagerTimesheetMonthView extends TimesheetMonthView {
+  exceptions: TimesheetException[]; workflowHistory: TimesheetWorkflowAudit[]; requiresReapproval: boolean
+  overtimeTotals: { approvedMinutes: number; pendingMinutes: number; rejectedMinutes: number }
+}
 export type DatabaseHealthState = 'HEALTHY' | 'BACKUP_RECOMMENDED' | 'MIGRATION_REQUIRED' | 'DATABASE_RECOVERY_REQUIRED' | 'BACKUP_INVALID' | 'STORE_CONFIGURATION_ERROR'
 export type BackupRestoreTestStatus = 'RESTORE_TEST_PENDING' | 'RESTORE_TEST_PASSED' | 'RESTORE_TEST_FAILED'
 export interface DatabaseBackupInventoryItem { backupId: string; category: string; createdAt: string; verificationStatus: 'VERIFIED' | 'INVALID' | 'VERIFYING'; schemaVersion: string; sizeBytes: number; protected: boolean; protectionReasons: string[]; restoreTestStatus: BackupRestoreTestStatus; latestRestoreTestAt: string | null; operationalFingerprint: Record<string, unknown> | null }
@@ -49,25 +118,78 @@ export interface StaffMembershipBaselineDiff { previousRevisionId: string; curre
 export interface StaffMembershipBaselineStatusRead { reviewId: string | null; outletScopeKey: string; month: string; status: StaffMembershipBaselineStatus; revisionNumber: number | null; approvedMemberCount: number; approvedAt: string | null; approvedBy: string | null; blockers: string[]; warnings: string[]; approvedMemberships: StaffMembershipHistory[] }
 export interface StaffMembershipBaselinePreview { outlet: OutletScope; month: string; status: StaffMembershipBaselineStatusRead; currentRevision?: StaffMembershipBaselineReview | null; authoritativeRevision?: StaffMembershipBaselineReview | null; revisionHistory: StaffMembershipBaselineReview[]; changes?: StaffMembershipBaselineDiff | null; suggestedCandidates: StaffMembershipBaselineCandidate[]; availableForManualInclusion: StaffMembershipBaselineCandidate[] }
 export interface StaffMembershipBaselineApprovalResult { status: 'BASELINE_APPROVED' | 'BASELINE_ALREADY_APPROVED'; review: StaffMembershipBaselineReview; membershipIds: string[] }
-export interface StaffEntitlement { staffId: string; staffNumber: string; staffName: string; employmentStatus: string; annualLeavePerYear: number; weeklyOffEntitlement: number; publicHolidayPerYear: number; persisted: boolean; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
-export interface StaffEntitlementBalance { staffId: string; year: number; annualLeave: { entitlement: number; used: number; remaining: number }; publicHoliday: { entitlement: number; used: number; remaining: number }; weeklyOff: { weekStart: string; weekEnd: string; required: number; assigned: number; difference: number; status: 'short' | 'compliant' | 'additional' } }
+export type StaffLeaveEntitlementOverrides = Partial<Record<EmployeeOverrideLeaveClassification, number>>
+export type StaffLeaveEntitlementOverrideWrite = Partial<Record<EmployeeOverrideLeaveClassification, number | null>>
+export interface StaffEntitlement { staffId: string; staffNumber: string; staffName: string; employmentStatus: string; annualLeavePerYear: number; weeklyOffEntitlement: number; publicHolidayPerYear: number; leaveOverrides: StaffLeaveEntitlementOverrides; persisted: boolean; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
+export interface StaffEntitlementUpdate { staffId: string; annualLeavePerYear: number; weeklyOffEntitlement: number; publicHolidayPerYear: number; leaveOverrides?: StaffLeaveEntitlementOverrideWrite }
+export type StaffYearlyEntitlementDraft = { staffId: string; year: number; allowances: Partial<Record<YearlyEntitlementLeaveClassification, number | null>>; annualLeaveOpeningBalance: number | null; approvalReason: string }
+export type StaffYearlyEntitlementWrite = StaffYearlyEntitlementDraft & { confirmation: 'CONFIRM_HR_APPROVED_YEARLY_ENTITLEMENTS' }
+export interface StaffYearlyEntitlementRecord { classification: YearlyEntitlementLeaveClassification; code: string; label: string; year: number; entitlement: number | null; accrualPerCompletedMonth: number | null; eligibleFrom: string | null; eligibleThrough: string | null; openingBalanceAdjustment: number | null; openingBalanceReason: string | null; configured: boolean }
+export interface EntitlementPolicy { id: string | null; code: string; label: string; classification: LeaveClassification; cadence: 'annual' | 'weekly'; defaultAllowance: number | null; approvedAllowance: number; configurable: boolean; persisted: boolean; activationRequired: boolean; updatedAt?: string; updatedBy?: string }
+export interface StaffLeaveEntitlementBalanceLine { classification: EmployeeOverrideLeaveClassification; code: string; label: string; entitlement: number | null; used: number; remaining: number | null; bookedFuture: null; availableAfterBooked: null }
+export interface AnnualLeaveServiceYearBalance {
+  serviceYearNumber: number; serviceYearStart: string; serviceYearEnd: string; nextEntitlementAvailabilityDate: string
+  availableLeave: number | null; knownAvailableLeave: number; used: number; remaining: number | null; accruingForNextServiceYear: number; completedServiceMonths: number
+  bookedFuture: number; availableAfterBooked: number | null; evidenceStatus: 'complete' | 'unconfigured'
+  approvedOpeningCarry: number | null; openingCarryReason: string | null; preAvailabilityUsageDates: string[]
+}
+export type AnnualLeaveCarryForwardDraft = { staffId: string; carryForward: number }
+export type AnnualLeaveCarryForwardWrite = AnnualLeaveCarryForwardDraft & { confirmation: 'CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD' }
+export interface AnnualLeaveCarryForwardPreview {
+  staffId: string; staffName: string; staffNumber: string; joinDate: string
+  effectiveDate: string; carryForward: number
+  evidenceServiceYearStart: string; evidenceServiceYearEnd: string; entitlementAvailabilityDate: string
+  before: AnnualLeaveServiceYearBalance | null; after: AnnualLeaveServiceYearBalance
+}
+export interface StaffEntitlementBalance { staffId: string; year: number; annualLeave: { entitlement: number | null; used: number; remaining: number | null; serviceYear?: AnnualLeaveServiceYearBalance }; publicHoliday: { entitlement: number; used: number; remaining: number }; weeklyOff: { weekStart: string; weekEnd: string; required: number; assigned: number; difference: number; status: 'short' | 'compliant' | 'additional' }; additionalLeave: StaffLeaveEntitlementBalanceLine[] }
+export interface StaffYearlyEntitlementBalanceLine extends StaffYearlyEntitlementRecord { accrued: number | null; carriedForward: number | null; used: number; remaining: number | null; bookedFuture: number | null; availableAfterBooked: number | null; serviceYear?: AnnualLeaveServiceYearBalance }
+export interface StaffYearlyEntitlementBalance { staffId: string; year: number; asOf: string; yearlyLeave: StaffYearlyEntitlementBalanceLine[]; weeklyOff: StaffEntitlementBalance['weeklyOff'] }
+export interface StaffYearlyEntitlementPreview { staffId: string; staffName: string; staffNumber: string; year: number; approvalReason: string; before: StaffYearlyEntitlementRecord[]; after: StaffYearlyEntitlementRecord[]; balanceBefore: StaffYearlyEntitlementBalance | null; balanceAfter: StaffYearlyEntitlementBalance }
+export type EntitlementReconciliationSource = 'service_year_hr_evidence' | 'yearly_hr_approval' | 'individual_override' | 'policy_default' | 'unconfigured'
+export interface StaffEntitlementReconciliationLine {
+  classification: LeaveClassification; code: string; label: string; cadence: 'annual' | 'weekly'
+  policyEntitlement: number | null; individualEntitlement: number | null; yearlyEntitlement: number | null
+  source: EntitlementReconciliationSource; openingBalance: number | null; openingBalanceReason: string | null
+  accrualPerCompletedMonth: number | null; completedEligibleMonths: number | null
+  accrued: number | null; carriedForward: number | null; used: number; remaining: number | null
+  bookedFuture: number | null; availableAfterBooked: number | null
+  serviceYear?: AnnualLeaveServiceYearBalance
+  evidenceStatus: 'complete' | 'missing_hr_evidence' | 'discrepancy' | 'weekly_recurring'; issues: string[]
+}
+export interface StaffEntitlementReconciliation {
+  staffId: string; staffName: string; staffNumber: string; year: number; asOf: string
+  lines: StaffEntitlementReconciliationLine[]; missingEvidence: string[]; discrepancies: string[]
+  confirmedUsageSource: 'DUTY_ROSTER'; bookedFutureSource: 'PLANNED_LEAVE_SEPARATE'; readOnly: true
+}
 export interface PublicHoliday { id: string; name: string; date: string; days: number; active: boolean; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export interface RosterEntry { staffId: string; date: string; dutyCode: string; updatedAt: string; updatedBy: string }
-export type LeaveClassification = 'annualLeave' | 'off' | 'publicHoliday' | 'sickLeave'
+export interface RosterBatchChange { staffId: string; date: string; dutyCode: string; expectedUpdatedAt: string | null }
 export interface StaffLeaveDay { staffId: string; staffName: string; staffNumber: string; employmentStatus: string; date: string; dutyCode: string; dutyLabel: string; classification: LeaveClassification }
 export interface StaffLeaveRecord { id: string; staffId: string; staffName: string; staffNumber: string; employmentStatus: string; leaveType: LeaveClassification; fromDate: string; toDate: string; leaveDays: number; holidays: number; offDays: number; totalDays: number; entries: StaffLeaveDay[] }
 export interface LeavePlannerDay extends StaffLeaveDay { color: string; dutyCodeValue: string; dutyCodeActive: boolean }
 export interface LeavePlannerPeriod extends StaffLeaveRecord { designation: string; confirmationSource: 'Duty Roster'; entitlementDays: number; sourceDutyCode: string; color: string }
+export type PlannedLeaveState = 'booked' | 'cancelled'
+export interface PlannedLeaveConflictEvidence { date: string; dutyCode: string; dutyLabel: string; classification: LeaveClassification }
+export interface PlannedLeavePeriod {
+  id: string; outletScopeId: string; staffId: string; staffName: string; staffNumber: string; designation: string
+  startDate: string; endDate: string; leaveType: 'annual_leave'; planningState: PlannedLeaveState; managerNote: string
+  bookedDays: number; accumulatedOffDaysAllocated: number; plannedAnnualLeaveDays: number; accumulatedOffDaysConsumed: number; revision: number; confirmedEvidence: PlannedLeaveConflictEvidence[]
+  createdAt: string; updatedAt: string; createdByUserId: string; createdByName: string; updatedByUserId: string; updatedByName: string
+  cancelledAt: string | null; cancelledByUserId: string | null; cancelledByName: string | null; cancellationReason: string
+}
+export interface PlannedLeaveWriteInput { staffId: string; startDate: string; endDate: string; leaveType: 'annual_leave'; managerNote?: string; accumulatedOffDaysAllocated?: number; revision?: number }
+export interface AccumulatedOffBalance { staffId: string; opening: number; earned: number; reserved: number; consumed: number; available: number; conflict: boolean; evaluatedThrough: string | null }
+export interface PlannedLeaveSummary { bookedFuture: number; availableAfterBooked: number }
 export interface LeavePlannerStaffRow {
   staffId: string; staffName: string; staffNumber: string; designation: string; employmentStatus: string
   membershipId: string; membershipStart: string; membershipEnd: string; membershipReviewStatus: StaffMembershipReviewStatus
-  days: LeavePlannerDay[]; periods: LeavePlannerPeriod[]
-  entitlement: StaffEntitlementBalance & { persisted: boolean; offAssignedInMonth: number }
+  days: LeavePlannerDay[]; periods: LeavePlannerPeriod[]; plannedPeriods: PlannedLeavePeriod[]; plannedDates: string[]
+  entitlement: StaffEntitlementBalance & { persisted: boolean; offAssignedInMonth: number; bookedFuture: number; availableAfterBooked: number | null; accumulatedOff: AccumulatedOffBalance }
 }
 export interface LeavePlannerDailyAvailability { date: string; members: number; scheduledWorking: number; unavailable: number; unassigned: number }
 export interface LeavePlannerReadModel {
   outlet: OutletScope; month: string; startDate: string; endDate: string; membershipBlocker: StaffMembershipScopeBlocker | null
-  rows: LeavePlannerStaffRow[]; availability: LeavePlannerDailyAvailability[]; dutyCodes: ConfigOption[]
+  rows: LeavePlannerStaffRow[]; availability: LeavePlannerDailyAvailability[]; dutyCodes: ConfigOption[]; plannedLeaveSupported: boolean
 }
 export interface AttendanceRecord { staffId: string; date: string; scheduledDuty: string | null; actualDuty: string | null; attendanceStatus: string | null; notes: string | null; staff: Pick<Staff, 'id' | 'name' | 'number' | 'position' | 'employmentStatus'>; updatedAt?: string }
 export interface TrainingAttendee { staffId: string; attendanceStatus: string | null; staff: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> }
@@ -98,7 +220,7 @@ export interface TrainingStaffCoverage {
 }
 export interface TrainingPerformance {
   month: string; target: { monthlyMinutes: number; monthlyHours: number; perHeadMinutes: number; perHeadHours: number; creditCapMinutes: number }
-  sessionsScheduled: number; sessionsCompleted: number; creditedMinutes: number; trainingHours: number
+  sessionsScheduled: number; sessionsCompleted: number; participantAttendances: number; creditedMinutes: number; trainingHours: number
   eligibleHeadcount: number; hoursPerHead: number; staffCovered: number; remainingMinutes: number; remainingHours: number
   targetAchieved: boolean; requiresReview: number; staffCoverage: TrainingStaffCoverage[]
 }
@@ -123,7 +245,12 @@ export interface TrainingCompletionInput {
   actualDurationMinutes: number
   staff: Array<{ staffId: string; eligibilityState: TrainingEligibilityState; participationState: TrainingParticipationState; evidenceNote?: string }>
 }
-export interface StaffTrainingHistory { trainingId: string; title: string; date: string; category: string; attendanceStatus: string | null; status: string; active: boolean }
+  export interface StaffTrainingHistory {
+    trainingId: string; title: string; date: string; category: string
+    attendanceStatus: string | null; status: string; active: boolean
+    actualDurationMinutes: number; creditedMinutes: number
+    participationStatus: 'participated'; confirmedAt: string
+  }
 export type TrainingImportReadiness = 'READY' | 'REVIEW_REQUIRED' | 'DUPLICATE'
 export interface TrainingImportRecord { topic: string; date: string; day: string; startTime: string; endTime: string; trainer: string; location: string; originalValues: Record<string, string>; warnings: string[]; readiness: TrainingImportReadiness; duplicateTrainingId?: string; duplicateWithinFile?: boolean }
 export interface TrainingImportBatchSession { id: string; title: string; date: string; startTime: string; endTime: string; trainer: string; managerCorrected: boolean; originalValues?: Record<string, unknown> | null; active: boolean }
@@ -132,12 +259,15 @@ export interface TrainingImportPreview { batchId: string; fileName: string; file
 export type TrainingImportReviewAction = 'IMPORT_ANYWAY' | 'EDIT_BEFORE_IMPORT' | 'SKIP'
 export interface TrainingImportDecision { index: number; action: TrainingImportReviewAction; changes?: Pick<TrainingImportRecord, 'topic' | 'date' | 'startTime' | 'endTime' | 'trainer' | 'location'> }
 export interface TrainingImportResult { imported: number; skipped: number; duplicates: number; failed?: number; importedIds: string[]; previousImportRemoved?: number; removed?: number }
-export interface BookingRecord { id: string; guestName: string; roomNumber: string; birthDate: string | null; arrivalDate: string | null; departureDate: string | null; mealPeriod: string; reservationDate: string; reservationTime: string; bookingNumber: string; covers: number; bookingStatus: string; bookingSource: string; bookedBy: string; guestNotes: string; tableNumber: string; waiterId: string | null; waiter: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> | null; importedBatchId?: string | null; importSource?: string | null; sourceActivityLabel?: string | null; sourceBookingStatus?: string | null; sourceFilename?: string | null; sourceReportDate?: string | null; sourceParserVersion?: string | null; sourceGuestNotes?: string | null; coverResolution?: BookingCoverResolution; memberSearchText?: string; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
+export type BookingServiceKind = 'dinner' | 'celebration'
+export interface BookingRecord { id: string; guestName: string; roomNumber: string; birthDate: string | null; arrivalDate: string | null; departureDate: string | null; mealPeriod: string; reservationDate: string; reservationTime: string; bookingNumber: string; covers: number; bookingStatus: string; bookingSource: string; bookedBy: string; guestNotes: string; tableNumber: string; waiterId: string | null; waiter: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> | null; importedBatchId?: string | null; importSource?: string | null; sourceActivityLabel?: string | null; sourceServiceKind?: BookingServiceKind; sourceServiceEndTime?: string | null; sourceBookingStatus?: string | null; sourceFilename?: string | null; sourceReportDate?: string | null; sourceParserVersion?: string | null; sourceGuestNotes?: string | null; coverResolution?: BookingCoverResolution; memberSearchText?: string; arrivedAt?: string | null; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export type WalkInBookingInput = Pick<BookingRecord, 'id' | 'guestName' | 'roomNumber' | 'birthDate' | 'arrivalDate' | 'departureDate' | 'mealPeriod' | 'reservationDate' | 'reservationTime' | 'covers' | 'guestNotes' | 'tableNumber' | 'waiterId'>
 export interface BookingSummary { totalBookings: number; expectedCovers: number; arrived: number; arrivedCovers: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number; unassignedTables: number; unassignedWaiters: number }
 export interface ChargeableRecord { id: string; date: string; bookingId: string | null; guestName: string; roomNumber: string; checkInvoiceNumber?: string; tableNumber: string; itemValue: string; itemLabel: string; itemCategory: string; quantity: number; unitPrice: number; totalAmount: number; waiterId: string | null; waiter: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> | null; status: string; notes: string; active: boolean; bookingNumber?: string | null; covers?: number; reservationDate?: string; reservationTime?: string; bookingSource?: string | null; importSource?: string | null; sourceGuestNotes?: string | null; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export interface ChargeableSummary { totalCharges: number; totalValue: number; realizedRevenue: number; pendingValue: number; charged: number; pending: number; itemsSold?: number; topSeller?: string; guests?: number }
 export type ChargeableWriteRequest = ChargeableRecord & { correctionReason?: string }
+export type ChargeableCorrectionRequest = ChargeableWriteRequest & { correctionReason: string; confirmation: string; expectedUpdatedAt?: string }
+export interface ChargeableCorrectionHistory { id: string; action: string; actor: string; createdAt: string; reason: string; before: ChargeableRecord | null; after: ChargeableRecord | null }
 export interface ChargeableDuplicateWarning { id: string; date: string; checkInvoiceNumber: string; roomNumber: string; tableNumber: string; itemLabel: string; quantity: number; waiterId: string | null }
 export type WineSpiritSaleStatus = 'pending' | 'charged' | 'cancelled' | 'void'
 export interface WineSpiritCalculation {
@@ -176,7 +306,7 @@ export interface BillTipRosterDiagnostic { staffId: string; staffName: string; s
 export interface BillTipDraftCalculation { distribution: BillTipDistribution; staff: BillTipRosterDiagnostic[]; blockers: string[] }
 export interface IncentiveCalculation { grossTotal: string; eligibleNetTotal: string; appliedRatePercent: string | null; appliedFixedAmount: string | null; appliedTierMinimum: string | null; appliedTierMaximum: string | null; calculatedAmount: string; finalAmount: string }
 export interface FinancialPreviewExternalAllocation { id: string; name: string; staffReference?: string; departmentOutlet?: string; fixedAmount: string; remarks?: string }
-export interface FinancialPreviewStaff { staffId: string; staffName: string; staffNumber: string; designation: string; membershipFrom: string; membershipTo: string | null; eligibleRecordedDays: number; alDaysExcluded: number; otherExcludedDays: number; historicalMissingRosterDays: number; futureUnclosedDays: number; calculatedBillTip: string; reviewStatus: 'READY' | 'REVIEW_REQUIRED' }
+export interface FinancialPreviewStaff { staffId: string; staffName: string; staffNumber: string; designation: string; membershipFrom: string; membershipTo: string | null; eligibleRecordedDays: number; alDaysExcluded: number; otherExcludedDays: number; historicalMissingRosterDays: number; futureUnclosedDays: number; calculatedBillTip: string; reviewStatus: 'READY' | 'REVIEW_REQUIRED'; reviewReasons: string[] }
 export interface FinancialIncentivePreviewRecord {
   sourceType: 'FOOD' | 'WINE_SPIRITS'; sourceId: string; chargeableId?: string
   serviceDate: string; checkInvoiceNumber?: string; roomNumber?: string
@@ -193,7 +323,7 @@ export interface FinancialManagerPreview {
   membership: { revisionId: string; revisionNumber: number; status: 'APPROVED'; approvedAt: string; approvedBy: string; memberCount: number }
   billTips: { totalPool: string; externalAllocations: FinancialPreviewExternalAllocation[]; externalAllocationTotal: string; remainingRegularTeamPool: string; totalEligibleRecordedDays: number; valuePerEligibleDay: string; regularStaffDistributed: string; roundingRemainder: string; reviewStatus: 'READY' | 'REVIEW_REQUIRED'; staff: FinancialPreviewStaff[] }
   incentives: { realizedRecordCount: number; realizedGrossAmount: string; pendingExcludedCount: number; pendingExcludedAmount: string; unattributedRealizedCount: number; unattributedIncentiveAmount: string; reviewStatus: 'READY' | 'REVIEW_REQUIRED'; records: FinancialIncentivePreviewRecord[]; staffSummary: Array<{ staffId: string; staffName: string; staffNumber: string; foodIncentive: string; wineSpiritsIncentive: string; totalIncentive: string; wineSpiritsStatus: 'ACTIVE' }>; wineSpiritsLiveSource: 'ACTIVE' }
-  earnings: Array<{ staffId: string; staffName: string; staffNumber: string; billTips: string; foodIncentives: string; wineSpiritsIncentives: string; totalExtraEarnings: string; status: 'READY' | 'REVIEW_REQUIRED' }>
+  earnings: Array<{ staffId: string; staffName: string; staffNumber: string; billTips: string; foodIncentives: string; wineSpiritsIncentives: string; totalExtraEarnings: string; status: 'READY' | 'REVIEW_REQUIRED'; reviewReasons: string[] }>
 }
 export interface BillTipVersionStaffSnapshot { staffId: string; staffName: string; staffNumber: string; designation: string; membershipFrom: string | null; membershipTo: string | null; eligibleDays: number; alExcluded: number; otherExcluded: number; historicalMissing: number; valuePerDay: string; finalAmount: string }
 export interface BillTipVersionExternalSnapshot { id: string; name: string; staffReference: string | null; departmentOutlet: string | null; fixedAmount: string; remarks: string }
@@ -209,14 +339,20 @@ export interface MaintenanceDuplicateWarning { id: string; issue: string; area: 
 export type ReportPeriodType = 'today' | 'week' | 'month' | 'custom'
 export interface ReportBreakdown { key: string; label: string; count: number }
 export interface ReportManagerSummary { id?: string; periodType: ReportPeriodType; startDate: string; endDate: string; managerNotes: string; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
+export interface ReportEarningsSummary {
+  incentives: { finalizedAmount: number; provisionalAmount: number; finalizedRecords: number; provisionalRecords: number }
+  billTips: { finalizedAmount: number; provisionalAmount: number; finalizedMonths: number; provisionalMonths: number }
+  state: 'finalized' | 'provisional' | 'not_recorded'
+}
 export interface OperationalReport {
   period: { type: ReportPeriodType; startDate: string; endDate: string; previousStartDate: string | null; previousEndDate: string | null; dayCount: number }
   executive: { totalBookings: number; expectedCovers: number; arrivedCovers: number; noShows: number; guestOccasions: number; chargeableRevenue: number; attendanceExceptions: number; openMaintenanceIssues: number }
   bookings: { totalBookings: number; expectedCovers: number; totalCovers: number; adults: number; kids: number; totalAdults: number; totalKids: number; arrivedBookings: number; arrivedCovers: number; arrivalPercent: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number; noShowRate: number; averageCoversPerBooking: number; busiestDate: string | null; averageCoversPerDay: number; byTime: Array<{ time: string; bookings: number; expectedCovers: number; totalCovers: number; adults: number; kids: number; totalAdults: number; totalKids: number; arrivedCovers: number; arrivalPercent: number; status: string; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number }>; byDate: Array<{ date: string; bookings: number; expectedCovers: number; totalCovers: number; adults: number; kids: number; totalAdults: number; totalKids: number; arrivedCovers: number; arrivalPercent: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; bookings: number; expectedCovers: number; totalCovers: number; adults: number; kids: number; totalAdults: number; totalKids: number; arrivedCovers: number; arrivalPercent: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number }> }
   attendance: { scheduledStaff: number; actualWorking: number; off: number; annualLeave: number; exceptions: number; details: Array<{ date: string; staffId: string; staffName: string; staffNumber: string; employmentStatus: string; scheduledDuty: string | null; actualDuty: string | null; attendanceStatus: string | null; isException: boolean }> }
   training: { sessions: number; participants: number; attended: number; absent: number; excused: number; sessionDetails: Array<{ id: string; date: string; title: string; category: string; status: string; participants: number; attended: number; absent: number; excused: number }>; employeeParticipation: Array<{ staffId: string; staffName: string; staffNumber: string; employmentStatus: string; sessions: number; attended: number }> }
-  occasions: { total: number; completed: number; pendingActive: number; requiringAttention: number; byType: ReportBreakdown[]; byCategory: ReportBreakdown[]; byStatus: ReportBreakdown[]; byDate: Array<{ date: string; total: number; byCategory: ReportBreakdown[] }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; total: number; byCategory: ReportBreakdown[] }>; records: Array<{ id: string; bookingId: string | null; date: string; guestName: string; roomNumber: string; covers: number; occasionType: string; category: string; status: string }> }
+  occasions: { total: number; completed: number; pendingActive: number; requiringAttention: number; byType: ReportBreakdown[]; byCategory: ReportBreakdown[]; byStatus: ReportBreakdown[]; byDate: Array<{ date: string; total: number; byCategory: ReportBreakdown[] }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; total: number; byCategory: ReportBreakdown[] }>; records: Array<{ id: string; bookingId: string | null; date: string; guestName: string; roomNumber: string; covers: number; occasionType: string; category: string; categoryKeys?: string[]; status: string }> }
   chargeables: { totalRevenue: number; realizedRevenue: number; pendingValue: number; pendingItems: number; itemsSold: number; topSeller: string; topSellerRevenue: number; mostSoldItem: string; topItem: { item: string; quantity: number; revenue: number } | null; topWaiter: { waiterId: string | null; waiter: string; staffNumber: string; employmentStatus: string; itemsSold: number; revenue: number; revenuePercent: number } | null; financialProofRecords: Array<{ id: string; date: string; guestName: string; roomNumber: string; checkInvoiceNumber: string; item: string; quantity: number; grossTotal: number; status: string; waiter: string }>; byItem: Array<{ itemValue: string; item: string; quantity: number; revenue: number }>; byWaiter: Array<{ rank: number; waiterId: string | null; waiter: string; staffNumber: string; employmentStatus: string; itemsSold: number; revenue: number; revenuePercent: number; items: Array<{ item: string; quantity: number; revenue: number }> }>; byDate: Array<{ date: string; realizedRevenue: number; itemsSold: number }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; realizedRevenue: number; itemsSold: number }> }
+  earnings: ReportEarningsSummary
   maintenance: { issuesReported: number; open: number; inProgress: number; completed: number; completedDuringPeriod: number; completedToday: number; unresolved: number; urgentUnresolved: number; normalUnresolved: number; byArea: ReportBreakdown[]; byDate: Array<{ date: string; issuesReported: number; completed: number }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; issuesReported: number; completed: number }>; records: Array<{ id: string; date: string; completionDate: string | null; issue: string; area: string; status: string; priority: string; referenceFollowUp: string }> }
   comparison: Array<{ key: string; label: string; current: number; previous: number; changePercent: number | null; movement: 'up' | 'down' | 'flat'; favorableWhen: 'up' | 'down' | 'neutral' }>
   managerSummary: ReportManagerSummary | null
@@ -229,7 +365,7 @@ export interface DailyReportRevenueVerification { acknowledged: boolean; verifie
 export interface DailyReportManualPayload {
   symphony: { foodRevenue: string; beverageRevenue: string; wineRevenue: string; liquorRevenue: string; totalSale: string; totalDiscount: string; totalVoid: string; netSale: string; totalRevenue: string; voidDetails: DailyReportVoidDetail[] }
   serviceVerification: { doubleDinePax: number | null; details: DailyReportDoubleDineDetail[] }
-  manager: { operationSummary: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
+  manager: { operationSummary: string; operatingSummary?: string; operationsIssues?: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
   revenueVerification?: DailyReportRevenueVerification
   completion?: Record<string, DailyReportReadinessState>
 }
@@ -239,9 +375,9 @@ export interface DailyReportRecord {
 }
 export interface DailyReportSnapshot { id: string; dailyReportId: string; outletScopeId: string; serviceDate: string; revisionNumber: number; frozenPayload: DailyReportFrozenPayload; snapshotSha256: string; approvedByUserId: string; approvedByName: string; approvedAt: string; createdAt: string }
 export interface DailyReportUpsellDetail { id: string; item: string; quantity: number; soldBy: string; staffNumber: string; roomNumber: string; checkInvoiceNumber: string; amount: string; source: 'Chargeable' | 'Wine / Spirits' }
-export interface DailyReportOccasionRoom { occasionId: string; bookingId: string | null; category: string; label: string; guestName: string; roomNumber: string; covers: number }
+export interface DailyReportOccasionRoom { occasionId: string; bookingId: string | null; category: string; categoryKeys?: string[]; label: string; guestName: string; roomNumber: string; covers: number }
 export interface DailyReportFrozenPayload {
-  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
+  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
   symphony: DailyReportManualPayload['symphony']
   serviceVerification: { doubleDinePax: number; details: DailyReportDoubleDineDetail[] }
   upselling: { chargeables: DailyReportUpsellDetail[]; wineSpirits: DailyReportUpsellDetail[]; details: DailyReportUpsellDetail[]; totalUpsellRevenue: string; itemsSold: number; topItem: string; topSeller: string }
@@ -269,6 +405,7 @@ export interface WeeklyReportView {
   variances: Array<{ date: string; netSale: string; totalRevenue: string; difference: string; verifiedBy: string; verifiedAt: string }>
   upselling: { totalRevenue: string; itemsSold: number; chargeableRevenue: string; wineSpiritsRevenue: string; topItem: string; topSeller: string; topItems: Array<{ label: string; quantity: number; revenue: string }>; topSellers: Array<{ label: string; revenue: string }> }
   occasions: Array<{ key: string; label: string; count: number; covers: number }>
+  earnings: ReportEarningsSummary
   attention: { noShowCovers: number; noShowRate: number | null; walkIns: number; doubleDinePax: number; highestNoShowDay: string | null; highestCoversDay: string | null; busiestServiceDay: string | null }
   comparison: { available: boolean; reason: string; previousWeekStart: string; previousWeekEnd: string; metrics: Array<{ key: string; label: string; current: number; previous: number; difference: number; changePercent: number | null }> }
   commentary: ReportManagerSummary | null
@@ -288,8 +425,9 @@ export interface MonthlyReportView {
   staffing:{currentTeamSize:number;averageOnDuty:number;offDays:number;annualLeaveDays:number;publicHolidays:number;sickLeaveDays:number}
   training:{sessions:number;participants:number;attendance:number|null;hours:number|null}
   maintenance:{opened:number;completed:number;stillOpen:number;inProgress:number;unresolved:number;items:Array<{id:string;issue:string;status:string;area:string}>}
+  earnings:ReportEarningsSummary
   finance:{input:MonthlyReportInput|null;complete:boolean;foodMatched:boolean|null;beverageMatched:boolean|null}
-  comparison:{available:boolean;reason:string;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>}
+  comparison:{available:boolean;reason:string;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>;teamDevelopmentMetrics?:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null;available:boolean;reason:string|null}>}
   readiness:Array<{label:string;state:'complete'|'warning'|'missing'|'pending';detail:string}>
   overallStatus:'MONTH IN PROGRESS'|'OPERATIONS COMPLETE'|'FINANCE PENDING'|'MONTHLY REPORT READY'
   legacyCommentary:ReportManagerSummary|null
@@ -297,7 +435,7 @@ export interface MonthlyReportView {
 export type BookingImportReadiness = 'READY' | 'WARNING' | 'REVIEW_REQUIRED' | 'DUPLICATE'
 export interface BookingGuestMemberPreview { guestName: string; roomNumber: string; accommodationCode: string; birthDate: string | null; arrivalDate: string | null; departureDate: string | null; mealPlan: string; guestNotes: string; sourceRowOrder: number }
 export type BookingCoverResolutionSource = 'base_confirmed_pax' | 'base_pending_pax' | 'base_cancelled_pax' | 'explicit_booking_override' | 'group_total' | 'linked_room_group_total' | 'joining_family_total' | 'incremental_addition' | 'arithmetic_expression' | 'structured_member_count'
-export interface BookingCoverResolution { baseCovers: number | null; totalCovers: number | null; adults: number | null; kids: number; structuredKids: number; explicitKids: number; source: BookingCoverResolutionSource; evidence: string; groupId?: string; groupTotal?: number; diagnostics: string[] }
+export interface BookingCoverResolution { baseCovers: number | null; totalCovers: number | null; adults: number | null; kids: number; structuredKids: number; explicitKids: number; unknownAges?: number; source: BookingCoverResolutionSource; evidence: string; groupId?: string; groupTotal?: number; diagnostics: string[] }
 export type BookingPaxSemantic = 'SOURCE_PAX' | 'GROUP_TOTAL' | 'INCREMENTAL_ADDITION' | 'STRUCTURED_MEMBER_COUNT' | 'BLOCKED_CAPACITY' | 'MANAGER_REVIEW'
 export interface BookingCoverLedgerEntry { index: number; bookingNumber: string; reservationTime: string; rooms: string[]; sourcePax: number; structuredMemberCount: number; commentPaxEvidence: string; paxSemantic: BookingPaxSemantic; effectiveOperationalPax: number; delta: number; groupIdentity: string | null; bookingState: 'NEW' | 'EXISTING'; reason: string; reviewRequired: boolean }
 export interface BookingCoverReconciliation { rawSectionHeaderTotal: number; sourceBookingTotal: number; positiveAdjustments: number; exclusions: number; effectiveOperationalTotal: number; arithmeticDifference: number; unresolvedRecords: number; reconciled: boolean; ledger: BookingCoverLedgerEntry[] }
@@ -339,7 +477,7 @@ export interface BookingIntelligencePreview {
   groupIdentity: string | null
   coverReason: string
 }
-export interface BookingImportPreviewRecord { venue: 'andalucia'; reservationDate: string; reservationTime: string; bookingNumber: string; primaryGuest: string; rooms: string[]; covers: number | null; sourceStatus: string; bookedBy: string; sourceNotes: string; activityLabel: string; walkIn: boolean; guestMembers: BookingGuestMemberPreview[]; warnings: string[]; readiness: BookingImportReadiness; coverResolution?: BookingCoverResolution; intelligence?: BookingIntelligencePreview; duplicateBookingId?: string }
+export interface BookingImportPreviewRecord { venue: 'andalucia'; reservationDate: string; reservationTime: string; serviceEndTime?: string | null; serviceKind?: BookingServiceKind; bookingNumber: string; primaryGuest: string; rooms: string[]; covers: number | null; sourceStatus: string; bookedBy: string; sourceNotes: string; activityLabel: string; walkIn: boolean; guestMembers: BookingGuestMemberPreview[]; warnings: string[]; readiness: BookingImportReadiness; coverResolution?: BookingCoverResolution; intelligence?: BookingIntelligencePreview; duplicateBookingId?: string }
 export interface BookingImportPreview { batchId: string; fileName: string; fileHash: string; reportDate: string; parserVersion: string; duplicateFile: boolean; summary: { bookingGroups: number; totalCovers: number; confirmed: number; pending: number; warnings: number; possibleDuplicates: number }; validation: { declaredBookingGroups: number; declaredCovers: number; reconciled: boolean; messages: string[]; coverReconciliation?: BookingCoverReconciliation }; bookings: BookingImportPreviewRecord[] }
 export interface BookingIntelligenceReanalysisRecord { index: number; source: BookingImportPreviewRecord; existing: BookingImportPreviewRecord; existingOccasionKeys?: string[]; occasionProjectionDifferences?: string[] }
 export interface BookingIntelligenceReanalysisPreview { batchId: string; rulesetVersion: string; existingBookings: number; intelligenceFindings: number; requiresIntelligenceReview: number; records: BookingIntelligenceReanalysisRecord[] }
@@ -352,9 +490,8 @@ export interface BookingImportReviewValidation { record: BookingImportPreviewRec
 export interface BookingImportResult { batchId: string; reservationDate: string; importedBookings: number; importedCovers: number; managerApprovedReviewItems: number; skippedDuplicates: number; skippedReviewRecords: number; skippedByManager: number; warnings: number; failedRecords: Array<{ bookingNumber: string; reason: string }>; importedBookingIds: string[] }
 export const config: Configuration = {
   dutyCodes: [
-    { id: 'on', value: 'ON', label: 'Duty', color: '#1b6288', active: true, metadata: { countsAsWorking: true, dutyClassification: 'working' } },
-    { id: 'off', value: 'OFF', label: 'Off', color: '#a7b0ba', active: true, metadata: { countsAsWorking: false, dutyClassification: 'off' } },
-    { id: 'al', value: 'AL', label: 'Annual Leave', color: '#b38b3a', active: true, metadata: { countsAsWorking: false, dutyClassification: 'annualLeave' } }
+    { id: 'on', value: 'ON', label: 'Duty', color: '#1b6288', active: true, metadata: { displayCode: 'ON', countsAsWorking: true, dutyClassification: 'working' } },
+    ...CORE_DUTY_CODES.map(item => ({ id: item.code.toLowerCase(), value: item.code, label: item.label, color: item.color, active: true, metadata: { displayCode: item.code, countsAsWorking: false, dutyClassification: item.classification, countsAsLeave: item.classification === 'annualLeave', countsAsOffDay: item.classification === 'off', countsAsPublicHoliday: item.classification === 'publicHoliday', countsAsSickLeave: item.classification === 'sickLeave', ...(item.classification === 'annualLeave' ? { billTipEligible: false, billTipWorkedDayUnits: 0 } : {}), protected: true, systemControlled: true } }))
   ],
   employmentStatuses: [
     { id: 'active', value: 'active', label: 'Active', color: '#1b6288', active: true, metadata: { eligibleForAssignments: true, employmentStage: 'active' } },

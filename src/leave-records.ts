@@ -8,8 +8,7 @@ const canJoin = (days: StaffLeaveDay[], next: StaffLeaveDay) => {
 
 const makeRecord = (entries: StaffLeaveDay[]): StaffLeaveRecord => {
   const leaveType = entries[0].classification
-  const annualLeaveDays = entries.filter(day => day.classification === 'annualLeave').length
-  const sickLeaveDays = entries.filter(day => day.classification === 'sickLeave').length
+  const leaveDays = entries.filter(day => day.classification !== 'off' && day.classification !== 'publicHoliday').length
   return {
     id: `${entries[0].staffId}:${entries[0].date}:${entries[entries.length - 1].date}:${leaveType}`,
     staffId: entries[0].staffId,
@@ -19,7 +18,7 @@ const makeRecord = (entries: StaffLeaveDay[]): StaffLeaveRecord => {
     leaveType,
     fromDate: entries[0].date,
     toDate: entries[entries.length - 1].date,
-    leaveDays: leaveType === 'sickLeave' ? sickLeaveDays : annualLeaveDays,
+    leaveDays,
     holidays: entries.filter(day => day.classification === 'publicHoliday').length,
     offDays: entries.filter(day => day.classification === 'off').length,
     totalDays: calendarDates(entries[0].date, entries[entries.length - 1].date).length,

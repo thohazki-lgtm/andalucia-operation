@@ -13,12 +13,13 @@ const moneyValue = (value: unknown) => typeof value === 'string' && /^\d+(?:\.\d
 const fixed = (value: number) => value.toFixed(2)
 const parseJson = (value: unknown): any => { if (typeof value !== 'string') return value || {}; try { return JSON.parse(value) } catch { return {} } }
 const cleanText = (value: unknown, maximum = 4000) => String(value ?? '').trim().slice(0, maximum)
+const guestExperienceCount = (rows: Array<Record<string, unknown>>, categories: Array<Record<string, unknown>>) => rows.some(row => Array.isArray(row.categoryKeys) && row.categoryKeys.length) ? new Set(rows.map(row => row.bookingId ? `booking:${String(row.bookingId)}` : `occasion:${String(row.occasionId)}`)).size : categories.reduce((sum, row) => sum + Number(row.count || 0), 0)
 export const isWalkInBookingEvidence = (row: { booking_source?: string | null; source_activity_label?: string | null; raw_import_payload?: unknown }) => { const payload = parseJson(row.raw_import_payload); return row.booking_source === 'walk_in' || payload?.effective?.walkIn === true || payload?.walkIn === true || /walk\s*in/i.test(row.source_activity_label || '') }
 
 export const emptyDailyReportManualPayload = (): DailyReportManualPayload => ({
   symphony: { foodRevenue: '', beverageRevenue: '', wineRevenue: '', liquorRevenue: '', totalSale: '', totalDiscount: '', totalVoid: '', netSale: '', totalRevenue: '', voidDetails: [] },
   serviceVerification: { doubleDinePax: null, details: [] },
-  manager: { operationSummary: '', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
+  manager: { operationSummary: '', operatingSummary: '', operationsIssues: '', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
   revenueVerification: { acknowledged: false },
 })
 
@@ -40,7 +41,7 @@ export class DailyReportService {
     const revenueVerification: DailyReportRevenueVerification = { acknowledged: verificationInput?.acknowledged === true }
     for (const key of ['verifiedByUserId', 'verifiedByName', 'verifiedAt', 'netSale', 'totalRevenue', 'difference'] as const) if (verificationInput?.[key]) revenueVerification[key] = cleanText(verificationInput[key], 200)
     if (Array.isArray(verificationInput?.messages)) revenueVerification.messages = verificationInput.messages.slice(0, 10).map((message: unknown) => cleanText(message, 500))
-    return { symphony, serviceVerification: { doubleDinePax, details }, manager: { operationSummary: cleanText(input?.manager?.operationSummary, 10000), keyOperationalIssue: cleanText(input?.manager?.keyOperationalIssue), guestFeedbackServiceRecovery: cleanText(input?.manager?.guestFeedbackServiceRecovery), followUpRequired: cleanText(input?.manager?.followUpRequired) }, revenueVerification }
+    return { symphony, serviceVerification: { doubleDinePax, details }, manager: { operationSummary: cleanText(input?.manager?.operationSummary, 10000), operatingSummary: cleanText(input?.manager?.operatingSummary, 10000), operationsIssues: cleanText(input?.manager?.operationsIssues, 10000), keyOperationalIssue: cleanText(input?.manager?.keyOperationalIssue), guestFeedbackServiceRecovery: cleanText(input?.manager?.guestFeedbackServiceRecovery), followUpRequired: cleanText(input?.manager?.followUpRequired) }, revenueVerification }
   }
 
   revenueReconciliation(manual: DailyReportManualPayload) {
@@ -77,10 +78,10 @@ export class DailyReportService {
       item('operational', 'Operational Data', 'complete', `${content.servicePerformance.totalBookings} bookings loaded from authoritative operational data.`),
       item('symphony', 'Symphony Revenue', requiredMoney.length ? 'missing' : 'complete', requiredMoney.length ? `Not entered: ${requiredMoney.map(key => key.replace(/([A-Z])/g, ' $1')).join(', ')}.` : 'Official Symphony values explicitly entered.', requiredMoney.length > 0),
       item('upselling', 'Upselling', 'complete', `${content.upselling.itemsSold || 0} realized item${content.upselling.itemsSold === 1 ? '' : 's'} loaded.`),
-      item('occasions', 'Guest Occasions', 'complete', `${content.guestOccasions.roomDetails.length} occasion record${content.guestOccasions.roomDetails.length === 1 ? '' : 's'} loaded.`),
+      item('occasions', 'Guest Occasions', 'complete', `${guestExperienceCount(content.guestOccasions.roomDetails, content.guestOccasions.categories)} distinct guest record${guestExperienceCount(content.guestOccasions.roomDetails, content.guestOccasions.categories) === 1 ? '' : 's'} loaded.`),
       item('voids', 'Void Evidence', requiredMoney.includes('totalVoid') ? 'missing' : voidMessages.length ? 'warning' : 'complete', requiredMoney.includes('totalVoid') ? 'Enter Total Void, including 0 when none.' : voidMessages.join(' ') || ((values.totalVoid || 0) === 0 ? 'Total Void explicitly entered as 0; no supporting detail required.' : 'Void details match the entered Total Void.'), requiredMoney.includes('totalVoid') || voidMessages.length > 0),
       item('doubleDine', 'Double Dine Verification', !doubleDineEntered ? 'missing' : doubleMismatch ? 'warning' : 'complete', !doubleDineEntered ? 'Enter Double Dine Pax, including 0 when none.' : doubleMismatch ? `Detail subtotal ${detailPax} differs from the authoritative total ${manual.serviceVerification.doubleDinePax}.` : `Authoritative total entered: ${manual.serviceVerification.doubleDinePax}.`, !doubleDineEntered),
-      item('manager', 'Manager Summary', manual.manager.operationSummary ? 'complete' : 'missing', manual.manager.operationSummary ? 'Manager commentary entered.' : 'Manager Operation Summary is required.', !manual.manager.operationSummary),
+      item('manager', 'Operating Summary', manual.manager.operatingSummary || manual.manager.operationSummary ? 'complete' : 'missing', manual.manager.operatingSummary ? (manual.manager.operationsIssues ? 'Operating Summary and Operations Issues entered.' : 'Operating Summary entered. Operations Issues are optional when there are none to report.') : manual.manager.operationSummary ? 'Preserved historical summary remains readable.' : 'Operating Summary is required. Operations Issues are optional.', !(manual.manager.operatingSummary || manual.manager.operationSummary)),
       { ...item('reconciliation', 'Revenue Reconciliation', reconciliation.status === 'incomplete' ? 'missing' : reconciliation.status === 'verification-required' ? 'warning' : 'complete', reconciliation.status === 'incomplete' ? 'Complete Symphony entry before reconciliation.' : reconciliation.status === 'reconciled' ? 'RECONCILED — entered Symphony figures require no variance acknowledgement.' : reconciliation.status === 'verified-with-variance' ? `VERIFIED WITH VARIANCE by ${reconciliation.verifiedByName}. ${reconciliation.messages.join(' ')}` : `${reconciliation.messages.join(' ')} Verify against Symphony before approval.`, false), verificationRequired: reconciliation.status === 'verification-required' },
     ]
   }
@@ -89,7 +90,9 @@ export class DailyReportService {
     const report = await this.reporting.report('today', serviceDate, serviceDate)
     const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.booking_source,b.source_activity_label,b.raw_import_payload,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
     const noShowRooms = bookingEvidence.filter(row => { const metadata = parseJson(row.status_metadata); return metadata.serviceStage === 'noShow' || metadata.bookingMetric === 'noShow' }).flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
-    const walkIns = bookingEvidence.filter(isWalkInBookingEvidence).length
+    const walkInEvidence = bookingEvidence.filter(isWalkInBookingEvidence)
+    const walkIns = walkInEvidence.length
+    const walkInRooms = walkInEvidence.flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
     const chargeables = report.chargeables.financialProofRecords.map(row => ({ id: row.id, item: row.item, quantity: row.quantity, soldBy: row.waiter, staffNumber: '', roomNumber: row.roomNumber, checkInvoiceNumber: row.checkInvoiceNumber, amount: fixed(row.grossTotal), source: 'Chargeable' as const }))
     const wineRows = (await this.wineSpirits.list({ start: serviceDate, end: serviceDate, outletScopeId })).filter(row => !row.archived && row.status === 'charged')
     const wineSpirits = wineRows.map(row => ({ id: row.id, item: row.itemName, quantity: row.quantity, soldBy: row.waiter.name, staffNumber: row.waiter.number, roomNumber: row.roomNumber, checkInvoiceNumber: row.checkInvoiceNumber, amount: row.grossTotal, source: 'Wine / Spirits' as const }))
@@ -98,10 +101,10 @@ export class DailyReportService {
     for (const row of details) { itemTotals.set(row.item, (itemTotals.get(row.item) || 0) + row.quantity); sellerTotals.set(row.soldBy, (sellerTotals.get(row.soldBy) || 0) + Number(row.amount)) }
     const topItem = [...itemTotals].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '—'
     const topSeller = [...sellerTotals].filter(([name]) => name !== 'Unassigned').sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '—'
-    const roomDetails = report.occasions.records.map(row => ({ occasionId: row.id, bookingId: row.bookingId, category: row.category, label: row.occasionType, guestName: row.guestName, roomNumber: row.roomNumber, covers: row.covers }))
-    const categories = DEFAULT_CATEGORIES.map(([key, label]) => { const rows = roomDetails.filter(row => row.category === key || row.label.toLowerCase() === label.toLowerCase()); return { key, label, count: rows.length, covers: rows.reduce((sum, row) => sum + row.covers, 0) } })
+    const roomDetails = report.occasions.records.map(row => ({ occasionId: row.id, bookingId: row.bookingId, category: row.category, categoryKeys: row.categoryKeys, label: row.occasionType, guestName: row.guestName, roomNumber: row.roomNumber, covers: row.covers }))
+    const categories = DEFAULT_CATEGORIES.map(([key, label]) => { const rows = roomDetails.filter(row => Array.isArray(row.categoryKeys) ? row.categoryKeys.includes(key) : row.category === key || row.label.toLowerCase() === label.toLowerCase()); return { key, label, count: rows.length, covers: rows.reduce((sum, row) => sum + row.covers, 0) } })
     return {
-      servicePerformance: { totalCovers: report.bookings.totalCovers, adults: report.bookings.totalAdults, kids: report.bookings.totalKids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.totalCovers, adults: row.totalAdults, kids: row.totalKids, noShows: row.noShowCovers, status: row.status })) },
+      servicePerformance: { totalCovers: report.bookings.totalCovers, adults: report.bookings.totalAdults, kids: report.bookings.totalKids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.totalCovers, adults: row.totalAdults, kids: row.totalKids, noShows: row.noShowCovers, status: row.status })) },
       symphony: emptyDailyReportManualPayload().symphony,
       serviceVerification: { doubleDinePax: 0, details: [] },
       upselling: { chargeables, wineSpirits, details, totalUpsellRevenue: fixed(details.reduce((sum, row) => sum + Number(row.amount), 0)), itemsSold: details.reduce((sum, row) => sum + row.quantity, 0), topItem, topSeller },

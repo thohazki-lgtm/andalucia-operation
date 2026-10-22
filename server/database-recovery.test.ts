@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
-import { createOperationalFingerprint, createVerifiedBackup } from './database-backup.js'
+import { createOperationalFingerprint, createVerifiedBackup, setBackupOriginalFilesystemProtection } from './database-backup.js'
 import { DatabaseRecoveryService, RECOVERY_PREPARATION_CONFIRMATION, RECOVERY_PROMOTION_CONFIRMATION, assertRecoveryInactive } from './database-recovery.js'
 import { STORE_IDENTITY_AUTHORIZATION, createStoreIdentity, openVerifiedDatabase, operationMarkerPaths, type DatabaseHealth } from './database-protection.js'
 import { acquireDatabaseSchedulerLock } from './database-scheduler.js'
@@ -13,21 +12,22 @@ import { prepareLiveMigration } from './migration-live-gate.js'
 import { reviewedMigrationSet } from './migration-store.js'
 import { BillTipFinalizationService } from './bill-tip-finalization-service.js'
 import { IncentivesCalculationService } from './incentives-calculation-service.js'
+import { createDisposableTestRoot } from './test-store-fixture.js'
 
-const root = await mkdtemp(join(tmpdir(), 'andalucia-db3-'))
+const root = await createDisposableTestRoot('db3')
 const canonical = join(root, 'data', 'postgres'); const backupRoot = join(root, 'backups'); const recoveryRoot = join(root, 'recovery')
 const actor = { userId: randomUUID(), displayName: 'Isolated Platform Owner' }
-const health = (recoveryRequired = true): DatabaseHealth => ({ status: recoveryRequired ? 'DATABASE_RECOVERY_REQUIRED' : 'HEALTHY', storeId: 'isolated-db3-canonical', storeRole: 'canonical', migrationVersion: '018', migrationRequired: false, recoveryRequired, lastVerifiedBackup: null, checks: [] })
+const health = (recoveryRequired = true): DatabaseHealth => ({ status: recoveryRequired ? 'DATABASE_RECOVERY_REQUIRED' : 'HEALTHY', storeId: 'isolated-db3-canonical', storeRole: 'canonical', migrationVersion: '026', migrationRequired: false, recoveryRequired, lastVerifiedBackup: null, checks: [] })
 const initialize = async () => {
   await mkdir(dirname(canonical), { recursive: true }); const db = new PGlite(canonical); await db.exec(await readFile('database/schema.sql', 'utf8')); await db.exec(await readFile('database/migrations/001_schema_migrations.sql', 'utf8'))
-  for (const migration of (await reviewedMigrationSet()).versions.filter(item => item.version <= '018')) await db.query("insert into schema_migrations(version,name,checksum,status,actor_source,notes) values($1,$2,$3,'applied','isolated DB-3 test','')", [migration.version, migration.name, migration.checksum])
+  for (const migration of (await reviewedMigrationSet()).versions.filter(item => item.version <= '026')) await db.query("insert into schema_migrations(version,name,checksum,status,actor_source,notes) values($1,$2,$3,'applied','isolated DB-3 test','')", [migration.version, migration.name, migration.checksum])
   await db.query("insert into outlet_scopes(id,scope_key,display_name,active,outlet_type) values('00000000-0000-4000-8000-00000000a001','andalucia','Andalucía',true,'restaurant')")
   await db.query("insert into authorization_roles(id,role_key,display_name,active,global_scope) values('00000000-0000-4000-8000-000000001001','owner','Owner / Super Admin',true,true)")
   await db.query("insert into user_accounts(id,login_identifier,normalized_login_identifier,display_name,password_hash,status) values('00000000-0000-4000-8000-000000009001','isolated.owner','isolated.owner','Isolated Owner','not-a-secret','active')")
   await db.query("insert into authorization_user_roles(id,user_id,role_id,active) values('00000000-0000-4000-8000-000000009002','00000000-0000-4000-8000-000000009001','00000000-0000-4000-8000-000000001001',true)")
   await db.close(); await createStoreIdentity(canonical, 'canonical', { authorization: STORE_IDENTITY_AUTHORIZATION, expectedCanonicalDirectory: canonical, storeId: 'isolated-db3-canonical' })
 }
-const service = () => new DatabaseRecoveryService({ recoveryRoot, backupRoot, canonicalDirectory: canonical, expectedCanonicalDirectory: canonical })
+const service = () => new DatabaseRecoveryService({ recoveryRoot, backupRoot, canonicalDirectory: canonical, expectedCanonicalDirectory: canonical, requiredVersion: '026' })
 const fingerprintStore = async () => { const value = new PGlite(canonical); try { return await createOperationalFingerprint(value) } finally { await value.close() } }
 const prepare = async (svc: DatabaseRecoveryService, latest: Record<string, unknown>, candidate: string, rollback = candidate) => {
   const incident = await svc.detect({ failureClass: 'DATABASE_RECOVERY_REQUIRED', health: health(), latestHealthyFingerprint: latest }); await svc.selectCandidate(incident.id, candidate, actor); await svc.rehearse(incident.id, actor)
@@ -37,11 +37,11 @@ const prepare = async (svc: DatabaseRecoveryService, latest: Record<string, unkn
 
 try {
   await initialize()
-  const oldBackup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot, exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, now: new Date('2026-09-10T01:00:00Z') })
+  const oldBackup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot, exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, requiredVersion: '026', now: new Date('2026-09-10T01:00:00Z') })
   const db = new PGlite(canonical); await db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'DB3-1','DB3 Test Member','Waiter','active','2026-09-01')", [randomUUID()]); const latestFingerprint = await createOperationalFingerprint(db); await db.close()
-  const currentBackup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'recovery', backupRoot, exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, now: new Date('2026-09-11T01:00:00Z') })
+  const currentBackup = await createVerifiedBackup({ sourceDirectory: canonical, category: 'recovery', backupRoot, exclusiveConfirmed: true, expectedCanonicalDirectory: canonical, requiredVersion: '026', now: new Date('2026-09-11T01:00:00Z') })
   await mkdir(join(backupRoot, 'invalid-candidate'), { recursive: true }); await writeFile(join(backupRoot, 'invalid-candidate', 'backup-failure.json'), JSON.stringify({ verificationStatus: 'INVALID' }))
-  const svc = service(); const missingSvc = new DatabaseRecoveryService({ recoveryRoot: join(root, 'missing-recovery'), backupRoot, canonicalDirectory: join(root, 'missing', 'postgres'), expectedCanonicalDirectory: join(root, 'missing', 'postgres') })
+  const svc = service(); const missingSvc = new DatabaseRecoveryService({ recoveryRoot: join(root, 'missing-recovery'), backupRoot, canonicalDirectory: join(root, 'missing', 'postgres'), expectedCanonicalDirectory: join(root, 'missing', 'postgres'), requiredVersion: '026' })
   assert.equal((await missingSvc.detect({ failureClass: 'STARTUP_INTEGRITY_FAILURE', health: health(), latestHealthyFingerprint: latestFingerprint })).state, 'RECOVERY_REQUIRED')
   const candidates = await svc.discoverCandidates(); assert.equal(candidates[0].backupId, currentBackup.metadata.backupId); assert.equal(candidates.some(item => item.backupId === 'invalid-candidate'), false)
 
@@ -54,7 +54,7 @@ try {
   await writeFile(join(canonical, 'simulated-startup-failure.txt'), 'isolated failure')
   const changed = await readFile(success.artifactFile, 'utf8').then(JSON.parse); changed.canonicalManifestAtAuthorization = await import('./migration-filesystem.js').then(module => module.createStoreManifest(canonical)); await writeFile(success.artifactFile, `${JSON.stringify(changed, null, 2)}\n`)
   const promoted = await svc.promoteOffline({ artifactFile: success.artifactFile, confirmation: RECOVERY_PROMOTION_CONFIRMATION, exclusiveCheck: async () => true }); assert.equal(promoted.state, 'RECOVERY_PROMOTED_AWAITING_ACCEPTANCE'); assert.equal(existsSync(operationMarkerPaths(canonical).recovery), false)
-  const opened = await openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical', backupRoot }); const promotedFingerprint = await createOperationalFingerprint(opened.db); const requiredTables = ['staff','staff_membership_baseline_reviews','duty_roster_entries','training_sessions','bookings','guest_occasions','chargeable_item_records','maintenance_issues','configuration_options']; const tables = await opened.db.query<{ table_name: string }>('select table_name from information_schema.tables where table_schema=\'public\''); assert.equal(requiredTables.every(name => tables.rows.some(row => row.table_name === name)), true); await opened.db.close()
+  const opened = await openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical', backupRoot, requiredVersion: '026' }); const promotedFingerprint = await createOperationalFingerprint(opened.db); const requiredTables = ['staff','staff_membership_baseline_reviews','duty_roster_entries','training_sessions','bookings','guest_occasions','chargeable_item_records','maintenance_issues','configuration_options']; const tables = await opened.db.query<{ table_name: string }>('select table_name from information_schema.tables where table_schema=\'public\''); assert.equal(requiredTables.every(name => tables.rows.some(row => row.table_name === name)), true); await opened.db.close()
   assert.equal((await svc.accept(success.incidentId, actor, promotedFingerprint)).state, 'RECOVERY_ACCEPTED')
 
   const restartFailure = await prepare(svc, latestFingerprint, currentBackup.metadata.backupId, oldBackup.metadata.backupId)
@@ -65,7 +65,7 @@ try {
   await assert.rejects(createVerifiedBackup({ sourceDirectory: canonical, category: 'manual', backupRoot, exclusiveConfirmed: true, expectedCanonicalDirectory: canonical }), /RECOVERY_IN_PROGRESS_OPERATION_BLOCKED/)
   await assert.rejects(prepareLiveMigration({ sourceDirectory: canonical, expectedLiveStore: canonical, backupRoot, exclusiveCheck: async () => true }), /RECOVERY_IN_PROGRESS_OPERATION_BLOCKED/)
   const blockFinancial = () => { throw new Error('RECOVERY_IN_PROGRESS_OPERATION_BLOCKED') }; await assert.rejects(new BillTipFinalizationService({} as PGlite, () => '2026-09-11', blockFinancial).finalizeInitial({} as any, {} as any), /RECOVERY_IN_PROGRESS_OPERATION_BLOCKED/); await assert.rejects(new IncentivesCalculationService({} as PGlite, blockFinancial).finalizeEarning('isolated'), /RECOVERY_IN_PROGRESS_OPERATION_BLOCKED/)
-  assert.equal((await svc.rollbackOffline({ incidentId: restartFailure.incidentId, confirmation: RECOVERY_PROMOTION_CONFIRMATION, exclusiveCheck: async () => true })).state, 'ROLLBACK_COMPLETED'); assert.equal(existsSync(operationMarkerPaths(canonical).recovery), false); const reopenedRollback = await openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical', backupRoot }); await reopenedRollback.db.close()
+  assert.equal((await svc.rollbackOffline({ incidentId: restartFailure.incidentId, confirmation: RECOVERY_PROMOTION_CONFIRMATION, exclusiveCheck: async () => true })).state, 'ROLLBACK_COMPLETED'); assert.equal(existsSync(operationMarkerPaths(canonical).recovery), false); const reopenedRollback = await openVerifiedDatabase({ dataDirectory: canonical, role: 'canonical', backupRoot, requiredVersion: '026' }); await reopenedRollback.db.close()
 
   const promotionFailure = await prepare(svc, await fingerprintStore(), oldBackup.metadata.backupId)
   await assert.rejects(svc.promoteOffline({ artifactFile: promotionFailure.artifactFile, confirmation: RECOVERY_PROMOTION_CONFIRMATION, exclusiveCheck: async () => true, simulateFailure: 'promotion' }), /SIMULATED_PROMOTION_FAILURE/); assert.equal(existsSync(operationMarkerPaths(canonical).recovery), false)
@@ -76,4 +76,7 @@ try {
   const routeSource = await readFile('server/index.ts', 'utf8'); assert.match(routeSource, /if \(!principal\.isOwner\).*Owner authority is required for database recovery/); assert.doesNotMatch(routeSource, /input\.actor|input\.isOwner|input\.permission/); const uiSource = await readFile('src/database-health.tsx', 'utf8'); assert.match(uiSource, /Database recovery required/); assert.match(uiSource, /Known operational differences/); assert.doesNotMatch(uiSource, /promoteOffline|RECOVERY_PROMOTION_CONFIRMATION/)
   assert.equal((await readFile('server/database-recovery.ts', 'utf8')).match(/pg_resetwal|pg_control editing|WAL deletion|checkpoint rewriting/g), null)
   console.log(JSON.stringify({ detection: true, missingCanonical: true, invalidCandidateExcluded: true, ranking: true, dataGap: true, rehearsalRequired: true, authorizationBoundToServerActor: true, ownerAuthorization: true, clientImpersonationRejected: true, authorizationFreshness: true, quarantine: true, promotionFailureIsolation: true, promotion: true, manifestVerification: true, guardedStartup: true, moduleTables: true, reconciliation: true, acceptance: true, restartFailure: true, rollback: true, rollbackFailureIsolation: true, recoveryLock: true, backupExclusion: true, restoreRehearsalExclusion: true, schedulerExclusion: true, migrationExclusion: true, financialFinalizationExclusion: true, recoveryHistory: true, ownerUi: true, audit: true, rawWalRepairAbsent: true }, null, 2))
-} finally { await rm(root, { recursive: true, force: true }) }
+} finally {
+  await setBackupOriginalFilesystemProtection(root, false).catch(() => undefined)
+  await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 })
+}

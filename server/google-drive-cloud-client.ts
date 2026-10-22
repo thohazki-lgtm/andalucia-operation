@@ -8,7 +8,9 @@ type Http = (input: string, init?: RequestInit) => Promise<Response>
 
 export type DesktopOAuthConfiguration = {
   clientId: string
+  clientSecret: string
   redirectUri: string
+  picker?: { allowFolderSelection: true; selectableMimeType: 'application/vnd.google-apps.folder' }
   authorizationEndpoint?: string
   tokenEndpoint?: string
 }
@@ -26,8 +28,33 @@ const requireLoopback = (value: string) => {
   if (url.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) throw new Error('OAUTH_REDIRECT_NOT_LOOPBACK')
 }
 
+class GoogleApiDiagnosticError extends Error {
+  constructor(
+    code: string,
+    readonly httpStatus: number,
+    readonly googleStatus: string,
+    readonly googleReason: string,
+    readonly sanitizedMessage: string
+  ) { super(code) }
+}
+
+const safeGoogleIdentifier = (value: unknown) => typeof value === 'string' && /^[A-Za-z0-9_.-]+$/.test(value) ? value : 'UNAVAILABLE'
+const safeGoogleMessage = (reason: string) => reason === 'SERVICE_DISABLED' || reason === 'accessNotConfigured'
+  ? 'Google Drive API is disabled or has not been used in this project.'
+  : 'Google API request failed.'
+
 const json = async <T>(response: Response, code: string): Promise<T> => {
-  if (!response.ok) throw new Error(code)
+  if (!response.ok) {
+    const payload = await response.clone().json().catch(() => ({})) as any
+    const googleError = payload?.error
+    const detailReason = Array.isArray(googleError?.details)
+      ? googleError.details.find((item: any) => item?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')?.reason
+      : undefined
+    const legacyReason = Array.isArray(googleError?.errors) ? googleError.errors[0]?.reason : undefined
+    const googleStatus = safeGoogleIdentifier(googleError?.status)
+    const googleReason = safeGoogleIdentifier(detailReason || legacyReason)
+    throw new GoogleApiDiagnosticError(code, response.status, googleStatus, googleReason, safeGoogleMessage(googleReason))
+  }
   return response.json() as Promise<T>
 }
 
@@ -37,11 +64,18 @@ export class GoogleDesktopOAuthCoordinator {
   begin(credentialReference: string): PendingDesktopAuthorization {
     const configuration = this.dependencies.configuration
     if (!configuration.clientId.trim()) throw new Error('OAUTH_CLIENT_ID_MISSING')
+    if (!configuration.clientSecret.trim()) throw new Error('OAUTH_CLIENT_SECRET_MISSING')
     requireLoopback(configuration.redirectUri)
     const state = this.dependencies.randomState?.() || randomUUID()
     const pkce = createPkce()
     const url = new URL(configuration.authorizationEndpoint || 'https://accounts.google.com/o/oauth2/v2/auth')
-    url.search = new URLSearchParams({ client_id: configuration.clientId, redirect_uri: configuration.redirectUri, response_type: 'code', scope: GOOGLE_DRIVE_FILE_SCOPE, code_challenge: pkce.challenge, code_challenge_method: pkce.method, state, access_type: 'offline', prompt: 'consent' }).toString()
+    const parameters = new URLSearchParams({ client_id: configuration.clientId, redirect_uri: configuration.redirectUri, response_type: 'code', scope: GOOGLE_DRIVE_FILE_SCOPE, code_challenge: pkce.challenge, code_challenge_method: pkce.method, state, access_type: 'offline', prompt: 'consent' })
+    if (configuration.picker) {
+      parameters.set('trigger_onepick', 'true')
+      parameters.set('allow_folder_selection', 'true')
+      parameters.set('mimetypes', configuration.picker.selectableMimeType)
+    }
+    url.search = parameters.toString()
     return { authorizationUrl: url.toString(), state, verifier: pkce.verifier, redirectUri: configuration.redirectUri, credentialReference }
   }
 
@@ -50,7 +84,7 @@ export class GoogleDesktopOAuthCoordinator {
     if (!callback.code) throw new Error('OAUTH_CODE_MISSING')
     const response = await (this.dependencies.http || fetch)(this.dependencies.configuration.tokenEndpoint || 'https://oauth2.googleapis.com/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: this.dependencies.configuration.clientId, code: callback.code, code_verifier: pending.verifier, grant_type: 'authorization_code', redirect_uri: pending.redirectUri })
+      body: new URLSearchParams({ client_id: this.dependencies.configuration.clientId, client_secret: this.dependencies.configuration.clientSecret, code: callback.code, code_verifier: pending.verifier, grant_type: 'authorization_code', redirect_uri: pending.redirectUri })
     })
     const payload = await json<{ access_token?: string; refresh_token?: string; expires_in?: number; scope?: string; error?: string }>(response, 'OAUTH_TOKEN_EXCHANGE_FAILED')
     if (!payload.access_token) throw new Error('OAUTH_ACCESS_TOKEN_MISSING')
@@ -62,7 +96,54 @@ export class GoogleDesktopOAuthCoordinator {
 }
 
 export interface CredentialLockerBridge {
-  request(input: { operation: 'load' | 'save' | 'remove'; reference: string; credential?: CloudCredential }): Promise<{ credential?: CloudCredential }>
+  request(input: { operation: 'load' | 'save' | 'remove' | 'load-client-secret' | 'load-web-picker-oauth' | 'load-web-picker-api-key'; reference: string; credential?: CloudCredential }): Promise<{ credential?: CloudCredential; clientSecretCredential?: OAuthClientSecretCredential; webPickerApiKey?: string }>
+}
+
+export type OAuthClientSecretCredential = { clientId: string; clientSecret: string }
+
+export type WebPickerProtectedConfiguration = OAuthClientSecretCredential & { apiKey: string }
+
+export class WindowsOAuthClientSecretStore {
+  constructor(private readonly bridge: CredentialLockerBridge) {}
+  async load(reference: string): Promise<OAuthClientSecretCredential | null> {
+    const value = (await this.bridge.request({ operation: 'load-client-secret', reference })).clientSecretCredential
+    if (!value) return null
+    if (!value.clientId?.trim() || !value.clientSecret?.trim()) throw new Error('OAUTH_CLIENT_SECRET_CREDENTIAL_INVALID')
+    return value
+  }
+
+  static production() {
+    return new WindowsOAuthClientSecretStore(createProductionCredentialLockerBridge())
+  }
+}
+
+export class WindowsWebPickerConfigurationStore {
+  constructor(private readonly bridge: CredentialLockerBridge) {}
+  async load(oauthReference: string, apiKeyReference: string): Promise<WebPickerProtectedConfiguration> {
+    const oauth = (await this.bridge.request({ operation: 'load-web-picker-oauth', reference: oauthReference })).clientSecretCredential
+    const apiKey = (await this.bridge.request({ operation: 'load-web-picker-api-key', reference: apiKeyReference })).webPickerApiKey
+    if (!oauth?.clientId?.trim() || !oauth.clientSecret?.trim()) throw new Error('WEB_PICKER_OAUTH_CREDENTIAL_MISSING')
+    if (!apiKey || !/^AIza[A-Za-z0-9_-]{35}$/.test(apiKey)) throw new Error('WEB_PICKER_API_KEY_MISSING')
+    return { clientId: oauth.clientId, clientSecret: oauth.clientSecret, apiKey }
+  }
+
+  static production() { return new WindowsWebPickerConfigurationStore(createProductionCredentialLockerBridge()) }
+}
+
+const createProductionCredentialLockerBridge = (): CredentialLockerBridge => {
+  const absolute = resolve(join(dirname(fileURLToPath(import.meta.url)), 'windows-credential-locker.ps1'))
+  return { request: input => new Promise((resolveRequest, reject) => {
+    const child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', absolute], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    const stdout: Buffer[] = []; let stderrBytes = 0
+    child.stdout.on('data', chunk => stdout.push(Buffer.from(chunk)))
+    child.stderr.on('data', chunk => { stderrBytes += Buffer.byteLength(chunk) })
+    child.once('error', () => reject(new Error('CREDENTIAL_LOCKER_HELPER_FAILED')))
+    child.once('close', code => {
+      if (code !== 0 || stderrBytes) return reject(new Error('CREDENTIAL_LOCKER_HELPER_FAILED'))
+      try { resolveRequest(JSON.parse(Buffer.concat(stdout).toString('utf8'))) } catch { reject(new Error('CREDENTIAL_LOCKER_HELPER_RESPONSE_INVALID')) }
+    })
+    child.stdin.end(JSON.stringify(input))
+  }) }
 }
 
 export class WindowsCredentialLockerStore implements CloudCredentialStore {
@@ -72,19 +153,7 @@ export class WindowsCredentialLockerStore implements CloudCredentialStore {
   async remove(reference: string) { await this.bridge.request({ operation: 'remove', reference }) }
 
   static production() {
-    const absolute = resolve(join(dirname(fileURLToPath(import.meta.url)), 'windows-credential-locker.ps1'))
-    return new WindowsCredentialLockerStore({ request: input => new Promise((resolveRequest, reject) => {
-      const child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', absolute], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
-      const stdout: Buffer[] = []; let stderrBytes = 0
-      child.stdout.on('data', chunk => stdout.push(Buffer.from(chunk)))
-      child.stderr.on('data', chunk => { stderrBytes += Buffer.byteLength(chunk) })
-      child.once('error', () => reject(new Error('CREDENTIAL_LOCKER_HELPER_FAILED')))
-      child.once('close', code => {
-        if (code !== 0 || stderrBytes) return reject(new Error('CREDENTIAL_LOCKER_HELPER_FAILED'))
-        try { resolveRequest(JSON.parse(Buffer.concat(stdout).toString('utf8'))) } catch { reject(new Error('CREDENTIAL_LOCKER_HELPER_RESPONSE_INVALID')) }
-      })
-      child.stdin.end(JSON.stringify(input))
-    }) })
+    return new WindowsCredentialLockerStore(createProductionCredentialLockerBridge())
   }
 }
 
@@ -102,9 +171,9 @@ export class GoogleDriveRestTransport implements DriveTransport {
   }
 
   async folder(credential: CloudCredential, folderId: string): Promise<DriveFolder> {
-    const fields = 'id,mimeType,trashed,driveId,owners(permissionId,emailAddress),capabilities(canAddChildren)'
+    const fields = 'id,name,mimeType,trashed,driveId,owners(permissionId,emailAddress),capabilities(canAddChildren)'
     const value = await json<any>(await this.http(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(folderId)}?supportsAllDrives=true&fields=${encodeURIComponent(fields)}`, { headers: bearer(credential) }), 'DRIVE_FOLDER_LOOKUP_FAILED')
-    return { id: value.id, mimeType: value.mimeType, trashed: Boolean(value.trashed), driveId: value.driveId, owners: (value.owners || []).map((owner: any) => ({ permissionId: owner.permissionId, emailAddress: owner.emailAddress })), canAddChildren: Boolean(value.capabilities?.canAddChildren) }
+    return { id: value.id, name: value.name, mimeType: value.mimeType, trashed: Boolean(value.trashed), driveId: value.driveId, owners: (value.owners || []).map((owner: any) => ({ permissionId: owner.permissionId, emailAddress: owner.emailAddress })), canAddChildren: Boolean(value.capabilities?.canAddChildren) }
   }
 
   async candidates(credential: CloudCredential, folderId: string, names: string[], backupId: string): Promise<RemoteRecoveryObject[]> {
@@ -168,7 +237,17 @@ export class GoogleDriveRestTransport implements DriveTransport {
   }
 }
 
-export const safeCloudError = (error: unknown) => sanitizeCloudValue({ error: error instanceof Error ? error.message.replace(/https?:\/\/\S+/g, '[url-redacted]') : 'UNKNOWN_CLOUD_ERROR' })
+export const safeCloudError = (error: unknown) => {
+  if (error instanceof GoogleApiDiagnosticError) return sanitizeCloudValue({
+    error: error.message,
+    httpStatus: error.httpStatus,
+    googleStatus: error.googleStatus,
+    googleReason: error.googleReason,
+    sanitizedMessage: error.sanitizedMessage
+  })
+  const message = error instanceof Error ? error.message : 'UNKNOWN_CLOUD_ERROR'
+  return sanitizeCloudValue({ error: /^[A-Z0-9_]+$/.test(message) ? message : 'SANITIZED_CLOUD_FAILURE' })
+}
 
 export const validateDestinationConfiguration = (value: ApprovedDriveDestination) => {
   if (value.version !== 1 || !value.credentialReference || !value.folderId || !value.label || !value.account.permissionId || !value.account.emailAddress) throw new Error('DESTINATION_BINDING_MALFORMED')

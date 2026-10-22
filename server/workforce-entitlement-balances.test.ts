@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-entitlement-balances-'))
+const snapshotPath = join(tmpdir(), `andalucia-entitlement-balances-${randomUUID()}.tar.gz`)
+const execFileAsync = promisify(execFile)
 const insertRoster = async (repository: StaffRepository, staffId: string, date: string, dutyCode: string) => {
   await repository.getDatabase().query(
     `insert into duty_roster_entries(id,staff_id,duty_date,duty_code_value)
@@ -80,15 +84,21 @@ try {
 
   const holidayCalendarRows = await repository.getDatabase().query<{ count: number }>('select count(*)::int count from public_holidays')
   assert.equal(holidayCalendarRows.rows[0].count, 0)
+  const snapshot = await repository.getDatabase().dumpDataDir('gzip')
+  await writeFile(snapshotPath, Buffer.from(await snapshot.arrayBuffer()))
   await repository.getDatabase().close()
 
-  const reopened = new StaffRepository(dataDirectory, new PGlite(dataDirectory))
-  await reopened.initialize()
-  const afterRestart = await reopened.entitlementBalance(active.id, 2026, '2026-09-14', '2026-09-20')
-  assert.deepEqual(afterRestart.annualLeave, { entitlement: 30, used: 4, remaining: 26 })
-  assert.deepEqual(afterRestart.publicHoliday, { entitlement: 11, used: 2, remaining: 9 })
-  assert.equal(afterRestart.weeklyOff.status, 'additional')
-  await reopened.getDatabase().close()
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ['--import', 'tsx', 'server/workforce-entitlement-balances-reopen-verifier.ts', snapshotPath, active.id],
+    { cwd: process.cwd() }
+  )
+  const afterRestart = JSON.parse(stdout.trim())
+  assert.deepEqual(afterRestart, {
+    annualLeave: { entitlement: 30, used: 4, remaining: 26 },
+    publicHoliday: { entitlement: 11, used: 2, remaining: 9 },
+    weeklyOffStatus: 'additional'
+  })
 
   console.log(JSON.stringify({
     annualLeave: '30 / 5 / 25, then 30 / 4 / 26',
@@ -102,5 +112,6 @@ try {
     apiRestartPersistence: true
   }, null, 2))
 } finally {
+  await rm(snapshotPath, { force: true })
   await rm(dataDirectory, { recursive: true, force: true })
 }

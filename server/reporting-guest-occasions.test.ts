@@ -8,6 +8,7 @@ import type { GuestOccasionRecord } from '../src/domain.js'
 
 const db = new PGlite()
 await db.exec(await readFile('database/schema.sql', 'utf8'))
+await db.exec(await readFile('database/migrations/017_booking_intelligence_foundation.sql', 'utf8'))
 const occasions = new GuestOccasionRepository(db)
 await occasions.initialize()
 const counts: Record<string, number> = { honeymoon: 2, birthday: 3, anniversary: 1, see_you_soon: 1, siyam_family: 2, famtrip: 1, presstrip: 1 }
@@ -19,13 +20,15 @@ for (const [occasionType, count] of Object.entries(counts)) for (let index = 0; 
 await occasions.save({ ...created[0], status: 'completed' }, 'Reporting test')
 const configuration = await occasions.configuration()
 const historical = configuration.types.find(option => option.value === 'presstrip')!
-await occasions.saveConfiguration('types', { ...historical, active: false })
+await assert.rejects(occasions.saveConfiguration('types', { ...historical, active: false }), /display color changes only/i)
+assert.equal((await occasions.configuration()).types.find(option => option.value === 'presstrip')?.active, true)
 
 const reporting = new ReportingRepository(db)
 const daily = await reporting.report('today', '2026-09-08', '2026-09-08')
 assert.equal(daily.occasions.total, 11)
-assert.deepEqual(Object.fromEntries(daily.occasions.byCategory.map(item => [item.label, item.count])), { Honeymoon: 2, Birthday: 3, Anniversary: 1, 'See You Soon': 1, 'Siyam Family': 2, Famtrip: 1, Presstrip: 1 })
-assert.equal(daily.occasions.byCategory.reduce((sum, item) => sum + item.count, 0), 11)
+assert.deepEqual(Object.fromEntries(daily.occasions.byCategory.map(item => [item.label, item.count])), { Honeymoon: 2, Birthday: 3, Anniversary: 1, 'See You Soon': 1, VIP: 4, TLC: 0, 'Siyam Family': 2, Famtrip: 1, Presstrip: 1 })
+assert.equal(daily.occasions.byCategory.reduce((sum, item) => sum + item.count, 0), 15)
+assert.equal(daily.occasions.total, 11, 'overlapping VIP classifications must not inflate the authoritative occasion total')
 assert.equal(daily.occasions.byStatus.reduce((sum, item) => sum + item.count, 0), 11)
 
 const week = await reporting.report('week', '2026-09-07', '2026-09-13')

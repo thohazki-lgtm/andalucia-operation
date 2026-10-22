@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
-import { GoogleDesktopOAuthCoordinator, GoogleDriveRestTransport, WindowsCredentialLockerStore, safeCloudError } from './google-drive-cloud-client.js'
+import { spawn } from 'node:child_process'
+import { GoogleDesktopOAuthCoordinator, GoogleDriveRestTransport, WindowsCredentialLockerStore, WindowsOAuthClientSecretStore, safeCloudError } from './google-drive-cloud-client.js'
 import {
   LoopbackOAuthCallbackServer,
   ManagerControlledCloudProvisioning,
@@ -12,7 +13,7 @@ import {
 } from './google-drive-provisioning.js'
 
 const allowedArguments = new Set([
-  'client-id', 'credential-reference', 'folder-id', 'destination-label', 'relationship', 'drive-id',
+  'client-id', 'client-secret-reference', 'credential-reference', 'destination-label', 'relationship', 'drive-id',
   'approved-root', 'artifact', 'sidecar', 'backup-id', 'schema', 'manifest-sha256', 'callback-timeout-seconds'
 ])
 
@@ -36,12 +37,12 @@ const parseArguments = (values: string[]) => {
   const timeoutSeconds = parsed.has('callback-timeout-seconds') ? Number(parsed.get('callback-timeout-seconds')) : 300
   if (!Number.isInteger(timeoutSeconds)) throw new Error('OAUTH_CALLBACK_TIMEOUT_INVALID')
   return {
-    clientId: required('client-id'), credentialReference: required('credential-reference'),
-    destination: { folderId: required('folder-id'), label: required('destination-label'), relationship, driveId: parsed.get('drive-id')?.trim() || undefined },
+    clientId: required('client-id'), clientSecretReference: required('client-secret-reference'), credentialReference: required('credential-reference'),
+    destination: { label: required('destination-label'), relationship, driveId: parsed.get('drive-id')?.trim() || undefined },
     approvedRoot: required('approved-root'), artifactPath: required('artifact'), sidecarPath: required('sidecar'),
     expectedBackupId: required('backup-id'), expectedSchema: required('schema'), expectedManifestSha256: required('manifest-sha256'),
     callbackTimeoutMs: timeoutSeconds * 1_000
-  } satisfies ProvisioningInput
+  } satisfies Omit<ProvisioningInput, 'clientSecret'> & { clientSecretReference: string }
 }
 
 class ConsoleManagerApproval implements ManagerApprovalBoundary {
@@ -51,6 +52,9 @@ class ConsoleManagerApproval implements ManagerApprovalBoundary {
     stdout.write('\nLocal authorization is ready. No Google credential or OAuth code will be shown in this terminal.\n')
     stdout.write(`Open this local address in a browser: ${localAuthorizationUrl}\n`)
     stdout.write('Review the Google account and drive.file permission in the browser, then complete or cancel there.\n\n')
+    const browser = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', localAuthorizationUrl], { detached: true, stdio: 'ignore', windowsHide: true })
+    browser.once('error', () => stdout.write('The default browser could not be opened automatically. Open the local address above manually.\n\n'))
+    browser.unref()
   }
 
   approveIdentity(identity: { maskedEmail: string; permissionFingerprint: string }) {
@@ -85,7 +89,12 @@ class ConsoleManagerApproval implements ManagerApprovalBoundary {
 
 const manager = new ConsoleManagerApproval()
 try {
-  const input = parseArguments(process.argv.slice(2))
+  const parsed = parseArguments(process.argv.slice(2))
+  const clientSecretCredential = await WindowsOAuthClientSecretStore.production().load(parsed.clientSecretReference)
+  if (!clientSecretCredential) throw new Error('OAUTH_CLIENT_SECRET_NOT_PROVISIONED')
+  if (clientSecretCredential.clientId !== parsed.clientId) throw new Error('OAUTH_CLIENT_SECRET_CLIENT_ID_MISMATCH')
+  const { clientSecretReference: _clientSecretReference, ...unsealedInput } = parsed
+  const input: ProvisioningInput = { ...unsealedInput, clientSecret: clientSecretCredential.clientSecret }
   const credentials = WindowsCredentialLockerStore.production()
   const drive = new GoogleDriveRestTransport()
   const runner = new ManagerControlledCloudProvisioning({

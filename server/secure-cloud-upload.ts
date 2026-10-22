@@ -150,7 +150,7 @@ export const assertLeastPrivilegeScopes = (scopes: readonly string[]) => {
 }
 
 export type DriveIdentity = { permissionId: string; emailAddress: string }
-export type DriveFolder = { id: string; mimeType: string; trashed: boolean; driveId?: string; owners: DriveIdentity[]; canAddChildren: boolean }
+export type DriveFolder = { id: string; name: string; mimeType: string; trashed: boolean; driveId?: string; owners: DriveIdentity[]; canAddChildren: boolean }
 export type RemoteRecoveryObject = {
   id: string
   name: string

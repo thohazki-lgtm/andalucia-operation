@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8')
+const workforce = await readFile(new URL('../src/workforce.tsx', import.meta.url), 'utf8')
+const styles = await readFile(new URL('../src/workforce.css', import.meta.url), 'utf8')
+const globalStyles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
+const domain = await readFile(new URL('../src/domain.ts', import.meta.url), 'utf8')
+const api = await readFile(new URL('../src/api.ts', import.meta.url), 'utf8')
+
+assert.match(app, /useState<'leave-types' \| 'entitlement-policies' \| 'employee-entitlements' \| 'public-holidays'>\('leave-types'\)/, 'Leave Types must be the default tab.')
+for (const tab of ['Leave Types', 'Entitlement Policies', 'Employee Entitlements', 'Public Holiday Calendar']) assert.ok(app.includes(`label: '${tab}'`), `Missing ${tab} tab.`)
+assert.match(app, /aria-label="Leave and Entitlements sections"/)
+assert.match(app, /<LeaveTypesPanel dutyCodes=\{configuration\.dutyCodes\}/)
+assert.equal((app.match(/<StaffEntitlementsManager \/>/g) || []).length, 1, 'Employee entitlement editing must have one screen.')
+assert.equal((app.match(/<PublicHolidaySettingsManager \/>/g) || []).length, 1, 'Public Holiday editing must have one screen.')
+assert.doesNotMatch(app.match(/function ConfigurationView[\s\S]*?\n\}/)?.[0] || '', /DutyCodeManager/, 'Duty Codes must remain in Duty Roster settings.')
+
+assert.match(workforce, /CORE_DUTY_CODES\.map/, 'Leave Types must reuse the protected core definitions.')
+for (const code of ['AL', 'SL', 'EL', 'PAT', 'BT', 'CIR', 'HAJ', 'RR', 'OFF', 'PH']) assert.match(domain, new RegExp(`code: '${code}'`), `Missing protected ${code} definition.`)
+assert.match(workforce, /Historical <b>SK<\/b> assignments remain compatible/)
+assert.match(workforce, /staffApi\.entitlementPolicies\(\)/, 'Policy manager must reuse the protected entitlement configuration API.')
+assert.match(workforce, /Approved · not active/, 'Approved defaults must remain visibly inactive until a manager saves them.')
+assert.match(workforce, /policy\.defaultAllowance \?\? policy\.approvedAllowance/, 'Prepared policy forms must show the approved value without treating it as already active.')
+assert.match(workforce, /Enter 0 only when zero is the explicit approved employee override/, 'Employee editing must preserve explicit zero separately from inherited or Unconfigured values.')
+assert.match(workforce, /Confirmed usage comes only from Duty Roster/)
+for (const metric of ['Entitled', 'Used', 'Remaining', 'Booked / Future', 'Available After Booked']) assert.ok(workforce.includes(metric), `Employee entitlement view must show ${metric}.`)
+assert.match(workforce, /Public Holiday Calendar remains the source for named calendar dates/, 'PH allowance policy and holiday dates must stay separate.')
+
+assert.match(styles, /\.leave-entitlement-tabs\{display:grid;grid-template-columns:repeat\(4/)
+assert.match(styles, /@media\(max-width:700px\)/)
+assert.match(styles, /\.leave-entitlement-tabs\{grid-template-columns:1fr 1fr\}/, 'Tabs must reflow on mobile.')
+assert.match(styles, /\.leave-type-grid\{grid-template-columns:1fr\}/, 'Leave Type cards must stack on mobile.')
+assert.match(styles, /\.entitlement-policy-row\{grid-template-columns:44px minmax\(0,1fr\) auto/, 'Policy rows must reflow on mobile.')
+assert.match(styles, /\.workforce-record-card\{min-width:0;/, 'Mobile workforce cards must shrink within their grid without causing page overflow.')
+assert.match(styles, /\.workforce-card-actions\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/, 'Mobile employee entitlement actions must remain contained in a two-column grid.')
+assert.match(globalStyles, /\.modal\{[^}]*width:min\(430px,calc\(100vw - 40px\)\)/, 'Existing modal width must remain unchanged.')
+assert.doesNotMatch(workforce, /Entitlement Reconciliation Preview|>Reconcile(?: Year)?</, 'Manager-facing reconciliation UI must be removed.')
+assert.match(api, /entitlementReconciliation:/, 'Shared reconciliation API capability must remain intact.')
+assert.match(domain, /interface StaffEntitlementReconciliation/, 'Shared reconciliation domain calculations must remain intact.')
+
+console.log(JSON.stringify({ tabs: 4, defaultTab: 'Leave Types', protectedLeaveTypes: 10, singleSources: true, skSlCompatibilityPreserved: true, responsive: true, reconciliationUiRemoved: true, reconciliationServicesPreserved: true }, null, 2))

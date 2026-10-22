@@ -3,6 +3,7 @@ import type { FinancialManagerPreview, FinancialPreviewExternalAllocation, Incen
 import { serviceDate } from '../src/service-date.js'
 import { billTipShares, formatFixed, parseFixed } from './financial-decimal.js'
 import { IncentivesCalculationService } from './incentives-calculation-service.js'
+import { dutyDisplayIdentity, resolvedBillTipEligibility, resolvedWorkedDayUnits } from '../src/duty-financial-policy.js'
 
 const monthPattern = /^(\d{4})-(0[1-9]|1[0-2])$/
 const daysInMonth = (year: number, month: number) => new Date(Date.UTC(year, month, 0)).getUTCDate()
@@ -13,15 +14,8 @@ const monthDates = (month: string) => {
 }
 const metadata = (value: unknown): Record<string, unknown> => typeof value === 'string' ? JSON.parse(value) : value as Record<string, unknown> || {}
 const approvedHelperAmounts = new Set([500n, 1000n, 1500n, 2000n])
-const approvedNamedDayUnits = new Map([['AL', 0], ['OFF', 0], ['PH', 1], ['SK', 1], ['TRN', 1], ['ON', 1]])
 const workedDayUnits = (duty: { value: string; metadata: Record<string, unknown> }): number | null => {
-  const explicit = duty.metadata.billTipWorkedDayUnits
-  if (typeof explicit === 'number' && Number.isInteger(explicit) && explicit >= 0) return explicit
-  const code = String(duty.metadata.displayCode || duty.value).trim().toUpperCase()
-  const approved = approvedNamedDayUnits.get(code)
-  if (approved !== undefined) return approved
-  if (duty.metadata.countsAsWorking === true) return 1
-  return null
+  return resolvedWorkedDayUnits({ value: duty.value, label: duty.value, metadata: duty.metadata })
 }
 const tierLabel = (minimum: string, maximum: string | null, rewardMode: string, rewardValue: string) => {
   const range = maximum == null ? `$${Number(minimum).toFixed(0)}+` : `$${Number(minimum).toFixed(0)}–$${Math.floor(Number(maximum))}`
@@ -47,14 +41,20 @@ export class FinancialPreviewService {
     const outlet = (await this.db.query<any>("select id,scope_key,display_name from outlet_scopes where id=$1 and active=true", [input.outletScopeId])).rows[0]
     if (!outlet) throw new Error('Financial preview outlet was not found.')
     const revision = (await this.db.query<any>("select id,revision_number,status,is_authoritative,approved_at::text,approved_by from staff_membership_baseline_reviews where outlet_scope_id=$1 and baseline_month=$2 and status='approved' and is_authoritative=true order by revision_number desc limit 1", [input.outletScopeId, input.month])).rows[0]
-    if (!revision) throw new Error('Approved Team Membership revision could not be resolved for this month.')
+    if (!revision) throw new Error(`No approved Team Membership revision exists for ${input.month}. Approve that exact month in Staff Management before calculating Earnings or Bill Tips.`)
     const members = (await this.db.query<any>("select h.staff_id,h.effective_from::text,h.effective_to::text,s.full_name,s.staff_number,s.position_key from staff_membership_history h join staff s on s.id=h.staff_id where h.baseline_revision_id=$1 and h.outlet_scope_id=$2 and h.review_status='approved' and h.is_current_baseline=true order by s.full_name", [revision.id, input.outletScopeId])).rows
     if (!members.length) throw new Error('Approved Team Membership revision has no regular Staff members.')
 
     const rosterRows = (await this.db.query<any>('select staff_id,duty_date::text,duty_code_value from duty_roster_entries where duty_date between $1 and $2 and staff_id=any($3::uuid[])', [start, end, members.map((row: any) => row.staff_id)])).rows
-    const dutyRows = (await this.db.query<any>("select value,label,metadata from configuration_options where group_key='duty_codes'")).rows
+    const dutyRows = (await this.db.query<any>("select value,label,active,metadata from configuration_options where group_key='duty_codes'")).rows
     const duties = new Map(dutyRows.map((row: any) => [row.value, { ...row, metadata: metadata(row.metadata) }]))
-    const unresolvedDuties = dutyRows.filter((row: any) => { const parsed = metadata(row.metadata); return typeof parsed.billTipEligible !== 'boolean' || (parsed.billTipEligible === true && workedDayUnits({ value: row.value, metadata: parsed }) === null) }).map((row: any) => row.value)
+    const rosterDutyValues = new Set(rosterRows.map((row: any) => row.duty_code_value))
+    const unresolvedDuties = dutyRows.filter((row: any) => {
+      if (!row.active && !rosterDutyValues.has(row.value)) return false
+      const parsed = metadata(row.metadata)
+      const eligible = resolvedBillTipEligibility({ value: row.value, label: row.label, metadata: parsed })
+      return eligible === null || (eligible === true && workedDayUnits({ value: row.value, metadata: parsed }) === null)
+    }).map((row: any) => dutyDisplayIdentity({ value: row.value, label: row.label, metadata: metadata(row.metadata) }).text)
     if (unresolvedDuties.length) throw new Error(`Bill Tip eligibility or worked-day credit is not configured for: ${unresolvedDuties.join(', ')}`)
     const roster = new Map(rosterRows.map((row: any) => [`${row.staff_id}|${row.duty_date}`, row.duty_code_value]))
     const staff = members.map((member: any) => {
@@ -66,13 +66,17 @@ export class FinancialPreviewService {
         const dutyValue = roster.get(`${member.staff_id}|${date}`)
         if (!dutyValue) { historicalMissingRosterDays++; continue }
         const duty: any = duties.get(dutyValue)
-        if (!duty || typeof duty.metadata.billTipEligible !== 'boolean') { historicalMissingRosterDays++; continue }
+        const eligible = duty ? resolvedBillTipEligibility(duty) : null
+        if (!duty || eligible === null) { historicalMissingRosterDays++; continue }
         const creditedUnits = workedDayUnits(duty)
-        if (duty.metadata.billTipEligible && creditedUnits !== null) eligibleRecordedDays += creditedUnits
+        if (eligible && creditedUnits !== null) eligibleRecordedDays += creditedUnits
         else if (duty.metadata.dutyClassification === 'annualLeave' || String(duty.metadata.displayCode || dutyValue).toUpperCase() === 'AL') alDaysExcluded++
         else otherExcludedDays++
       }
-      return { staffId: member.staff_id, staffName: member.full_name, staffNumber: member.staff_number, designation: member.position_key, membershipFrom: member.effective_from, membershipTo: member.effective_to, eligibleRecordedDays, alDaysExcluded, otherExcludedDays, historicalMissingRosterDays, futureUnclosedDays: futureDates.length, calculatedBillTip: '0.00', reviewStatus: historicalMissingRosterDays ? 'REVIEW_REQUIRED' as const : 'READY' as const }
+      const reviewReasons = historicalMissingRosterDays
+        ? [`${historicalMissingRosterDays} past roster day${historicalMissingRosterDays === 1 ? '' : 's'} ${historicalMissingRosterDays === 1 ? 'has' : 'have'} no recorded duty code.`]
+        : []
+      return { staffId: member.staff_id, staffName: member.full_name, staffNumber: member.staff_number, designation: member.position_key, membershipFrom: member.effective_from, membershipTo: member.effective_to, eligibleRecordedDays, alDaysExcluded, otherExcludedDays, historicalMissingRosterDays, futureUnclosedDays: futureDates.length, calculatedBillTip: '0.00', reviewStatus: historicalMissingRosterDays ? 'REVIEW_REQUIRED' as const : 'READY' as const, reviewReasons }
     })
     const remainingCents = poolCents - externalCents
     const eligibleDays = staff.map(item => item.eligibleRecordedDays)
@@ -83,7 +87,7 @@ export class FinancialPreviewService {
     const statusRows = (await this.db.query<any>("select value,metadata from configuration_options where group_key='chargeable_statuses'")).rows
     const realizedStatuses = statusRows.filter((row: any) => metadata(row.metadata).countsAsRealizedRevenue === true).map((row: any) => row.value)
     const pendingStatuses = statusRows.filter((row: any) => metadata(row.metadata).countsAsPendingValue === true).map((row: any) => row.value)
-    const chargeables = (await this.db.query<any>('select c.id,c.charge_date::text,c.item_value,c.item_label,c.quantity,c.unit_price::text,c.total_amount::text,c.status,c.waiter_id,s.full_name,s.staff_number,s.position_key from chargeable_item_records c left join staff s on s.id=c.waiter_id where c.outlet_scope_id=$1 and c.charge_date between $2 and $3 and c.active=true order by c.charge_date,c.created_at,c.id', [input.outletScopeId, start, end])).rows
+    const chargeables = (await this.db.query<any>('select c.id,c.charge_date::text,c.check_invoice_number,coalesce(b.room_number,c.room_number) room_number,c.item_value,c.item_label,c.quantity,c.unit_price::text,c.total_amount::text,c.status,c.waiter_id,s.full_name,s.staff_number,s.position_key from chargeable_item_records c left join bookings b on b.id=c.booking_id left join staff s on s.id=c.waiter_id where c.outlet_scope_id=$1 and c.charge_date between $2 and $3 and c.active=true order by c.charge_date,c.created_at,c.id', [input.outletScopeId, start, end])).rows
     const pendingRows = chargeables.filter((row: any) => pendingStatuses.includes(row.status))
     const realizedRows = chargeables.filter((row: any) => realizedStatuses.includes(row.status))
     const wineRows = (await this.db.query<any>(`select w.id,w.service_date::text,w.check_invoice_number,w.room_number,w.item_name,w.quantity,w.gross_unit_price::text,w.gross_total::text,w.incentive_eligible_net_unit_price::text,w.incentive_eligible_net_total::text,w.incentive_tier_minimum::text,w.incentive_tier_maximum::text,w.incentive_reward_mode,w.incentive_reward_value::text,w.incentive_per_bottle::text,w.total_beverage_incentive::text,w.status,w.waiter_id,w.financial_rate_version_id,w.incentive_rule_version,fr.version financial_rate_version,s.full_name,s.staff_number
@@ -103,7 +107,7 @@ export class FinancialPreviewService {
       const tierRows = (await this.db.query<any>('select id,minimum_amount::text,maximum_amount::text,reward_mode,reward_value::text from incentive_rule_tiers where rule_id=$1 order by sort_order', [ruleRow.id])).rows
       const rule: IncentiveRule = { id: ruleRow.id, ruleKey: ruleRow.rule_key, configurationOptionId: ruleRow.configuration_option_id, sourceKey: ruleRow.source_key, ruleFamily: ruleRow.rule_family, version: Number(ruleRow.version), effectiveFrom: ruleRow.effective_from, effectiveTo: ruleRow.effective_to, ratePercent: ruleRow.rate_percent, active: ruleRow.active, tiers: tierRows.map((tier: any) => ({ id: tier.id, minimumAmount: tier.minimum_amount, maximumAmount: tier.maximum_amount, rewardMode: tier.reward_mode, rewardValue: tier.reward_value })) }
       const calculated = this.calculator.calculateIncentive(rule, row.unit_price, Number(row.quantity), rateRow.service_charge_rate, rateRow.gst_rate)
-      incentives.push({ sourceType: 'FOOD', sourceId: row.id, chargeableId: row.id, serviceDate: row.charge_date, itemValue: row.item_value, itemLabel: row.item_label, quantity: Number(row.quantity), grossAmount: calculated.grossTotal, grossUnitPrice: row.unit_price, eligibleNetAmount: calculated.eligibleNetTotal, appliedRule: rule.ruleFamily === 'food_percentage' ? `${rule.ratePercent}% Food` : rule.ruleFamily === 'no_incentive' ? 'No incentive' : 'Wine/Spirits tier', incentive: calculated.finalAmount, soldByStaffId: row.waiter_id || null, soldByName: row.full_name || null, soldByNumber: row.staff_number || null, status: 'PROVISIONAL' as const, reviewStatus: row.waiter_id && row.full_name ? 'READY' : 'REVIEW_REQUIRED', financialRateVersion: Number(rateRow.version), incentiveRuleVersion: rule.version })
+      incentives.push({ sourceType: 'FOOD', sourceId: row.id, chargeableId: row.id, serviceDate: row.charge_date, checkInvoiceNumber: row.check_invoice_number || undefined, roomNumber: row.room_number || undefined, itemValue: row.item_value, itemLabel: row.item_label, quantity: Number(row.quantity), grossAmount: calculated.grossTotal, grossUnitPrice: row.unit_price, eligibleNetAmount: calculated.eligibleNetTotal, appliedRule: rule.ruleFamily === 'food_percentage' ? `${rule.ratePercent}% Food` : rule.ruleFamily === 'no_incentive' ? 'No incentive' : 'Wine/Spirits tier', incentive: calculated.finalAmount, soldByStaffId: row.waiter_id || null, soldByName: row.full_name || null, soldByNumber: row.staff_number || null, status: 'PROVISIONAL' as const, reviewStatus: row.waiter_id && row.full_name ? 'READY' : 'REVIEW_REQUIRED', financialRateVersion: Number(rateRow.version), incentiveRuleVersion: rule.version })
     }
     for (const row of realizedWineRows) {
       incentives.push({
@@ -131,7 +135,7 @@ export class FinancialPreviewService {
     }
     const incentiveSummary = [...staffIncentives.values()].map(item => ({ staffId: item.staffId, staffName: item.staffName, staffNumber: item.staffNumber, foodIncentive: formatFixed(item.foodIncentiveCents, 2), wineSpiritsIncentive: formatFixed(item.wineSpiritsIncentiveCents, 2), totalIncentive: formatFixed(item.foodIncentiveCents + item.wineSpiritsIncentiveCents, 2), wineSpiritsStatus: 'ACTIVE' as const }))
     const incentivesByStaff = new Map(incentiveSummary.map(item => [item.staffId, item]))
-    const earnings = staff.map(item => { const incentive = incentivesByStaff.get(item.staffId); const bill = parseFixed(item.calculatedBillTip, 2); const food = parseFixed(incentive?.foodIncentive || '0.00', 2); const wine = parseFixed(incentive?.wineSpiritsIncentive || '0.00', 2); return { staffId: item.staffId, staffName: item.staffName, staffNumber: item.staffNumber, billTips: item.calculatedBillTip, foodIncentives: formatFixed(food, 2), wineSpiritsIncentives: formatFixed(wine, 2), totalExtraEarnings: formatFixed(bill + food + wine, 2), status: item.reviewStatus } })
+    const earnings = staff.map(item => { const incentive = incentivesByStaff.get(item.staffId); const bill = parseFixed(item.calculatedBillTip, 2); const food = parseFixed(incentive?.foodIncentive || '0.00', 2); const wine = parseFixed(incentive?.wineSpiritsIncentive || '0.00', 2); return { staffId: item.staffId, staffName: item.staffName, staffNumber: item.staffNumber, billTips: item.calculatedBillTip, foodIncentives: formatFixed(food, 2), wineSpiritsIncentives: formatFixed(wine, 2), totalExtraEarnings: formatFixed(bill + food + wine, 2), status: item.reviewStatus, reviewReasons: item.reviewReasons } })
     return {
       generatedAt: new Date().toISOString(), month: input.month, outlet: { id: outlet.id, key: outlet.scope_key, name: outlet.display_name }, periodStatus: asOfDate <= end ? 'IN_PROGRESS' : 'CLOSED', previewStatus: 'PROVISIONAL', asOfDate,
       membership: { revisionId: revision.id, revisionNumber: Number(revision.revision_number), status: 'APPROVED', approvedAt: revision.approved_at, approvedBy: revision.approved_by, memberCount: members.length },

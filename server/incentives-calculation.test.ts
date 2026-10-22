@@ -12,14 +12,12 @@ import { ChargeableRepository } from './chargeable-repository.js'
 import { StaffRepository } from './staff-repository.js'
 
 const storage = await mkdtemp(join(tmpdir(), 'andalucia-incentives-calculation-'))
-const databasePath = join(storage, 'postgres')
 const schema = await readFile('database/schema.sql', 'utf8')
-const initial = new PGlite(databasePath)
-await initial.exec(schema)
-await initial.exec("alter table chargeable_item_records add column check_invoice_number text not null default ''")
-await initial.close()
+const database = new PGlite()
+await database.exec(schema)
+await database.exec("alter table chargeable_item_records add column check_invoice_number text not null default ''")
 
-const staffRepository = new StaffRepository(databasePath, new PGlite(databasePath))
+const staffRepository = new StaffRepository(storage, database)
 try {
   await staffRepository.initialize()
   const db = staffRepository.getDatabase()
@@ -28,7 +26,7 @@ try {
   const chargeables = new ChargeableRepository(db)
   await repository.initialize(); await chargeables.initialize()
 
-  const duty = async (displayCode: string, classification: 'working' | 'off' | 'annualLeave' | 'publicHoliday' | 'sickLeave' | 'other', billTipEligible = true) => staffRepository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: displayCode, color: '#456789', active: true, metadata: { displayCode, dutyClassification: classification, countsAsWorking: classification === 'working', billTipEligible } })
+  const duty = async (displayCode: string, classification: 'working' | 'off' | 'annualLeave' | 'publicHoliday' | 'sickLeave' | 'other', billTipEligible = true) => staffRepository.saveConfiguration('duty-codes', { id: randomUUID(), value: '', label: displayCode, color: '#456789', active: true, metadata: { displayCode, dutyClassification: classification, countsAsWorking: classification === 'working', billTipEligible, billTipWorkedDayUnits: billTipEligible ? 1 : 0 } })
   const configuration = await staffRepository.configuration()
   const value = (displayCode: string) => configuration.dutyCodes.find(item => (item.metadata?.displayCode || item.value) === displayCode)!.value
   const on = value('ON'); const al = value('AL')

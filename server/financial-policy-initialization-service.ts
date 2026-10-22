@@ -2,25 +2,9 @@ import { randomUUID } from 'node:crypto'
 import type { PGlite } from '@electric-sql/pglite'
 import type { AuditActor } from '../src/domain.js'
 import { auditActorLabel } from './authorization-service.js'
+import { approvedDutyFinancialRule } from '../src/duty-financial-policy.js'
 
 export const FINANCIAL_POLICY_EFFECTIVE_DATE = '2026-09-01'
-
-const dutyPolicy = new Map([
-  ['AL', false],
-  ['OFF', true],
-  ['PH', true],
-  ['SK', true],
-  ['TRN', true],
-  ['ON', true],
-])
-const dutyWorkedDayUnits = new Map([
-  ['AL', 0],
-  ['OFF', 0],
-  ['PH', 1],
-  ['SK', 1],
-  ['TRN', 1],
-  ['ON', 1],
-])
 
 const packageRules = [
   { value: 'lobster_paella', family: 'food_percentage', rate: '2.5000' },
@@ -78,13 +62,13 @@ export class FinancialPolicyInitializationService {
         const metadata = parsedMetadata(row.metadata)
         const displayCode = String(metadata.displayCode || row.value).trim().toUpperCase()
         const current = typeof metadata.billTipEligible === 'boolean' ? metadata.billTipEligible : null
-        const known = dutyPolicy.get(displayCode)
-        const proposed = known ?? (current !== null ? current : metadata.dutyClassification === 'working' ? true : null)
+        const approvedRule = approvedDutyFinancialRule({ value: row.value, label: row.label, metadata })
+        const proposed = approvedRule?.billTipEligible ?? current
         const currentWorkedDayUnits = typeof metadata.billTipWorkedDayUnits === 'number' ? metadata.billTipWorkedDayUnits : null
-        const proposedWorkedDayUnits = dutyWorkedDayUnits.get(displayCode) ?? (metadata.countsAsWorking === true ? 1 : proposed === false ? 0 : null)
+        const proposedWorkedDayUnits = approvedRule?.workedDayUnits ?? (currentWorkedDayUnits !== null ? currentWorkedDayUnits : proposed === false ? 0 : null)
         if (proposed === null) unresolved.push(displayCode)
         if (proposed === true && proposedWorkedDayUnits === null) unresolved.push(`${displayCode}:WORKED_DAY_UNITS`)
-        return { id: row.id, value: row.value, code: displayCode, name: row.label, current, proposed, currentWorkedDayUnits, proposedWorkedDayUnits, reason: known !== undefined ? 'approved_named_policy' : current !== null ? 'existing_explicit_manager_metadata' : 'approved_normal_working_duty_policy', metadata }
+        return { id: row.id, value: row.value, code: displayCode, name: row.label, current, proposed, currentWorkedDayUnits, proposedWorkedDayUnits, reason: approvedRule ? displayCode === 'AL' ? 'mandatory_annual_leave_exclusion' : 'approved_automatic_duty_policy' : current !== null ? 'existing_explicit_manager_metadata' : 'manager_decision_required', metadata }
       })
       if (unresolved.length) throw new Error(`BILL_TIP_ELIGIBILITY_MANAGER_DECISION_REQUIRED:${unresolved.join(',')}`)
 

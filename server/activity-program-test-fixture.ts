@@ -30,8 +30,13 @@ const bookingLine = (row: Row): Array<[number, string]> => [
   ...(row.bookedBy ? [[780, row.bookedBy] as [number, string]] : [])
 ]
 
-export function syntheticActivityProgramPdf(kind: 'import' | 'intelligence' = 'import') {
-  const date = kind === 'import' ? '31.08.2026' : '20.09.2026'
+export function syntheticActivityProgramPdf(kind: 'import' | 'intelligence' | 'celebration' = 'import') {
+  const date = kind === 'import' ? '31.08.2026' : kind === 'intelligence' ? '20.09.2026' : '15.10.2026'
+  if (kind === 'celebration') return pdf([
+    [[35, `Activity Program - ${date}`]],
+    [[35, '19:30-21:30 Celebration @ Andalucia']],
+    bookingLine({ room: '718', name: 'Ritu Celebration Fixture', notes: 'Birthday celebration for Ritu', booking: '2738768', status: 'Confirmed (6 pax)', bookedBy: 'Test Agent' })
+  ])
   const rows: Row[] = kind === 'import' ? [
     { room: '211', name: 'Fictional Guest Alpha', notes: '2 adults + 1 child', booking: '9000001', status: 'Confirmed (2 pax)', bookedBy: 'Test Agent' },
     { room: '212', name: 'Fictional Guest Beta' },
