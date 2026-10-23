@@ -46,7 +46,11 @@ $allowedPaths = @(
     '.gitattributes', '.gitignore', 'AGENTS.md', 'ANDALUCIA', 'index.html', 'package-lock.json',
     'package.json', 'README.md', 'tsconfig.json', 'tsconfig.node.json', 'vite.config.ts'
 )
-& git add -- $allowedPaths
+$existingAllowedPaths = @($allowedPaths | Where-Object { Test-Path -LiteralPath (Join-Path $repositoryRoot $_) })
+if ($existingAllowedPaths.Count -eq 0) {
+    throw 'No approved source paths exist in this checkout.'
+}
+& git add -- $existingAllowedPaths
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to stage the approved source allowlist.'
 }
