@@ -68,6 +68,8 @@ try {
   assert.match(installer, /DontStopOnIdleEnd/)
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:StopOnIdleEnd/)
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:DisallowHardTerminate/)
+  assert.match(installer, /Settings\.AllowHardTerminate = \$false/)
+  assert.match(installer, /RegisterTaskDefinition/)
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:ExecutionTimeLimit/)
   assert.match(installer, /SCHEDULER_INSTALL_REQUIRES_AUTHORITATIVE_GIT_CHECKOUT/)
   assert.match(guardedStart, /ANDALUCIA_RUNTIME_SOURCE_NOT_AUTHORITATIVE_GIT_CHECKOUT/)
