@@ -263,18 +263,46 @@ main{min-width:0}
 @media(max-width:430px){.training-r2-actions{grid-template-columns:1fr}.training-r2-kpis strong{font-size:16px}.training-r2-cards>article>header{flex-direction:column}.training-status{white-space:normal}.training-r2-drawer{padding-inline:14px}}
 
 /* Training R2 detail drawer — compact management reading width */
-.training-r2-drawer{display:flex;flex-direction:column;align-items:stretch;width:min(620px,100vw);min-width:0;overflow-x:hidden}
-.training-r2-drawer>header,.training-r2-drawer>section,.training-r2-drawer>footer{flex:0 0 auto;width:100%;min-width:0;max-width:100%}
-.training-r2-drawer .training-detail-grid{grid-template-columns:repeat(2,minmax(150px,200px));column-gap:24px;max-width:424px}
-.training-r2-drawer .training-detail-grid>div{min-width:0}
-.training-r2-drawer .training-detail-grid dd{overflow-wrap:anywhere}
-.training-r2-drawer .training-evidence-list{max-width:500px}
-.training-r2-drawer .training-evidence-list>div{display:grid;grid-template-columns:minmax(0,270px) minmax(125px,170px);justify-content:start;column-gap:18px}
-.training-r2-drawer .training-evidence-list>div>span{min-width:0}
-.training-r2-drawer .training-evidence-list em{align-self:center;text-align:left;overflow-wrap:break-word}
-@media(max-width:700px){.training-r2-drawer{width:100%}.training-r2-drawer .training-detail-grid{grid-template-columns:1fr;max-width:none}.training-r2-drawer .training-evidence-list{max-width:none}.training-r2-drawer .training-evidence-list>div{grid-template-columns:1fr;row-gap:4px}.training-r2-drawer .training-evidence-list em{align-self:auto}}
-@media(max-width:430px){.training-r2-drawer{inset:0 0 0 auto;display:flex;flex-direction:column;align-items:stretch;width:100vw;max-width:100vw;overflow-x:hidden}.training-r2-drawer>*{min-width:0;max-width:100%}.training-r2-drawer>section{width:100%;overflow-x:hidden}.training-r2-drawer .training-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;width:100%;max-width:none}.training-r2-drawer .training-evidence-list{width:100%;max-width:none}.training-r2-drawer .training-evidence-list>div{grid-template-columns:minmax(0,1fr) 104px;align-items:center;column-gap:10px;width:100%}.training-r2-drawer .training-evidence-list b{font-size:13px;font-weight:600;line-height:1.3;overflow-wrap:normal;word-break:normal}.training-r2-drawer .training-evidence-list small{font-size:9px;line-height:1.35}.training-r2-drawer .training-evidence-list em{font-size:9px;line-height:1.35;text-align:left;overflow-wrap:normal;word-break:normal}.training-r2-drawer>footer{width:100%;flex-wrap:wrap}}
-@media(max-width:370px){.training-r2-drawer .training-detail-grid{grid-template-columns:1fr}.training-r2-drawer .training-evidence-list>div{grid-template-columns:minmax(0,1fr) 96px}}
+/* Training T2 — premium staff coverage and session details. */
+.training-coverage-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.training-coverage-grid>article{min-width:0;padding:13px;border:1px solid #dec58f;border-top:3px solid #b38b3a;border-left-width:1px;border-radius:9px;background:#fffaf0;box-shadow:0 4px 12px #173d5608}
+.training-coverage-grid>article.achieved{border-top-color:#398063;border-left-color:#dec58f}
+.training-coverage-identity{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0;padding:0 0 10px;border-bottom:1px solid #eadbb8}
+.training-coverage-identity>div{min-width:0}.training-coverage-identity b,.training-coverage-identity small,.training-coverage-identity span{display:block}
+.training-coverage-identity b{color:#173d56;font-size:13px;font-weight:650;line-height:1.3;overflow-wrap:anywhere}
+.training-coverage-identity small{margin-top:3px;color:#617987;font-size:10.5px;font-weight:600;line-height:1.35}
+.training-coverage-identity>div>span{margin-top:2px;color:#718492;font-size:9.5px;font-weight:550}
+.training-coverage-identity>.ao-status-pill{flex:0 0 auto;min-height:26px;font-size:8.5px;white-space:nowrap}
+.training-coverage-metrics{display:grid;grid-template-columns:1.25fr .8fr 1.2fr;gap:6px;margin:10px 0 0}
+.training-coverage-metrics>div{min-width:0;padding:7px 8px;border:1px solid #eadbb8;border-radius:7px;background:#fff}
+.training-coverage-metrics dt{color:#718492;font-size:8.5px;font-weight:750;line-height:1.25;text-transform:uppercase}
+.training-coverage-metrics dd{margin:4px 0 0;color:#173d56;font-size:13px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.training-coverage-target{display:block;margin-top:8px;color:#687f8c;font-size:9.5px;font-weight:600}
+.staff-profile-drawer.training-r2-drawer{inset:0 0 0 auto;display:flex;flex-direction:column;align-items:stretch;width:min(700px,100vw);min-width:0;overflow-x:hidden;overflow-y:auto;padding:24px;background:#f7f9fa}
+.staff-profile-drawer.training-r2-drawer>header,.staff-profile-drawer.training-r2-drawer>section,.staff-profile-drawer.training-r2-drawer>footer{flex:0 0 auto;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.staff-profile-drawer.training-r2-drawer>.training-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0;padding:4px 48px 16px 0;border-bottom:1px solid #dec58f;background:transparent}
+.training-detail-header>div{min-width:0}.training-detail-header h2{margin:3px 0;color:#173d56;font:700 25px/1.18 'Playfair Display',serif;overflow-wrap:anywhere}.training-detail-header>div>span{display:block;margin-top:6px;color:#617987;font-size:11px;font-weight:600}
+.training-detail-header>.training-status{flex:0 0 auto;margin:3px 0 0;min-height:28px;padding-inline:10px;font-size:9px}
+.staff-profile-drawer.training-r2-drawer>section{margin-top:12px;padding:14px 16px;border-color:#dec58f;border-radius:9px;box-shadow:0 4px 12px #173d5608}
+.training-r2-drawer>section h3{margin:0;color:#173d56;font:700 17px/1.25 'Playfair Display',serif}
+.training-r2-drawer .training-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 0;width:100%;max-width:none}
+.training-r2-drawer .training-detail-grid>div,.training-performance-summary>div{min-width:0;padding:8px 9px;border:1px solid #eadbb8;border-radius:7px;background:#fffaf0}
+.training-r2-drawer :is(.training-detail-grid,.training-performance-summary) dt{color:#718492;font-size:8.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
+.training-r2-drawer :is(.training-detail-grid,.training-performance-summary) dd{margin:4px 0 0;color:#173d56;font-size:11.5px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.training-session-section>p{margin:10px 0 0;color:#526c7b;font-size:11px;line-height:1.45}
+.training-performance-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 8px}
+.training-performance-section>small{color:#718492;font-size:9.5px;font-weight:550}
+.training-section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.training-section-heading>span{color:#718492;font-size:9.5px;font-weight:650}
+.training-r2-drawer .training-evidence-list{display:grid;width:100%;max-width:none;gap:0;margin-top:8px;border:1px solid #eadbb8;border-radius:8px;overflow:hidden;background:#fff}
+.training-r2-drawer .training-evidence-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(90px,.8fr) minmax(100px,.8fr);align-items:center;gap:10px;width:100%;padding:9px 10px;border-bottom:1px solid #eadbb8;background:#fff}
+.training-r2-drawer .training-evidence-row:nth-child(even){background:#fffdf8}.training-r2-drawer .training-evidence-row:last-child{border-bottom:0}
+.training-evidence-row>span{min-width:0}.training-evidence-row b,.training-evidence-row small{display:block}.training-evidence-row b{color:#173d56;font-size:13px;font-weight:650;line-height:1.3;overflow-wrap:anywhere}.training-evidence-row small{margin-top:3px;color:#718492;font-size:9.5px;line-height:1.35}
+.training-evidence-duty{color:#526c7b;font-size:10px;font-weight:650;overflow-wrap:anywhere}.training-evidence-row em{color:#526b79;font-size:9.5px;font-style:normal;font-weight:650;line-height:1.35;text-align:right;overflow-wrap:anywhere}.training-evidence-row.participated em{color:#34705a}
+.staff-profile-drawer.training-r2-drawer>.training-detail-actions{display:flex;justify-content:flex-end;gap:8px;margin:12px 0 0;padding:12px 0 0;border-top:1px solid #dec58f;background:transparent}
+@media(max-width:1100px) and (min-width:701px){.training-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.training-coverage-grid{grid-template-columns:1fr;gap:8px;margin-top:10px}.training-coverage-grid>article{padding:12px}.staff-profile-drawer.training-r2-drawer{width:100%;padding:16px 12px}.staff-profile-drawer.training-r2-drawer>.training-detail-header{gap:10px;padding:4px 44px 13px 2px}.training-detail-header h2{font-size:22px}.training-detail-header>.training-status{align-self:flex-start}.staff-profile-drawer.training-r2-drawer>section{padding:12px}.training-r2-drawer .training-detail-grid,.training-performance-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.training-r2-drawer .training-evidence-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.training-evidence-duty{grid-column:1}.training-evidence-row em{grid-column:2;grid-row:1/3;max-width:112px}.staff-profile-drawer.training-r2-drawer>.training-detail-actions{flex-wrap:wrap}.staff-profile-drawer.training-r2-drawer>.training-detail-actions .ao-action{flex:1 1 calc(50% - 4px);min-height:44px}}
+@media(max-width:430px){.training-coverage-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.training-coverage-metrics>div{padding:7px 6px}.training-coverage-metrics dd{font-size:12px}.staff-profile-drawer.training-r2-drawer{width:100vw;max-width:100vw}.training-r2-drawer .training-detail-grid,.training-performance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.staff-profile-drawer.training-r2-drawer>.training-detail-actions .ao-action{flex-basis:100%}}
+@media(max-width:370px){.training-r2-drawer .training-detail-grid,.training-performance-summary{grid-template-columns:1fr}.training-coverage-identity{align-items:flex-start;flex-direction:column}.training-coverage-identity>.ao-status-pill{align-self:flex-start}}
 
 /* Training R2 — Reports-aligned visual rhythm (module scoped) */
 .training-r2-toolbar{gap:14px;margin-bottom:11px}
@@ -316,20 +344,12 @@ main{min-width:0}
 .training-coverage{margin-top:12px;margin-bottom:0;padding:14px 15px;border-radius:8px}
 .training-coverage>header{gap:12px}
 .training-coverage>header .secondary{min-height:40px;margin:0}
-.training-coverage-grid{gap:7px;margin-top:11px}
-.training-coverage-grid article{padding:9px 10px;border-radius:7px}
-.training-coverage-grid article header{gap:7px}
-.training-coverage-grid article header b{font-size:11px;line-height:1.3}
-.training-coverage-grid article header>span{font-size:8px;line-height:1.3}
-.training-coverage-grid article>div{margin-top:7px}
-.training-coverage-grid article>div b{font-size:13px;line-height:1.2}
 
 @media(max-width:1100px) and (min-width:701px){
   .training-r2-toolbar{align-items:center;flex-wrap:wrap}
   .training-r2-toolbar>div:first-child{flex:0 0 auto}
   .training-r2-actions{flex:0 1 auto}
   .training-r2-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .training-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media(max-width:700px){
@@ -361,8 +381,6 @@ main{min-width:0}
   .training-coverage{margin-top:10px;padding:12px}
   .training-coverage>header{gap:9px}
   .training-coverage>header .secondary{min-height:44px;width:100%}
-  .training-coverage-grid{grid-template-columns:1fr;gap:6px;margin-top:9px}
-  .training-coverage-grid article{padding:8px 9px}
 }
 
 @media(max-width:380px){
@@ -412,33 +430,11 @@ main{min-width:0}
   .training-r2-toolbar{align-items:center;justify-content:space-between}
   .training-r2-period,.training-r2-toolbar .view-switch{width:max-content;max-width:100%}
 }
-.training-coverage-grid article{padding:7px 8px}
-.training-coverage-grid article header{margin:0}
-.training-coverage-grid article>div{margin-top:4px}
-.training-r2-drawer>section{margin-top:12px;padding:16px 18px}
-.training-r2-drawer .training-detail-grid{margin:9px 0 0;row-gap:9px}
-.training-r2-drawer .training-evidence-list{gap:0;margin-top:7px}
-.training-r2-drawer .training-evidence-list>div{padding:6px 4px;row-gap:2px}
 
 @media(max-width:700px){
   .training-page-header{margin-bottom:4px}
   .training-r2-period{width:100%;grid-template-columns:40px minmax(0,1fr) 40px}
   .training-r2-toolbar .view-switch{width:100%}
-  .training-coverage-grid article{padding:7px 8px}
-  .training-r2-drawer>section{padding:14px 12px}
-  .training-r2-drawer .training-detail-grid{margin-top:8px;row-gap:8px}
-}
-
-/* Training R2 View Session — bounded, balanced content grids */
-.training-r2-drawer .training-session-section .training-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;max-width:100%}
-.training-r2-drawer .training-eligibility-section .training-evidence-list{width:min(100%,420px);max-width:420px}
-.training-r2-drawer .training-eligibility-section .training-evidence-list>div{grid-template-columns:minmax(0,240px) minmax(120px,150px);column-gap:12px}
-
-@media(max-width:430px){
-  .training-r2-drawer .training-session-section .training-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .training-r2-drawer .training-eligibility-section .training-evidence-list{width:100%;max-width:100%}
-  .training-r2-drawer .training-eligibility-section .training-evidence-list>div{grid-template-columns:minmax(0,220px) max-content;justify-content:start;column-gap:8px}
-  .training-r2-drawer .training-eligibility-section .training-evidence-list em{max-width:104px}
 }
 
 /* Training Stage 4A — shared action-system adoption (module scoped) */
