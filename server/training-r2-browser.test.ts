@@ -265,6 +265,7 @@ try {
   const performanceBefore = await cdp.evaluate<any>(`fetch('/api/training/performance?month=${fixtureMonth}').then(response=>response.json())`)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.training-r2-drawer button')).find(node=>node.textContent?.trim()==='Confirm Training');if(!button)return false;button.click();return true})()`), true)
   for (let i=0;i<20;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.training-confirm-modal')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const duties=Array.from(document.querySelectorAll('.training-confirm-duty b')).map(node=>node.textContent?.trim()||'');return duties.length>0&&duties.every(value=>!value.startsWith('DUTY_'))})()`), true, 'Confirmation rows expose internal duty identifiers instead of readable roster labels')
   const confirmationWidths: Array<Record<string, unknown>> = []
   for (const width of widths) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 844 : width <= 1024 ? 900 : 1000, deviceScaleFactor: 1, mobile: width <= 430 }); await sleep(150)
