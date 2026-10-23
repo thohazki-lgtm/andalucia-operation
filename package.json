@@ -13,6 +13,8 @@
     "dev:client": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build": "tsc -b && vite build",
     "source:checkpoint": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File deployment/windows/Publish-AndaluciaSourceCheckpoint.ps1",
+    "release:ui:preflight": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File deployment/windows/Test-AndaluciaGuardedUiActivation.ps1",
+    "release:ui:activate": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1",
     "db:migrate:rehearsal": "tsx server/migration-rehearsal.ts",
     "db:migrate:prepare-live": "tsx server/migration-prepare-live.ts",
     "db:migrate:prepare-training-r2": "tsx server/training-r2-prepare-live.ts",

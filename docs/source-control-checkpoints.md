@@ -37,3 +37,23 @@ Only after the health response and rendered browser both match the approved sour
 The required lifecycle is:
 
 `Code → Focused Tests → GitHub Checkpoint → PR / Approved Merge → Authorized Guarded Activation → Live SHA and Browser Verification`
+
+## Guarded UI release commands
+
+After GitHub merge and authoritative-checkout synchronization, run the non-mutating release gate:
+
+```powershell
+npm run release:ui:preflight -- -ExpectedSha <verified-main-sha>
+```
+
+It requires synchronized tracked-clean `main`, canonical identity, a healthy active Schema 027 runtime, unambiguous repository-owned listeners and marker, safe installed scheduler settings, and a verified restore-tested backup no older than 24 hours. It also compares the active runtime SHA with the target and blocks non-UI paths. A reviewed mixed release requires separate manager authorization and the explicit `-AllowReviewedNonUiPaths` flag.
+
+The activation command defaults to preparation only:
+
+```powershell
+npm run release:ui:activate -- -ExpectedSha <verified-main-sha>
+```
+
+It returns `READY_AWAITING_RESTART_AUTHORIZATION` without stopping anything. Only an applicable manager authorization permits adding `-ManagerAuthorizedRestart`. The command then uses the existing graceful stop, requires ports and the canonical marker to release naturally, starts the installed guarded runtime task once, and requires `/api/health` to report the target SHA, `main`, healthy Schema 027, and no migration or recovery requirement. It never removes a marker, force-stops a process, edits scheduler configuration, migrates a database, or retries an ambiguous activation.
+
+Browser verification remains a distinct final gate. The automation reports `HEALTH_VERIFIED`, not `LIVE VERIFIED`; an agent must confirm the changed desktop and mobile UI before the release is complete.
