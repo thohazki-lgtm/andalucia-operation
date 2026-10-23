@@ -4,8 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,client -c blue,cyan \"npm run dev:api\" \"npm run dev:client\"",
+    "dev": "concurrently -k -n api,client -c blue,cyan \"npm run dev:api:watch\" \"npm run dev:client\"",
     "dev:api": "set \"ANDALUCIA_DATA_DIR=%CD%\\.data-development\\postgres\" && set \"ANDALUCIA_STORE_ROLE=development\" && set \"ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION=\" && tsx server/index.ts",
+    "dev:api:watch": "set \"ANDALUCIA_DATA_DIR=%CD%\\.data-development\\postgres\" && set \"ANDALUCIA_STORE_ROLE=development\" && set \"ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION=\" && tsx watch --clear-screen=false server/index.ts",
     "dev:canonical": "concurrently -k -n api,client -c blue,cyan \"npm run dev:canonical:api\" \"npm run dev:client\"",
     "dev:canonical:api": "tsx server/index.ts",
     "runtime:stop:guarded": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File deployment/windows/Stop-AndaluciaGuardedApplication.ps1",
@@ -36,6 +37,7 @@
     "test:database-backup-admin": "tsx server/database-backup-admin.test.ts",
     "test:database-scheduler": "tsx server/database-scheduler.test.ts",
     "test:database-safe-shutdown": "tsx server/database-safe-shutdown.test.ts",
+    "test:runtime-source-version": "tsx server/runtime-source-version.test.ts",
     "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
     "test:secure-cloud-upload": "tsx server/secure-cloud-upload.test.ts",
     "test:cloud-provisioning": "tsx server/google-drive-provisioning.test.ts",
