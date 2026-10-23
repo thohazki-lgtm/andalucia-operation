@@ -36,6 +36,21 @@ function Assert-RuntimeTaskSafety {
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'RUNTIME_TASK_SAFETY_DRIFT:WorkingDirectory' }
 }
 
+function Set-RuntimeTaskHardTerminateProtection {
+  # On this Windows Task Scheduler provider, New-ScheduledTaskSettingsSet
+  # accepts -DisallowHardTerminate but does not serialize the setting. The
+  # supported COM API exposes the inverse AllowHardTerminate property.
+  $service = New-Object -ComObject 'Schedule.Service'
+  $service.Connect()
+  $folder = $service.GetFolder('\')
+  $task = $folder.GetTask($runtimeName)
+  $definition = $task.Definition
+  $definition.Settings.AllowHardTerminate = $false
+  $taskCreateOrUpdate = 6
+  $taskLogonInteractiveToken = 3
+  $folder.RegisterTaskDefinition($runtimeName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonInteractiveToken, $null) | Out-Null
+}
+
 foreach ($path in @($jobScript, $runtimeScript)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
 Assert-AuthoritativeMainCheckout
@@ -53,6 +68,7 @@ $rehearsalTrigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWee
 Register-ScheduledTask -TaskName $runtimeName -Action $runtimeAction -Principal $principal -Settings $runtimeSettings -Description 'On-demand guarded ANDALUCÍA OPERATION application runtime used to restore the pre-backup running state.' -Force | Out-Null
 Register-ScheduledTask -TaskName $dailyName -Action $dailyAction -Trigger $dailyTrigger -Principal $principal -Settings $commonSettings -Description 'Creates an offline DB-2 verified DAILY backup and applies protected seven-generation retention.' -Force | Out-Null
 Register-ScheduledTask -TaskName $rehearsalName -Action $rehearsalAction -Trigger $rehearsalTrigger -Principal $principal -Settings $commonSettings -Description 'Runs the DB-2 restore rehearsal against the latest suitable verified backup without promotion.' -Force | Out-Null
+Set-RuntimeTaskHardTerminateProtection
 Assert-RuntimeTaskSafety
 
 New-Item -ItemType Directory -Path $exportRoot -Force | Out-Null
