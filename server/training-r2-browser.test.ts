@@ -177,6 +177,7 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.training-coverage button')).find(node=>node.textContent?.trim()==='View coverage');if(!button)return false;button.click();return true})()`), true, 'Staff Training Coverage did not expand')
   await sleep(180)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const card=document.querySelector('.training-coverage-grid>article');const text=card?.textContent||'';return !!card&&!!card.querySelector('.training-coverage-identity')&&!!card.querySelector('.training-coverage-metrics')&&['Credited hours','Sessions','Remaining target','Monthly target'].every(label=>text.includes(label))})()`), true, 'Premium Staff Training Coverage card is incomplete')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('.training-coverage>header button[aria-expanded="true"]');return !!button&&button.textContent?.trim()==='Hide coverage'&&!button.querySelector('path[d="m6 6 12 12"]')})()`), true, 'Staff Training Coverage still uses an X icon for its expand/collapse action')
   const widths = [360,390,430,768,820,1024,1280,1440]
   const results: Array<Record<string, unknown>> = []
   for (const width of widths) {
@@ -241,6 +242,7 @@ try {
   assert.equal(openedManagerSession, true, `${managerSessionTitle} was not available in the rendered Training list`); await sleep(700)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer') && document.body.innerText.includes('Eligibility preview')`), true)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-detail-header .training-status')&&!!document.querySelector('.training-section-heading')&&!!document.querySelector('.training-evidence-row .training-evidence-duty')&&!!document.querySelector('.training-detail-actions')`), true, 'Premium Training Details structure is incomplete')
+  assert.equal(await cdp.evaluate<boolean>(`getComputedStyle(document.querySelector('.training-detail-actions')).position==='sticky'`), true, 'Training Details actions are not held in a sticky footer')
   assert.equal(await cdp.evaluate<boolean>(`(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()`), true); await sleep(180)
   assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-r2-drawer')`), true, 'Escape did not dismiss Training Details')
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const card=Array.from(document.querySelectorAll('.training-r2-cards>article')).find(node=>node.textContent?.includes(${JSON.stringify('Grooming Standards and Personal Hygiene')}));const button=card?.querySelector('button');if(!button)return false;button.click();return true})()`), true); await sleep(500)
