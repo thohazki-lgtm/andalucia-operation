@@ -73,6 +73,11 @@ const officialTimesheets = new OfficialTimesheetExportService(repository.getData
 const authorization = new AuthorizationService(repository.getDatabase())
 const auth = new AuthService(repository.getDatabase(), authorization)
 const loginLimiter = new LoginAttemptLimiter()
+const activeSource = Object.freeze({
+  sha: process.env.ANDALUCIA_ACTIVE_SOURCE_SHA || 'development-unversioned',
+  branch: process.env.ANDALUCIA_ACTIVE_SOURCE_BRANCH || 'development',
+  schema: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION || databaseHealth.migrationVersion
+})
 const databaseBackupAdmin = new DatabaseBackupAdminService(defaultBackupRoot, runtimeStore.dataDirectory, process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION)
 const databaseRecovery = new DatabaseRecoveryService({ recoveryRoot: resolve('.recovery'), backupRoot: defaultBackupRoot, canonicalDirectory: runtimeStore.dataDirectory, expectedCanonicalDirectory: runtimeStore.dataDirectory, requiredVersion: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION })
 const billTipWorkflow = new BillTipWorkflowService(repository.getDatabase(), databaseHealth, databaseBackupAdmin, runtimeStore.dataDirectory, resolve('.recovery'))
@@ -109,7 +114,7 @@ await occasions.initialize()
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://127.0.0.1')
-    if (request.method === 'GET' && url.pathname === '/api/health') return send(response, 200, { ok: true, database: publicDatabaseHealth(databaseHealth) }, { 'Cache-Control': 'no-store' })
+    if (request.method === 'GET' && url.pathname === '/api/health') return send(response, 200, { ok: true, application: activeSource, database: publicDatabaseHealth(databaseHealth) }, { 'Cache-Control': 'no-store' })
     if (request.method === 'GET' && url.pathname === '/api/database/health') { const principal = await requireAuthenticatedUser(request, auth); await authorization.requirePermission(principal, 'manage_platform'); const summary = await databaseBackupAdmin.summary(databaseHealth); return send(response, 200, { ...summary, recovery: await databaseRecovery.summary(databaseHealth) }, { 'Cache-Control': 'no-store' }) }
     if (request.method === 'GET' && url.pathname === '/api/database/backups') { const principal = await requireAuthenticatedUser(request, auth); await authorization.requirePermission(principal, 'manage_platform'); return send(response, 200, await databaseBackupAdmin.inventory(), { 'Cache-Control': 'no-store' }) }
     if (request.method === 'POST' && url.pathname === '/api/database/backups/request') { assertTrustedOrigin(request); const principal = await requireAuthenticatedUser(request, auth); await authorization.requirePermission(principal, 'manage_platform'); return send(response, 202, await databaseBackupAdmin.requestManualBackup(principal)) }
