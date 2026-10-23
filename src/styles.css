@@ -341,8 +341,8 @@ main{min-width:0}
 .training-r2-cards dl{gap:7px 10px;margin:9px 0}
 .training-r2-cards footer{gap:8px}
 .training-r2-cards footer button{min-height:40px}
-.training-coverage{margin-top:12px;margin-bottom:0;padding:14px 15px;border-radius:8px}
-.training-coverage>header{gap:12px}
+.training-coverage{margin-top:12px;margin-bottom:0;padding:14px 15px;border:1px solid #dec58f;border-radius:8px}
+.training-coverage>header{gap:12px;padding-bottom:12px;border-bottom:1px solid #eadbb8}
 .training-coverage>header .secondary{min-height:40px;margin:0}
 
 @media(max-width:1100px) and (min-width:701px){

@@ -217,7 +217,11 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const event=document.querySelector('.training-r2-calendar .training-event');if(!event)return false;event.click();return true})()`), true, 'Mobile Training agenda session did not open')
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer')`)) break; await sleep(100) }
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer')`), true, 'Mobile Training agenda did not open the existing details panel')
-  await cdp.evaluate(`document.querySelector('.training-r2-drawer button[aria-label="Close Training details"]')?.click()`); await sleep(180)
+  assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-r2-drawer button[aria-label="Close Training details"]')`), true, 'Training Details still exposes an X close action')
+  await cdp.evaluate(`document.querySelector('.training-r2-drawer')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`); await sleep(80)
+  assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer')`), true, 'Clicking inside Training Details dismissed it')
+  await cdp.evaluate(`document.querySelector('.training-r2-drawer')?.parentElement?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`); await sleep(180)
+  assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-r2-drawer')`), true, 'Training Details backdrop did not dismiss it')
   await cdp.evaluate(`Array.from(document.querySelectorAll('.view-switch button')).find(b=>b.textContent?.trim()==='List')?.click()`); await sleep(200)
   assert.equal(await cdp.evaluate<boolean>(`getComputedStyle(document.querySelector('.training-r2-table')).display==='none' && getComputedStyle(document.querySelector('.training-r2-cards')).display!=='none'`), true)
   const managerSessionTitle = 'Grooming Standards and Personal Hygiene'
@@ -237,6 +241,9 @@ try {
   assert.equal(openedManagerSession, true, `${managerSessionTitle} was not available in the rendered Training list`); await sleep(700)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer') && document.body.innerText.includes('Eligibility preview')`), true)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.training-detail-header .training-status')&&!!document.querySelector('.training-section-heading')&&!!document.querySelector('.training-evidence-row .training-evidence-duty')&&!!document.querySelector('.training-detail-actions')`), true, 'Premium Training Details structure is incomplete')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()`), true); await sleep(180)
+  assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.training-r2-drawer')`), true, 'Escape did not dismiss Training Details')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const card=Array.from(document.querySelectorAll('.training-r2-cards>article')).find(node=>node.textContent?.includes(${JSON.stringify('Grooming Standards and Personal Hygiene')}));const button=card?.querySelector('button');if(!button)return false;button.click();return true})()`), true); await sleep(500)
   const drawerResults: Array<Record<string, unknown>> = []
   for (const width of widths) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 844 : width <= 1024 ? 900 : 1000, deviceScaleFactor: 1, mobile: width <= 430 }); await sleep(180)
