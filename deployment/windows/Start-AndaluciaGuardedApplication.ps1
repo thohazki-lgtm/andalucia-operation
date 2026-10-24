@@ -6,18 +6,12 @@ $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $packagePath = Join-Path $projectRoot 'package.json'
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
+$sourceResolver = Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'
 
 function Get-ApprovedSourceState {
-  $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
-  if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $projectRoot) { throw 'ANDALUCIA_RUNTIME_SOURCE_NOT_AUTHORITATIVE_GIT_CHECKOUT' }
-  $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
-  if ($branch -ne 'main') { throw "ANDALUCIA_RUNTIME_SOURCE_BRANCH_NOT_MAIN:$branch" }
-  $dirty = @(& git -C $projectRoot status --porcelain --untracked-files=no)
-  if ($dirty.Count -gt 0) { throw 'ANDALUCIA_RUNTIME_SOURCE_DIRTY' }
-  $sha = (& git -C $projectRoot rev-parse HEAD 2>$null).Trim()
-  $approvedSha = (& git -C $projectRoot rev-parse refs/remotes/origin/main 2>$null).Trim()
-  if (-not $sha -or -not $approvedSha -or $sha -ne $approvedSha) { throw "ANDALUCIA_RUNTIME_SOURCE_NOT_APPROVED_MAIN:${sha}:${approvedSha}" }
-  return @{ Sha = $sha; Branch = $branch }
+  if (-not (Test-Path -LiteralPath $sourceResolver -PathType Leaf)) { throw 'ANDALUCIA_RUNTIME_SOURCE_RESOLVER_MISSING' }
+  . $sourceResolver
+  return Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
 }
 
 if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) { throw 'ANDALUCIA_PROJECT_DIRECTORY_INVALID' }
