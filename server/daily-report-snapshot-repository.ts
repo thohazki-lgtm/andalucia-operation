@@ -14,6 +14,7 @@ export type DailyReportManualPayload = {
     voidDetails: Array<{ amount: string; reason: string; checkInvoiceNumber: string }>
   }
   serviceVerification: { doubleDinePax: number | null; details: Array<{ roomNumber: string; pax: number; sourceOutlet: string; note: string }> }
+  serviceCharges: { amount: string; remarks: string }
   manager: { operationSummary: string; operatingSummary?: string; operationsIssues?: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
   revenueVerification?: DailyReportRevenueVerification
   completion?: Record<string, 'complete' | 'warning' | 'missing'>
@@ -27,6 +28,7 @@ export type DailyReportFrozenPayload = {
   }
   symphony: DailyReportManualPayload['symphony']
   serviceVerification: DailyReportManualPayload['serviceVerification']
+  serviceCharges?: DailyReportManualPayload['serviceCharges']
   upselling: { chargeables: Array<Record<string, unknown>>; wineSpirits: Array<Record<string, unknown>>; details?: Array<Record<string, unknown>>; totalUpsellRevenue: string; itemsSold?: number; topItem?: string; topSeller?: string }
   guestOccasions: { categories: Array<Record<string, unknown>>; roomDetails: Array<Record<string, unknown>> }
   manager: DailyReportManualPayload['manager']

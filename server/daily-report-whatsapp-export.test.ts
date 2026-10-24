@@ -10,6 +10,7 @@ const view = {
     servicePerformance: { totalCovers: 27, adults: 22, kids: 5, totalBookings: 8, arrivedCovers: 24, noShowCovers: 3, noShowRooms: ['406', '709'], walkIns: 2, walkInRooms: ['118'], bookingByTimeSlot: [] },
     symphony: { foodRevenue: '1200', beverageRevenue: '500', wineRevenue: '200', liquorRevenue: '100', totalSale: '1700', totalDiscount: '20', totalVoid: '10', netSale: '1670', totalRevenue: '1670', voidDetails: [] },
     serviceVerification: { doubleDinePax: 4, details: [{ roomNumber: '470', pax: 4, sourceOutlet: 'Japanese Restaurant', note: 'Second seating confirmed.' }] },
+    serviceCharges: { amount: '42.50', remarks: 'Collected separately at the outlet.' },
     upselling: { chargeables: [], wineSpirits: [], details: [], totalUpsellRevenue: '75', itemsSold: 2, topItem: 'Birthday Basic', topSeller: 'Server One' },
     guestOccasions: {
       categories: [
@@ -34,7 +35,7 @@ const view = {
 
 const full = buildDailyReportWhatsAppMessage(view, 'full')
 assert.equal(dailyReportExportStatus(view), 'APPROVED · REVISION 3')
-for (const expected of ['*ANDALUCÍA DAILY REPORT*', '*SERVICE PERFORMANCE*', '*SYMPHONY / REVENUE*', '*CHARGEABLE ITEMS / UPSELLING*', '*GUEST OCCASIONS*', '*SERVICE VERIFICATION*', '*MANAGER REVIEW*', '*Status:* APPROVED · REVISION 3', 'Covers: 27 · Adults: 22 · Kids: 5', 'No-show Covers: 3 · Rooms: 406, 709', 'Walk-ins: 2 · Rooms: 118', 'Total Revenue: $1,670.00', 'Revenue: $75.00 · Items Sold: 2', 'VIP: 3 bookings · 13 pax\nRooms: 228 × 2, 512 × 4, 620 / 621 × 7', 'Repeaters / Siyam Family: 3 bookings · 13 pax\nRooms: 228 × 2, 512 × 4, 620 / 621 × 7', 'Famtrip: 1 booking · 4 pax\nRooms: 512 × 4', 'Birthday: 1 booking · 2 pax\nRooms: 333 × 2', 'TLC: 1 booking · 1 pax', 'Double Dine Pax: 4', '470 · 4 pax · Japanese Restaurant · Second seating confirmed.', 'Operating Summary: Smooth service with strong teamwork.', 'Operations Issues: Ice machine follow-up.']) assert.ok(full.includes(expected), expected)
+for (const expected of ['*ANDALUCÍA DAILY REPORT*', '*SERVICE PERFORMANCE*', '*SYMPHONY / REVENUE*', '*CHARGEABLE ITEMS / UPSELLING*', '*GUEST OCCASIONS*', '*SERVICE VERIFICATION & CHARGES*', '*MANAGER REVIEW*', '*Status:* APPROVED · REVISION 3', 'Covers: 27 · Adults: 22 · Kids: 5', 'No-show Covers: 3 · Rooms: 406, 709', 'Walk-ins: 2 · Rooms: 118', 'Total Revenue: $1,670.00', 'Revenue: $75.00 · Items Sold: 2', 'VIP: 3 bookings · 13 pax\nRooms: 228 × 2, 512 × 4, 620 / 621 × 7', 'Repeaters / Siyam Family: 3 bookings · 13 pax\nRooms: 228 × 2, 512 × 4, 620 / 621 × 7', 'Famtrip: 1 booking · 4 pax\nRooms: 512 × 4', 'Birthday: 1 booking · 2 pax\nRooms: 333 × 2', 'TLC: 1 booking · 1 pax', 'Double Dine Pax: 4', '470 · 4 pax · Japanese Restaurant · Second seating confirmed.', 'Daily Service Charges: $42.50', 'Remarks: Collected separately at the outlet.', 'Operating Summary: Smooth service with strong teamwork.', 'Operations Issues: Ice machine follow-up.']) assert.ok(full.includes(expected), expected)
 assert.equal((full.match(/━━━━━━━━━━━━━━/g) || []).length, 6)
 assert.equal(/\*[^*]+\*\n(?!\n)/.test(full), false, 'every heading must be followed by one blank line')
 assert.equal(/\n{3,}/.test(full), false, 'message must not contain excessive blank lines')
@@ -48,8 +49,14 @@ assert.equal((quick.match(/━━━━━━━━━━━━━━/g) || []).
 assert.equal(/\*[^*]+\*\n(?!\n)/.test(quick), false, 'every heading must be followed by one blank line')
 assert.equal(/\n{3,}/.test(quick), false, 'message must not contain excessive blank lines')
 assert.ok(quick.includes('Guest Occasions: VIP: 3 bookings · 13 pax'))
+assert.ok(quick.includes('Service Charges: $42.50'))
 assert.equal(quick.includes('Rooms: 228 × 2'), false, 'Quick Management Summary must remain unchanged')
 assert.equal(quick.includes('*SYMPHONY / REVENUE*'), false)
+
+const explicitZero = { ...view, snapshot: null, content: { ...view.content, serviceCharges: { amount: '0.00', remarks: '' } } } as DailyReportView
+assert.ok(buildDailyReportWhatsAppMessage(explicitZero, 'quick').includes('Service Charges: $0.00'))
+const unentered = { ...view, snapshot: null, content: { ...view.content, serviceCharges: { amount: '', remarks: '' } } } as DailyReportView
+assert.ok(buildDailyReportWhatsAppMessage(unentered, 'quick').includes('Service Charges: Not entered'))
 
 const longRooms = Array.from({ length: 24 }, (_, index) => ({ occasionId: `occasion-long-${index}`, bookingId: `booking-long-${index}`, category: 'vip', categoryKeys: ['vip'], label: 'VIP', guestName: `Guest ${index}`, roomNumber: String(700 + index), covers: index + 1 }))
 const longView = { ...view, snapshot: null, report: { ...view.report!, status: 'draft' as const }, content: { ...view.content, guestOccasions: { categories: [{ key: 'vip', label: 'VIP', count: 24, covers: 300 }], roomDetails: longRooms } } } as DailyReportView

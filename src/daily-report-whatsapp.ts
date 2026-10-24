@@ -52,6 +52,7 @@ const occasionRoomLines = (content: DailyReportView['content']) => content.guest
 
 export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: DailyReportWhatsAppFormat) {
   const content = authoritativeContent(view)
+  const serviceCharges = content.serviceCharges || { amount: '', remarks: '' }
   const service = content.servicePerformance
   const manager = managerSummary(content)
   const occasions = occasionLines(content)
@@ -74,6 +75,7 @@ export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: D
       `Total Revenue: ${amount(content.symphony.totalRevenue)} · Net Sale: ${amount(content.symphony.netSale)}`,
       `Upselling: ${amount(content.upselling.totalUpsellRevenue)} · ${content.upselling.itemsSold} item${content.upselling.itemsSold === 1 ? '' : 's'}`,
       `Double Dine: ${content.serviceVerification.doubleDinePax} pax`,
+      `Service Charges: ${amount(serviceCharges.amount)}`,
       `Guest Occasions: ${occasions.length ? occasions.join('; ') : 'None recorded'}`
     ]),
     ...(management.length ? [messageSection('Manager Review', management)] : [])
@@ -100,9 +102,11 @@ export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: D
       `Top Item: ${content.upselling.topItem || 'None recorded'} · Top Seller: ${content.upselling.topSeller || 'None recorded'}`
     ]),
     messageSection('Guest Occasions', occasions.length ? occasionRoomLines(content) : ['None recorded']),
-    messageSection('Service Verification', [
+    messageSection('Service Verification & Charges', [
       `Double Dine Pax: ${content.serviceVerification.doubleDinePax}`,
-      ...(doubleDineDetails.length ? doubleDineDetails : ['No Double Dine details recorded'])
+      ...(doubleDineDetails.length ? doubleDineDetails : ['No Double Dine details recorded']),
+      `Daily Service Charges: ${amount(serviceCharges.amount)}`,
+      ...(clean(serviceCharges.remarks) ? [`Remarks: ${serviceCharges.remarks.trim()}`] : [])
     ]),
     ...(management.length ? [messageSection('Manager Review', management)] : [])
   ])

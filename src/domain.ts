@@ -365,6 +365,7 @@ export interface DailyReportRevenueVerification { acknowledged: boolean; verifie
 export interface DailyReportManualPayload {
   symphony: { foodRevenue: string; beverageRevenue: string; wineRevenue: string; liquorRevenue: string; totalSale: string; totalDiscount: string; totalVoid: string; netSale: string; totalRevenue: string; voidDetails: DailyReportVoidDetail[] }
   serviceVerification: { doubleDinePax: number | null; details: DailyReportDoubleDineDetail[] }
+  serviceCharges: { amount: string; remarks: string }
   manager: { operationSummary: string; operatingSummary?: string; operationsIssues?: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
   revenueVerification?: DailyReportRevenueVerification
   completion?: Record<string, DailyReportReadinessState>
@@ -380,6 +381,7 @@ export interface DailyReportFrozenPayload {
   servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInCovers?: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
   symphony: DailyReportManualPayload['symphony']
   serviceVerification: { doubleDinePax: number; details: DailyReportDoubleDineDetail[] }
+  serviceCharges?: DailyReportManualPayload['serviceCharges']
   upselling: { chargeables: DailyReportUpsellDetail[]; wineSpirits: DailyReportUpsellDetail[]; details: DailyReportUpsellDetail[]; totalUpsellRevenue: string; itemsSold: number; topItem: string; topSeller: string }
   guestOccasions: { categories: Array<{ key: string; label: string; count: number; covers: number }>; roomDetails: DailyReportOccasionRoom[] }
   manager: DailyReportManualPayload['manager']

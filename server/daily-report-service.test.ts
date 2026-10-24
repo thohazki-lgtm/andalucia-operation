@@ -88,7 +88,7 @@ try {
     await assert.rejects(() => service.review('2026-09-10', outlet, actor), /not ready/)
     const manual = {
       symphony: { foodRevenue: '100.00', beverageRevenue: '50.00', wineRevenue: '20.00', liquorRevenue: '10.00', totalSale: '150.00', totalDiscount: '10.00', totalVoid: '5.00', netSale: '135.00', totalRevenue: '135.00', voidDetails: [{ amount: '5.00', reason: 'Manager approved void', checkInvoiceNumber: '41034457' }] },
-      serviceVerification: { doubleDinePax: 0, details: [] }, manager: { operationSummary: '', operatingSummary: 'Service ran smoothly with strong guest feedback.', operationsIssues: 'Ice machine follow-up remains open for tomorrow.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
+      serviceVerification: { doubleDinePax: 0, details: [] }, serviceCharges: { amount: '42.5', remarks: 'Separate daily service charge.' }, manager: { operationSummary: '', operatingSummary: 'Service ran smoothly with strong guest feedback.', operationsIssues: 'Ice machine follow-up remains open for tomorrow.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
     }
     const saved = await service.saveDraft('2026-09-10', manual, outlet, actor)
     assert.equal(saved.report?.preparedByName, owner.display_name)
@@ -97,11 +97,13 @@ try {
     assert.equal(saved.readiness.find(item => item.key === 'voids')?.state, 'complete')
     assert.equal(saved.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(saved.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(saved.report?.manualPayload.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     assert.equal(saved.readiness.find(item => item.key === 'manager')?.label, 'Operating Summary')
     const reloadedService = new DailyReportService(db, new ReportingRepository(db))
     const reloaded = await reloadedService.view('2026-09-10', outlet)
     assert.equal(reloaded.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(reloaded.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(reloaded.report?.manualPayload.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     assert.equal(reloaded.content.upselling.details?.some(row => row.id === birthdayBasicId && row.item === 'Birthday Basic' && row.roomNumber === '708' && row.checkInvoiceNumber === 'BIRTHDAY-708' && row.amount === '75.00'), true)
     const independentlyEdited = await reloadedService.saveDraft('2026-09-10', { ...reloaded.report!.manualPayload, manager: { ...reloaded.report!.manualPayload.manager, operationsIssues: 'Updated independently after reload.' } }, outlet, actor)
     assert.equal(independentlyEdited.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
@@ -144,6 +146,10 @@ try {
     const mismatch = service.readiness(mismatchManual, saved.content).find(item => item.key === 'doubleDine')
     assert.equal(mismatch?.state, 'warning'); assert.equal(mismatch?.blocking, false)
     assert.equal(service.normalizeManual({ ...manual, serviceVerification: { doubleDinePax: '04', details: [] } }).serviceVerification.doubleDinePax, 4)
+    assert.deepEqual(service.normalizeManual({ ...manual, serviceCharges: { amount: '', remarks: '  ' } }).serviceCharges, { amount: '', remarks: '' })
+    assert.equal(service.normalizeManual({ ...manual, serviceCharges: { amount: '0', remarks: 'Explicit zero.' } }).serviceCharges.amount, '0.00')
+    assert.equal(service.normalizeManual({ ...manual, serviceCharges: { amount: '1.25', remarks: '' } }).serviceCharges.amount, '1.25')
+    for (const amount of ['-1', '1.234', 'abc', '01']) await assert.rejects(() => service.saveDraft('2026-09-08', { ...manual, serviceCharges: { amount, remarks: '' } }, outlet, actor), /Daily Service Charges/)
     const brokenRevenue = service.normalizeManual({ ...manual, symphony: { ...manual.symphony, netSale: '140.00' } })
     const advisory = service.readiness(brokenRevenue, saved.content).find(item => item.key === 'reconciliation')
     assert.equal(advisory?.state, 'warning'); assert.equal(advisory?.blocking, false); assert.equal(advisory?.verificationRequired, true)
@@ -163,6 +169,7 @@ try {
     assert.equal(approved.content.revenueVerification?.acknowledged, true); assert.equal(approved.content.revenueVerification?.verifiedByName, owner.display_name)
     assert.equal(approved.content.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(approved.content.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(approved.content.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     const retry = await service.approve('2026-09-10', 'reports-r1-isolated-approval', outlet, actor); assert.equal(retry.snapshot?.id, approved.snapshot?.id)
     await assert.rejects(() => service.approve('2026-09-10', 'reports-r1-different-key', outlet, actor), /already approved/)
     const snapshotJson = JSON.stringify(approved.content)
