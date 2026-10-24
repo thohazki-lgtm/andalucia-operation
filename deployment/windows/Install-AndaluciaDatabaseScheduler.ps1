@@ -41,7 +41,13 @@ function Register-GracefulShutdownTask([string]$PowerShellPath) {
   $definition = $service.NewTask(0)
   $definition.RegistrationInfo.Description = 'Gracefully releases the Andalucía canonical PGlite owner before a Windows shutdown or restart.'
   $definition.Principal.UserId = $currentUser
-  $definition.Principal.LogonType = 3
+  # The User32 1074 event is raised while Windows is already tearing down the
+  # interactive desktop session. An InteractiveToken task can therefore fail
+  # before PowerShell initializes (NTSTATUS 0xC0000142), leaving PGlite's
+  # ownership marker behind. S4U keeps the same limited user identity but lets
+  # Task Scheduler launch the local shutdown handshake independently of the
+  # closing interactive session; no password is stored and no elevation is used.
+  $definition.Principal.LogonType = 2
   $definition.Principal.RunLevel = 0
   $definition.Settings.Enabled = $true
   $definition.Settings.StartWhenAvailable = $true
@@ -58,8 +64,8 @@ function Register-GracefulShutdownTask([string]$PowerShellPath) {
   $action.Arguments = ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $shutdownScript)
   $action.WorkingDirectory = $projectRoot
   $taskCreateOrUpdate = 6
-  $taskLogonInteractiveToken = 3
-  $folder.RegisterTaskDefinition($shutdownName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonInteractiveToken, $null) | Out-Null
+  $taskLogonS4U = 2
+  $folder.RegisterTaskDefinition($shutdownName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonS4U, $null) | Out-Null
 }
 
 function Assert-ShutdownTaskSafety {
@@ -71,11 +77,13 @@ function Assert-ShutdownTaskSafety {
   $arguments = $definition.SelectSingleNode('//t:Actions/t:Exec/t:Arguments', $namespace).InnerText
   $workingDirectory = $definition.SelectSingleNode('//t:Actions/t:Exec/t:WorkingDirectory', $namespace).InnerText
   $allowHardTerminate = $definition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $namespace).InnerText
+  $logonType = $definition.SelectSingleNode('//t:Principals/t:Principal/t:LogonType', $namespace).InnerText
   if ($subscription -notmatch 'EventID=1074' -or $subscription -notmatch "Provider\[@Name='User32'\]") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:EventTrigger' }
   if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath((Join-Path $PSHOME 'powershell.exe'))) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:PowerShell' }
   if ($arguments -notlike "*$shutdownScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Script' }
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WorkingDirectory' }
   if ($allowHardTerminate -ne 'false') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:AllowHardTerminate' }
+  if ($logonType -ne 'S4U') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:LogonType' }
 }
 
 function Set-RuntimeTaskHardTerminateProtection {
