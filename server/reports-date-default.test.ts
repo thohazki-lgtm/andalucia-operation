@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { clearLegacyDailyReportDate, currentMaldivesReportDate, legacyDailyReportDateKey } from '../src/report-date-selection.js'
+import { clearLegacyDailyReportDate, currentMaldivesReportDate, dailyReportUrlForDate, initialDailyReportDate, legacyDailyReportDateKey } from '../src/report-date-selection.js'
+import { hydrateDailyReportManualPayload } from '../src/daily-report-manual.js'
 import { addCalendarDays, addCalendarMonths, monthRange, weekRange } from '../src/service-date.js'
 
 assert.equal(currentMaldivesReportDate(new Date('2026-10-16T18:59:59.000Z')), '2026-10-16')
@@ -16,12 +17,28 @@ assert.equal(addCalendarDays('2026-10-17', 1), '2026-10-18')
 assert.deepEqual(weekRange('2026-10-17'), ['2026-10-12', '2026-10-18'])
 assert.deepEqual(monthRange('2026-10-17'), ['2026-10-01', '2026-10-31'])
 assert.equal(addCalendarMonths('2026-10-17', 1), '2026-11-17')
+assert.equal(initialDailyReportDate('?dailyReportDate=2026-10-16', new Date('2026-10-25T12:00:00Z')), '2026-10-16')
+assert.equal(initialDailyReportDate('?dailyReportDate=not-a-date', new Date('2026-10-25T12:00:00Z')), currentMaldivesReportDate(new Date('2026-10-25T12:00:00Z')))
+assert.equal(dailyReportUrlForDate('http://localhost:5173/?leavePlannerR2=1', '2026-10-16'), '/?leavePlannerR2=1&dailyReportDate=2026-10-16')
+
+const hydratedHistorical = hydrateDailyReportManualPayload({
+  symphony: { totalRevenue: '9250.00' },
+  serviceVerification: { doubleDinePax: 4, details: [{ roomNumber: '716', pax: 4, sourceOutlet: 'Main Restaurant', note: '' }] },
+  manager: { operationSummary: 'Preserved historical report.' },
+})
+assert.deepEqual(hydratedHistorical.serviceCharges, { amount: '', remarks: '' })
+assert.equal(hydratedHistorical.symphony.totalRevenue, '9250.00')
+assert.equal(hydratedHistorical.symphony.voidDetails.length, 0)
+assert.equal(hydratedHistorical.serviceVerification.details.length, 1)
+assert.equal(hydratedHistorical.manager.operationSummary, 'Preserved historical report.')
 
 const reportsSource = await readFile(resolve('src/reports.tsx'), 'utf8')
 const appSource = await readFile(resolve('src/App.tsx'), 'utf8')
-assert.match(reportsSource, /useState\(currentMaldivesReportDate\)/)
+assert.match(reportsSource, /useState\(initialDailyReportDate\)/)
 assert.match(reportsSource, /clearLegacyDailyReportDate\(\)/)
 assert.doesNotMatch(reportsSource, /sessionStorage\.(getItem|setItem)/)
+assert.match(reportsSource, /hydrateDailyReportManualPayload\(next\.report\?\.manualPayload\)/)
+assert.match(reportsSource, /dailyReportUrlForDate\(window\.location\.href, value\)/)
 assert.match(reportsSource, /unsaved Daily Report changes\. Change the date and discard them/)
 assert.match(reportsSource, /beforeunload/)
 assert.match(reportsSource, /setUnsaved\(false\); onToast\('Daily Report draft saved\.'/)
@@ -31,6 +48,8 @@ console.log(JSON.stringify({
   maldivesTodayBoundary: true,
   staleSessionDateRemoved: true,
   historicalDateNavigationPreserved: true,
+  historicalDateRefreshPreserved: true,
+  legacyManualPayloadHydrated: true,
   weeklyMonthlyBoundariesPreserved: true,
   unsavedDailyEditsProtected: true,
   canonicalDataTouched: false
