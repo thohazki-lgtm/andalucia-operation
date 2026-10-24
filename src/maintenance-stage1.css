@@ -1,15 +1,23 @@
 .maintenance-summary .total {
-  border-left: 4px solid #183e53;
+  --maintenance-accent: #183e53;
 }
 
 .maintenance-toolbar {
-  align-items: flex-end;
-  margin-bottom: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #dec58f;
+  border-radius: 12px;
+  background: #fffaf0;
 }
 
 .maintenance-toolbar h2 {
-  margin: 3px 0 0;
+  margin: 0;
+  color: #173d56;
+  font: 650 19px/1.2 'Playfair Display', serif;
 }
+
+.maintenance-toolbar > .ao-action { min-height: 42px; border-color: #bd9854; }
 
 .maintenance-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -18,10 +26,22 @@
 }
 
 .maintenance-summary article {
+  position: relative;
   min-width: 0;
-  min-height: 108px;
-  padding: 16px 18px;
+  min-height: 98px;
+  padding: 15px 16px;
+  overflow: hidden;
+  border: 1px solid #dec58f;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fffaf0 100%);
+  box-shadow: 0 3px 12px #173d5608;
 }
+
+.maintenance-summary article::before { content: ''; position: absolute; top: 0; right: 14px; left: 14px; height: 3px; border-radius: 0 0 4px 4px; background: var(--maintenance-accent, #bd9854); }
+.maintenance-summary .open { --maintenance-accent: #b74b45; }
+.maintenance-summary .progress { --maintenance-accent: #b38b3a; }
+.maintenance-summary .complete { --maintenance-accent: #2f8063; }
+.maintenance-panel { overflow: hidden; border: 1px solid #dec58f; border-radius: 12px; background: #fffdf8; }
 
 .maintenance-filters {
   display: grid;
@@ -29,6 +49,8 @@
   align-items: end;
   gap: 12px;
   padding: 14px 16px;
+  border-bottom: 1px solid #dec58f;
+  background: #fffaf0;
 }
 
 .maintenance-filters > input,
@@ -45,6 +67,8 @@
   gap: 5px;
 }
 
+.maintenance-filters :is(input, select) { min-height: 42px; border-color: #dec58f; background: #fff; }
+
 .maintenance-urgent-row td {
   background: #fff9f7;
 }
@@ -53,19 +77,14 @@
   box-shadow: inset 4px 0 0 #c75b4f, 1px 0 0 #dce5e9;
 }
 
-.maintenance-card-urgent {
-  border-color: #e7b4ae;
-  box-shadow: inset 4px 0 0 #c75b4f;
-}
+.maintenance-card-urgent { box-shadow: inset 4px 0 0 #c75b4f, 0 3px 12px #173d5608; }
 
 .maintenance-detail {
   padding: 4px 2px;
 }
 
 .maintenance-table-wrap {
-  overflow-x: auto;
-  overflow-y: visible;
-  scrollbar-gutter: auto;
+  display: none;
 }
 
 .maintenance-table {
@@ -108,11 +127,20 @@
   padding-inline: 9px;
 }
 
-@media (min-width: 1360px) {
-  .maintenance-table-wrap {
-    overflow-x: hidden;
-  }
-}
+.maintenance-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 1120px); margin-inline: auto; gap: 12px; padding: 14px; }
+.maintenance-card { display: flex; min-width: 0; flex-direction: column; padding: 14px; border: 1px solid #dec58f; border-radius: 12px; background: linear-gradient(180deg, #fffdf8 0%, #fff 100%); box-shadow: 0 3px 12px #173d5608; }
+.maintenance-card-head > div { min-width: 0; }
+.maintenance-card-date { display: block; margin-bottom: 4px; color: #687b86; font-size: 11px; font-weight: 650; }
+.maintenance-card h3 { margin: 0; }
+.maintenance-card dl { margin: 12px 0 10px; gap: 9px 14px; }
+.maintenance-card dd { line-height: 1.35; }
+.maintenance-card-footer { display: grid; grid-template-columns: minmax(150px, 1fr) auto; align-items: end; gap: 10px; margin-top: auto; padding-top: 10px; border-top: 1px solid #eadbbd; }
+.maintenance-card-footer label { display: grid; min-width: 0; gap: 5px; }
+.maintenance-card-footer label > span { color: #657780; font-size: 10px; font-weight: 700; letter-spacing: .055em; text-transform: uppercase; }
+.maintenance-card-footer .maintenance-status-select,.maintenance-card-footer .maintenance-status-pill { max-width: 190px; }
+
+@media (max-width: 900px) { .maintenance-cards { grid-template-columns: 1fr; } }
+@media (max-width: 1050px) and (min-width: 701px) { .maintenance-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .maintenance-filters > input { grid-column: 1 / -1; } }
 
 .maintenance-issue-trigger {
   display: inline-flex;
@@ -213,6 +241,7 @@
 
   .maintenance-toolbar > .ao-action {
     width: 100%;
+    min-height: 44px;
   }
 
   .maintenance-summary {
