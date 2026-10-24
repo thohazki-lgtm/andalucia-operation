@@ -145,6 +145,8 @@
 @media(max-width:900px){.external-allocations>header{align-items:flex-start}.external-allocation-actions{flex-wrap:wrap}.bill-tip-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @media(max-width:700px){
+  .financial-primary-tabs{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px;padding:1px 0 3px;overflow:visible}
+  .financial-primary-tabs button{width:100%;max-width:none;min-width:0;min-height:48px;padding-inline:10px}
   .financial-command.bill-tip-command{align-items:stretch;gap:12px;padding:14px;margin-bottom:16px}
   .bill-tip-command .bill-tip-command-eyebrow,.bill-tip-command .bill-tip-month-label{display:none}
   .bill-tip-command .financial-command-controls{gap:8px;padding:0;border:0;background:transparent}
