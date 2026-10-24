@@ -1,26 +1,26 @@
 .chargeable-toolbar,.chargeable-date-controls,.config-heading{display:flex;align-items:center}
 .chargeable-toolbar,.chargeable-summary,.chargeable-panel{width:100%;max-width:100%;min-width:0}
 .chargeable-panel{contain:inline-size}
-.chargeable-toolbar{justify-content:space-between;gap:12px;margin-bottom:12px;padding:10px 12px;border:1px solid #cfae6a;border-radius:10px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);box-shadow:0 3px 12px #7b5a1b0b}
+.chargeable-toolbar{justify-content:space-between;gap:12px;margin-bottom:14px;padding:10px 12px;border:1px solid #dec58f;border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);box-shadow:0 3px 12px #7b5a1b0b}
 .chargeable-date-controls{max-width:100%;gap:7px}
 .chargeable-date-controls .chargeable-date-step{width:40px;height:40px;flex-basis:40px}
 .chargeable-date-picker{width:172px}
 .chargeable-date-picker input{height:40px;border-color:#d7bd82;border-radius:9px;background:#fff;color:#173d56;font:650 12px 'DM Sans',Arial,sans-serif;text-align:center}
 .chargeable-today{margin:0!important;white-space:nowrap}
 .chargeable-add{min-height:40px;white-space:nowrap}
-.chargeable-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.chargeable-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .chargeable-summary article{min-width:0;min-height:94px;padding:15px 17px;border:1px solid #dec58f;border-top:3px solid #c5a45e;border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fffaf0 100%);box-shadow:0 3px 12px #7657190a}
 .chargeable-summary span{display:block;color:#6f765f;font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.065em}
 .chargeable-summary strong{display:block;margin-top:7px;font-size:27px;color:#183e53;font-variant-numeric:tabular-nums}
 .chargeable-summary .summary-text{font-size:18px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chargeable-tabs{display:flex;align-items:center;gap:7px;padding:9px 12px 8px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none;-ms-overflow-style:none;border-bottom:1px solid #d8b96f;background:#fffaf0}.chargeable-tabs::-webkit-scrollbar{display:none}.chargeable-tabs button{appearance:none;flex:0 0 auto;min-height:40px;padding:8px 10px;border:1px solid #dec58f;border-radius:8px;background:#fffdf8;color:#35566a;font:700 12px/1.2 inherit;white-space:nowrap;cursor:pointer}.chargeable-tabs button:hover{border-color:#c6a25a;background:#fff7e6;color:#173d56}.chargeable-tabs button:focus-visible{outline:3px solid #d7b663;outline-offset:1px}.chargeable-tabs button.active{border-color:#173d56;background:#173d56;color:#fff;box-shadow:inset 0 -2px #c9a24f}.chargeable-tabs b{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:4px;padding:0 5px;border-radius:10px;background:#f0e5cf;color:#71551f;font-size:10px}.chargeable-tabs button.active b{background:#d7b663;color:#173d56}
-.chargeable-panel{padding:0;overflow:hidden;border-color:#dec58f;background:#fffdf8}
-.chargeable-filters{display:grid;grid-template-columns:minmax(250px,1.35fr) repeat(3,minmax(128px,.55fr));align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid #d8b96f;background:#fffdf8}
+.chargeable-panel{box-sizing:border-box;padding:0;overflow:hidden;border:1px solid #dec58f;border-radius:12px;background:#fffdf8}
+.chargeable-filters{display:grid;grid-template-columns:minmax(250px,1.35fr) repeat(3,minmax(128px,.55fr));align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #d8b96f;background:#fffdf8}
 .chargeable-filters input,.chargeable-filters select{width:100%;min-width:0;height:38px;border:1px solid #dcc795;border-radius:8px;background-color:#fff;color:#294b60;font:500 12px 'DM Sans',Arial,sans-serif}
 .chargeable-filters input{padding:0 11px}.chargeable-filters select{padding:0 30px 0 10px}
 .archive-toggle{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;min-height:38px;padding:0 2px;white-space:nowrap;margin:0;color:#5f7382;font-size:12px;font-weight:600}
 .archive-toggle input{flex:0 0 auto!important;width:16px!important;height:16px!important;margin:0}
 .chargeable-table-wrap{width:100%;max-width:100%;min-width:0;overflow:visible}
-.chargeable-card-grid{display:grid!important;width:100%;max-width:920px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-inline:auto;padding:8px}
+.chargeable-card-grid{display:grid!important;width:100%;max-width:920px;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-inline:auto;padding:12px}
 .chargeable-card-grid .mobile-operation-card.mobile-chargeable-card{display:flex;min-width:0;flex-direction:column;padding:10px 11px;border:1px solid #dec58f;border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%);box-shadow:0 2px 8px #173d5608}
 .chargeable-card-grid .mobile-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0;padding-bottom:7px;border-bottom:1px solid #ead7ae}
 .chargeable-card-grid .mobile-card-kicker{display:block;color:#607987;font-size:9px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
@@ -34,7 +34,7 @@
 .chargeable-card-grid .mobile-card-fields select{width:100%;min-height:44px;border-color:#d9c18e;border-radius:8px}
 .chargeable-card-grid .mobile-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
 .chargeable-card-grid .mobile-card-actions .ao-action{width:100%}
-@media(max-width:1100px){.chargeable-card-grid{grid-template-columns:minmax(0,1fr)}.mobile-chargeable-card .mobile-card-fields{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.chargeable-card-grid{grid-template-columns:minmax(0,1fr)}.mobile-chargeable-card .mobile-card-fields{grid-template-columns:minmax(0,1fr)}}
 .chargeable-table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:850px}
 .chargeable-table th,.chargeable-table td{padding:11px 8px;border-bottom:1px solid #ead7ae;text-align:left;vertical-align:middle}
 .chargeable-table th{height:42px;font-size:10px;font-weight:750;line-height:1.15;color:#173d56;text-transform:uppercase;letter-spacing:.055em;background:#fff6e4}
