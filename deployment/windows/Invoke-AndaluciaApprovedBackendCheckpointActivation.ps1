@@ -12,6 +12,8 @@ $expectedCheckpointSha = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
 $expectedRuntimeBaselineSha = '40461397f9b5f1d3ffa391be9a0fc5110c6ff020'
 $expectedBackendControlSha = 'dd07564c3e13a6f4e86668a34077e9527d3da2ee'
 $expectedReviewUiSha = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
+$expectedReviewUiControlSha = 'e33cbb100dbb5b01cc3399641a59980c68be3b5c'
+$expectedFinalReviewUiSha = '6110fd6e6da9f311d5be880eb3a277cb51caae3f'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $markerPath = Join-Path $canonicalData 'postmaster.pid'
@@ -19,14 +21,15 @@ $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-i
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 $stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
-if ($ManagerAuthorization -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_ACTIVATION')) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_MANAGER_AUTHORIZATION_REQUIRED' }
+if ($ManagerAuthorization -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_ACTIVATION')) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_MANAGER_AUTHORIZATION_REQUIRED' }
 . $resolverPath
 
 $source = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
 $isBackendCheckpoint = $source.Mode -eq 'approved_local_daily_report_backend_checkpoint' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION'
 $isReviewUiCheckpoint = $source.Mode -eq 'approved_local_daily_report_backend_with_review_ui' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedBackendControlSha -and $source.ReviewUiCheckpointSha -eq $expectedReviewUiSha
-if ((-not $isBackendCheckpoint -and -not $isReviewUiCheckpoint) -or $source.ReviewedCheckpointSha -ne $expectedCheckpointSha -or $source.Sha -ne $ExpectedControlSha) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_SOURCE_MISMATCH' }
-$requiredRuntimeSha = if ($isReviewUiCheckpoint) { $expectedBackendControlSha } else { $expectedRuntimeBaselineSha }
+$isFinalReviewUiCheckpoint = $source.Mode -eq 'approved_local_daily_report_backend_with_final_review_ui' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedReviewUiControlSha -and $source.ReviewUiCheckpointSha -eq $expectedFinalReviewUiSha
+if ((-not $isBackendCheckpoint -and -not $isReviewUiCheckpoint -and -not $isFinalReviewUiCheckpoint) -or $source.ReviewedCheckpointSha -ne $expectedCheckpointSha -or $source.Sha -ne $ExpectedControlSha) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_SOURCE_MISMATCH' }
+$requiredRuntimeSha = if ($isFinalReviewUiCheckpoint) { $expectedReviewUiControlSha } elseif ($isReviewUiCheckpoint) { $expectedBackendControlSha } else { $expectedRuntimeBaselineSha }
 if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISSING' }
 $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
 if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISMATCH' }
@@ -91,4 +94,4 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
   Start-Sleep -Seconds 1
 }
 if (-not $activatedHealth) { throw 'ANDALUCIA_LOCAL_BACKEND_GUARDED_START_HEALTH_VERIFICATION_FAILED' }
-[ordered]@{ status='HEALTH_VERIFIED'; runtimeSha=[string]$activatedHealth.application.sha; branch=[string]$activatedHealth.application.branch; schema=[string]$activatedHealth.database.migrationVersion; database=[string]$activatedHealth.database.status; backupId=[string]$verifiedBackup.backupId; reviewedCheckpointSha=$expectedCheckpointSha; reviewUiCheckpointSha=if($isReviewUiCheckpoint){$expectedReviewUiSha}else{$null}; restartPerformed=$true; markerModifiedManually=$false } | ConvertTo-Json -Depth 5
+[ordered]@{ status='HEALTH_VERIFIED'; runtimeSha=[string]$activatedHealth.application.sha; branch=[string]$activatedHealth.application.branch; schema=[string]$activatedHealth.database.migrationVersion; database=[string]$activatedHealth.database.status; backupId=[string]$verifiedBackup.backupId; reviewedCheckpointSha=$expectedCheckpointSha; reviewUiCheckpointSha=if($isFinalReviewUiCheckpoint){$expectedFinalReviewUiSha}elseif($isReviewUiCheckpoint){$expectedReviewUiSha}else{$null}; restartPerformed=$true; markerModifiedManually=$false } | ConvertTo-Json -Depth 5

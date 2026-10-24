@@ -8,6 +8,7 @@ const sourceRoot = resolve('.')
 const testRoot = await createDisposableTestRoot('local-backend-checkpoint-activation')
 const expectedCheckpoint = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
 const expectedReviewUiCheckpoint = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
+const expectedFinalReviewUiCheckpoint = '6110fd6e6da9f311d5be880eb3a277cb51caae3f'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -57,25 +58,32 @@ try {
   const wrongReviewUi = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', expectedCheckpoint, '-ReviewUiCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongReviewUi.status, 0)
   assert.match(wrongReviewUi.output, /ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongFinalReviewUi = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', expectedCheckpoint, '-FinalReviewUiCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongFinalReviewUi.status, 0)
+  assert.match(wrongFinalReviewUi.output, /ANDALUCIA_LOCAL_BACKEND_FINAL_UI_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
   const activationSource = await readFile(join(deploymentRoot, 'Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1'), 'utf8')
   assert.match(resolverSource, new RegExp(expectedCheckpoint))
   assert.match(resolverSource, new RegExp(expectedReviewUiCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedFinalReviewUiCheckpoint))
   assert.match(approvalSource, new RegExp(expectedCheckpoint))
   assert.match(approvalSource, new RegExp(expectedReviewUiCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedFinalReviewUiCheckpoint))
   assert.doesNotMatch(approvalSource, /\*\.ts|server\/\*/)
   assert.match(resolverSource, /approved_local_daily_report_backend_checkpoint/)
   assert.match(resolverSource, /approved_local_daily_report_backend_with_review_ui/)
+  assert.match(resolverSource, /approved_local_daily_report_backend_with_final_review_ui/)
   assert.match(activationSource, new RegExp(expectedCheckpoint))
   assert.match(activationSource, new RegExp(expectedReviewUiCheckpoint))
+  assert.match(activationSource, new RegExp(expectedFinalReviewUiCheckpoint))
   assert.match(activationSource, /VERIFIED_RECENT_BACKUP_REQUIRED/)
   assert.match(activationSource, /RUNTIME_TASK_SAFETY_DRIFT/)
   assert.match(activationSource, /GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED/)
   assert.doesNotMatch(activationSource, /Remove-Item|Stop-Process|taskkill/)
 
-  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
