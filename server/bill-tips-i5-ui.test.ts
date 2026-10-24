@@ -23,5 +23,7 @@ assert.match(styles, /@media\(min-width:901px\)\{\.bill-tip-metrics\{grid-templa
 assert.match(styles, /\.bill-tip-team-table\{display:none\}/)
 assert.match(styles, /\.bill-tip-staff-cards\{display:grid/)
 assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+assert.match(styles, /\.financial-primary-tabs\{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+assert.match(styles, /\.financial-primary-tabs button\{width:100%;max-width:none;min-width:0/)
 
 console.log('Bill Tips I5 UI assertions passed.')
