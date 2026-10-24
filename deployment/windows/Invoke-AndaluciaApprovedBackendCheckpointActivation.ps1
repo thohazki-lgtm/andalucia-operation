@@ -1,0 +1,89 @@
+[CmdletBinding()]
+param(
+  [Parameter(Mandatory = $true)][string]$ExpectedControlSha,
+  [Parameter(Mandatory = $true)][string]$ManagerAuthorization,
+  [string]$RepositoryRoot,
+  [int]$MaximumBackupAgeHours = 24
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$expectedCheckpointSha = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
+$expectedRuntimeBaselineSha = '40461397f9b5f1d3ffa391be9a0fc5110c6ff020'
+$projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
+$markerPath = Join-Path $canonicalData 'postmaster.pid'
+$identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
+$resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
+$stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
+$runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
+if ($ManagerAuthorization -ne 'YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION') { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_MANAGER_AUTHORIZATION_REQUIRED' }
+. $resolverPath
+
+$source = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
+if ($source.Mode -ne 'approved_local_daily_report_backend_checkpoint' -or $source.ReviewedCheckpointSha -ne $expectedCheckpointSha -or $source.Sha -ne $ExpectedControlSha) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_SOURCE_MISMATCH' }
+if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISSING' }
+$identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
+if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISMATCH' }
+
+$health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5
+if (-not $health.ok -or $health.database.status -ne 'HEALTHY' -or $health.database.migrationVersion -ne '027' -or $health.database.migrationRequired -or $health.database.recoveryRequired) { throw 'ANDALUCIA_LOCAL_BACKEND_SCHEMA_OR_HEALTH_GATE_FAILED' }
+if ([string]$health.application.sha -ne $expectedRuntimeBaselineSha) { throw "ANDALUCIA_LOCAL_BACKEND_RUNTIME_BASELINE_MISMATCH:$($health.application.sha)" }
+
+$runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction SilentlyContinue
+if (-not $runtimeTask) { throw 'ANDALUCIA_LOCAL_BACKEND_RUNTIME_TASK_MISSING' }
+[xml]$taskDefinition = Export-ScheduledTask -TaskName $runtimeTaskName
+$taskNamespace = [Xml.XmlNamespaceManager]::new($taskDefinition.NameTable)
+$taskNamespace.AddNamespace('t', 'http://schemas.microsoft.com/windows/2004/02/mit/task')
+$taskCommand = $taskDefinition.SelectSingleNode('//t:Actions/t:Exec/t:Command', $taskNamespace).InnerText
+$taskArguments = $taskDefinition.SelectSingleNode('//t:Actions/t:Exec/t:Arguments', $taskNamespace).InnerText
+$taskWorkingDirectory = $taskDefinition.SelectSingleNode('//t:Actions/t:Exec/t:WorkingDirectory', $taskNamespace).InnerText
+$allowHardTerminate = $taskDefinition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $taskNamespace).InnerText
+$stopOnIdleEnd = $taskDefinition.SelectSingleNode('//t:Settings/t:IdleSettings/t:StopOnIdleEnd', $taskNamespace).InnerText
+$executionTimeLimit = $taskDefinition.SelectSingleNode('//t:Settings/t:ExecutionTimeLimit', $taskNamespace).InnerText
+$expectedLauncher = [IO.Path]::GetFullPath((Join-Path $projectRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
+if ([IO.Path]::GetFullPath($taskWorkingDirectory) -ne $projectRoot -or $taskArguments -notlike "*$expectedLauncher*" -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { throw 'ANDALUCIA_LOCAL_BACKEND_RUNTIME_TASK_ACTION_DRIFT' }
+if ($allowHardTerminate -ne 'false' -or $stopOnIdleEnd -ne 'false' -or $executionTimeLimit -ne 'PT0S') { throw 'ANDALUCIA_LOCAL_BACKEND_RUNTIME_TASK_SAFETY_DRIFT' }
+
+$listeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001,5173 })
+if (@($listeners | Where-Object LocalPort -eq 3001).Count -ne 1 -or @($listeners | Where-Object LocalPort -eq 5173).Count -ne 1) { throw 'ANDALUCIA_LOCAL_BACKEND_RUNTIME_LISTENER_AMBIGUOUS' }
+foreach ($listener in $listeners) {
+  $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
+  if (-not $listenerProcess -or [string]$listenerProcess.CommandLine -notlike "*$projectRoot*") { throw "ANDALUCIA_LOCAL_BACKEND_RUNTIME_OWNER_MISMATCH:$($listener.LocalPort):$($listener.OwningProcess)" }
+}
+if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVE_MARKER_MISSING' }
+
+$verifiedBackup = $null
+foreach ($metadataFile in @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.backups') -Filter 'backup-metadata.json' -Recurse -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)) {
+  try { $candidate = Get-Content -LiteralPath $metadataFile.FullName -Raw | ConvertFrom-Json } catch { continue }
+  if ($candidate.verificationStatus -ne 'VERIFIED' -or $candidate.openTestStatus -ne 'PASS' -or $candidate.preflightStatus -ne 'READY') { continue }
+  $restorePath = Join-Path $metadataFile.Directory.FullName 'restore-test.json'
+  if (-not (Test-Path -LiteralPath $restorePath -PathType Leaf)) { continue }
+  try { $restore = Get-Content -LiteralPath $restorePath -Raw | ConvertFrom-Json } catch { continue }
+  if ($restore.status -ne 'RESTORE_TEST_PASSED' -or -not $restore.manifestMatch -or -not $restore.fingerprintMatch -or -not $restore.migrationMatch -or $restore.preflightStatus -ne 'READY') { continue }
+  $backupAgeHours = ([DateTime]::UtcNow - [DateTime]::Parse([string]$candidate.createdAt).ToUniversalTime()).TotalHours
+  if ($backupAgeHours -le $MaximumBackupAgeHours) { $verifiedBackup = $candidate; break }
+}
+if (-not $verifiedBackup) { throw 'ANDALUCIA_LOCAL_BACKEND_VERIFIED_RECENT_BACKUP_REQUIRED' }
+
+& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+if ($LASTEXITCODE -ne 0) { throw "ANDALUCIA_LOCAL_BACKEND_GUARDED_STOP_FAILED:$LASTEXITCODE" }
+$released = $false
+for ($attempt = 0; $attempt -lt 60; $attempt++) {
+  $activePorts = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001,5173,5174 })
+  if ($activePorts.Count -eq 0 -and -not (Test-Path -LiteralPath $markerPath)) { $released = $true; break }
+  Start-Sleep -Seconds 1
+}
+if (-not $released) { throw 'ANDALUCIA_LOCAL_BACKEND_GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED' }
+
+Start-ScheduledTask -TaskName $runtimeTaskName
+$activatedHealth = $null
+for ($attempt = 0; $attempt -lt 90; $attempt++) {
+  try {
+    $candidate = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 3
+    if ($candidate.ok -and $candidate.application.sha -eq $ExpectedControlSha -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $activatedHealth = $candidate; break }
+  } catch {}
+  Start-Sleep -Seconds 1
+}
+if (-not $activatedHealth) { throw 'ANDALUCIA_LOCAL_BACKEND_GUARDED_START_HEALTH_VERIFICATION_FAILED' }
+[ordered]@{ status='HEALTH_VERIFIED'; runtimeSha=[string]$activatedHealth.application.sha; branch=[string]$activatedHealth.application.branch; schema=[string]$activatedHealth.database.migrationVersion; database=[string]$activatedHealth.database.status; backupId=[string]$verifiedBackup.backupId; reviewedCheckpointSha=$expectedCheckpointSha; restartPerformed=$true; markerModifiedManually=$false } | ConvertTo-Json -Depth 5

@@ -35,13 +35,52 @@ function Assert-AndaluciaChangedPaths {
     'server/local-ui-activation.test.ts',
     'server/database-scheduler.test.ts'
   )
+  $backendControlPaths = @(
+    'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
+    'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1',
+    'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1',
+    'server/local-backend-checkpoint-activation.test.ts'
+  )
   $invalid = @(if ($Mode -eq 'ui') {
     @($paths | Where-Object { $_ -notmatch $uiPattern })
+  } elseif ($Mode -eq 'backend_control') {
+    @($paths | Where-Object { $_ -notin $backendControlPaths })
   } else {
     @($paths | Where-Object { $_ -notin $controlPaths })
   })
   if ($invalid.Count -gt 0) { throw "ANDALUCIA_LOCAL_UI_PATH_NOT_APPROVED:${Mode}:$($invalid -join ',')" }
   return $paths
+}
+
+function Get-AndaluciaReviewedDailyReportCheckpointPaths {
+  return @(
+    'server/booking-walk-in-r2.test.ts',
+    'server/daily-report-historical-browser.test.ts',
+    'server/daily-report-service-charges-browser.test.ts',
+    'server/daily-report-service.test.ts',
+    'server/daily-report-service.ts',
+    'server/daily-report-snapshot-foundation.test.ts',
+    'server/daily-report-snapshot-repository.ts',
+    'server/daily-report-whatsapp-export.test.ts',
+    'server/reports-daily-sections-browser.test.ts',
+    'server/reports-date-default.test.ts',
+    'src/daily-report-manual.ts',
+    'src/daily-report-save-integrity.ts',
+    'src/daily-report-whatsapp.ts',
+    'src/domain.ts',
+    'src/report-date-selection.ts',
+    'src/reports.css',
+    'src/reports.tsx'
+  )
+}
+
+function Assert-AndaluciaExactChangedPaths {
+  param([string]$ProjectRoot, [string]$From, [string]$To, [string[]]$ExpectedPaths, [string]$Code)
+  $actual = @(& git -C $ProjectRoot diff --name-only "$From..$To" | Sort-Object)
+  $expected = @($ExpectedPaths | Sort-Object)
+  $difference = @(Compare-Object -ReferenceObject $expected -DifferenceObject $actual)
+  if ($difference.Count -gt 0) { $details = @(($difference | ForEach-Object { "$($_.SideIndicator)$($_.InputObject)" }) | Sort-Object) -join ','; throw "${Code}:$details" }
+  return $actual
 }
 
 function Get-AndaluciaApprovedSourceState {
@@ -66,8 +105,39 @@ function Get-AndaluciaApprovedSourceState {
   if ($branch -notmatch '^codex/local-ui-[a-z0-9._-]+$') { throw "ANDALUCIA_RUNTIME_SOURCE_BRANCH_NOT_APPROVED:$branch" }
   if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_MANIFEST_MISSING' }
   try { $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_MANIFEST_INVALID' }
-  if ($manifest.version -ne 'andalucia-local-ui-approval-v1' -or $manifest.mode -ne 'approved_local_ui_checkpoint' -or $manifest.managerApproval -ne 'YES_I_APPROVE_LOCAL_UI_CHECKPOINT') { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_MANIFEST_INVALID' }
+  $isUiApproval = $manifest.version -eq 'andalucia-local-ui-approval-v1' -and $manifest.mode -eq 'approved_local_ui_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_LOCAL_UI_CHECKPOINT'
+  $isDailyReportBackendApproval = $manifest.version -eq 'andalucia-local-backend-approval-v1' -and $manifest.mode -eq 'approved_local_daily_report_backend_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isDailyReportBackendApproval) {
+    $expectedBaselineSha = '40461397f9b5f1d3ffa391be9a0fc5110c6ff020'
+    $expectedCheckpointSha = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
+    if ([string]$manifest.baselineApprovedSourceSha -ne $expectedBaselineSha -or [string]$manifest.reviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_IDENTITY_MISMATCH' }
+    $reviewedCheckpointSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.reviewedCheckpointSha)
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($reviewedCheckpointSha -ne $expectedCheckpointSha -or $controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_BACKEND_APPROVAL_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $originMainSha $expectedBaselineSha 'ANDALUCIA_LOCAL_BACKEND_BASELINE_NOT_BASED_ON_APPROVED_MAIN'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedBaselineSha $reviewedCheckpointSha 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_NOT_BASED_ON_BASELINE'
+    Assert-AndaluciaGitAncestor $ProjectRoot $reviewedCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_BACKEND_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $reviewedPaths = @(Get-AndaluciaReviewedDailyReportCheckpointPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedBaselineSha $reviewedCheckpointSha $reviewedPaths 'ANDALUCIA_LOCAL_BACKEND_REVIEWED_PATH_MISMATCH')
+    $manifestPaths = @($manifest.reviewedPaths | ForEach-Object { [string]$_ })
+    if (@(Compare-Object ($reviewedPaths | Sort-Object) ($manifestPaths | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_BACKEND_MANIFEST_PATH_MISMATCH' }
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $reviewedCheckpointSha $controlCommitSha 'backend_control')
+
+    $hashes = [ordered]@{
+      launcherSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1')
+      resolverSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1')
+      approvalScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1')
+      backendApprovalScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1')
+      backendActivationScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1')
+    }
+    foreach ($name in $hashes.Keys) {
+      if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_BACKEND_CONTROL_HASH_MISMATCH:$name" }
+    }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_daily_report_backend_checkpoint'; ApprovedMainSha=$originMainSha; BaselineApprovedSourceSha=$expectedBaselineSha; ReviewedCheckpointSha=$reviewedCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   $uiCheckpointSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.sourceUiCheckpointSha)
   $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
