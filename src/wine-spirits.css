@@ -1,11 +1,11 @@
 .wine-page{display:grid;gap:14px;min-width:0;max-width:100%}
 main:has(.wine-page){align-self:start;min-width:0;max-width:100%;margin:0 auto;overflow-x:hidden}
 .financial-module:has(.wine-page) .financial-primary-tabs{margin-bottom:14px}
-.wine-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:10px 12px;border:1px solid #dec58f;border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);box-shadow:0 3px 12px #7b5a1b0b}
+.wine-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:10px 12px;border:1px solid #c5a45e;border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);box-shadow:0 3px 12px #7b5a1b0b}
 .wine-toolbar-heading{min-width:0}.wine-toolbar h2{margin:0;color:#173e55;font:600 1.25rem/1.15 'Playfair Display',Georgia,serif}
 .wine-toolbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.wine-month-control{min-width:0}.wine-toolbar .ao-date-control{min-width:160px}
 .wine-toolbar input{padding:0 44px 0 11px;border:1px solid #d5e0e5;border-radius:9px;background:#fff;color:#294b60;font:650 12px 'DM Sans',Arial,sans-serif}
-.panel.wine-panel{box-sizing:border-box;min-width:0;padding:0;overflow:hidden;border:1px solid #dec58f;border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%);box-shadow:0 0 0 1px rgba(197,164,94,.16),0 4px 14px #173d5608}
+.panel.wine-panel{box-sizing:border-box;min-width:0;margin-bottom:0;padding:8px;overflow:hidden;border:1px solid #c5a45e;border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%);box-shadow:0 0 0 1px rgba(197,164,94,.22),0 4px 14px #173d5608}
 .wine-filters{display:grid;grid-template-columns:minmax(16rem,1.25fr) minmax(12rem,.7fr) minmax(10rem,.55fr);align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #d8b96f;background:#fffaf0}
 .wine-filters input:not([type="checkbox"]),.wine-filters select{width:100%;min-width:0;height:2.5rem;border:1px solid #d5c49f;border-radius:.55rem;background-color:#fff;color:#294b60;font:600 12px 'DM Sans',Arial,sans-serif}
 .wine-filters input:not([type="checkbox"]){padding:0 11px}.wine-filters select{padding:0 30px 0 10px}
