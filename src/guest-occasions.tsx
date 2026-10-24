@@ -9,7 +9,6 @@ export interface GuestOccasionConfiguration { types: ConfigOption[]; statuses: C
 const optionLabel = (options: ConfigOption[], value: string) => options.find(option => option.value === value)?.label || value || '—'
 const formatDate = (value: string) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
 const ordinal = (value: number) => value % 100 >= 11 && value % 100 <= 13 ? 'th' : value % 10 === 1 ? 'st' : value % 10 === 2 ? 'nd' : value % 10 === 3 ? 'rd' : 'th'
-const sourceLabel = (record: GuestOccasionRecord) => ['manual', 'manager_created'].includes(record.source) ? 'Manual' : record.source === 'booking_intelligence' ? 'Booking Intelligence' : record.importSource === 'activity_program' ? 'Booking Import' : 'Booking'
 const celebrationTypes = new Set(['honeymoon', 'see_you_soon', 'birthday', 'anniversary'])
 type ExperienceGroup = 'all' | 'celebrations' | 'vip' | 'attention'
 const evidencePreview = (value: string, maximum = 120) => { const compact = value.replace(/\s+/g, ' ').trim(); return compact.length > maximum ? `${compact.slice(0, maximum - 1).trimEnd()}…` : compact || 'No source evidence recorded.' }
@@ -46,17 +45,17 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <ActionButton variant="primary" className="occasion-add-manual" icon="add" onClick={() => setEditing('new')}>Add Manual Occasion</ActionButton>
 </div>
 </section>
-    <section className="occasion-summary">
-<article className="panel">
+    <section className="occasion-summary" aria-label="Guest occasion summary">
+<article className="panel occasion-summary-card occasion-summary-celebrations">
 <span>Celebrations</span>
 <strong>{groups.celebrations}</strong>
 </article>
-<article className="panel attention">
+<article className="panel occasion-summary-card attention">
 <span>Attention Needed</span>
 <strong>{groups.attentionNeeded}</strong>
 </article>
-<article className="panel vip"><span>VIP / Special Guests</span><strong>{groups.vipSpecial}</strong></article>
-<article className="panel complete"><span>Completed</span><strong>{groups.completed}</strong></article>
+<article className="panel occasion-summary-card vip"><span>VIP / Special Guests</span><strong>{groups.vipSpecial}</strong></article>
+<article className="panel occasion-summary-card complete"><span>Completed</span><strong>{groups.completed}</strong></article>
 </section>
     <section className="panel occasion-panel">
 <nav className="occasion-tabs" aria-label="Guest Experience groups"><button className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>All <b>{allCount}</b></button><button className={group === 'celebrations' ? 'active' : ''} onClick={() => setGroup('celebrations')}>Celebrations <b>{groups.celebrations}</b></button><button className={group === 'vip' ? 'active' : ''} onClick={() => setGroup('vip')}>VIP / Special Guests <b>{groups.vipSpecial}</b></button><button className={group === 'attention' ? 'active' : ''} onClick={() => setGroup('attention')}>Attention Needed <b>{groups.attentionNeeded}</b></button></nav>
@@ -65,7 +64,7 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <select aria-label="Filter occasion status" value={status} onChange={event => setStatus(event.target.value)}>
 <option value="all">All statuses</option>{configuration.statuses.filter(option => option.active).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
 <select aria-label="Filter occasion waiter" value={waiter} onChange={event => setWaiter(event.target.value)}><option value="all">All waiters</option><option value="unassigned">Unassigned waiter</option>{staff.map(person => <option key={person.id} value={person.id}>{person.name}{person.employmentStatus !== 'active' ? ' (Inactive)' : ''}</option>)}</select>
-</div>{loading && <div className="inline-state">Loading Guest Experience…</div>}{error && <div className="inline-state error-state">
+</div><div className="occasion-results">{loading && <div className="inline-state">Loading Guest Experience…</div>}{error && <div className="inline-state error-state">
 <p>{error}</p>
 <ActionButton icon="refresh" onClick={() => void load()}>Try again</ActionButton>
 </div>}{!loading && !error && <>{visibleAttention.length > 0 && <AttentionRecords records={visibleAttention} staff={staff} configuration={configuration} onView={setViewingAttention} />}{visible.length > 0 && <section className="occasion-records" aria-label="Guest Occasions records"><header><div><p className="eyebrow">GUEST OCCASIONS</p><h3>Recognition & celebration service</h3></div><span className="badge">{visible.length}</span></header><div className="occasion-table-wrap" tabIndex={0} aria-label="Guest Occasions records table">
@@ -102,7 +101,7 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
 <IconAction icon="edit" label={`Edit occasion for ${record.guestName}`} onClick={() => setEditing(record)} />
 </td>
 </tr>})}</tbody>
-</table><div className="mobile-occasion-list">{visible.map(record => <MobileOccasionCard key={record.id} record={record} configuration={configuration} onStatus={nextStatus => void quickStatus(record, nextStatus)} onView={() => setViewing(record)} onEdit={() => setEditing(record)} />)}</div></div></section>}{visible.length === 0 && visibleAttention.length === 0 && <div className="inline-empty">No Guest Experience records match this date and filters.</div>}</>}</section>
+</table><div className="mobile-occasion-list">{visible.map(record => <MobileOccasionCard key={record.id} record={record} configuration={configuration} onStatus={nextStatus => void quickStatus(record, nextStatus)} onView={() => setViewing(record)} onEdit={() => setEditing(record)} />)}</div></div></section>}{visible.length === 0 && visibleAttention.length === 0 && <div className="inline-empty occasion-empty">No Guest Experience records match this date and filters.</div>}</>}</div></section>
     {editing && <GuestOccasionForm record={editing === 'new' ? undefined : editing} date={date} bookings={bookings} staff={staff} configuration={configuration} onClose={() => setEditing(null)} onSave={async record => { await save(record); setEditing(null) }} />}
     {viewing && <GuestOccasionDetails record={viewing} configuration={configuration} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null) }} onStatus={nextStatus => void quickStatus(viewing, nextStatus)} />}
     {viewingAttention && <AttentionDetails record={viewingAttention} staff={staff} configuration={configuration} onClose={() => setViewingAttention(null)} />}
@@ -117,9 +116,10 @@ function AttentionRecords({ records, staff, configuration, onView }: { records: 
 function MobileOccasionCard({ record, configuration, onStatus, onView, onEdit }: { record: GuestOccasionRecord; configuration: GuestOccasionConfiguration; onStatus: (status: string) => void; onView: () => void; onEdit: () => void }) {
   const occasion = configuration.types.find(option => option.value === record.occasionType)
   const status = configuration.statuses.find(option => option.value === record.status)
-  return <article className="mobile-operation-card mobile-occasion-card">
-    <header><div><span className="occasion-card-time">{record.reservationTime}</span><span className="occasion-chip" style={{ background: occasion?.color }}>{occasion?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span><h4>{record.guestName}</h4><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ' · Manual occasion'}</small></div>{status?.metadata?.occasionWorkflow === 'attention' && <span className="attention-flag">Attention required</span>}</header>
-    <div className="mobile-card-facts"><span><small>Table</small><b>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</b></span><span><small>Waiter</small><b>{record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive' : ''}` : 'Unassigned'}</b></span><span><small>Source</small><b>{sourceLabel(record)}</b></span><span><small>Covers</small><b>{record.covers || '—'}</b></span></div>
+  const workflow = String(status?.metadata?.occasionWorkflow || 'attention')
+  return <article className={`mobile-operation-card mobile-occasion-card occasion-card-${workflow}`}>
+    <header><div><span className="occasion-card-time">{record.reservationTime}</span><span className="occasion-chip" style={{ background: occasion?.color }}>{occasion?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span><h4><button className="occasion-guest-trigger mobile-occasion-guest-trigger" type="button" onClick={onView} aria-label={`View occasion details for ${record.guestName}`}><span>{record.guestName}</span><SvgIcon name="chevron-right" size={18} /></button></h4><small>Room {record.roomNumber || '—'}{record.bookingNumber ? ` · #${record.bookingNumber}` : ' · Manual occasion'}</small></div>{status?.metadata?.occasionWorkflow === 'attention' && <span className="attention-flag">Attention required</span>}</header>
+    <div className="mobile-card-facts"><span><small>Table</small><b>{optionLabel(configuration.tables, record.tableNumber) || 'Unassigned'}</b></span><span><small>Waiter</small><b>{record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive' : ''}` : 'Unassigned'}</b></span></div>
     <label className="mobile-card-status">Status<StatusSelect className={`occasion-status-select occasion-status-${String(status?.metadata?.occasionWorkflow || 'attention')}`} label={`Mobile occasion status for ${record.guestName}`} value={record.status} style={{ borderColor: status?.color }} onChange={event => onStatus(event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></label>
     <div className="mobile-card-actions"><ActionButton icon="chevron-right" iconPosition="end" onClick={onView}>View Details</ActionButton><ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton></div>
   </article>
@@ -128,16 +128,19 @@ function MobileOccasionCard({ record, configuration, onStatus, onView, onEdit }:
 function GuestOccasionForm({ record, date, bookings, staff, configuration, onClose, onSave }: { record?: GuestOccasionRecord; date: string; bookings: BookingRecord[]; staff: Staff[]; configuration: GuestOccasionConfiguration; onClose: () => void; onSave: (record: GuestOccasionRecord) => Promise<void> }) {
   const firstType = configuration.types.find(option => option.active)
   const defaultStatus = configuration.statuses.find(option => option.active && option.value === firstType?.metadata?.defaultStatus) || configuration.statuses.find(option => option.active)
-  const [form, setForm] = useState<GuestOccasionRecord>(record || { id: crypto.randomUUID(), occasionType: firstType?.value || '', bookingId: null, guestName: '', roomNumber: '', reservationDate: date, reservationTime: '19:00', tableNumber: '', waiterId: null, waiter: null, status: defaultStatus?.value || '', source: 'manual', sourceText: 'Manager-created occasion', notes: '', active: true })
+  const [initialForm] = useState<GuestOccasionRecord>(() => record || { id: crypto.randomUUID(), occasionType: firstType?.value || '', bookingId: null, guestName: '', roomNumber: '', reservationDate: date, reservationTime: '19:00', tableNumber: '', waiterId: null, waiter: null, status: defaultStatus?.value || '', source: 'manual', sourceText: 'Manager-created occasion', notes: '', active: true })
+  const [form, setForm] = useState<GuestOccasionRecord>(initialForm)
   const [saving, setSaving] = useState(false); const [error, setError] = useState('')
+  const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initialForm), [form, initialForm])
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved guest occasion changes?')) onClose() }
   const availableStaff = staff.filter(person => person.employmentStatus === 'active' || person.id === form.waiterId)
   const update = <K extends keyof GuestOccasionRecord>(field: K, value: GuestOccasionRecord[K]) => setForm(current => ({ ...current, [field]: value }))
   const selectBooking = (bookingId: string) => { const booking = bookings.find(item => item.id === bookingId); if (!booking) return setForm(current => ({ ...current, bookingId: null })); setForm(current => ({ ...current, bookingId: booking.id, guestName: booking.guestName, roomNumber: booking.roomNumber, reservationDate: booking.reservationDate, reservationTime: booking.reservationTime, tableNumber: booking.tableNumber, waiterId: booking.waiterId })) }
   const selectType = (value: string) => { const selected = configuration.types.find(option => option.value === value); const nextStatus = configuration.statuses.find(option => option.active && option.value === selected?.metadata?.defaultStatus)?.value; setForm(current => ({ ...current, occasionType: value, status: !record && nextStatus ? nextStatus : current.status })) }
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.occasionType || !form.guestName.trim() || !form.reservationDate || !form.reservationTime || !form.status) return setError('Occasion type, guest, date, time and status are required.'); setSaving(true); setError(''); try { await onSave({ ...form, guestName: form.guestName.trim(), source: record?.source || 'manual', sourceText: record?.sourceText || 'Manager-created occasion' }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save guest occasion.') } finally { setSaving(false) } }
-  return <OccasionModal title={record ? 'Edit Guest Occasion' : 'Add Manual Occasion'} onClose={onClose} wide>
+  return <OccasionModal title={record ? 'Edit Guest Occasion' : 'Add Manual Occasion'} onClose={requestClose} wide className="occasion-edit-modal" dismissOnBackdrop dismissOnEscape hideClose>
 <form className="staff-form occasion-form" onSubmit={event => void submit(event)}>
-<div className="occasion-form-grid">
+<section className="occasion-form-section"><h3>Reservation & Guest</h3><div className="occasion-form-grid">
 <label>Related booking<select value={form.bookingId || ''} onChange={event => selectBooking(event.target.value)}>
 <option value="">Manual entry / walk-in</option>{bookings.map(booking => <option key={booking.id} value={booking.id}>{booking.reservationTime} · {booking.guestName} · Room {booking.roomNumber || '—'} · #{booking.bookingNumber || 'manual'}</option>)}</select>
 </label>
@@ -151,6 +154,7 @@ function GuestOccasionForm({ record, date, bookings, staff, configuration, onClo
 </label>
 <label>Reservation time<input type="time" value={form.reservationTime} readOnly={Boolean(form.bookingId)} onChange={event => update('reservationTime', event.target.value)} />
 </label>
+</div></section><section className="occasion-form-section"><h3>Operational Details</h3><div className="occasion-form-grid">
 <label>Table number<select value={form.tableNumber} disabled={Boolean(form.bookingId)} onChange={event => update('tableNumber', event.target.value)}>
 <option value="">Unassigned</option>{configuration.tables.filter(option => option.active || option.value === form.tableNumber).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
 </label>
@@ -159,10 +163,10 @@ function GuestOccasionForm({ record, date, bookings, staff, configuration, onClo
 </label>
 <label>Status<select value={form.status} onChange={event => update('status', event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === form.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
 </label>
-</div>{form.bookingId && <p className="linked-booking-note">Guest, room, date, time, table and waiter stay synchronized with the linked booking.</p>}{record?.source.startsWith('automatic') && <label>Detection evidence<textarea readOnly rows={3} value={form.sourceText} />
+</div>{form.bookingId && <p className="linked-booking-note">Guest, room, date, time, table and waiter stay synchronized with the linked booking.</p>}</section><section className="occasion-form-section"><h3>Notes</h3>{record?.source.startsWith('automatic') && <label>Detection evidence<textarea readOnly rows={3} value={form.sourceText} />
 </label>}<label>Manager notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} />
-</label>{error && <p className="save-error">{error}</p>}<div className="form-actions">
-<ActionButton onClick={onClose}>Cancel</ActionButton>
+</label></section>{error && <p className="save-error">{error}</p>}<div className="form-actions">
+<ActionButton onClick={requestClose}>Cancel</ActionButton>
 <ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save occasion'}</ActionButton>
 </div>
 </form>
@@ -179,13 +183,13 @@ function GuestOccasionDetails({ record, configuration, onClose, onEdit, onStatus
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
   return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
 <aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Occasion Details">
-<header><div><p className="eyebrow">{groupLabel}</p><h2>{record.guestName}</h2><span className="occasion-chip" style={{ background: type?.color }}>{type?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span></div><IconAction className="close" icon="close" label="Close guest details" onClick={onClose} /></header>
+<header><div><p className="eyebrow">{groupLabel}</p><h2>{record.guestName}</h2><span className="occasion-chip" style={{ background: type?.color }}>{type?.label || record.occasionType}{record.visitNumber ? ` · ${record.visitNumber}${ordinal(record.visitNumber)} Visit` : ''}</span></div></header>
 <div className="occasion-drawer-body">
 <DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || 'Manual / walk-in'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection>
 <DrawerSection title="Reservation"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /></DrawerSection>
 {hasVisitRecognition && <DrawerSection title="Visit Recognition">{record.visitNumber && <Detail label="Recognized visit" value={`${record.visitNumber}${ordinal(record.visitNumber)} visit`} />}{record.knownVisits && <Detail label="Known visits" value={String(record.knownVisits)} />}{Boolean(record.previousAndaluciaVisits) && <Detail label="Previous visits" value={String(record.previousAndaluciaVisits)} />}</DrawerSection>}
-{preferenceAlert && <DrawerSection title="Guest Preferences & Alerts"><p className="occasion-alert-copy">{preferenceAlert}</p></DrawerSection>}
-<DrawerSection title="Operational Status"><Detail label="Status" value={optionLabel(configuration.statuses, record.status)} />{record.notes.trim() && <Detail label="Preparation notes" value={record.notes} />}</DrawerSection>
+{preferenceAlert && <DrawerSection title="Guest Preferences & Alerts" wide><p className="occasion-alert-copy">{preferenceAlert}</p></DrawerSection>}
+<DrawerSection title="Operational Status" wide><Detail label="Status" value={optionLabel(configuration.statuses, record.status)} />{record.notes.trim() && <Detail label="Preparation notes" value={record.notes} />}</DrawerSection>
 </div><footer><ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton>{prepared && record.status !== prepared.value && <ActionButton icon="check" onClick={() => onStatus(prepared.value)}>Mark as Prepared</ActionButton>}{completed && record.status !== completed.value && <ActionButton variant="primary" icon="check" onClick={() => onStatus(completed.value)}>Mark as Completed</ActionButton>}</footer>
 </aside></div>
 }
@@ -194,10 +198,10 @@ function AttentionDetails({ record, staff, configuration, onClose }: { record: G
   const waiter = staff.find(person => person.id === record.waiterId)
   const classification = attentionLabel(record)
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
-  return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Attention Details"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h2>{record.guestName}</h2><span className={`badge attention-detail-type ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{classification}</span></div><IconAction className="close" icon="close" label="Close guest attention details" onClick={onClose} /></header><div className="occasion-drawer-body"><DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || '—'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection><DrawerSection title="Reservation"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={waiter ? `${waiter.name} · ${waiter.number}` : 'Unassigned'} /></DrawerSection><DrawerSection title="Attention & Source Notes"><Detail label="Attention type" value={classification} /><p className={`occasion-alert-copy ${record.normalizedKey === 'ALLERGY' ? 'danger' : ''}`}>{record.rawEvidence.trim() || 'No source notes recorded.'}</p><Detail label="Status" value="Attention" /></DrawerSection></div><footer><ActionButton icon="close" onClick={onClose}>Close</ActionButton></footer></aside></div>
+  return <div className="occasion-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="occasion-drawer" role="dialog" aria-modal="true" aria-label="Guest Attention Details"><header><div><p className="eyebrow">ATTENTION NEEDED</p><h2>{record.guestName}</h2><span className={`badge attention-detail-type ${record.normalizedKey === 'ALLERGY' ? 'danger' : 'blue'}`}>{classification}</span></div></header><div className="occasion-drawer-body"><DrawerSection title="Guest"><Detail label="Room" value={record.roomNumber || '—'} /><Detail label="Booking" value={record.bookingNumber || '—'} /><Detail label="Covers" value={record.covers ? String(record.covers) : '—'} /></DrawerSection><DrawerSection title="Reservation"><Detail label="Date / time" value={`${formatDate(record.reservationDate)} · ${record.reservationTime}`} /><Detail label="Table" value={optionLabel(configuration.tables, record.tableNumber)} /><Detail label="Waiter" value={waiter ? `${waiter.name} · ${waiter.number}` : 'Unassigned'} /></DrawerSection><DrawerSection title="Attention & Source Notes" wide><Detail label="Attention type" value={classification} /><p className={`occasion-alert-copy ${record.normalizedKey === 'ALLERGY' ? 'danger' : ''}`}>{record.rawEvidence.trim() || 'No source notes recorded.'}</p><Detail label="Status" value="Attention" /></DrawerSection></div></aside></div>
 }
 
-function DrawerSection({ title, children }: { title: string; children: ReactNode }) { return <section className="drawer-section"><h3>{title}</h3><div>{children}</div></section> }
+function DrawerSection({ title, children, wide = false }: { title: string; children: ReactNode; wide?: boolean }) { return <section className={`drawer-section${wide ? ' drawer-section-wide' : ''}`}><h3>{title}</h3><div>{children}</div></section> }
 function Detail({ label, value }: { label: string; value: string }) { return <div className="drawer-detail"><span>{label}</span><b>{value}</b></div> }
 
 export function GuestOccasionConfigurationManager({ configuration, onSave }: { configuration: Pick<GuestOccasionConfiguration, 'types' | 'statuses'>; onSave: (group: 'types' | 'statuses', option: ConfigOption) => Promise<void> }) {
@@ -267,9 +271,11 @@ function GuestOccasionConfigForm({ group, option, onClose, onSave }: { group: 't
 </OccasionModal>
 }
 
-function OccasionModal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) { return <div className="modal-backdrop">
-<section className={`modal${wide ? ' booking-modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-<IconAction className="close" icon="close" label="Close dialog" onClick={onClose} />
+function OccasionModal({ title, children, onClose, wide = false, className = '', dismissOnBackdrop = false, dismissOnEscape = false, hideClose = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; className?: string; dismissOnBackdrop?: boolean; dismissOnEscape?: boolean; hideClose?: boolean }) {
+  useEffect(() => { if (!dismissOnEscape) return; const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [dismissOnEscape, onClose])
+  return <div className="modal-backdrop" onMouseDown={event => { if (dismissOnBackdrop && event.target === event.currentTarget) onClose() }}>
+<section className={`modal${wide ? ' booking-modal-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+{!hideClose && <IconAction className="close" icon="close" label="Close dialog" onClick={onClose} />}
 <h2>{title}</h2>{children}</section>
 </div> }
 
