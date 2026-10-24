@@ -29,6 +29,7 @@ function Assert-AndaluciaChangedPaths {
   $uiPattern = '^(src/|public/|server/[^/]*(browser|responsive|ui|interface)[^/]*\.test\.(ts|tsx|mjs)$)'
   $controlPaths = @(
     'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
+    'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
     'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
     'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1',
     'server/local-ui-activation.test.ts',
