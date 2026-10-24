@@ -74,6 +74,14 @@ function Get-AndaluciaReviewedDailyReportCheckpointPaths {
   )
 }
 
+function Get-AndaluciaReviewedDailyReportReviewUiPaths {
+  return @(
+    'server/reports-daily-sections-browser.test.ts',
+    'src/reports.css',
+    'src/reports.tsx'
+  )
+}
+
 function Assert-AndaluciaExactChangedPaths {
   param([string]$ProjectRoot, [string]$From, [string]$To, [string[]]$ExpectedPaths, [string]$Code)
   $actual = @(& git -C $ProjectRoot diff --name-only "$From..$To" | Sort-Object)
@@ -107,8 +115,41 @@ function Get-AndaluciaApprovedSourceState {
   try { $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_MANIFEST_INVALID' }
   $isUiApproval = $manifest.version -eq 'andalucia-local-ui-approval-v1' -and $manifest.mode -eq 'approved_local_ui_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_LOCAL_UI_CHECKPOINT'
   $isDailyReportBackendApproval = $manifest.version -eq 'andalucia-local-backend-approval-v1' -and $manifest.mode -eq 'approved_local_daily_report_backend_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isDailyReportBackendUiApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v1' -and $manifest.mode -eq 'approved_local_daily_report_backend_with_review_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isDailyReportBackendUiApproval) {
+    $expectedBaselineSha = '40461397f9b5f1d3ffa391be9a0fc5110c6ff020'
+    $expectedCheckpointSha = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
+    $expectedPreviousControlSha = 'dd07564c3e13a6f4e86668a34077e9527d3da2ee'
+    $expectedReviewUiSha = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
+    if ([string]$manifest.baselineApprovedSourceSha -ne $expectedBaselineSha -or [string]$manifest.reviewedCheckpointSha -ne $expectedCheckpointSha -or [string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.reviewUiCheckpointSha -ne $expectedReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_APPROVAL_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $originMainSha $expectedBaselineSha 'ANDALUCIA_LOCAL_BACKEND_UI_BASELINE_NOT_BASED_ON_APPROVED_MAIN'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedBaselineSha $expectedCheckpointSha 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_NOT_BASED_ON_BASELINE'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedCheckpointSha $expectedPreviousControlSha 'ANDALUCIA_LOCAL_BACKEND_UI_PRIOR_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedReviewUiSha 'ANDALUCIA_LOCAL_BACKEND_UI_REVIEW_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedReviewUiSha $controlCommitSha 'ANDALUCIA_LOCAL_BACKEND_UI_CONTROL_NOT_BASED_ON_REVIEW'
+    $reviewedPaths = @(Get-AndaluciaReviewedDailyReportCheckpointPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedBaselineSha $expectedCheckpointSha $reviewedPaths 'ANDALUCIA_LOCAL_BACKEND_UI_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedCheckpointSha $expectedPreviousControlSha 'backend_control')
+    $reviewUiPaths = @(Get-AndaluciaReviewedDailyReportReviewUiPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedReviewUiSha $reviewUiPaths 'ANDALUCIA_LOCAL_BACKEND_UI_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedReviewUiSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($reviewedPaths | Sort-Object) @($manifest.reviewedPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0 -or @(Compare-Object ($reviewUiPaths | Sort-Object) @($manifest.reviewUiPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_MANIFEST_PATH_MISMATCH' }
+
+    $hashes = [ordered]@{
+      launcherSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1')
+      resolverSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1')
+      approvalScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1')
+      backendApprovalScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1')
+      backendActivationScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1')
+    }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_BACKEND_UI_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_daily_report_backend_with_review_ui'; ApprovedMainSha=$originMainSha; BaselineApprovedSourceSha=$expectedBaselineSha; ReviewedCheckpointSha=$expectedCheckpointSha; PreviousControlCommitSha=$expectedPreviousControlSha; ReviewUiCheckpointSha=$expectedReviewUiSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isDailyReportBackendApproval) {
     $expectedBaselineSha = '40461397f9b5f1d3ffa391be9a0fc5110c6ff020'

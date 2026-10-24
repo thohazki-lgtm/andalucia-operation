@@ -7,6 +7,7 @@ import { createDisposableTestRoot } from './test-store-fixture.js'
 const sourceRoot = resolve('.')
 const testRoot = await createDisposableTestRoot('local-backend-checkpoint-activation')
 const expectedCheckpoint = 'f9cd8b03db9d55205e37783aedd141335a9a11e0'
+const expectedReviewUiCheckpoint = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -53,21 +54,28 @@ try {
   const wrongCheckpoint = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongCheckpoint.status, 0)
   assert.match(wrongCheckpoint.output, /ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongReviewUi = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', expectedCheckpoint, '-ReviewUiCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongReviewUi.status, 0)
+  assert.match(wrongReviewUi.output, /ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
   const activationSource = await readFile(join(deploymentRoot, 'Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1'), 'utf8')
   assert.match(resolverSource, new RegExp(expectedCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedReviewUiCheckpoint))
   assert.match(approvalSource, new RegExp(expectedCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedReviewUiCheckpoint))
   assert.doesNotMatch(approvalSource, /\*\.ts|server\/\*/)
   assert.match(resolverSource, /approved_local_daily_report_backend_checkpoint/)
+  assert.match(resolverSource, /approved_local_daily_report_backend_with_review_ui/)
   assert.match(activationSource, new RegExp(expectedCheckpoint))
+  assert.match(activationSource, new RegExp(expectedReviewUiCheckpoint))
   assert.match(activationSource, /VERIFIED_RECENT_BACKUP_REQUIRED/)
   assert.match(activationSource, /RUNTIME_TASK_SAFETY_DRIFT/)
   assert.match(activationSource, /GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED/)
   assert.doesNotMatch(activationSource, /Remove-Item|Stop-Process|taskkill/)
 
-  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, exactCheckpoint: expectedCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
