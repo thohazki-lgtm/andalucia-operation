@@ -104,7 +104,7 @@ function App() {
 </div>
 <AuthUserButton />
 </div>
-<header className={`page-header${page === 'Reports' ? ' reports-header' : ''}${page === 'Staff Management' ? ' staff-management-header' : ''}${page === 'Training' ? ' training-page-header' : ''}`}>
+<header className={`page-header${page === 'Reports' ? ' reports-header' : ''}${page === 'Staff Management' ? ' staff-management-header' : ''}${page === 'Training' ? ' training-page-header' : ''}${page === 'Guest Occasions' ? ' guest-occasions-page-header' : ''}`}>
 <div>
 <p className="eyebrow">{pageContext}</p>
 <h1>{page}</h1>
