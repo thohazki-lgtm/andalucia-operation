@@ -41,7 +41,7 @@
 .maintenance-summary .open { --maintenance-accent: #b74b45; }
 .maintenance-summary .progress { --maintenance-accent: #b38b3a; }
 .maintenance-summary .complete { --maintenance-accent: #2f8063; }
-.maintenance-panel { overflow: hidden; border: 1px solid #dec58f; border-radius: 12px; background: #fffdf8; }
+.panel.maintenance-panel { overflow: hidden; border: 1px solid #dec58f; border-radius: 12px; background: #fffdf8; }
 
 .maintenance-filters {
   display: grid;
