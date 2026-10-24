@@ -45,6 +45,7 @@
 .maintenance-modal .save-error { margin: 9px 0 0; }
 .maintenance-modal .form-actions { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; display: grid; grid-template-columns: repeat(2, minmax(0, 165px)); justify-content: end; gap: 8px; margin: 0; padding: 9px 12px; border-top: 1px solid #dec58f; background: #fffaf0; box-shadow: 0 -5px 14px #173d5608; }
 .maintenance-modal .form-actions .ao-action { width: 100%; min-height: 42px; margin: 0; }
+.modal.maintenance-details-modal { width: min(660px, calc(100vw - 32px)); }
 
 @media (max-width: 700px) {
   .modal.maintenance-modal {
