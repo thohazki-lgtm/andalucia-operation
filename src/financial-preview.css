@@ -258,7 +258,7 @@
 .earnings-preview-results .financial-table-wrap tbody td{border-bottom-color:#eee0c6}
 .earnings-preview-results .financial-table-wrap tbody td+td{border-left:1px solid #f2e7d2}
 .earnings-preview-results .financial-table-wrap .emphasized-total b{color:#173d56;font-weight:850}
-.staff-incentive-summary{justify-self:center;width:min(100%,820px)}
+.staff-incentive-summary{justify-self:stretch;width:100%}
 .staff-incentive-summary .financial-table-wrap{margin-top:12px}
 .staff-incentive-table td:first-child b,.earnings-summary-table td:first-child b{color:#173d56;font-weight:750}
 .earnings-team-summary .financial-table-wrap{margin-top:12px}
