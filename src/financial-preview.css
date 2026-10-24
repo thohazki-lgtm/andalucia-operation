@@ -83,11 +83,11 @@
 .financial-status.ao-status-pill--gold,.period-pill.ao-status-pill--gold{border-color:#dcc082;background:#fff8e8;color:#80601f}
 .financial-status.ao-status-pill--navy{border-color:#aac0cb;background:#edf4f7;color:#173b52}
 
-/* Stage 5D: Earnings Summary uses the shared controls without adopting Bill Tips surfaces. */
-.financial-command.earnings-command{align-items:center;gap:16px;margin-bottom:16px}
+/* Earnings Summary command structure. */
+.financial-command.earnings-command{align-items:center;gap:16px;margin-bottom:12px}
 .earnings-command .financial-command-controls{align-items:center}
 .earnings-command .financial-command-controls .ao-date-control{width:168px}
-.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:38px;padding:0 37px 0 10px;border:1px solid #d8e2e6;border-radius:7px;background:#fff;color:#294b60;font:11px inherit}
+.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:42px;padding:0 37px 0 10px;border:1px solid var(--financial-gold);border-radius:9px;background:#fffdf8;color:#294b60;font:11px inherit}
 .earnings-command .financial-command-controls>.ao-action{min-height:38px}
 
 /* Stage 5C final polish: restrained Bill Tips-only champagne and gold hierarchy. */
@@ -233,4 +233,62 @@
   .bill-tip-review-modal>.close.ao-icon-action{width:44px;height:44px;min-height:44px;top:10px;right:10px}
   .bill-tip-review-modal .form-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   .bill-tip-review-modal .form-actions .ao-action{width:100%;min-width:0;min-height:44px}
+}
+
+/* Earnings Summary premium table and mobile-card system. */
+.financial-command.earnings-command{padding:16px 18px;border:1px solid var(--financial-gold);border-top:3px solid var(--financial-gold-strong);border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 55%,#fff 100%);box-shadow:none}
+.earnings-command .financial-command-controls{padding:8px;border:1px solid var(--financial-gold);border-radius:10px;background:#fffdf8}
+.earnings-command .financial-command-controls .ao-date-control{width:184px}
+.earnings-command .financial-command-controls .ao-date-control input{height:42px}
+.earnings-preview-results{gap:12px}
+.earnings-preview-results>.financial-preview-banner{border-color:var(--financial-gold);border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 55%,#fff 100%)}
+.earnings-preview-results>.financial-metrics{gap:10px}
+.earnings-preview-results>.financial-metrics article{min-height:92px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 74%);box-shadow:none}
+.earnings-preview-results>.financial-metrics article::before{content:"";display:block;width:28px;height:2px;margin-bottom:9px;border-radius:2px;background:var(--financial-gold-strong)}
+.earnings-preview-results>.financial-metrics span{min-height:22px;color:#756744;line-height:1.35}
+.earnings-preview-results>.financial-metrics strong{margin-top:6px;color:#173d56;line-height:1.05;font-variant-numeric:tabular-nums}
+.financial-module .earnings-preview-results>.financial-subsection{padding:16px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 70%);box-shadow:none}
+.earnings-preview-results>.financial-subsection>header{align-items:center;padding-bottom:11px;border-bottom:1px solid #eadbbd}
+.earnings-preview-results>.financial-subsection>header h3{color:#173d56;font:700 19px 'Playfair Display',serif}
+.earnings-preview-results .financial-table-wrap{overflow-x:auto;border:1px solid var(--financial-gold);border-radius:10px;background:#fff}
+.earnings-preview-results .financial-table-wrap table{margin:0}
+.earnings-preview-results .financial-table-wrap thead th{border-bottom:1px solid var(--financial-gold);background:#f8f1e3;color:#173d56}
+.earnings-preview-results .financial-table-wrap thead th+th{border-left:1px solid #eadbbd}
+.earnings-preview-results .financial-table-wrap tbody tr:nth-child(even){background:#fffaf2}
+.earnings-preview-results .financial-table-wrap tbody td{border-bottom-color:#eee0c6}
+.earnings-preview-results .financial-table-wrap tbody td+td{border-left:1px solid #f2e7d2}
+.earnings-preview-results .financial-table-wrap .emphasized-total b{color:#173d56;font-weight:850}
+.staff-incentive-summary{justify-self:center;width:min(100%,820px)}
+.staff-incentive-summary .financial-table-wrap{margin-top:12px}
+.staff-incentive-table td:first-child b,.earnings-summary-table td:first-child b{color:#173d56;font-weight:750}
+.earnings-team-summary .financial-table-wrap{margin-top:12px}
+.earnings-summary-table .emphasized-total{background:#f5ead3}
+.earnings-summary-table .emphasized-total b{font-size:12px}
+.earnings-staff-cards{display:none}
+
+@media(max-width:700px){
+  .financial-command.earnings-command{gap:10px;padding:14px;margin-bottom:12px}
+  .earnings-command .financial-command-controls{width:100%;min-width:0;padding:0;border:0;background:transparent}
+  .earnings-command .financial-command-controls .ao-date-control,.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:44px;min-height:44px}
+  .earnings-preview-results{gap:10px}
+  .earnings-preview-results>.financial-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .earnings-preview-results>.financial-metrics article{min-height:84px;padding:11px 12px}
+  .earnings-preview-results>.financial-metrics article::before{width:22px;margin-bottom:7px}
+  .financial-module .earnings-preview-results>.financial-subsection{padding:14px}
+  .earnings-preview-results>.financial-subsection>header{align-items:flex-start;gap:9px}
+  .earnings-incentive-preview .financial-table-wrap,.staff-incentive-summary .financial-table-wrap{overflow-x:auto}
+  .earnings-summary-desktop{display:none}
+  .earnings-staff-cards{display:grid;gap:10px;margin-top:12px}
+  .earnings-staff-card{min-width:0;padding:13px;border:1px solid var(--financial-gold);border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%)}
+  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #eadbbd}
+  .earnings-staff-card>header>div{display:grid;gap:3px;min-width:0}
+  .earnings-staff-card>header b{color:#173d56;font-size:13px;line-height:1.2}
+  .earnings-staff-card>header small{color:#6f828c;font-size:10px}
+  .earnings-staff-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 0}
+  .earnings-staff-card dl>div{min-width:0;padding:8px;border-radius:8px;background:#f9f6ef}
+  .earnings-staff-card dt{color:#78878d;font-size:8px;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
+  .earnings-staff-card dd{margin:4px 0 0;color:#294b60;font-size:12px;font-weight:750}
+  .earnings-staff-card .earnings-total{background:#f4ead6}
+  .earnings-staff-card .earnings-total dd{color:#173d56;font:800 16px 'Playfair Display',serif}
+  .earnings-staff-card>.financial-review-reason{max-width:none;margin-top:9px}
 }
