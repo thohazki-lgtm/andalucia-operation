@@ -101,6 +101,7 @@
     "test:commercial-r2": "tsx server/commercial-r2-foundation.test.ts",
     "test:bill-tip-finalization-migration": "tsx server/bill-tip-finalization-migration.test.ts",
     "test:bill-tip-workflow": "tsx server/bill-tip-workflow.test.ts",
+    "test:bill-tips-i5-ui": "tsx server/bill-tips-i5-ui.test.ts",
     "test:wine-spirits-migration": "tsx server/wine-spirits-migration.test.ts",
     "test:wine-spirits-workflow": "tsx server/wine-spirits-repository.test.ts",
     "test:outlet-membership": "tsx server/outlet-membership-repository.test.ts",
