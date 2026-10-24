@@ -82,17 +82,43 @@ try {
   for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.daily-report-header input[type="date"]')&&!document.querySelector('.inline-state')`)) break; await sleep(100) }
   await cdp.evaluate(`(()=>{const input=document.querySelector('.daily-report-header input[type="date"]'),setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,${JSON.stringify(reportDate)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))})()`)
   for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('#daily-verification input[aria-label="Daily Service Charges USD"]')`)) break; await sleep(100) }
-  await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]');inputSetter.call(charge,'68.25');charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,'Separate outlet service charge.');remarks.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.double-dine-add')?.click()})()`)
+  await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]');inputSetter.call(charge,'125.50');charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,'Dinner service charge.');remarks.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.double-dine-add')?.click()})()`)
   await sleep(100)
   await cdp.evaluate(`(()=>{const values=['719','2','Main Restaurant'],setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;document.querySelectorAll('.double-dine-editor-row input').forEach((node,index)=>{setter.call(node,values[index]);node.dispatchEvent(new Event('input',{bubbles:true}))});Array.from(document.querySelectorAll('.daily-header-actions button')).find(button=>button.textContent?.includes('Save Draft'))?.click()})()`)
   for (let attempt = 0; attempt < 160; attempt += 1) {
     const saved = await cdp.evaluate<any>(`fetch('/api/reports/daily?date=${reportDate}').then(response=>response.json())`)
-    if (saved?.report?.manualPayload?.serviceCharges?.amount === '68.25' && saved?.report?.manualPayload?.serviceCharges?.remarks === 'Separate outlet service charge.') break
+    if (saved?.report?.manualPayload?.serviceCharges?.amount === '125.50' && saved?.report?.manualPayload?.serviceCharges?.remarks === 'Dinner service charge.') break
     await sleep(100)
   }
   const persisted = await cdp.evaluate<any>(`fetch('/api/reports/daily?date=${reportDate}').then(response=>response.json())`)
-  assert.deepEqual(persisted.report.manualPayload.serviceCharges, { amount: '68.25', remarks: 'Separate outlet service charge.' })
+  assert.deepEqual(persisted.report.manualPayload.serviceCharges, { amount: '125.50', remarks: 'Dinner service charge.' })
   assert.equal(persisted.report.manualPayload.serviceVerification.doubleDinePax, 2)
+
+  await cdp.send('Page.reload')
+  for (let attempt = 0; attempt < 120; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Reports"]')`)) break; await sleep(100) }
+  await cdp.evaluate(`document.querySelector('button[aria-label="Reports"]')?.click()`)
+  for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`document.querySelector('[aria-label="Daily Service Charges USD"]')?.value==='125.50'`)) break; await sleep(100) }
+  assert.deepEqual(await cdp.evaluate<any>(`(()=>({amount:document.querySelector('[aria-label="Daily Service Charges USD"]')?.value,remarks:document.querySelector('[aria-label="Service Charges Remarks"]')?.value,date:document.querySelector('.daily-report-header input[type="date"]')?.value}))()`), { amount: '125.50', remarks: 'Dinner service charge.', date: reportDate })
+
+  await cdp.evaluate(`document.querySelector('button[aria-label="Dashboard"]')?.click()`); await sleep(100)
+  await cdp.evaluate(`document.querySelector('button[aria-label="Reports"]')?.click()`)
+  for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`document.querySelector('[aria-label="Daily Service Charges USD"]')?.value==='125.50'`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<string>(`document.querySelector('[aria-label="Daily Service Charges USD"]')?.value||''`), '125.50')
+
+  const setServiceCharges = async (amount: string, remarks: string) => {
+    await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]');inputSetter.call(charge,${JSON.stringify(amount)});charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,${JSON.stringify(remarks)});remarks.dispatchEvent(new Event('input',{bubbles:true}));Array.from(document.querySelectorAll('.daily-header-actions button')).find(button=>button.textContent?.includes('Save Draft'))?.click()})()`)
+    for (let attempt = 0; attempt < 160; attempt += 1) { const saved = await cdp.evaluate<any>(`fetch('/api/reports/daily?date=${reportDate}').then(response=>response.json())`); if (saved?.report?.manualPayload?.serviceCharges?.amount === amount && saved?.report?.manualPayload?.serviceCharges?.remarks === remarks) return saved; await sleep(100) }
+    throw new Error(`Service Charges ${amount} did not persist.`)
+  }
+  const updated = await setServiceCharges('150.00', 'Updated dinner service charge.')
+  assert.deepEqual(updated.report.manualPayload.serviceCharges, { amount: '150.00', remarks: 'Updated dinner service charge.' })
+  const explicitZero = await setServiceCharges('0.00', 'Explicit zero service charge.')
+  assert.deepEqual(explicitZero.report.manualPayload.serviceCharges, { amount: '0.00', remarks: 'Explicit zero service charge.' })
+  await cdp.send('Page.reload')
+  for (let attempt = 0; attempt < 120; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Reports"]')`)) break; await sleep(100) }
+  await cdp.evaluate(`document.querySelector('button[aria-label="Reports"]')?.click()`)
+  for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`document.querySelector('[aria-label="Daily Service Charges USD"]')?.value==='0.00'`)) break; await sleep(100) }
+  assert.deepEqual(await cdp.evaluate<any>(`(()=>({amount:document.querySelector('[aria-label="Daily Service Charges USD"]')?.value,remarks:document.querySelector('[aria-label="Service Charges Remarks"]')?.value}))()`), { amount: '0.00', remarks: 'Explicit zero service charge.' })
 
   const results = []
   for (const viewport of [{ name: 'desktop-1440', width: 1440, height: 900, mobile: false }, { name: 'desktop-1280', width: 1280, height: 800, mobile: false }, { name: 'desktop-1024', width: 1024, height: 768, mobile: false }, { name: 'tablet-768', width: 768, height: 1024, mobile: false }, { name: 'mobile-430', width: 430, height: 932, mobile: true }, { name: 'mobile-390', width: 390, height: 844, mobile: true }, { name: 'mobile-360', width: 360, height: 800, mobile: true }]) {
@@ -105,8 +131,8 @@ try {
     if (viewport.width > 800) assert.ok(Math.abs(layout.widths[0] - layout.widths[1]) < 1)
     assert.deepEqual(layout.borders, ['rgb(222, 197, 143)', 'rgb(222, 197, 143)'])
     assert.deepEqual(layout.radii, ['12px', '12px'])
-    assert.equal(layout.amount, '68.25')
-    assert.equal(layout.remarks, 'Separate outlet service charge.')
+    assert.equal(layout.amount, '0.00')
+    assert.equal(layout.remarks, 'Explicit zero service charge.')
     assert.equal(layout.total, '2')
     assert.equal(layout.manualPaxInput, false)
     assert.equal(layout.enteredWeight, 500)
@@ -126,12 +152,18 @@ try {
   }
   await cdp.evaluate(`document.querySelector('.whatsapp-export-trigger')?.click()`)
   await sleep(80)
-  assert.equal(await cdp.evaluate<boolean>(`document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Service Charges: $68.25')===true`), true)
+  assert.equal(await cdp.evaluate<boolean>(`document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Service Charges: $0.00')===true`), true)
   await cdp.evaluate(`Array.from(document.querySelectorAll('.whatsapp-format-selector .ao-action')).find(button=>button.textContent?.includes('Full Daily Report'))?.click()`)
   await sleep(80)
-  assert.equal(await cdp.evaluate<boolean>(`document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Daily Service Charges: $68.25')===true&&document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Remarks: Separate outlet service charge.')===true`), true)
+  assert.equal(await cdp.evaluate<boolean>(`document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Daily Service Charges: $0.00')===true&&document.querySelector('.whatsapp-export-dialog textarea')?.value.includes('Remarks: Explicit zero service charge.')===true`), true)
+  await cdp.evaluate(`document.querySelector('.whatsapp-export-close')?.click()`)
+  await cdp.evaluate(`(()=>{window.__andaluciaOriginalFetch=window.fetch.bind(window);window.fetch=async(...args)=>{const response=await window.__andaluciaOriginalFetch(...args);if(String(args[0]).includes('/api/reports/daily/')&&String(args[0]).endsWith('/draft')){const data=await response.clone().json();if(data.report?.manualPayload)delete data.report.manualPayload.serviceCharges;return new Response(JSON.stringify(data),{status:response.status,statusText:response.statusText,headers:response.headers})}return response}})()`)
+  await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]');inputSetter.call(charge,'80.00');charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,'Incomplete response guard test.');remarks.dispatchEvent(new Event('input',{bubbles:true}));Array.from(document.querySelectorAll('.daily-header-actions button')).find(button=>button.textContent?.includes('Save Draft'))?.click()})()`)
+  for (let attempt = 0; attempt < 80; attempt += 1) { if (await cdp.evaluate<boolean>(`document.body.textContent?.includes('Service Charges save was not confirmed.')===true`)) break; await sleep(100) }
+  assert.deepEqual(await cdp.evaluate<any>(`(()=>({amount:document.querySelector('[aria-label="Daily Service Charges USD"]')?.value,remarks:document.querySelector('[aria-label="Service Charges Remarks"]')?.value,exportDisabled:document.querySelector('.whatsapp-export-trigger')?.disabled===true,warning:document.body.textContent?.includes('Service Charges save was not confirmed.')===true}))()`), { amount: '80.00', remarks: 'Incomplete response guard test.', exportDisabled: true, warning: true })
+  await cdp.evaluate(`window.fetch=window.__andaluciaOriginalFetch`)
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ status: 'PASS', schema: '027', serviceChargesPersisted: true, explicitAmount: '68.25', responsive: results.map(item => ({ viewport: item.viewport, columns: item.columns, overflow: item.pageOverflow })), screenshots, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', schema: '027', serviceChargesPersisted: true, initialAmount: '125.50', updatedAmount: '150.00', explicitZero: '0.00', browserReloadRestored: true, navigationRestored: true, incompleteResponseDoesNotClearInputs: true, responsive: results.map(item => ({ viewport: item.viewport, columns: item.columns, overflow: item.pageOverflow })), screenshots, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   socket?.close()
   for (const child of children.reverse()) if (child.exitCode === null) child.kill()

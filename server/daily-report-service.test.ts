@@ -7,7 +7,7 @@ import { DailyReportService } from './daily-report-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { createFinancialFinalizationFingerprint, createOperationalFingerprint } from './database-backup.js'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
-import { managerReviewWasPersisted } from '../src/daily-report-save-integrity.js'
+import { managerReviewWasPersisted, serviceChargesWerePersisted } from '../src/daily-report-save-integrity.js'
 import { BookingRepository } from './booking-repository.js'
 import { GuestOccasionRepository } from './guest-occasion-repository.js'
 
@@ -110,6 +110,9 @@ try {
     assert.equal(independentlyEdited.report?.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
     assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, independentlyEdited.report?.manualPayload.manager), true)
     assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, { operatingSummary: '', operationsIssues: '' }), false)
+    assert.equal(serviceChargesWerePersisted({ amount: '125.5', remarks: ' Dinner service ' }, { amount: '125.50', remarks: 'Dinner service' }), true)
+    assert.equal(serviceChargesWerePersisted({ amount: '0.00', remarks: '' }, { amount: '', remarks: '' }), false)
+    assert.equal(serviceChargesWerePersisted({ amount: '125.50', remarks: 'Dinner service' }, undefined), false)
     const managerAudit = (await db.query<any>("select before_data,after_data from audit_logs where entity_type='daily_report' and entity_id=$1 and action='manual_payload_updated' order by created_at desc,id desc limit 1", [independentlyEdited.report!.id])).rows[0]
     assert.equal(managerAudit.before_data.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
     assert.equal(managerAudit.after_data.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
