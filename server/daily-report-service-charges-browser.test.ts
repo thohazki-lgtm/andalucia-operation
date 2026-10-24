@@ -82,7 +82,7 @@ try {
   for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.daily-report-header input[type="date"]')&&!document.querySelector('.inline-state')`)) break; await sleep(100) }
   await cdp.evaluate(`(()=>{const input=document.querySelector('.daily-report-header input[type="date"]'),setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,${JSON.stringify(reportDate)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))})()`)
   for (let attempt = 0; attempt < 160; attempt += 1) { if (await cdp.evaluate<boolean>(`!!document.querySelector('#daily-verification input[aria-label="Daily Service Charges USD"]')`)) break; await sleep(100) }
-  await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]'),pax=document.querySelector('[aria-label="Double Dine Pax"]');inputSetter.call(charge,'68.25');charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,'Separate outlet service charge.');remarks.dispatchEvent(new Event('input',{bubbles:true}));inputSetter.call(pax,'2');pax.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.double-dine-add')?.click()})()`)
+  await cdp.evaluate(`(()=>{const inputSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set,textSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set,charge=document.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=document.querySelector('[aria-label="Service Charges Remarks"]');inputSetter.call(charge,'68.25');charge.dispatchEvent(new Event('input',{bubbles:true}));textSetter.call(remarks,'Separate outlet service charge.');remarks.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.double-dine-add')?.click()})()`)
   await sleep(100)
   await cdp.evaluate(`(()=>{const values=['719','2','Main Restaurant'],setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;document.querySelectorAll('.double-dine-editor-row input').forEach((node,index)=>{setter.call(node,values[index]);node.dispatchEvent(new Event('input',{bubbles:true}))});Array.from(document.querySelectorAll('.daily-header-actions button')).find(button=>button.textContent?.includes('Save Draft'))?.click()})()`)
   for (let attempt = 0; attempt < 160; attempt += 1) {
@@ -92,13 +92,14 @@ try {
   }
   const persisted = await cdp.evaluate<any>(`fetch('/api/reports/daily?date=${reportDate}').then(response=>response.json())`)
   assert.deepEqual(persisted.report.manualPayload.serviceCharges, { amount: '68.25', remarks: 'Separate outlet service charge.' })
+  assert.equal(persisted.report.manualPayload.serviceVerification.doubleDinePax, 2)
 
   const results = []
   for (const viewport of [{ name: 'desktop-1440', width: 1440, height: 900, mobile: false }, { name: 'desktop-1280', width: 1280, height: 800, mobile: false }, { name: 'desktop-1024', width: 1024, height: 768, mobile: false }, { name: 'tablet-768', width: 768, height: 1024, mobile: false }, { name: 'mobile-430', width: 430, height: 932, mobile: true }, { name: 'mobile-390', width: 390, height: 844, mobile: true }, { name: 'mobile-360', width: 360, height: 800, mobile: true }]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.mobile })
     await sleep(100)
     await cdp.evaluate(`document.querySelector('.service-verification-details')?.setAttribute('open','')`)
-    const layout = await cdp.evaluate<any>(`(()=>{const section=document.querySelector('#daily-verification'),grid=section.querySelector('.service-verification-charge-grid'),cards=Array.from(grid.children),details=section.querySelector('.service-verification-details'),charge=section.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=section.querySelector('[aria-label="Service Charges Remarks"]');return{title:section.querySelector(':scope>header h3')?.textContent?.trim(),columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,widths:cards.map(card=>card.getBoundingClientRect().width),borders:cards.map(card=>getComputedStyle(card).borderTopColor),radii:cards.map(card=>getComputedStyle(card).borderRadius),amount:charge?.value,remarks:remarks?.value,detailsOpen:details?.open===true,detailsRows:details?.querySelectorAll('.double-dine-editor-row').length,controlHeights:[charge,remarks].map(node=>node.getBoundingClientRect().height),sectionOverflow:section.scrollWidth>section.clientWidth+1,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+    const layout = await cdp.evaluate<any>(`(()=>{const section=document.querySelector('#daily-verification'),grid=section.querySelector('.service-verification-charge-grid'),cards=Array.from(grid.children),details=section.querySelector('.service-verification-details'),charge=section.querySelector('[aria-label="Daily Service Charges USD"]'),remarks=section.querySelector('[aria-label="Service Charges Remarks"]'),total=section.querySelector('.double-dine-total-summary b'),financialPlaceholder=document.querySelector('#daily-symphony input[placeholder="Not entered"]');return{title:section.querySelector(':scope>header h3')?.textContent?.trim(),columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,widths:cards.map(card=>card.getBoundingClientRect().width),borders:cards.map(card=>getComputedStyle(card).borderTopColor),radii:cards.map(card=>getComputedStyle(card).borderRadius),amount:charge?.value,remarks:remarks?.value,total:total?.textContent?.trim(),manualPaxInput:!!section.querySelector('[aria-label="Double Dine Pax"]'),enteredWeight:Number(getComputedStyle(charge).fontWeight),enteredFont:getComputedStyle(charge).fontFamily,placeholderWeight:Number(getComputedStyle(financialPlaceholder,'::placeholder').fontWeight),placeholderSize:parseFloat(getComputedStyle(financialPlaceholder,'::placeholder').fontSize),placeholderColor:getComputedStyle(financialPlaceholder,'::placeholder').color,detailsOpen:details?.open===true,detailsRows:details?.querySelectorAll('.double-dine-editor-row').length,controlHeights:[charge,remarks].map(node=>node.getBoundingClientRect().height),sectionOverflow:section.scrollWidth>section.clientWidth+1,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
     assert.equal(layout.title, 'Service Verification & Charges')
     assert.equal(layout.columns, viewport.width > 800 ? 2 : 1)
     if (viewport.width > 800) assert.ok(Math.abs(layout.widths[0] - layout.widths[1]) < 1)
@@ -106,6 +107,13 @@ try {
     assert.deepEqual(layout.radii, ['12px', '12px'])
     assert.equal(layout.amount, '68.25')
     assert.equal(layout.remarks, 'Separate outlet service charge.')
+    assert.equal(layout.total, '2')
+    assert.equal(layout.manualPaxInput, false)
+    assert.equal(layout.enteredWeight, 500)
+    assert.equal(layout.enteredFont.toLowerCase().includes('monospace'), false)
+    assert.equal(layout.placeholderWeight, 400)
+    assert.ok(layout.placeholderSize >= 14 && layout.placeholderSize <= 15)
+    assert.equal(layout.placeholderColor, 'rgb(120, 137, 148)')
     assert.equal(layout.detailsOpen, true)
     assert.equal(layout.detailsRows, 1)
     if (viewport.width <= 430) assert.ok(layout.controlHeights.every((height: number) => height >= 44))
