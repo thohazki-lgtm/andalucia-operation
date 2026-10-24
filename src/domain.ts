@@ -377,7 +377,7 @@ export interface DailyReportSnapshot { id: string; dailyReportId: string; outlet
 export interface DailyReportUpsellDetail { id: string; item: string; quantity: number; soldBy: string; staffNumber: string; roomNumber: string; checkInvoiceNumber: string; amount: string; source: 'Chargeable' | 'Wine / Spirits' }
 export interface DailyReportOccasionRoom { occasionId: string; bookingId: string | null; category: string; categoryKeys?: string[]; label: string; guestName: string; roomNumber: string; covers: number }
 export interface DailyReportFrozenPayload {
-  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
+  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInCovers?: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
   symphony: DailyReportManualPayload['symphony']
   serviceVerification: { doubleDinePax: number; details: DailyReportDoubleDineDetail[] }
   upselling: { chargeables: DailyReportUpsellDetail[]; wineSpirits: DailyReportUpsellDetail[]; details: DailyReportUpsellDetail[]; totalUpsellRevenue: string; itemsSold: number; topItem: string; topSeller: string }

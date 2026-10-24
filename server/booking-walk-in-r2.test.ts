@@ -43,8 +43,8 @@ assert.equal((await repository.find(manual.id))?.bookingSource, 'manual')
 
 assert.equal(isWalkInBookingEvidence({ booking_source: 'walk_in' }), true)
 assert.equal(isWalkInBookingEvidence({ booking_source: 'manual' }), false)
-assert.equal(isWalkInBookingEvidence({ booking_source: 'activity_program', raw_import_payload: { effective: { walkIn: true } } }), true)
-assert.equal(isWalkInBookingEvidence({ booking_source: 'activity_program', source_activity_label: 'Andalucía Walk In Guests' }), true)
+assert.equal(isWalkInBookingEvidence({ booking_source: 'activity_program', raw_import_payload: { effective: { walkIn: true } } }), false)
+assert.equal(isWalkInBookingEvidence({ booking_source: 'activity_program', source_activity_label: 'Andalucía Walk In Guests' }), false)
 
 const waiting = { ...walkIn, id: randomUUID(), guestName: 'Waiting Guest', bookingStatus: 'waiting', bookingNumber: 'WAIT-1' }
 await repository.save(waiting, 'R2 Test')
@@ -57,4 +57,4 @@ const auditCount = Number((await db.query<{ count: number }>("select count(*)::i
 assert.equal(auditCount >= 2, true)
 await db.close()
 
-console.log(JSON.stringify({ canonicalWalkIn: true, sourceImmutable: true, waiting: true, walkInFieldPersistence: true, resetDefaults: true, protectedFields: true, optionalGuestName: true, canonicalReporting: true, historicalActivityWalkIn: true, historicalManualPreserved: true, tableRanges: true, individualAssignments: true, historicalTablesPreserved: true, audit: true }, null, 2))
+console.log(JSON.stringify({ canonicalWalkIn: true, sourceImmutable: true, waiting: true, walkInFieldPersistence: true, resetDefaults: true, protectedFields: true, optionalGuestName: true, canonicalReporting: true, activityHeadingsExcluded: true, importedPayloadFlagsExcluded: true, historicalManualPreserved: true, tableRanges: true, individualAssignments: true, historicalTablesPreserved: true, audit: true }, null, 2))

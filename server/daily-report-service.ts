@@ -14,7 +14,7 @@ const fixed = (value: number) => value.toFixed(2)
 const parseJson = (value: unknown): any => { if (typeof value !== 'string') return value || {}; try { return JSON.parse(value) } catch { return {} } }
 const cleanText = (value: unknown, maximum = 4000) => String(value ?? '').trim().slice(0, maximum)
 const guestExperienceCount = (rows: Array<Record<string, unknown>>, categories: Array<Record<string, unknown>>) => rows.some(row => Array.isArray(row.categoryKeys) && row.categoryKeys.length) ? new Set(rows.map(row => row.bookingId ? `booking:${String(row.bookingId)}` : `occasion:${String(row.occasionId)}`)).size : categories.reduce((sum, row) => sum + Number(row.count || 0), 0)
-export const isWalkInBookingEvidence = (row: { booking_source?: string | null; source_activity_label?: string | null; raw_import_payload?: unknown }) => { const payload = parseJson(row.raw_import_payload); return row.booking_source === 'walk_in' || payload?.effective?.walkIn === true || payload?.walkIn === true || /walk\s*in/i.test(row.source_activity_label || '') }
+export const isWalkInBookingEvidence = (row: { booking_source?: string | null; source_activity_label?: string | null; raw_import_payload?: unknown }) => row.booking_source === 'walk_in'
 
 export const emptyDailyReportManualPayload = (): DailyReportManualPayload => ({
   symphony: { foodRevenue: '', beverageRevenue: '', wineRevenue: '', liquorRevenue: '', totalSale: '', totalDiscount: '', totalVoid: '', netSale: '', totalRevenue: '', voidDetails: [] },
@@ -88,10 +88,11 @@ export class DailyReportService {
 
   private async liveContent(serviceDate: string, outletScopeId: string): Promise<DailyReportSnapshotContent> {
     const report = await this.reporting.report('today', serviceDate, serviceDate)
-    const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.booking_source,b.source_activity_label,b.raw_import_payload,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
+    const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.covers,b.booking_source,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
     const noShowRooms = bookingEvidence.filter(row => { const metadata = parseJson(row.status_metadata); return metadata.serviceStage === 'noShow' || metadata.bookingMetric === 'noShow' }).flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
     const walkInEvidence = bookingEvidence.filter(isWalkInBookingEvidence)
     const walkIns = walkInEvidence.length
+    const walkInCovers = walkInEvidence.reduce((sum, row) => sum + Math.max(0, Number(row.covers) || 0), 0)
     const walkInRooms = walkInEvidence.flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
     const chargeables = report.chargeables.financialProofRecords.map(row => ({ id: row.id, item: row.item, quantity: row.quantity, soldBy: row.waiter, staffNumber: '', roomNumber: row.roomNumber, checkInvoiceNumber: row.checkInvoiceNumber, amount: fixed(row.grossTotal), source: 'Chargeable' as const }))
     const wineRows = (await this.wineSpirits.list({ start: serviceDate, end: serviceDate, outletScopeId })).filter(row => !row.archived && row.status === 'charged')
@@ -104,7 +105,7 @@ export class DailyReportService {
     const roomDetails = report.occasions.records.map(row => ({ occasionId: row.id, bookingId: row.bookingId, category: row.category, categoryKeys: row.categoryKeys, label: row.occasionType, guestName: row.guestName, roomNumber: row.roomNumber, covers: row.covers }))
     const categories = DEFAULT_CATEGORIES.map(([key, label]) => { const rows = roomDetails.filter(row => Array.isArray(row.categoryKeys) ? row.categoryKeys.includes(key) : row.category === key || row.label.toLowerCase() === label.toLowerCase()); return { key, label, count: rows.length, covers: rows.reduce((sum, row) => sum + row.covers, 0) } })
     return {
-      servicePerformance: { totalCovers: report.bookings.totalCovers, adults: report.bookings.totalAdults, kids: report.bookings.totalKids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.totalCovers, adults: row.totalAdults, kids: row.totalKids, noShows: row.noShowCovers, status: row.status })) },
+      servicePerformance: { totalCovers: report.bookings.totalCovers, adults: report.bookings.totalAdults, kids: report.bookings.totalKids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInCovers, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.totalCovers, adults: row.totalAdults, kids: row.totalKids, noShows: row.noShowCovers, status: row.status })) },
       symphony: emptyDailyReportManualPayload().symphony,
       serviceVerification: { doubleDinePax: 0, details: [] },
       upselling: { chargeables, wineSpirits, details, totalUpsellRevenue: fixed(details.reduce((sum, row) => sum + Number(row.amount), 0)), itemsSold: details.reduce((sum, row) => sum + row.quantity, 0), topItem, topSeller },

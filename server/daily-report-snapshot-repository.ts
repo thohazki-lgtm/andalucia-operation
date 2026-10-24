@@ -22,7 +22,7 @@ export type DailyReportManualPayload = {
 export type DailyReportFrozenPayload = {
   servicePerformance: {
     totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number
-    noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInRooms?: string[]
+    noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInCovers?: number; walkInRooms?: string[]
     bookingByTimeSlot: Array<Record<string, unknown>>
   }
   symphony: DailyReportManualPayload['symphony']
