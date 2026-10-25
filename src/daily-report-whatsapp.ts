@@ -6,7 +6,8 @@ const reportDate = (value: string) => new Intl.DateTimeFormat('en-GB', { day: '2
 const amount = (value: string | number | null | undefined) => value === '' || value == null ? 'Not entered' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
 const rooms = (values: string[] | undefined) => values?.length ? values.join(', ') : 'None recorded'
 const clean = (value: string | undefined) => value?.trim() || ''
-const sectionDivider = '━━━━━━━━━━━━━━'
+const sectionDivider = '━━━━━━━━━━━━━━━━━━━━'
+const categoryDivider = '────────────────────'
 const messageSection = (heading: string, lines: string[]) => [`*${heading.toUpperCase()}*`, '', ...lines].join('\n')
 const joinSections = (sections: string[]) => sections.join(`\n\n${sectionDivider}\n\n`)
 
@@ -34,7 +35,7 @@ const occasionLines = (content: DailyReportView['content']) => content.guestOcca
 
 const occasionRoomLines = (content: DailyReportView['content']) => content.guestOccasions.categories
   .filter(category => Number(category.count) > 0)
-  .flatMap(category => {
+  .flatMap((category, categoryIndex) => {
     const seen = new Set<string>()
     const roomDetails = content.guestOccasions.roomDetails
       .filter(row => Array.isArray(row.categoryKeys) ? row.categoryKeys.includes(category.key) : row.category === category.key || row.label.toLowerCase() === category.label.toLowerCase())
@@ -47,7 +48,8 @@ const occasionRoomLines = (content: DailyReportView['content']) => content.guest
       })
       .map(row => `${row.roomNumber.trim()} × ${Number(row.covers)}`)
     const summary = `${category.label}: ${category.count} booking${category.count === 1 ? '' : 's'} · ${category.covers} pax`
-    return roomDetails.length ? [summary, `Rooms: ${roomDetails.join(', ')}`] : [summary]
+    const lines = roomDetails.length ? [summary, `Rooms: ${roomDetails.join(', ')}`] : [summary]
+    return categoryIndex ? [categoryDivider, ...lines] : lines
   })
 
 export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: DailyReportWhatsAppFormat) {
@@ -72,8 +74,10 @@ export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: D
     reportHeading,
     messageSection('Quick Management Summary', [
       ...serviceLines,
-      `Total Revenue: ${amount(content.symphony.totalRevenue)} · Net Sale: ${amount(content.symphony.netSale)}`,
-      `Upselling: ${amount(content.upselling.totalUpsellRevenue)} · ${content.upselling.itemsSold} item${content.upselling.itemsSold === 1 ? '' : 's'}`,
+      `Total Revenue: ${amount(content.symphony.totalRevenue)}`,
+      `Net Sale: ${amount(content.symphony.netSale)}`,
+      `Upselling Revenue: ${amount(content.upselling.totalUpsellRevenue)}`,
+      `Items Sold: ${content.upselling.itemsSold}`,
       `Double Dine: ${content.serviceVerification.doubleDinePax} pax`,
       `Service Charges: ${amount(serviceCharges.amount)}`,
       `Guest Occasions: ${occasions.length ? occasions.join('; ') : 'None recorded'}`
@@ -93,13 +97,19 @@ export function buildDailyReportWhatsAppMessage(view: DailyReportView, format: D
     messageSection('Symphony / Revenue', [
       `Food Revenue: ${amount(content.symphony.foodRevenue)}`,
       `Beverage Revenue: ${amount(content.symphony.beverageRevenue)}`,
-      `Wine Revenue: ${amount(content.symphony.wineRevenue)} · Liquor Revenue: ${amount(content.symphony.liquorRevenue)}`,
-      `Total Sale: ${amount(content.symphony.totalSale)} · Discount: ${amount(content.symphony.totalDiscount)} · Void: ${amount(content.symphony.totalVoid)}`,
-      `Net Sale: ${amount(content.symphony.netSale)} · Total Revenue: ${amount(content.symphony.totalRevenue)}`
+      `Wine Revenue: ${amount(content.symphony.wineRevenue)}`,
+      `Liquor Revenue: ${amount(content.symphony.liquorRevenue)}`,
+      `Total Sale: ${amount(content.symphony.totalSale)}`,
+      `Discount: ${amount(content.symphony.totalDiscount)}`,
+      `Void: ${amount(content.symphony.totalVoid)}`,
+      `Net Sale: ${amount(content.symphony.netSale)}`,
+      `Total Revenue: ${amount(content.symphony.totalRevenue)}`
     ]),
     messageSection('Chargeable Items / Upselling', [
-      `Revenue: ${amount(content.upselling.totalUpsellRevenue)} · Items Sold: ${content.upselling.itemsSold}`,
-      `Top Item: ${content.upselling.topItem || 'None recorded'} · Top Seller: ${content.upselling.topSeller || 'None recorded'}`
+      `Revenue: ${amount(content.upselling.totalUpsellRevenue)}`,
+      `Items Sold: ${content.upselling.itemsSold}`,
+      `Top Item: ${content.upselling.topItem || 'None recorded'}`,
+      `Top Seller: ${content.upselling.topSeller || 'None recorded'}`
     ]),
     messageSection('Guest Occasions', occasions.length ? occasionRoomLines(content) : ['None recorded']),
     messageSection('Service Verification & Charges', [
