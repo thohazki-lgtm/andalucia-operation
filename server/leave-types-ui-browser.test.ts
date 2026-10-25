@@ -56,6 +56,7 @@ try {
   assert.equal(baselineState.configured + baselineState.activationButtons, 10, 'Every protected Duty Code must retain one configured or activation state.')
 
   const results: Record<string, unknown> = {}
+  const policyResults: Record<string, unknown> = {}
   for (const width of [1440, 1024, 768, 430, 390, 360]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
@@ -78,9 +79,31 @@ try {
     const target = join(output, `after-${width}.png`)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, Buffer.from(capture.data, 'base64'))
+
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Entitlement Policies')?.click()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-row')`)) break; await sleep(100) }
+    const policyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.entitlement-policies-panel');const grid=panel.querySelector('.entitlement-policy-list');const cards=Array.from(panel.querySelectorAll('.entitlement-policy-row'));const first=cards[0];const code=first.querySelector('.policy-code');const allowance=first.querySelector('.policy-allowance b');const edit=first.querySelector('.secondary');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('.policy-identity small')?.textContent.trim()===card.querySelector('.policy-identity strong')?.textContent.trim()).length,statuses:panel.querySelectorAll('.policy-source').length,editActions:Array.from(panel.querySelectorAll('.secondary')).filter(button=>button.textContent.trim()==='Edit').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeight:Math.round(first.getBoundingClientRect().height),buttonHeight:Math.round(edit.getBoundingClientRect().height),allowanceWeight:getComputedStyle(allowance).fontWeight,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor}})()`)
+    assert.equal(policyResult.overflow, false, `Entitlement Policies overflow at ${width}px.`)
+    assert.equal(policyResult.cards, 10)
+    assert.equal(policyResult.columns, width <= 700 ? 1 : 2)
+    assert.equal(policyResult.duplicateSubtitles, 0)
+    assert.equal(policyResult.statuses, 10)
+    assert.equal(policyResult.editActions, 10)
+    assert.equal(policyResult.panelBorder, 'rgb(222, 197, 143)')
+    assert.equal(policyResult.panelBackground, 'rgb(255, 253, 248)')
+    assert.equal(policyResult.cardBorder, 'rgb(222, 197, 143)')
+    assert.ok(policyResult.cardHeight >= 104 && policyResult.cardHeight <= 140)
+    assert.ok(policyResult.buttonHeight >= 34)
+    assert.equal(policyResult.allowanceWeight, '500')
+    assert.equal(policyResult.codeColor, policyResult.codeBorder, 'Entitlement Policy leave-code colors must remain authoritative.')
+    policyResults[String(width)] = policyResult
+    const policyCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+    await writeFile(join(output, `entitlement-policies-${width}.png`), Buffer.from(policyCapture.data, 'base64'))
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Leave Types')?.click()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-type-card')`)) break; await sleep(100) }
   }
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).map(width => `artifacts/visual-validation/leave-types/after-${width}.png`) }, null, 2))
+  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`]) }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }
