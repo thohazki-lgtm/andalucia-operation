@@ -202,6 +202,13 @@ function Get-AndaluciaReviewedCustomReportRedesignPaths {
   )
 }
 
+function Get-AndaluciaReviewedCustomReportFinalUiPaths {
+  return @(
+    'server/reports-custom-monthly-browser.test.ts',
+    'src/reports.css'
+  )
+}
+
 function Assert-AndaluciaExactChangedPaths {
   param([string]$ProjectRoot, [string]$From, [string]$To, [string[]]$ExpectedPaths, [string]$Code)
   $actual = @(& git -C $ProjectRoot diff --name-only "$From..$To" | Sort-Object)
@@ -254,8 +261,26 @@ function Get-AndaluciaApprovedSourceState {
   $isMonthlyReportTypographyApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v4' -and $manifest.mode -eq 'approved_local_monthly_report_typography_refinement' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_TYPOGRAPHY_REFINEMENT_CHECKPOINT'
   $isMonthlyReportAlignmentApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v5' -and $manifest.mode -eq 'approved_local_monthly_report_table_alignment' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT'
   $isCustomReportRedesignApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v6' -and $manifest.mode -eq 'approved_local_custom_report_redesign' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isCustomReportFinalUiApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v7' -and $manifest.mode -eq 'approved_local_custom_report_final_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_FINAL_UI_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isCustomReportFinalUiApproval) {
+    $expectedPreviousControlSha = '7a9fe44b7d4e045b8c6cbee30e2305ccdb08f9de'
+    $expectedCustomReportFinalUiCheckpointSha = 'f285c5d32aeead2cbca5659d08c985f6e0e15424'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.customReportFinalUiCheckpointSha -ne $expectedCustomReportFinalUiCheckpointSha) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedCustomReportFinalUiCheckpointSha 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedCustomReportFinalUiCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $customReportFinalUiPaths = @(Get-AndaluciaReviewedCustomReportFinalUiPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedCustomReportFinalUiCheckpointSha $customReportFinalUiPaths 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedCustomReportFinalUiCheckpointSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($customReportFinalUiPaths | Sort-Object) @($manifest.customReportFinalUiPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_CUSTOM_REPORT_FINAL_UI_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_custom_report_final_ui'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; CustomReportFinalUiCheckpointSha=$expectedCustomReportFinalUiCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isCustomReportRedesignApproval) {
     $expectedPreviousControlSha = '32d1f255383ec74290dd5c3b1585c6dac34f9b76'
