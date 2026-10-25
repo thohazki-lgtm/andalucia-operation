@@ -29,7 +29,7 @@ const expectedCustomReportCheckpoint = '2a4a00e60187b38cab85fda26766e1500b5fd4ad
 const expectedCustomReportFinalUiCheckpoint = 'f285c5d32aeead2cbca5659d08c985f6e0e15424'
 const expectedLeaveTypesCheckpoint = '4bbc70c7280879c41e73131d9b62212d735a68ca'
 const expectedEmployeeEntitlementsCheckpoint = 'ca28f4f522d6d5c1b6ae78e23d1ad031c87d117b'
-const expectedEmployeeEntitlementsIntegration = '8b2d5ea6a2fe8da48137b0de726ac63bd86a370c'
+const expectedEmployeeEntitlementsIntegration = '8b2d5ead2d895004fa6aa8c5e1a9694891b23926'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })

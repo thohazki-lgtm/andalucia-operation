@@ -300,7 +300,7 @@ function Get-AndaluciaApprovedSourceState {
     $expectedPreviousControlSha = 'c3d09f939961ba4f974ee83e67452e828179350c'
     $expectedReviewedCheckpointParentSha = '114a35c12914a4cde3d43e8dd281918251a11140'
     $expectedEmployeeEntitlementsCheckpointSha = 'ca28f4f522d6d5c1b6ae78e23d1ad031c87d117b'
-    $expectedEmployeeEntitlementsIntegrationSha = '8b2d5ea6a2fe8da48137b0de726ac63bd86a370c'
+    $expectedEmployeeEntitlementsIntegrationSha = '8b2d5ead2d895004fa6aa8c5e1a9694891b23926'
     if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.employeeEntitlementsCheckpointSha -ne $expectedEmployeeEntitlementsCheckpointSha -or [string]$manifest.employeeEntitlementsIntegrationSha -ne $expectedEmployeeEntitlementsIntegrationSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_IDENTITY_MISMATCH' }
     $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
     if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_NONCANONICAL_SHA' }
