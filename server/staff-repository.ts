@@ -615,11 +615,13 @@ export class StaffRepository {
     const annualUsage = await this.database.query<{ annualLeaveUsed: number; publicHolidayUsed: number }>(`select count(*) filter(where c.metadata->>'dutyClassification'='annualLeave')::int as "annualLeaveUsed",count(*) filter(where c.metadata->>'dutyClassification'='publicHoliday')::int as "publicHolidayUsed" from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date >= $3 and r.duty_date < $4`, [staffId, staffConfigKeys['duty-codes'], annualStart, annualEnd])
     const additionalUsage = await this.database.query<{ classification: EmployeeOverrideLeaveClassification; used: number }>(`select case when upper(r.duty_code_value) in ('SK','SL') then 'sickLeave' else c.metadata->>'dutyClassification' end as classification,count(*)::int as used from duty_roster_entries r left join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date >= $3 and r.duty_date < $4 group by 1`, [staffId, staffConfigKeys['duty-codes'], annualStart, annualEnd])
     const overrides = await this.employeeLeaveOverrideTableAvailable() ? await this.database.query<{ classification: EmployeeOverrideLeaveClassification; entitlement: number }>('select leave_classification as classification,entitled_units::int as entitlement from staff_leave_entitlement_overrides where staff_id=$1', [staffId]) : { rows: [] }
-    const weeklyUsage = await this.database.query<{ assigned: number }>(`select count(*)::int as assigned from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4 and c.metadata->>'dutyClassification'='off'`, [staffId, staffConfigKeys['duty-codes'], weekStart, weekEnd])
+    const weeklyUsage = await this.database.query<{ assigned: number; assignmentCount: number; unknownCount: number }>(`select count(*) filter(where c.metadata->>'dutyClassification'='off')::int as assigned,count(*)::int as "assignmentCount",count(*) filter(where c.value is null)::int as "unknownCount" from duty_roster_entries r left join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4`, [staffId, staffConfigKeys['duty-codes'], weekStart, weekEnd])
     const annualLeaveUsed = annualUsage.rows[0].annualLeaveUsed
     const publicHolidayUsed = annualUsage.rows[0].publicHolidayUsed
     const assigned = weeklyUsage.rows[0].assigned
     const difference = assigned - allowance.rows[0].weeklyOff
+    const currentServiceDate = serviceDate()
+    const complete = weekEnd < currentServiceDate && weeklyUsage.rows[0].assignmentCount === 7 && weeklyUsage.rows[0].unknownCount === 0
     const usageByClassification = new Map(additionalUsage.rows.filter(row => EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS.includes(row.classification)).map(row => [row.classification, Number(row.used)]))
     const entitlementByClassification = new Map(overrides.rows.map(row => [row.classification, Number(row.entitlement)]))
     const policyByClassification = new Map(policies.map(policy => [policy.classification, policy.defaultAllowance]))
@@ -629,13 +631,13 @@ export class StaffRepository {
       const used = usageByClassification.get(classification) || 0
       return { classification, code: definition.code, label: definition.label, entitlement, used, remaining: entitlement === null ? null : entitlement - used, bookedFuture: null, availableAfterBooked: null }
     })
-    const today = serviceDate(); const yearStart = `${year}-01-01`; const yearEnd = `${year}-12-31`; const asOf = today < yearStart ? yearStart : today > yearEnd ? yearEnd : today
+    const today = currentServiceDate; const yearStart = `${year}-01-01`; const yearEnd = `${year}-12-31`; const asOf = today < yearStart ? yearStart : today > yearEnd ? yearEnd : today
     const serviceYearSupported = await this.serviceYearEntitlementTableAvailable()
     const serviceYear = await this.annualLeaveServiceYearBalance(staffId, asOf).catch(error => { if (error instanceof Error && error.message === 'SERVICE_YEAR_NOT_STARTED') return null; throw error })
     const annualLeave = serviceYear
       ? { entitlement: serviceYear.availableLeave, used: serviceYear.used, remaining: serviceYear.remaining, serviceYear }
       : serviceYearSupported ? { entitlement: null, used: 0, remaining: null } : { entitlement: allowance.rows[0].annualLeave, used: annualLeaveUsed, remaining: allowance.rows[0].annualLeave - annualLeaveUsed }
-    return { staffId, year, annualLeave, publicHoliday: { entitlement: allowance.rows[0].publicHoliday, used: publicHolidayUsed, remaining: allowance.rows[0].publicHoliday - publicHolidayUsed }, weeklyOff: { weekStart, weekEnd, required: allowance.rows[0].weeklyOff, assigned, difference, status: difference < 0 ? 'short' as const : difference > 0 ? 'additional' as const : 'compliant' as const }, additionalLeave }
+    return { staffId, year, annualLeave, publicHoliday: { entitlement: allowance.rows[0].publicHoliday, used: publicHolidayUsed, remaining: allowance.rows[0].publicHoliday - publicHolidayUsed }, weeklyOff: { weekStart, weekEnd, required: allowance.rows[0].weeklyOff, assigned, difference, complete, status: !complete ? 'pending' as const : difference < 0 ? 'short' as const : difference > 0 ? 'additional' as const : 'compliant' as const }, additionalLeave }
   }
 
   private async confirmedYearlyUsage(staffId: string, year: number) {

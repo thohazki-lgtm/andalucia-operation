@@ -34,31 +34,33 @@ try {
 
   const publicHoliday = await repository.saveConfiguration('duty-codes', {
     id: randomUUID(), value: '', label: 'Validation Public Holiday', color: '#8b6b9e', active: true,
-    metadata: { displayCode: 'PHV', dutyClassification: 'publicHoliday', countsAsWorking: true }
+    metadata: { displayCode: 'PHV', dutyClassification: 'publicHoliday', countsAsWorking: true, billTipEligible: false, billTipWorkedDayUnits: 0 }
   })
   assert.equal(publicHoliday.metadata?.countsAsWorking, false)
   await repository.saveEntitlement({ staffId: active.id, annualLeavePerYear: 30, weeklyOffEntitlement: 1, publicHolidayPerYear: 11 })
 
   for (const date of ['2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09']) await insertRoster(repository, active.id, date, annualLeave.value)
   for (const date of ['2026-02-02', '2026-02-03', '2026-02-04']) await insertRoster(repository, active.id, date, publicHoliday.value)
-  let balance = await repository.entitlementBalance(active.id, 2026, '2026-08-31', '2026-09-06')
+  let balance = await repository.entitlementBalance(active.id, 2026, '2026-08-30', '2026-09-05')
   assert.deepEqual(balance.annualLeave, { entitlement: 30, used: 5, remaining: 25 })
   assert.deepEqual(balance.publicHoliday, { entitlement: 11, used: 3, remaining: 8 })
-  assert.deepEqual(balance.weeklyOff, { weekStart: '2026-08-31', weekEnd: '2026-09-06', required: 1, assigned: 0, difference: -1, status: 'short' })
+  assert.deepEqual(balance.weeklyOff, { weekStart: '2026-08-30', weekEnd: '2026-09-05', required: 1, assigned: 0, difference: -1, complete: false, status: 'pending' })
 
   await insertRoster(repository, active.id, '2026-01-09', working.value)
   await insertRoster(repository, active.id, '2026-02-04', working.value)
-  balance = await repository.entitlementBalance(active.id, 2026, '2026-08-31', '2026-09-06')
+  balance = await repository.entitlementBalance(active.id, 2026, '2026-08-30', '2026-09-05')
   assert.deepEqual(balance.annualLeave, { entitlement: 30, used: 4, remaining: 26 })
   assert.deepEqual(balance.publicHoliday, { entitlement: 11, used: 2, remaining: 9 })
 
-  await insertRoster(repository, active.id, '2026-09-07', off.value)
-  const compliant = await repository.entitlementBalance(active.id, 2026, '2026-09-07', '2026-09-13')
-  assert.deepEqual(compliant.weeklyOff, { weekStart: '2026-09-07', weekEnd: '2026-09-13', required: 1, assigned: 1, difference: 0, status: 'compliant' })
-  await insertRoster(repository, active.id, '2026-09-14', off.value)
-  await insertRoster(repository, active.id, '2026-09-15', off.value)
-  const additional = await repository.entitlementBalance(active.id, 2026, '2026-09-14', '2026-09-20')
-  assert.deepEqual(additional.weeklyOff, { weekStart: '2026-09-14', weekEnd: '2026-09-20', required: 1, assigned: 2, difference: 1, status: 'additional' })
+  for (const date of ['2026-08-30', '2026-08-31', '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05']) await insertRoster(repository, active.id, date, working.value)
+  const short = await repository.entitlementBalance(active.id, 2026, '2026-08-30', '2026-09-05')
+  assert.deepEqual(short.weeklyOff, { weekStart: '2026-08-30', weekEnd: '2026-09-05', required: 1, assigned: 0, difference: -1, complete: true, status: 'short' })
+  for (const date of ['2026-09-06', '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-12']) await insertRoster(repository, active.id, date, date === '2026-09-06' ? off.value : working.value)
+  const compliant = await repository.entitlementBalance(active.id, 2026, '2026-09-06', '2026-09-12')
+  assert.deepEqual(compliant.weeklyOff, { weekStart: '2026-09-06', weekEnd: '2026-09-12', required: 1, assigned: 1, difference: 0, complete: true, status: 'compliant' })
+  for (const date of ['2026-09-13', '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19']) await insertRoster(repository, active.id, date, ['2026-09-13', '2026-09-14'].includes(date) ? off.value : working.value)
+  const additional = await repository.entitlementBalance(active.id, 2026, '2026-09-13', '2026-09-19')
+  assert.deepEqual(additional.weeklyOff, { weekStart: '2026-09-13', weekEnd: '2026-09-19', required: 1, assigned: 2, difference: 1, complete: true, status: 'additional' })
 
   await repository.saveEntitlement({ staffId: inactive.id, annualLeavePerYear: 0, weeklyOffEntitlement: 1, publicHolidayPerYear: 0 })
   await insertRoster(repository, inactive.id, '2024-02-29', annualLeave.value)
@@ -67,7 +69,7 @@ try {
 
   const historicalLeave = await repository.saveConfiguration('duty-codes', {
     id: randomUUID(), value: '', label: 'Historical Leave', color: '#826f42', active: true,
-    metadata: { displayCode: 'HLV', dutyClassification: 'annualLeave', countsAsWorking: false }
+    metadata: { displayCode: 'HLV', dutyClassification: 'annualLeave', countsAsWorking: false, billTipEligible: false, billTipWorkedDayUnits: 0 }
   })
   const secondActive = staff.filter(person => person.employmentStatus === 'active')[1]
   await repository.saveEntitlement({ staffId: secondActive.id, annualLeavePerYear: 30, weeklyOffEntitlement: 1, publicHolidayPerYear: 11 })
@@ -103,7 +105,7 @@ try {
   console.log(JSON.stringify({
     annualLeave: '30 / 5 / 25, then 30 / 4 / 26',
     publicHoliday: '11 / 3 / 8, then 11 / 2 / 9 without calendar dependency',
-    weeklyOff: ['short', 'compliant', 'additional'],
+    weeklyOff: ['pending', 'short', 'compliant', 'additional'],
     zeroEntitlementNegativeBalance: true,
     inactiveHistoricalStaff: true,
     retiredDutyCodeHistory: true,

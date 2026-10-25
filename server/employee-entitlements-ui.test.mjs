@@ -28,6 +28,16 @@ assert.match(styles, /@media\(max-width:700px\).*?\.staff-entitlements-panel \.e
 
 assert.match(workforce, /displayEntitlement\(serviceYear \? serviceYear\.availableLeave/, 'Available Leave rendering must preserve Unconfigured versus zero.')
 assert.match(workforce, /summary\?\.bookedFuture/, 'Booked/Future must remain separately rendered.')
+const offSummaryPosition = workforce.indexOf('OFF Days Summary')
+const annualLeavePosition = workforce.indexOf('aria-label="Yearly leave entitlement balances"')
+assert.ok(offSummaryPosition > 0 && offSummaryPosition < annualLeavePosition, 'OFF Days Summary must appear before Annual Leave balances.')
+for (const label of ['OFF Taken', 'Accumulated OFF', 'Available Balance', 'Weekly OFF Review', 'Required', 'Assigned', 'Difference', 'Status']) assert.ok(workforce.includes(label), `Missing OFF summary label: ${label}`)
+assert.match(workforce, /staffApi\.accumulatedOffBalance\(item\.staffId\)/, 'OFF summary must use the existing accumulated-OFF balance service.')
+assert.match(workforce, /weeklyOff\.status === 'pending' \? 'Pending'/, 'Incomplete weeks must render Pending.')
+assert.match(workforce, /weeklyOff\.complete \?/, 'Incomplete weeks must not display a shortage difference.')
+assert.match(styles, /\.off-days-summary\{[^}]*border:1px solid #dec58f[^}]*border-radius:12px/, 'OFF summary must use the approved gold card treatment.')
+assert.match(styles, /\.off-days-metrics\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'The three OFF figures must share one horizontal desktop row.')
+assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:7px/, 'Weekly OFF Review must remain compact.')
 
 console.log(JSON.stringify({
   compactEmployeeRows: true,
@@ -37,4 +47,6 @@ console.log(JSON.stringify({
   serviceYearPresentationPreserved: true,
   consolidatedManageActions: true,
   reconciliationUiRemoved: true,
+  offDaysSummaryFirst: true,
+  rosterAuthoritativeOffBalance: true,
 }, null, 2))

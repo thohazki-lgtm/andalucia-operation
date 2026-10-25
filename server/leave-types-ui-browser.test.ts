@@ -60,6 +60,7 @@ try {
   const results: Record<string, unknown> = {}
   const policyResults: Record<string, unknown> = {}
   const employeeResults: Record<string, unknown> = {}
+  const offSummaryResults: Record<string, unknown> = {}
   for (const width of [1440, 1024, 768, 430, 390, 360]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
@@ -124,11 +125,29 @@ try {
     employeeResults[String(width)] = employeeResult
     const employeeCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `employee-entitlements-${width}.png`), Buffer.from(employeeCapture.data, 'base64'))
+    await cdp.evaluate(`document.querySelector('.entitlement-manage-menu button')?.click()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.off-days-summary')`)) break; await sleep(100) }
+    const offSummaryResult = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.entitlement-balance-modal');const summary=modal.querySelector('.off-days-summary');const yearly=modal.querySelector('.additional-entitlement-balances');const metrics=Array.from(summary.querySelectorAll('.off-days-metrics>div'));const weekly=summary.querySelector('.off-days-weekly-review');const actions=Array.from(summary.querySelectorAll('.balance-week-actions button'));return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,modalOverflow:modal.scrollWidth>modal.clientWidth+1,summaryBeforeAnnual:summary.compareDocumentPosition(yearly)===Node.DOCUMENT_POSITION_FOLLOWING,metricLabels:metrics.map(metric=>metric.querySelector('dt').textContent.trim()),metricColumns:getComputedStyle(summary.querySelector('.off-days-metrics')).gridTemplateColumns.split(' ').length,weeklyLabels:Array.from(weekly.querySelectorAll('dt')).map(label=>label.textContent.trim()),weeklyColumns:getComputedStyle(weekly.querySelector('dl')).gridTemplateColumns.split(' ').length,border:getComputedStyle(summary).borderColor,background:getComputedStyle(summary).backgroundColor,actions:actions.map(button=>button.textContent.trim()),actionHeights:actions.map(button=>Math.round(button.getBoundingClientRect().height))}})()`)
+    assert.equal(offSummaryResult.overflow, false, `OFF summary page overflow at ${width}px.`)
+    assert.equal(offSummaryResult.modalOverflow, false, `OFF summary modal overflow at ${width}px.`)
+    assert.equal(offSummaryResult.summaryBeforeAnnual, true)
+    assert.deepEqual(offSummaryResult.metricLabels, ['OFF Taken', 'Accumulated OFF', 'Available Balance'])
+    assert.equal(offSummaryResult.metricColumns, 3)
+    assert.deepEqual(offSummaryResult.weeklyLabels, ['Required', 'Assigned', 'Difference', 'Status'])
+    assert.equal(offSummaryResult.weeklyColumns, width <= 700 ? 2 : 4)
+    assert.equal(offSummaryResult.border, 'rgb(222, 197, 143)')
+    assert.equal(offSummaryResult.background, 'rgb(255, 253, 248)')
+    assert.deepEqual(offSummaryResult.actions, ['← Previous Week', 'Current Week', 'Next Week →'])
+    if (width <= 700) assert.equal(offSummaryResult.actionHeights.every((height:number)=>height>=38), true)
+    offSummaryResults[String(width)] = offSummaryResult
+    const offSummaryCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+    await writeFile(join(output, `off-days-summary-${width}.png`), Buffer.from(offSummaryCapture.data, 'base64'))
+    await cdp.evaluate(`document.querySelector('.entitlement-balance-modal .close')?.click()`)
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Leave Types')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-type-card')`)) break; await sleep(100) }
   }
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), employeeResponsiveWidths: Object.keys(employeeResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`, `artifacts/visual-validation/leave-types/employee-entitlements-${width}.png`]) }, null, 2))
+  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), employeeResponsiveWidths: Object.keys(employeeResults), offSummaryResponsiveWidths: Object.keys(offSummaryResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`, `artifacts/visual-validation/leave-types/employee-entitlements-${width}.png`, `artifacts/visual-validation/leave-types/off-days-summary-${width}.png`]) }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }
