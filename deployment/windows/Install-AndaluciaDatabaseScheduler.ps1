@@ -6,6 +6,7 @@ $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $jobScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Invoke-AndaluciaDatabaseJob.ps1'))
 $runtimeScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-AndaluciaGuardedApplication.ps1'))
 $shutdownScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Stop-AndaluciaGuardedApplication.ps1'))
+$shutdownSignalScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Signal-AndaluciaWindowsShutdown.cmd'))
 $sourceResolver = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'))
 $exportRoot = Join-Path $projectRoot '.backups\.db2\scheduler\task-exports'
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -34,7 +35,7 @@ function Assert-RuntimeTaskSafety {
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'RUNTIME_TASK_SAFETY_DRIFT:WorkingDirectory' }
 }
 
-function Register-GracefulShutdownTask([string]$PowerShellPath) {
+function Register-GracefulShutdownTask([string]$CommandPath) {
   $service = New-Object -ComObject 'Schedule.Service'
   $service.Connect()
   $folder = $service.GetFolder('\')
@@ -60,8 +61,12 @@ function Register-GracefulShutdownTask([string]$PowerShellPath) {
   $trigger.Enabled = $true
   $trigger.Subscription = "<QueryList><Query Id='0' Path='System'><Select Path='System'>*[System[Provider[@Name='User32'] and EventID=1074]]</Select></Query></QueryList>"
   $action = $definition.Actions.Create(0)
-  $action.Path = $PowerShellPath
-  $action.Arguments = ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $shutdownScript)
+  # The event is delivered while Windows is already tearing down the session.
+  # Keep the scheduled action to one atomic file signal; the already-running
+  # API owns and performs the guarded PGlite shutdown. This avoids starting a
+  # full PowerShell host after teardown has begun.
+  $action.Path = $CommandPath
+  $action.Arguments = ("/D /Q /C call `"{0}`"" -f $shutdownSignalScript)
   $action.WorkingDirectory = $projectRoot
   $taskCreateOrUpdate = 6
   $taskLogonS4U = 2
@@ -79,8 +84,8 @@ function Assert-ShutdownTaskSafety {
   $allowHardTerminate = $definition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $namespace).InnerText
   $logonType = $definition.SelectSingleNode('//t:Principals/t:Principal/t:LogonType', $namespace).InnerText
   if ($subscription -notmatch 'EventID=1074' -or $subscription -notmatch "Provider\[@Name='User32'\]") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:EventTrigger' }
-  if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath((Join-Path $PSHOME 'powershell.exe'))) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:PowerShell' }
-  if ($arguments -notlike "*$shutdownScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Script' }
+  if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath((Join-Path $env:SystemRoot 'System32\cmd.exe'))) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Command' }
+  if ($arguments -notlike "*$shutdownSignalScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:SignalScript' }
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WorkingDirectory' }
   if ($allowHardTerminate -ne 'false') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:AllowHardTerminate' }
   if ($logonType -ne 'S4U') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:LogonType' }
@@ -101,7 +106,7 @@ function Set-RuntimeTaskHardTerminateProtection {
   $folder.RegisterTaskDefinition($runtimeName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonInteractiveToken, $null) | Out-Null
 }
 
-foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
+foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
 $approvedSource = Assert-ApprovedCheckout
 
@@ -109,6 +114,7 @@ $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interact
 $commonSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2)
 $runtimeSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -DisallowHardTerminate -ExecutionTimeLimit ([TimeSpan]::Zero)
 $powerShell = Join-Path $PSHOME 'powershell.exe'
+$commandPrompt = Join-Path $env:SystemRoot 'System32\cmd.exe'
 $runtimeAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $runtimeScript) -WorkingDirectory $projectRoot
 $dailyAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job DailyBackup" -f $jobScript) -WorkingDirectory $projectRoot
 $rehearsalAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job WeeklyRestoreRehearsal" -f $jobScript) -WorkingDirectory $projectRoot
@@ -122,7 +128,7 @@ Register-ScheduledTask -TaskName $dailyName -Action $dailyAction -Trigger $daily
 Register-ScheduledTask -TaskName $rehearsalName -Action $rehearsalAction -Trigger $rehearsalTrigger -Principal $principal -Settings $commonSettings -Description 'Runs the DB-2 restore rehearsal against the latest suitable verified backup without promotion.' -Force | Out-Null
 Set-RuntimeTaskHardTerminateProtection
 Assert-RuntimeTaskSafety
-Register-GracefulShutdownTask $powerShell
+Register-GracefulShutdownTask $commandPrompt
 Assert-ShutdownTaskSafety
 
 New-Item -ItemType Directory -Path $exportRoot -Force | Out-Null

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { appendFile, mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import type { FileHandle } from 'node:fs/promises'
 import { operationMarkerPaths } from './database-protection.js'
@@ -75,6 +75,8 @@ export type SchedulerShutdownRequest = {
   source: 'windows_task_scheduler' | 'guarded_operator'
 }
 
+export const schedulerShutdownSignalPath = (backupRoot: string) => join(schedulerRoot(backupRoot), 'control', 'windows-shutdown.signal')
+
 export const startSchedulerShutdownControl = (options: {
   backupRoot: string
   gracefulShutdown: (reason: string) => Promise<void>
@@ -84,9 +86,36 @@ export const startSchedulerShutdownControl = (options: {
   const requests = join(root, 'requests')
   const processing = join(root, 'processing')
   const responses = join(root, 'responses')
+  const shutdownSignal = schedulerShutdownSignalPath(options.backupRoot)
   let handling = false
   const inspect = async () => {
-    if (handling || !existsSync(requests)) return
+    if (handling) return
+    if (existsSync(shutdownSignal)) {
+      const signalAge = Date.now() - (await stat(shutdownSignal)).mtimeMs
+      if (signalAge > 2 * 60_000) {
+        await unlink(shutdownSignal).catch(() => undefined)
+      } else {
+        handling = true
+        await mkdir(processing, { recursive: true })
+        await mkdir(responses, { recursive: true })
+        const requestId = `windows-shutdown-${randomUUID()}`
+        const claimed = join(processing, `${requestId}.signal`)
+        try {
+          await rename(shutdownSignal, claimed)
+          const response = join(responses, `${requestId}.json`)
+          await writeFile(response, JSON.stringify({ requestId, state: 'accepted', acceptedAt: new Date().toISOString(), source: 'windows_shutdown_signal' }), 'utf8')
+          await options.gracefulShutdown('WINDOWS_SHUTDOWN_SIGNAL')
+          await writeFile(response, JSON.stringify({ requestId, state: 'completed', completedAt: new Date().toISOString(), source: 'windows_shutdown_signal' }), 'utf8')
+          await unlink(claimed).catch(() => undefined)
+          ;(options.exit || ((code: number) => process.exit(code)))(0)
+        } catch (error) {
+          await writeFile(join(responses, `${requestId}.json`), JSON.stringify({ requestId, state: 'failed', failedAt: new Date().toISOString(), source: 'windows_shutdown_signal', error: safeError(error) }), 'utf8').catch(() => undefined)
+          handling = false
+        }
+        return
+      }
+    }
+    if (!existsSync(requests)) return
     const { readdir } = await import('node:fs/promises')
     const names = (await readdir(requests)).filter(name => name.endsWith('.json')).sort()
     if (!names.length) return
