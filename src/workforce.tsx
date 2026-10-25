@@ -85,24 +85,15 @@ export function StaffEntitlementsManager() {
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
       <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Employee identity and actions stay visible while reviewing balances.</small></div>
-      <div className="workforce-table-wrap entitlement-table-wrap"><table className="workforce-table entitlement-table" aria-label="Staff entitlement settings">
-        <thead><tr><th>Staff</th><th>Available Leave</th><th>Used</th><th>Remaining</th><th>Accruing <span>Next Service Year</span></th><th>Booked <span>/ Future</span></th><th>Available <span>After Booked</span></th><th>Additional Leave</th><th>OFF <span>/ Week</span></th><th>PH <span>/ Year</span></th><th>Source</th><th>Actions</th></tr></thead>
-        <tbody>{visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const overrides = Object.keys(item.leaveOverrides).length; const effective = summary?.additionalLeave?.filter(line => line.entitlement !== null).length ?? overrides; return <tr key={item.staffId}>
-          <td><b>{item.staffName}</b><small>{item.staffNumber}</small></td>
-          <td>{serviceYear ? displayEntitlement(serviceYear.availableLeave) : displayEntitlement(summary?.annualLeave.entitlement)}</td>
-          <td>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</td>
-          <td>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</td>
-          <td>{serviceYear?.accruingForNextServiceYear ?? '—'}</td>
-          <td>{summary?.bookedFuture ?? '—'}</td>
-          <td>{displayEntitlement(summary?.availableAfterBooked)}</td>
-          <td>{effective ? `${effective} available${overrides ? ` · ${overrides} override${overrides === 1 ? '' : 's'}` : ''}` : 'Unconfigured'}</td>
-          <td>{item.weeklyOffEntitlement}</td>
-          <td>{item.publicHolidayPerYear}</td>
-          <td><span className="badge blue">Automatic service year</span></td>
-          <td><div className="entitlement-row-actions"><button className="link" onClick={() => setViewing(item)}>Balance</button><button className="link" onClick={() => setEditingCarryForward(item)}>Carry Forward</button><button className="link" onClick={() => setEditingYearly(item)}>Edit Year</button><button className="link" onClick={() => setEditing(item)}>Settings</button></div></td>
-        </tr>})}</tbody>
-      </table></div>
-      <div className="workforce-mobile-cards entitlement-mobile-cards" aria-label="Staff entitlement settings mobile view">{visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const overrides = Object.keys(item.leaveOverrides).length; const effective = summary?.additionalLeave?.filter(line => line.entitlement !== null).length ?? overrides; return <article className="workforce-record-card entitlement-record-card" key={item.staffId}><header><div><b>{item.staffName}</b><small>{item.staffNumber}</small></div><span className={item.employmentStatus === 'active' ? 'badge blue' : 'badge'}>{item.employmentStatus === 'active' ? 'Active' : 'Inactive'}</span></header><div className="entitlement-card-evidence"><span className="badge blue">Automatic service year</span></div><dl className="entitlement-summary-grid"><div><dt>Available Leave</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableLeave : summary?.annualLeave.entitlement)}</dd></div><div><dt>Used</dt><dd>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</dd></div><div><dt>Remaining</dt><dd>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</dd></div><div><dt>Accruing Next Service Year</dt><dd>{serviceYear?.accruingForNextServiceYear ?? '—'}</dd></div><div><dt>Booked / Future</dt><dd>{summary?.bookedFuture ?? '—'}</dd></div><div><dt>Available After Booked</dt><dd>{displayEntitlement(summary?.availableAfterBooked)}</dd></div><div><dt>Additional Leave</dt><dd>{effective ? `${effective} available${overrides ? ` · ${overrides} override${overrides === 1 ? '' : 's'}` : ''}` : 'Unconfigured'}</dd></div><div><dt>OFF / Week</dt><dd>{item.weeklyOffEntitlement}</dd></div><div><dt>PH / Year</dt><dd>{item.publicHolidayPerYear}</dd></div></dl><div className="workforce-card-actions"><button className="secondary" onClick={() => setViewing(item)}>Balance</button><button className="secondary" onClick={() => setEditingCarryForward(item)}>Carry Forward</button><button className="secondary" onClick={() => setEditingYearly(item)}>Edit Year</button><button className="secondary" onClick={() => setEditing(item)}>Settings</button></div></article>})}</div>
+      <div className="employee-entitlement-list" aria-label="Staff entitlement settings">{visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; return <article className="employee-entitlement-row" key={item.staffId}>
+        <header className="employee-entitlement-identity"><b>{item.staffName}</b><small>{item.staffNumber}</small></header>
+        <dl className="employee-entitlement-metrics">
+          <div><dt>Available AL</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableLeave : summary?.annualLeave.entitlement)}</dd></div>
+          <div><dt>Future Booked AL</dt><dd>{summary?.bookedFuture ?? '—'}</dd></div>
+          <div><dt>Accruing Next Year AL</dt><dd>{serviceYear?.accruingForNextServiceYear ?? '—'}</dd></div>
+        </dl>
+        <details className="entitlement-manage"><summary>Manage</summary><div className="entitlement-manage-menu"><button type="button" onClick={() => setViewing(item)}>Balance</button><button type="button" onClick={() => setEditingCarryForward(item)}>Carry Forward</button><button type="button" onClick={() => setEditingYearly(item)}>Edit Year</button><button type="button" onClick={() => setEditing(item)}>Settings</button></div></details>
+      </article>})}</div>
       {!visible.length && <p className="workforce-empty">No staff match this view.</p>}
     </>}
     {editing && <EntitlementForm item={editing} onClose={() => setEditing(null)} onSave={saved} />}

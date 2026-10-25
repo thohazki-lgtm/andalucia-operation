@@ -27,6 +27,8 @@ try {
   const owner = (await fixture.db.query<any>("select u.id from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
   assert.ok(owner)
   await fixture.db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
+  const position = (await fixture.db.query<{ value: string }>("select value from configuration_options where group_key='staff_positions' and active=true order by sort_order limit 1")).rows[0]?.value || 'F&B Attendant'
+  await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'ENT-001','Aisha Ibrahim',$2,'active','2024-01-01'),($3,'ENT-002','Mohamed Rasheed',$2,'active','2025-02-01')", [randomUUID(), position, randomUUID()])
   await fixture.db.close()
 
   const node = process.execPath
@@ -57,6 +59,7 @@ try {
 
   const results: Record<string, unknown> = {}
   const policyResults: Record<string, unknown> = {}
+  const employeeResults: Record<string, unknown> = {}
   for (const width of [1440, 1024, 768, 430, 390, 360]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
@@ -99,11 +102,31 @@ try {
     policyResults[String(width)] = policyResult
     const policyCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `entitlement-policies-${width}.png`), Buffer.from(policyCapture.data, 'base64'))
+
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Employee Entitlements')?.click()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.employee-entitlement-row')`)) break; await sleep(100) }
+    const employeeResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.staff-entitlements-panel');const rows=Array.from(panel.querySelectorAll('.employee-entitlement-row'));const first=rows[0];const metrics=Array.from(first.querySelectorAll('.employee-entitlement-metrics>div'));const manage=first.querySelector('.entitlement-manage');manage.open=true;const menu=manage.querySelector('.entitlement-manage-menu');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rows:rows.length,rowColumns:getComputedStyle(first).gridTemplateColumns.split(' ').length,rowHeight:Math.round(first.getBoundingClientRect().height),labels:metrics.map(metric=>metric.querySelector('dt').textContent.trim()),metricColumns:getComputedStyle(first.querySelector('.employee-entitlement-metrics')).gridTemplateColumns.split(' ').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,rowBorder:getComputedStyle(first).borderColor,rowBackground:getComputedStyle(first).backgroundColor,manageHeight:Math.round(manage.querySelector('summary').getBoundingClientRect().height),menuActions:Array.from(menu.querySelectorAll('button')).map(button=>button.textContent.trim()),menuVisible:getComputedStyle(menu).display!=='none'}})()`)
+    assert.equal(employeeResult.overflow, false, `Employee Entitlements overflow at ${width}px.`)
+    assert.ok(employeeResult.rows > 0)
+    assert.equal(employeeResult.rowColumns, width <= 700 ? 2 : 3)
+    assert.equal(employeeResult.metricColumns, 3)
+    assert.deepEqual(employeeResult.labels, ['Available AL', 'Future Booked AL', 'Accruing Next Year AL'])
+    assert.equal(employeeResult.panelBorder, 'rgb(222, 197, 143)')
+    assert.equal(employeeResult.panelBackground, 'rgb(255, 253, 248)')
+    assert.equal(employeeResult.rowBorder, 'rgb(222, 197, 143)')
+    assert.equal(employeeResult.rowBackground, 'rgb(255, 253, 248)')
+    assert.ok(employeeResult.rowHeight <= (width <= 700 ? 145 : 76), `Employee row is not compact at ${width}px.`)
+    assert.ok(employeeResult.manageHeight >= (width <= 700 ? 44 : 36))
+    assert.deepEqual(employeeResult.menuActions, ['Balance', 'Carry Forward', 'Edit Year', 'Settings'])
+    assert.equal(employeeResult.menuVisible, true)
+    employeeResults[String(width)] = employeeResult
+    const employeeCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+    await writeFile(join(output, `employee-entitlements-${width}.png`), Buffer.from(employeeCapture.data, 'base64'))
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Leave Types')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-type-card')`)) break; await sleep(100) }
   }
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`]) }, null, 2))
+  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), employeeResponsiveWidths: Object.keys(employeeResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`, `artifacts/visual-validation/leave-types/employee-entitlements-${width}.png`]) }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }
