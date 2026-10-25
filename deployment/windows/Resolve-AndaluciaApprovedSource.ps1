@@ -229,6 +229,20 @@ function Get-AndaluciaReviewedEmployeeEntitlementsPaths {
   )
 }
 
+function Get-AndaluciaReviewedOffDaysSummaryPaths {
+  return @(
+    'server/employee-entitlements-ui.test.mjs',
+    'server/index.ts',
+    'server/leave-types-ui-browser.test.ts',
+    'server/staff-repository.ts',
+    'server/workforce-entitlement-balances-reopen-verifier.ts',
+    'server/workforce-entitlement-balances.test.ts',
+    'src/domain.ts',
+    'src/workforce.css',
+    'src/workforce.tsx'
+  )
+}
+
 function Assert-AndaluciaPathContentMatches {
   param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
   foreach ($path in $ExpectedPaths) {
@@ -293,8 +307,29 @@ function Get-AndaluciaApprovedSourceState {
   $isCustomReportFinalUiApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v7' -and $manifest.mode -eq 'approved_local_custom_report_final_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_FINAL_UI_CHECKPOINT'
   $isLeaveTypesApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v1' -and $manifest.mode -eq 'approved_local_leave_types' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT'
   $isEmployeeEntitlementsApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v3' -and $manifest.mode -eq 'approved_local_employee_entitlements' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isOffDaysSummaryApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v4' -and $manifest.mode -eq 'approved_local_off_days_summary' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_OFF_DAYS_SUMMARY_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isOffDaysSummaryApproval) {
+    $expectedPreviousControlSha = '94e51d45ebae0e20da5d50e18a67b17a06d3cf41'
+    $expectedOffDaysSummaryCheckpointSha = 'bffece4a6e2ae6b8601c10adcd088f9cf08d8ff1'
+    $expectedOffDaysSummaryIntegrationSha = '5ecd4a86b1d1e021d11a4c01b4aa6f5869016ee8'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.offDaysSummaryCheckpointSha -ne $expectedOffDaysSummaryCheckpointSha -or [string]$manifest.offDaysSummaryIntegrationSha -ne $expectedOffDaysSummaryIntegrationSha) { throw 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedOffDaysSummaryIntegrationSha 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_INTEGRATION_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedOffDaysSummaryIntegrationSha $controlCommitSha 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_CONTROL_NOT_BASED_ON_INTEGRATION'
+    $offDaysSummaryPaths = @(Get-AndaluciaReviewedOffDaysSummaryPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedOffDaysSummaryCheckpointSha $offDaysSummaryPaths 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedOffDaysSummaryIntegrationSha $offDaysSummaryPaths 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_INTEGRATION_PATH_MISMATCH')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $expectedOffDaysSummaryCheckpointSha $expectedOffDaysSummaryIntegrationSha $offDaysSummaryPaths 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_CONTENT_MISMATCH'
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedOffDaysSummaryIntegrationSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($offDaysSummaryPaths | Sort-Object) @($manifest.offDaysSummaryPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_OFF_DAYS_SUMMARY_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_off_days_summary'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; OffDaysSummaryCheckpointSha=$expectedOffDaysSummaryCheckpointSha; OffDaysSummaryIntegrationSha=$expectedOffDaysSummaryIntegrationSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isEmployeeEntitlementsApproval) {
     $expectedPreviousControlSha = 'c3d09f939961ba4f974ee83e67452e828179350c'
