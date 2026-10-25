@@ -28,7 +28,8 @@ const expectedMonthlyReportAlignmentCheckpoint = '8ff75ae31e598750ddca1672d660f3
 const expectedCustomReportCheckpoint = '2a4a00e60187b38cab85fda26766e1500b5fd4ad'
 const expectedCustomReportFinalUiCheckpoint = 'f285c5d32aeead2cbca5659d08c985f6e0e15424'
 const expectedLeaveTypesCheckpoint = '4bbc70c7280879c41e73131d9b62212d735a68ca'
-const expectedEmployeeEntitlementsCheckpoint = '3a48c878359f81174adb5d3c0ed6b1723484ab7a'
+const expectedEmployeeEntitlementsCheckpoint = 'ca28f4f522d6d5c1b6ae78e23d1ad031c87d117b'
+const expectedEmployeeEntitlementsIntegration = '8b2d5ea6a2fe8da48137b0de726ac63bd86a370c'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -227,6 +228,9 @@ try {
   assert.match(resolverSource, new RegExp(expectedEmployeeEntitlementsCheckpoint))
   assert.match(approvalSource, new RegExp(expectedEmployeeEntitlementsCheckpoint))
   assert.match(activationSource, new RegExp(expectedEmployeeEntitlementsCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedEmployeeEntitlementsIntegration))
+  assert.match(approvalSource, new RegExp(expectedEmployeeEntitlementsIntegration))
+  assert.match(activationSource, new RegExp(expectedEmployeeEntitlementsIntegration))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
@@ -242,7 +246,9 @@ try {
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_LEAVE_TYPES_ACTIVATION/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT[^\n]+\*/)
+  assert.match(resolverSource, /andalucia-local-workforce-approval-v3/)
   assert.match(resolverSource, /approved_local_employee_entitlements/)
+  assert.match(resolverSource, /Assert-AndaluciaPathContentMatches/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_ACTIVATION/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT[^\n]+\*/)

@@ -223,11 +223,19 @@ function Get-AndaluciaReviewedLeaveTypesPaths {
 function Get-AndaluciaReviewedEmployeeEntitlementsPaths {
   return @(
     'server/employee-entitlements-ui.test.mjs',
-    'server/leave-entitlements-foundation.test.mjs',
     'server/leave-types-ui-browser.test.ts',
     'src/workforce.css',
     'src/workforce.tsx'
   )
+}
+
+function Assert-AndaluciaPathContentMatches {
+  param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
+  foreach ($path in $ExpectedPaths) {
+    $reviewedBlob = (& git -C $ProjectRoot rev-parse "$ReviewedRef`:$path" 2>$null).Trim()
+    $integratedBlob = (& git -C $ProjectRoot rev-parse "$IntegratedRef`:$path" 2>$null).Trim()
+    if (-not $reviewedBlob -or -not $integratedBlob -or $reviewedBlob -ne $integratedBlob) { throw "$Code`:$path" }
+  }
 }
 
 function Assert-AndaluciaExactChangedPaths {
@@ -284,25 +292,29 @@ function Get-AndaluciaApprovedSourceState {
   $isCustomReportRedesignApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v6' -and $manifest.mode -eq 'approved_local_custom_report_redesign' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT'
   $isCustomReportFinalUiApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v7' -and $manifest.mode -eq 'approved_local_custom_report_final_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_FINAL_UI_CHECKPOINT'
   $isLeaveTypesApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v1' -and $manifest.mode -eq 'approved_local_leave_types' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT'
-  $isEmployeeEntitlementsApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v2' -and $manifest.mode -eq 'approved_local_employee_entitlements' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT'
+  $isEmployeeEntitlementsApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v3' -and $manifest.mode -eq 'approved_local_employee_entitlements' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT'
   if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
 
   if ($isEmployeeEntitlementsApproval) {
-    $expectedPreviousControlSha = 'e4f0ceadebcbcb73502b6a8340a108a4d665a923'
-    $expectedEmployeeEntitlementsCheckpointSha = '3a48c878359f81174adb5d3c0ed6b1723484ab7a'
-    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.employeeEntitlementsCheckpointSha -ne $expectedEmployeeEntitlementsCheckpointSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_IDENTITY_MISMATCH' }
+    $expectedPreviousControlSha = 'c3d09f939961ba4f974ee83e67452e828179350c'
+    $expectedReviewedCheckpointParentSha = '114a35c12914a4cde3d43e8dd281918251a11140'
+    $expectedEmployeeEntitlementsCheckpointSha = 'ca28f4f522d6d5c1b6ae78e23d1ad031c87d117b'
+    $expectedEmployeeEntitlementsIntegrationSha = '8b2d5ea6a2fe8da48137b0de726ac63bd86a370c'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.employeeEntitlementsCheckpointSha -ne $expectedEmployeeEntitlementsCheckpointSha -or [string]$manifest.employeeEntitlementsIntegrationSha -ne $expectedEmployeeEntitlementsIntegrationSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_IDENTITY_MISMATCH' }
     $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
     if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_NONCANONICAL_SHA' }
-    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedEmployeeEntitlementsCheckpointSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_NOT_BASED_ON_PRIOR_CONTROL'
-    Assert-AndaluciaGitAncestor $ProjectRoot $expectedEmployeeEntitlementsCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedEmployeeEntitlementsIntegrationSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_INTEGRATION_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedEmployeeEntitlementsIntegrationSha $controlCommitSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_CONTROL_NOT_BASED_ON_INTEGRATION'
     $employeeEntitlementsPaths = @(Get-AndaluciaReviewedEmployeeEntitlementsPaths)
-    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedEmployeeEntitlementsCheckpointSha $employeeEntitlementsPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_PATH_MISMATCH')
-    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedEmployeeEntitlementsCheckpointSha $controlCommitSha 'backend_control')
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedReviewedCheckpointParentSha $expectedEmployeeEntitlementsCheckpointSha $employeeEntitlementsPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedEmployeeEntitlementsIntegrationSha $employeeEntitlementsPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_INTEGRATION_PATH_MISMATCH')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $expectedEmployeeEntitlementsCheckpointSha $expectedEmployeeEntitlementsIntegrationSha $employeeEntitlementsPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_CONTENT_MISMATCH'
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedEmployeeEntitlementsIntegrationSha $controlCommitSha 'backend_control')
     if (@(Compare-Object ($employeeEntitlementsPaths | Sort-Object) @($manifest.employeeEntitlementsPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_MANIFEST_PATH_MISMATCH' }
     $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
     foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_CONTROL_HASH_MISMATCH:$name" } }
-    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_employee_entitlements'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; EmployeeEntitlementsCheckpointSha=$expectedEmployeeEntitlementsCheckpointSha; ControlCommitSha=$controlCommitSha }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_employee_entitlements'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; EmployeeEntitlementsCheckpointSha=$expectedEmployeeEntitlementsCheckpointSha; EmployeeEntitlementsIntegrationSha=$expectedEmployeeEntitlementsIntegrationSha; ControlCommitSha=$controlCommitSha }
   }
 
   if ($isLeaveTypesApproval) {
