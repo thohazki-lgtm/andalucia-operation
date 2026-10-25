@@ -86,13 +86,20 @@ export function StaffEntitlementsManager() {
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
       <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Employee identity and actions stay visible while reviewing balances.</small></div>
       <div className="employee-entitlement-list" aria-label="Staff entitlement settings">{visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; return <article className="employee-entitlement-row" key={item.staffId}>
-        <header className="employee-entitlement-identity"><b>{item.staffName}</b><small>{item.staffNumber}</small></header>
+        <header className="employee-entitlement-header">
+          <div className="employee-entitlement-identity"><b>{item.staffName}</b><small>{item.staffNumber}</small></div>
+          <div className="employee-entitlement-date"><span>Service Year</span><b>{serviceYear ? `${displayDate(serviceYear.serviceYearStart)} – ${displayDate(serviceYear.serviceYearEnd)}` : '—'}</b></div>
+          <div className="employee-entitlement-date"><span>Next Availability</span><b>{serviceYear ? displayDate(serviceYear.nextEntitlementAvailabilityDate) : '—'}</b></div>
+          <details className="entitlement-manage"><summary>Manage</summary><div className="entitlement-manage-menu"><button type="button" onClick={() => setViewing(item)}>Balance</button><button type="button" onClick={() => setEditingCarryForward(item)}>Carry Forward</button><button type="button" onClick={() => setEditingYearly(item)}>Edit Year</button><button type="button" onClick={() => setEditing(item)}>Settings</button></div></details>
+        </header>
         <dl className="employee-entitlement-metrics">
-          <div><dt>Available AL</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableLeave : summary?.annualLeave.entitlement)}</dd></div>
-          <div><dt>Future Booked AL</dt><dd>{summary?.bookedFuture ?? '—'}</dd></div>
-          <div><dt>Accruing Next Year AL</dt><dd>{serviceYear?.accruingForNextServiceYear ?? '—'}</dd></div>
+          <div><dt>Available</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableLeave : summary?.annualLeave.entitlement)}</dd></div>
+          <div><dt>Used</dt><dd>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</dd></div>
+          <div><dt>Remaining</dt><dd>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</dd></div>
+          <div><dt>Accruing Next Year</dt><dd>{serviceYear?.accruingForNextServiceYear ?? '—'}</dd></div>
+          <div><dt>Future Booked</dt><dd>{serviceYear?.bookedFuture ?? summary?.bookedFuture ?? '—'}</dd></div>
+          <div><dt>Available After Booked</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableAfterBooked : summary?.availableAfterBooked)}</dd></div>
         </dl>
-        <details className="entitlement-manage"><summary>Manage</summary><div className="entitlement-manage-menu"><button type="button" onClick={() => setViewing(item)}>Balance</button><button type="button" onClick={() => setEditingCarryForward(item)}>Carry Forward</button><button type="button" onClick={() => setEditingYearly(item)}>Edit Year</button><button type="button" onClick={() => setEditing(item)}>Settings</button></div></details>
       </article>})}</div>
       {!visible.length && <p className="workforce-empty">No staff match this view.</p>}
     </>}

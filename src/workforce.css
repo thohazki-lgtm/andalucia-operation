@@ -75,7 +75,20 @@
 .balance-week-actions{display:flex;justify-content:space-between;gap:8px;margin-top:14px}
 .balance-week-actions .secondary{margin:0;min-height:38px}
 
-@media(max-width:1050px){.employee-entitlement-row{grid-template-columns:minmax(170px,1fr) minmax(0,2fr) auto;gap:8px}.employee-entitlement-metrics div{padding-inline:7px}}
+.staff-entitlements-panel .employee-entitlement-list{gap:8px}
+.staff-entitlements-panel .employee-entitlement-row{display:block;min-width:0;padding:9px 10px}
+.staff-entitlements-panel .employee-entitlement-header{display:grid;grid-template-columns:minmax(170px,1.15fr) minmax(230px,1.35fr) minmax(145px,.8fr) auto;align-items:center;min-width:0;gap:10px;padding-bottom:8px;border-bottom:1px solid rgba(222,197,143,.78)}
+.staff-entitlements-panel .employee-entitlement-identity,.staff-entitlements-panel .employee-entitlement-date{min-width:0}
+.staff-entitlements-panel .employee-entitlement-identity b,.staff-entitlements-panel .employee-entitlement-identity small,.staff-entitlements-panel .employee-entitlement-date span,.staff-entitlements-panel .employee-entitlement-date b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.staff-entitlements-panel .employee-entitlement-date span{color:#718492;font-size:8px;font-weight:500;line-height:1.25;text-transform:uppercase}
+.staff-entitlements-panel .employee-entitlement-date b{margin-top:2px;color:#294f63;font-size:10px;font-weight:500;line-height:1.3}
+.staff-entitlements-panel .employee-entitlement-metrics{grid-template-columns:repeat(6,minmax(0,1fr));margin:0;padding-top:8px}
+.staff-entitlements-panel .employee-entitlement-metrics div{padding:1px 8px}
+.staff-entitlements-panel .employee-entitlement-metrics div:first-child{border-left:0}
+.staff-entitlements-panel .employee-entitlement-metrics dt{font-size:8.5px}
+.staff-entitlements-panel .entitlement-manage{justify-self:end}
+
+@media(max-width:1050px){.staff-entitlements-panel .employee-entitlement-header{grid-template-columns:minmax(150px,1fr) minmax(210px,1.35fr) minmax(130px,.85fr) auto;gap:8px}.staff-entitlements-panel .employee-entitlement-metrics{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:8px}.staff-entitlements-panel .employee-entitlement-metrics div:nth-child(4){border-left:0}.staff-entitlements-panel .employee-entitlement-metrics div{padding-inline:7px}}
 
 @media(max-width:700px){
   .leave-entitlements-heading{align-items:flex-start;flex-direction:column;gap:6px;padding:10px 11px}.leave-entitlements-heading h2{font-size:19px}.leave-entitlements-heading>p{text-align:left}
@@ -88,6 +101,7 @@
   .workforce-table-wrap{display:none}
   .workforce-mobile-cards{display:grid;gap:10px}
   .employee-entitlement-row{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px}.employee-entitlement-metrics{grid-column:1/-1;grid-row:2;gap:0;padding-top:8px;border-top:1px solid rgba(222,197,143,.78)}.employee-entitlement-metrics div:first-child{border-left:0}.employee-entitlement-metrics div{padding:2px 7px}.employee-entitlement-metrics dt{font-size:9px}.employee-entitlement-metrics dd{font-size:13px}.entitlement-manage{grid-column:2;grid-row:1}.entitlement-manage summary{min-width:88px;min-height:44px}.entitlement-manage-menu button{min-height:44px}
+  .staff-entitlements-panel .employee-entitlement-row{display:block;padding:10px}.staff-entitlements-panel .employee-entitlement-header{grid-template-columns:minmax(0,1fr) auto;gap:8px}.staff-entitlements-panel .employee-entitlement-date{padding-top:7px;border-top:1px solid rgba(222,197,143,.55)}.staff-entitlements-panel .employee-entitlement-date:nth-child(2){grid-column:1}.staff-entitlements-panel .employee-entitlement-date:nth-child(3){grid-column:2}.staff-entitlements-panel .employee-entitlement-metrics{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:8px;border-top:0}.staff-entitlements-panel .employee-entitlement-metrics div:nth-child(odd){border-left:0}.staff-entitlements-panel .employee-entitlement-metrics div:nth-child(even){border-left:1px solid rgba(222,197,143,.78)}.staff-entitlements-panel .employee-entitlement-metrics dt{font-size:9px}.staff-entitlements-panel .employee-entitlement-metrics dd{font-size:13px}.staff-entitlements-panel .entitlement-manage{grid-column:2;grid-row:1}.entitlement-manage summary{min-width:88px;min-height:44px}.entitlement-manage-menu button{min-height:44px}
   .workforce-record-card{min-width:0;border:1px solid #e2e9ec;border-radius:9px;padding:14px;background:#fbfcfc}
   .workforce-record-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .workforce-record-card header b,.workforce-record-card header small{display:block}
