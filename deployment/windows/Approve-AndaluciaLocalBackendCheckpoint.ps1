@@ -5,6 +5,7 @@ param(
   [Parameter(Mandatory = $true)][string]$ManagerApproval,
   [string]$ReviewUiCheckpointSha,
   [string]$FinalReviewUiCheckpointSha,
+  [string]$CoverCheckpointSha,
   [string]$RepositoryRoot
 )
 
@@ -16,15 +17,19 @@ $expectedBackendControlSha = 'dd07564c3e13a6f4e86668a34077e9527d3da2ee'
 $expectedReviewUiSha = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
 $expectedReviewUiControlSha = 'e33cbb100dbb5b01cc3399641a59980c68be3b5c'
 $expectedFinalReviewUiSha = '6110fd6e6da9f311d5be880eb3a277cb51caae3f'
+$expectedPreviousControlShaForCover = '054fb4a77729c63249eb7c86ba4e3e8e1dfac03b'
+$expectedAlignmentSha = 'e509f25f4aaf1a501e1396be2079f904f4e17159'
+$expectedCoverSha = '1e3c1001ec6746e8fd627960ef2ee5ef1cd3f2b0'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 $manifestPath = Join-Path $projectRoot '.runtime\andalucia-local-ui-approval.json'
-if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
+if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
 if ($ReviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT' -and $ReviewUiCheckpointSha -ne $expectedReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT' -and $FinalReviewUiCheckpointSha -ne $expectedFinalReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FINAL_UI_CHECKPOINT_SHA_NOT_APPROVED' }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT' -and $CoverCheckpointSha -ne $expectedCoverSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_CHECKPOINT_SHA_NOT_APPROVED' }
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_PRIOR_APPROVAL_MISSING' }
 . $resolverPath
@@ -38,6 +43,27 @@ $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/mai
 $resolvedCheckpoint = Resolve-AndaluciaGitRef $projectRoot $ReviewedCheckpointSha
 $resolvedControlCommit = Resolve-AndaluciaGitRef $projectRoot $ControlCommitSha
 if ($resolvedCheckpoint -ne $expectedCheckpointSha -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FULL_SHA_REQUIRED' }
+
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT') {
+  $resolvedCover = Resolve-AndaluciaGitRef $projectRoot $CoverCheckpointSha
+  if ($resolvedCover -ne $expectedCoverSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_FULL_SHA_REQUIRED' }
+  try { $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_PRIOR_APPROVAL_INVALID' }
+  if ($priorManifest.version -ne 'andalucia-local-backend-ui-approval-v2' -or $priorManifest.mode -ne 'approved_local_daily_report_backend_with_final_review_ui' -or $priorManifest.managerApproval -ne 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT' -or [string]$priorManifest.controlCommitSha -ne $expectedPreviousControlShaForCover -or [string]$priorManifest.activeSourceSha -ne $expectedPreviousControlShaForCover -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_PRIOR_APPROVAL_INVALID' }
+  foreach ($pair in @(@($expectedPreviousControlShaForCover,$expectedAlignmentSha),@($expectedAlignmentSha,$resolvedCover),@($resolvedCover,$resolvedControlCommit))) { Assert-AndaluciaGitAncestor $projectRoot $pair[0] $pair[1] 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_ANCESTRY_MISMATCH' }
+  $alignmentPaths = @(Get-AndaluciaReviewedDailyReportAlignmentPaths)
+  $coverPaths = @(Get-AndaluciaReviewedDailyReportCoverCorrectionPaths)
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedPreviousControlShaForCover $expectedAlignmentSha $alignmentPaths 'ANDALUCIA_LOCAL_DAILY_REPORT_ALIGNMENT_PATH_MISMATCH')
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedAlignmentSha $resolvedCover $coverPaths 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_PATH_MISMATCH')
+  [void](Assert-AndaluciaChangedPaths $projectRoot $resolvedCover $resolvedControlCommit 'backend_control')
+  $manifest = [ordered]@{ version='andalucia-local-backend-ui-approval-v3'; mode='approved_local_daily_report_cover_reconciliation'; managerApproval=$ManagerApproval; approvedAt=[DateTime]::UtcNow.ToString('o'); approvedMainSha=$approvedMainSha; baselineApprovedSourceSha=$expectedBaselineSha; reviewedCheckpointSha=$expectedCheckpointSha; previousControlCommitSha=$expectedPreviousControlShaForCover; alignmentCheckpointSha=$expectedAlignmentSha; coverCheckpointSha=$resolvedCover; controlCommitSha=$resolvedControlCommit; activeSourceSha=$activeSourceSha; branch=$branch; alignmentPaths=$alignmentPaths; coverPaths=$coverPaths; launcherSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 $resolverPath; approvalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+  New-Item -ItemType Directory -Path (Split-Path $manifestPath -Parent) -Force | Out-Null
+  $temporaryPath = "$manifestPath.tmp"
+  [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 6) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
+  $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
+  [ordered]@{ status='APPROVED_LOCAL_DAILY_REPORT_COVER_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 7
+  exit 0
+}
 
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT') {
   $resolvedFinalReviewUi = Resolve-AndaluciaGitRef $projectRoot $FinalReviewUiCheckpointSha
