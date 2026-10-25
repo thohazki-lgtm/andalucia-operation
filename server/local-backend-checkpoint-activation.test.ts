@@ -11,6 +11,7 @@ const expectedReviewUiCheckpoint = 'bbc348a7cf9ca672d0371ecf35fd2f157f3f27fe'
 const expectedFinalReviewUiCheckpoint = '6110fd6e6da9f311d5be880eb3a277cb51caae3f'
 const expectedCoverCheckpoint = '1e3c1001ec6746e8fd627960ef2ee5ef1cd3f2b0'
 const expectedDateCheckpoint = '572c5694df750b0edf009180e0b297c3d03c3b5d'
+const expectedTypographyCheckpoint = '51a35ece8b7cf90b698175b1a532e5bb6d141498'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -92,12 +93,18 @@ try {
   assert.match(resolverSource, /approved_local_daily_report_date_persistence/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_ACTIVATION/)
+  assert.match(resolverSource, new RegExp(expectedTypographyCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedTypographyCheckpoint))
+  assert.match(activationSource, new RegExp(expectedTypographyCheckpoint))
+  assert.match(resolverSource, /approved_local_daily_report_typography_refinement/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_ACTIVATION/)
   assert.match(activationSource, /VERIFIED_RECENT_BACKUP_REQUIRED/)
   assert.match(activationSource, /RUNTIME_TASK_SAFETY_DRIFT/)
   assert.match(activationSource, /GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED/)
   assert.doesNotMatch(activationSource, /Remove-Item|Stop-Process|taskkill/)
 
-  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, exactTypographyCheckpoint: expectedTypographyCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
