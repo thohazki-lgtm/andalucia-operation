@@ -14,6 +14,7 @@ const expectedDateCheckpoint = '572c5694df750b0edf009180e0b297c3d03c3b5d'
 const expectedTypographyCheckpoint = '51a35ece8b7cf90b698175b1a532e5bb6d141498'
 const expectedDateResetCheckpoint = 'b1d15609a99ad14a0f13ae99c1c3858d4d2d099a'
 const expectedShutdownCheckpoint = '7770b19fb1e34bb33f2107419289d13a825fa2e7'
+const expectedWeeklyReportCheckpoint = '7c0dbe6be26acfb0e1fa8bef5bffaa7bc3f968ca'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -112,12 +113,19 @@ try {
   assert.match(resolverSource, /approved_local_windows_shutdown_reliability/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT[^\n]+\*/)
+  assert.match(resolverSource, new RegExp(expectedWeeklyReportCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedWeeklyReportCheckpoint))
+  assert.match(activationSource, new RegExp(expectedWeeklyReportCheckpoint))
+  assert.match(resolverSource, /approved_local_weekly_report_checkpoint/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_WEEKLY_REPORT_ACTIVATION/)
+  assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT[^\n]+\*/)
   assert.match(activationSource, /VERIFIED_RECENT_BACKUP_REQUIRED/)
   assert.match(activationSource, /RUNTIME_TASK_SAFETY_DRIFT/)
   assert.match(activationSource, /GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED/)
   assert.doesNotMatch(activationSource, /Remove-Item|Stop-Process|taskkill/)
 
-  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, exactTypographyCheckpoint: expectedTypographyCheckpoint, exactDateResetCheckpoint: expectedDateResetCheckpoint, exactShutdownCheckpoint: expectedShutdownCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, exactTypographyCheckpoint: expectedTypographyCheckpoint, exactDateResetCheckpoint: expectedDateResetCheckpoint, exactShutdownCheckpoint: expectedShutdownCheckpoint, exactWeeklyReportCheckpoint: expectedWeeklyReportCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
