@@ -428,9 +428,10 @@ export interface MonthlyReportView {
   staffing:{currentTeamSize:number;averageOnDuty:number;offDays:number;annualLeaveDays:number;publicHolidays:number;sickLeaveDays:number}
   training:{sessions:number;participants:number;attendance:number|null;hours:number|null}
   maintenance:{opened:number;completed:number;stillOpen:number;inProgress:number;unresolved:number;items:Array<{id:string;issue:string;status:string;area:string}>}
+  serviceCharges:{total:string;approvedDays:number;expectedDays:number;contributingDays:number;explicitZeroDays:number;approvedMissingValueDays:number;unapprovedOrMissingDays:number;state:'complete'|'partial'|'missing';label:string}
   earnings:ReportEarningsSummary
   finance:{input:MonthlyReportInput|null;complete:boolean;foodMatched:boolean|null;beverageMatched:boolean|null}
-  comparison:{available:boolean;reason:string;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>;teamDevelopmentMetrics?:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null;available:boolean;reason:string|null}>}
+  comparison:{available:boolean;reason:string;coverage:'complete'|'partial'|'unavailable';currentApprovedDays:number;currentExpectedDays:number;previousApprovedDays:number;previousExpectedDays:number;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>;teamDevelopmentMetrics?:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null;available:boolean;reason:string|null}>}
   readiness:Array<{label:string;state:'complete'|'warning'|'missing'|'pending';detail:string}>
   overallStatus:'MONTH IN PROGRESS'|'OPERATIONS COMPLETE'|'FINANCE PENDING'|'MONTHLY REPORT READY'
   legacyCommentary:ReportManagerSummary|null
