@@ -31,7 +31,9 @@ const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 const metadata = (value: unknown) => typeof value === 'string' ? JSON.parse(value) : value || {}
 
 export class AccumulatedOffService {
-  constructor(private readonly db: PGlite) {}
+  constructor(private readonly db: PGlite, private readonly now: () => Date = () => new Date()) {}
+
+  private today() { return serviceDate(this.now()) }
 
   async ready() {
     const result = await this.db.query<{ count: number }>("select count(*)::int count from information_schema.tables where table_schema='public' and table_name='accumulated_off_week_evaluations'")
@@ -47,7 +49,7 @@ export class AccumulatedOffService {
   async recalculateWeek(staffId: string, outletScopeId: string, dateOrWeekStart: string, actor: AuthPrincipal | string = 'Accumulated OFF evaluator') {
     if (!(await this.ready())) return null
     const [weekStart, weekEnd] = rosterWeekRange(dateOrWeekStart)
-    const lastCompleted = addCalendarDays(rosterWeekRange(serviceDate())[0], -1)
+    const lastCompleted = addCalendarDays(rosterWeekRange(this.today())[0], -1)
     if (weekStart < firstEligibleWeek || weekEnd > lastCompleted) return null
     const membership = (await this.db.query<any>(`select m.id from staff_membership_history m join staff s on s.id=m.staff_id where m.staff_id=$1 and m.outlet_scope_id=$2 and m.membership_dimension='regular_outlet' and m.review_status='approved' and m.is_current_baseline=true and m.effective_from<=$3 and coalesce(m.effective_to,'9999-12-31'::date)>=$4 and s.join_date<=$3 and coalesce(s.resignation_date,'9999-12-31'::date)>=$4 order by m.effective_from desc limit 1`, [staffId, outletScopeId, weekStart, weekEnd])).rows[0]
     const roster = (await this.db.query<any>(`select r.id,r.duty_date::text date,r.duty_code_value,c.label,c.metadata from duty_roster_entries r left join configuration_options c on c.group_key='duty_codes' and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $2 and $3 order by r.duty_date`, [staffId, weekStart, weekEnd])).rows
@@ -83,13 +85,13 @@ export class AccumulatedOffService {
   }
 
   async recalculateStaff(staffId: string, outletScopeId: string, actor: AuthPrincipal | string = 'Accumulated OFF evaluator') {
-    const lastCompleted = addCalendarDays(rosterWeekRange(serviceDate())[0], -1)
+    const lastCompleted = addCalendarDays(rosterWeekRange(this.today())[0], -1)
     for (let weekStart = firstEligibleWeek; addCalendarDays(weekStart, 6) <= lastCompleted; weekStart = addCalendarDays(weekStart, 7)) await this.recalculateWeek(staffId, outletScopeId, weekStart, actor)
   }
 
   async initializeEligibleHistory(outletScopeId: string, actor: AuthPrincipal | string = 'Accumulated OFF initial evaluator'): Promise<AccumulatedOffHistoryInitializationResult> {
     if (!(await this.ready())) throw new Error('ACCUMULATED_OFF_MIGRATION_026_REQUIRED')
-    const lastCompleted = addCalendarDays(rosterWeekRange(serviceDate())[0], -1)
+    const lastCompleted = addCalendarDays(rosterWeekRange(this.today())[0], -1)
     if (lastCompleted < firstEligibleWeek) return { outletScopeId, firstEligibleWeek, evaluatedThrough: null, eligibleStaff: 0, evaluations: 0, earnedDays: 0, incompleteWeeks: 0, ineligibleWeeks: 0 }
     const staff = (await this.db.query<{ staff_id: string }>(`select distinct membership.staff_id
       from staff_membership_history membership

@@ -21,7 +21,7 @@ export function LeaveTypesPanel({ dutyCodes, onActivate }: { dutyCodes: ConfigOp
     <div className="panel-title workforce-section-title"><div><p className="eyebrow">AUTHORITATIVE CLASSIFICATIONS</p><h3>Leave Types</h3><p>The ten protected classifications reuse Duty Roster code definitions. Names and identities are not duplicated here.</p></div><span className="leave-type-count">10 protected types</span></div>
     <div className="leave-type-grid" aria-label="Protected leave types">{leaveTypes.map(item => <article className="leave-type-card" key={item.code}>
       <span className="leave-type-code" style={{ borderColor: item.color, color: item.color }}>{item.code}</span>
-      <div><strong>{item.label}</strong><small>{LEAVE_CLASSIFICATION_LABELS[item.classification]}</small></div>
+      <div><strong>{item.label}</strong>{LEAVE_CLASSIFICATION_LABELS[item.classification] !== item.label && <small>{LEAVE_CLASSIFICATION_LABELS[item.classification]}</small>}</div>
       {item.configured && item.active ? <span className="leave-type-state active">Configured</span> : <button type="button" className="secondary activate-duty-code" disabled={activatingCode !== null} onClick={() => void activate(item.code)}>{activatingCode === item.code ? 'Activating…' : 'Activate Duty Code'}</button>}
     </article>)}</div>
     {activationError && <p className="save-error" role="alert">{activationError}</p>}

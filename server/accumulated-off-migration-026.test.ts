@@ -10,6 +10,7 @@ import { ANDALUCIA_SCOPE_ID, OutletMembershipRepository } from './outlet-members
 import { PlannedLeaveRepository } from './planned-leave-repository.js'
 import { StaffRepository } from './staff-repository.js'
 import { createDisposableDevelopmentStore, createDisposableStoreThrough } from './test-store-fixture.js'
+import { addCalendarDays, serviceDate } from '../src/service-date.js'
 
 const migrationFixture = await createDisposableStoreThrough('accumulated-off-migration', '025')
 try {
@@ -33,7 +34,8 @@ try {
   const actor: AuthPrincipal = { userId: fixture.ownerId, displayName: 'Accumulated OFF Manager', loginIdentifier: 'test-owner', sessionId: randomUUID(), staffId: null, isOwner: true, roleKeys: ['owner'], permissionKeys: ['manage_duty_roster'], globalScope: true, allowedOutletScopeIds: [ANDALUCIA_SCOPE_ID] }
   const history: StaffMembershipHistory = { id: randomUUID(), staffId: person.id, outletScopeId: ANDALUCIA_SCOPE_ID, membershipDimension: 'regular_outlet', effectiveFrom: '2026-09-01', effectiveTo: null, source: 'baseline_manager_review', reason: 'Migration 026 isolated validation', reviewStatus: 'approved' }
   await membership.createMembership(history)
-  const accumulated = new AccumulatedOffService(db)
+  const controlledNow = new Date('2026-10-21T07:00:00.000Z')
+  const accumulated = new AccumulatedOffService(db, () => controlledNow)
   const operations = new OperationsRepository(db, (changes, label) => accumulated.recalculateAffected(changes, label)); await operations.initialize()
   const configuration = await staffRepository.configuration()
   const working = configuration.dutyCodes.find(item => item.metadata?.countsAsWorking === true)!
@@ -52,7 +54,7 @@ try {
   for (const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23','2026-09-24','2026-09-25']) await operations.updateRoster(person.id, date, working.value, 'Accumulated OFF test')
   await operations.updateRoster(person.id, '2026-09-26', 'UNKNOWN_026', 'Unknown-code validation')
   assert.equal((await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)).earned, 1, 'Unknown duty semantics must not earn OFF.')
-  assert.equal(await accumulated.recalculateWeek(person.id, ANDALUCIA_SCOPE_ID, '2026-10-18'), null, 'The current incomplete Sunday-Saturday week must not be evaluated.')
+  assert.equal(await accumulated.recalculateWeek(person.id, ANDALUCIA_SCOPE_ID, '2026-10-18'), null, 'The controlled current Sunday-Saturday week must not be evaluated before Saturday ends.')
 
   const second = (await staffRepository.list()).find(item => item.employmentStatus === 'active' && item.id !== person.id)!
   await membership.createMembership({ id: randomUUID(), staffId: second.id, outletScopeId: ANDALUCIA_SCOPE_ID, membershipDimension: 'regular_outlet', effectiveFrom: '2026-09-08', effectiveTo: '2026-09-12', source: 'baseline_manager_review', reason: 'Partial membership validation', reviewStatus: 'approved' })
@@ -73,11 +75,19 @@ try {
   assert.equal(await auditCount(), afterInitialEvaluation, 'Repeated historical initialization must not duplicate evaluations or audit events.')
   assert.equal(Number((await db.query<{ count: number }>("select count(*)::int count from audit_logs where entity_type='accumulated_off_history'")).rows[0].count), 1, 'Repeated historical initialization must not duplicate its manager audit record.')
 
+  const afterControlledWeek = new AccumulatedOffService(db, () => new Date('2026-10-26T07:00:00.000Z'))
+  const completedMissingWeek = await afterControlledWeek.recalculateWeek(person.id, ANDALUCIA_SCOPE_ID, '2026-10-18')
+  assert.equal(completedMissingWeek?.evaluation_state, 'incomplete', 'After the Sunday-Saturday boundary passes, a completed week with missing records must be evaluated as incomplete.')
+  assert.equal(Number(completedMissingWeek?.earned_days), 0, 'A completed week with missing records must never earn accumulated OFF.')
+
   const planned = new PlannedLeaveRepository(db, accumulated)
-  const booking = await planned.create({ staffId: person.id, startDate: '2026-10-25', endDate: '2026-10-27', leaveType: 'annual_leave', managerNote: 'Accumulated OFF reservation test', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
+  const planningStart = addCalendarDays(serviceDate(), 1)
+  const planningEnd = addCalendarDays(planningStart, 2)
+  const laterPlanningDate = addCalendarDays(planningStart, 7)
+  const booking = await planned.create({ staffId: person.id, startDate: planningStart, endDate: planningEnd, leaveType: 'annual_leave', managerNote: 'Accumulated OFF reservation test', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
   balance = await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)
   assert.equal(balance.reserved, 1); assert.equal(balance.available, 0)
-  await assert.rejects(() => planned.create({ staffId: person.id, startDate: '2026-11-01', endDate: '2026-11-01', leaveType: 'annual_leave', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /verified available balance of 0/)
+  await assert.rejects(() => planned.create({ staffId: person.id, startDate: laterPlanningDate, endDate: laterPlanningDate, leaveType: 'annual_leave', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /verified available balance of 0/)
 
   await operations.updateRoster(person.id, '2026-09-12', off.value, 'Historical correction')
   balance = await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)
@@ -86,13 +96,13 @@ try {
   const cancelled = await planned.cancel(booking.id, booking.revision, 'Cancellation releases reservation', { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
   assert.equal(cancelled.planningState, 'cancelled'); assert.equal((await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)).available, 1)
 
-  const active = await planned.create({ staffId: person.id, startDate: '2026-10-25', endDate: '2026-10-27', leaveType: 'annual_leave', managerNote: 'Confirmed consumption test', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
-  await operations.updateRoster(person.id, '2026-10-25', off.value, 'Confirmed accumulated OFF roster evidence')
-  await accumulated.confirmConsumption(active.id, ['2026-10-25'], { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
+  const active = await planned.create({ staffId: person.id, startDate: planningStart, endDate: planningEnd, leaveType: 'annual_leave', managerNote: 'Confirmed consumption test', accumulatedOffDaysAllocated: 1 }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
+  await operations.updateRoster(person.id, planningStart, off.value, 'Confirmed accumulated OFF roster evidence')
+  await accumulated.confirmConsumption(active.id, [planningStart], { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
   balance = await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)
   assert.equal(balance.consumed, 1); assert.equal(balance.reserved, 0); assert.equal(balance.available, 0)
-  await assert.rejects(() => accumulated.confirmConsumption(active.id, ['2026-10-25'], { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /exceeds|duplicate/i)
-  await operations.updateRoster(person.id, '2026-10-26', off.value, 'Ordinary weekly OFF')
+  await assert.rejects(() => accumulated.confirmConsumption(active.id, [planningStart], { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /exceeds|duplicate/i)
+  await operations.updateRoster(person.id, addCalendarDays(planningStart, 1), off.value, 'Ordinary weekly OFF')
   assert.equal((await accumulated.balance(person.id, ANDALUCIA_SCOPE_ID)).consumed, 1, 'Ordinary OFF must not consume balance without explicit confirmation.')
 
   const opened = await accumulated.addOpeningBalance({ staffId: person.id, days: 2, effectiveDate: '2026-09-01', justification: 'Verified historical roster evidence', evidenceReference: 'HR-OFF-OPENING-001' }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
