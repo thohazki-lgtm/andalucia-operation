@@ -410,6 +410,7 @@ export interface WeeklyReportView {
   earnings: ReportEarningsSummary
   attention: { noShowCovers: number; noShowRate: number | null; walkIns: number; doubleDinePax: number; highestNoShowDay: string | null; highestCoversDay: string | null; busiestServiceDay: string | null }
   comparison: { available: boolean; reason: string; previousWeekStart: string; previousWeekEnd: string; metrics: Array<{ key: string; label: string; current: number; previous: number; difference: number; changePercent: number | null }> }
+  serviceCharges: { total: string; approvedDays: number; contributingDays: number; explicitZeroDays: number; approvedMissingValueDays: number; unapprovedOrMissingDays: number; state: 'complete' | 'partial' | 'missing'; label: string }
   commentary: ReportManagerSummary | null
   status: Array<{ label: string; state: 'complete' | 'partial' | 'missing' | 'saved'; detail: string }>
 }
