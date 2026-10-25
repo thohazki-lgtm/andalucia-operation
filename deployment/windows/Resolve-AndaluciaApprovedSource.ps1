@@ -133,6 +133,15 @@ function Get-AndaluciaReviewedDailyReportDateResetPaths {
   )
 }
 
+function Get-AndaluciaReviewedWindowsShutdownReliabilityPaths {
+  return @(
+    'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
+    'deployment/windows/Signal-AndaluciaWindowsShutdown.cmd',
+    'server/database-scheduler.test.ts',
+    'server/database-scheduler.ts'
+  )
+}
+
 function Assert-AndaluciaExactChangedPaths {
   param([string]$ProjectRoot, [string]$From, [string]$To, [string[]]$ExpectedPaths, [string]$Code)
   $actual = @(& git -C $ProjectRoot diff --name-only "$From..$To" | Sort-Object)
@@ -172,8 +181,26 @@ function Get-AndaluciaApprovedSourceState {
   $isDailyReportDateApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v4' -and $manifest.mode -eq 'approved_local_daily_report_date_persistence' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT'
   $isDailyReportTypographyApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v5' -and $manifest.mode -eq 'approved_local_daily_report_typography_refinement' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT'
   $isDailyReportDateResetApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v6' -and $manifest.mode -eq 'approved_local_daily_report_date_reset' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isWindowsShutdownApproval = $manifest.version -eq 'andalucia-local-system-approval-v1' -and $manifest.mode -eq 'approved_local_windows_shutdown_reliability' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isWindowsShutdownApproval) {
+    $expectedPreviousControlSha = '60591881a56f614e7054c848b54d00e5fa82ccda'
+    $expectedShutdownCheckpointSha = '7770b19fb1e34bb33f2107419289d13a825fa2e7'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.shutdownCheckpointSha -ne $expectedShutdownCheckpointSha) { throw 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedShutdownCheckpointSha 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedShutdownCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $shutdownPaths = @(Get-AndaluciaReviewedWindowsShutdownReliabilityPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedShutdownCheckpointSha $shutdownPaths 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedShutdownCheckpointSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($shutdownPaths | Sort-Object) @($manifest.shutdownPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); installerSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1'); shutdownSignalSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Signal-AndaluciaWindowsShutdown.cmd'); schedulerSourceSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'server/database-scheduler.ts') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_windows_shutdown_reliability'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; ShutdownCheckpointSha=$expectedShutdownCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isDailyReportDateResetApproval) {
     $expectedPreviousControlSha = '8d5872d4e6071eb3568a3b8ce9e1747ba4853d66'
