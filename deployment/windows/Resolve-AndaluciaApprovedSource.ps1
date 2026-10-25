@@ -144,7 +144,7 @@ function Get-AndaluciaApprovedSourceState {
   $isDailyReportBackendUiApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v1' -and $manifest.mode -eq 'approved_local_daily_report_backend_with_review_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT'
   $isDailyReportBackendFinalUiApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v2' -and $manifest.mode -eq 'approved_local_daily_report_backend_with_final_review_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT'
   $isDailyReportCoverApproval = $manifest.version -eq 'andalucia-local-backend-ui-approval-v3' -and $manifest.mode -eq 'approved_local_daily_report_cover_reconciliation' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
 
   if ($isDailyReportCoverApproval) {
