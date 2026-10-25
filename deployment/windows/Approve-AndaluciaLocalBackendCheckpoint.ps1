@@ -8,6 +8,7 @@ param(
   [string]$CoverCheckpointSha,
   [string]$DatePersistenceCheckpointSha,
   [string]$TypographyCheckpointSha,
+  [string]$DateResetCheckpointSha,
   [string]$RepositoryRoot
 )
 
@@ -26,18 +27,21 @@ $expectedPreviousControlShaForDate = '0bb49f54a61c733f0d8b7bcb3e237937df69f360'
 $expectedDateCheckpointSha = '572c5694df750b0edf009180e0b297c3d03c3b5d'
 $expectedPreviousControlShaForTypography = '91fb31267b983c471d92622e1cac03a313391305'
 $expectedTypographyCheckpointSha = '51a35ece8b7cf90b698175b1a532e5bb6d141498'
+$expectedPreviousControlShaForDateReset = '8d5872d4e6071eb3568a3b8ce9e1747ba4853d66'
+$expectedDateResetCheckpointSha = 'b1d15609a99ad14a0f13ae99c1c3858d4d2d099a'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 $manifestPath = Join-Path $projectRoot '.runtime\andalucia-local-ui-approval.json'
-if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
+if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
 if ($ReviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT' -and $ReviewUiCheckpointSha -ne $expectedReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT' -and $FinalReviewUiCheckpointSha -ne $expectedFinalReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FINAL_UI_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT' -and $CoverCheckpointSha -ne $expectedCoverSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT' -and $DatePersistenceCheckpointSha -ne $expectedDateCheckpointSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT' -and $TypographyCheckpointSha -ne $expectedTypographyCheckpointSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT_SHA_NOT_APPROVED' }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT' -and $DateResetCheckpointSha -ne $expectedDateResetCheckpointSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_CHECKPOINT_SHA_NOT_APPROVED' }
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_PRIOR_APPROVAL_MISSING' }
 . $resolverPath
@@ -51,6 +55,29 @@ $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/mai
 $resolvedCheckpoint = Resolve-AndaluciaGitRef $projectRoot $ReviewedCheckpointSha
 $resolvedControlCommit = Resolve-AndaluciaGitRef $projectRoot $ControlCommitSha
 if ($resolvedCheckpoint -ne $expectedCheckpointSha -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FULL_SHA_REQUIRED' }
+
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT') {
+  $resolvedDateResetCheckpoint = Resolve-AndaluciaGitRef $projectRoot $DateResetCheckpointSha
+  if ($resolvedDateResetCheckpoint -ne $expectedDateResetCheckpointSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_FULL_SHA_REQUIRED' }
+  try { $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_PRIOR_APPROVAL_INVALID' }
+  $isPriorTypography = $priorManifest.version -eq 'andalucia-local-backend-ui-approval-v5' -and $priorManifest.mode -eq 'approved_local_daily_report_typography_refinement' -and $priorManifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT' -and [string]$priorManifest.controlCommitSha -eq $expectedPreviousControlShaForDateReset -and [string]$priorManifest.activeSourceSha -eq $expectedPreviousControlShaForDateReset
+  $isDateResetRetry = $priorManifest.version -eq 'andalucia-local-backend-ui-approval-v6' -and $priorManifest.mode -eq 'approved_local_daily_report_date_reset' -and $priorManifest.managerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT' -and [string]$priorManifest.dateResetCheckpointSha -eq $expectedDateResetCheckpointSha -and [string]$priorManifest.previousControlCommitSha -eq $expectedPreviousControlShaForDateReset -and [string]$priorManifest.activeSourceSha -eq [string]$priorManifest.controlCommitSha
+  if ((-not $isPriorTypography -and -not $isDateResetRetry) -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_PRIOR_APPROVAL_INVALID' }
+  if ($isDateResetRetry) { Assert-AndaluciaGitAncestor $projectRoot ([string]$priorManifest.controlCommitSha) $resolvedControlCommit 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_RETRY_NOT_DESCENDANT' }
+  Assert-AndaluciaGitAncestor $projectRoot $expectedPreviousControlShaForDateReset $resolvedDateResetCheckpoint 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_NOT_BASED_ON_PRIOR_CONTROL'
+  Assert-AndaluciaGitAncestor $projectRoot $resolvedDateResetCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_CONTROL_NOT_BASED_ON_CHECKPOINT'
+  $dateResetPaths = @(Get-AndaluciaReviewedDailyReportDateResetPaths)
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedPreviousControlShaForDateReset $resolvedDateResetCheckpoint $dateResetPaths 'ANDALUCIA_LOCAL_DAILY_REPORT_DATE_RESET_PATH_MISMATCH')
+  [void](Assert-AndaluciaChangedPaths $projectRoot $resolvedDateResetCheckpoint $resolvedControlCommit 'backend_control')
+  $manifest = [ordered]@{ version='andalucia-local-backend-ui-approval-v6'; mode='approved_local_daily_report_date_reset'; managerApproval=$ManagerApproval; approvedAt=[DateTime]::UtcNow.ToString('o'); approvedMainSha=$approvedMainSha; previousControlCommitSha=$expectedPreviousControlShaForDateReset; dateResetCheckpointSha=$resolvedDateResetCheckpoint; controlCommitSha=$resolvedControlCommit; activeSourceSha=$activeSourceSha; branch=$branch; dateResetPaths=$dateResetPaths; launcherSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 $resolverPath; approvalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+  New-Item -ItemType Directory -Path (Split-Path $manifestPath -Parent) -Force | Out-Null
+  $temporaryPath = "$manifestPath.tmp"
+  [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 6) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
+  $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
+  [ordered]@{ status='APPROVED_LOCAL_DAILY_REPORT_DATE_RESET_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 7
+  exit 0
+}
 
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT') {
   $resolvedTypographyCheckpoint = Resolve-AndaluciaGitRef $projectRoot $TypographyCheckpointSha

@@ -20,6 +20,8 @@ $expectedPreviousControlShaForDate = '0bb49f54a61c733f0d8b7bcb3e237937df69f360'
 $expectedDateCheckpointSha = '572c5694df750b0edf009180e0b297c3d03c3b5d'
 $expectedPreviousControlShaForTypography = '91fb31267b983c471d92622e1cac03a313391305'
 $expectedTypographyCheckpointSha = '51a35ece8b7cf90b698175b1a532e5bb6d141498'
+$expectedPreviousControlShaForDateReset = '8d5872d4e6071eb3568a3b8ce9e1747ba4853d66'
+$expectedDateResetCheckpointSha = 'b1d15609a99ad14a0f13ae99c1c3858d4d2d099a'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $markerPath = Join-Path $canonicalData 'postmaster.pid'
@@ -27,7 +29,7 @@ $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-i
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 $stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
-if ($ManagerAuthorization -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_ACTIVATION')) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_MANAGER_AUTHORIZATION_REQUIRED' }
+if ($ManagerAuthorization -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_ACTIVATION','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_ACTIVATION')) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_MANAGER_AUTHORIZATION_REQUIRED' }
 . $resolverPath
 
 $source = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
@@ -37,8 +39,9 @@ $isFinalReviewUiCheckpoint = $source.Mode -eq 'approved_local_daily_report_backe
 $isCoverCheckpoint = $source.Mode -eq 'approved_local_daily_report_cover_reconciliation' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedPreviousControlShaForCover -and $source.CoverCheckpointSha -eq $expectedCoverSha
 $isDateCheckpoint = $source.Mode -eq 'approved_local_daily_report_date_persistence' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedPreviousControlShaForDate -and $source.DateCheckpointSha -eq $expectedDateCheckpointSha
 $isTypographyCheckpoint = $source.Mode -eq 'approved_local_daily_report_typography_refinement' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedPreviousControlShaForTypography -and $source.TypographyCheckpointSha -eq $expectedTypographyCheckpointSha
-if ((-not $isBackendCheckpoint -and -not $isReviewUiCheckpoint -and -not $isFinalReviewUiCheckpoint -and -not $isCoverCheckpoint -and -not $isDateCheckpoint -and -not $isTypographyCheckpoint) -or ((-not $isDateCheckpoint -and -not $isTypographyCheckpoint) -and $source.ReviewedCheckpointSha -ne $expectedCheckpointSha) -or $source.Sha -ne $ExpectedControlSha) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_SOURCE_MISMATCH' }
-$requiredRuntimeSha = if ($isTypographyCheckpoint) { $expectedPreviousControlShaForTypography } elseif ($isDateCheckpoint) { $expectedPreviousControlShaForDate } elseif ($isCoverCheckpoint) { $expectedPreviousControlShaForCover } elseif ($isFinalReviewUiCheckpoint) { $expectedReviewUiControlSha } elseif ($isReviewUiCheckpoint) { $expectedBackendControlSha } else { $expectedRuntimeBaselineSha }
+$isDateResetCheckpoint = $source.Mode -eq 'approved_local_daily_report_date_reset' -and $ManagerAuthorization -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_ACTIVATION' -and $source.PreviousControlCommitSha -eq $expectedPreviousControlShaForDateReset -and $source.DateResetCheckpointSha -eq $expectedDateResetCheckpointSha
+if ((-not $isBackendCheckpoint -and -not $isReviewUiCheckpoint -and -not $isFinalReviewUiCheckpoint -and -not $isCoverCheckpoint -and -not $isDateCheckpoint -and -not $isTypographyCheckpoint -and -not $isDateResetCheckpoint) -or ((-not $isDateCheckpoint -and -not $isTypographyCheckpoint -and -not $isDateResetCheckpoint) -and $source.ReviewedCheckpointSha -ne $expectedCheckpointSha) -or $source.Sha -ne $ExpectedControlSha) { throw 'ANDALUCIA_LOCAL_BACKEND_ACTIVATION_SOURCE_MISMATCH' }
+$requiredRuntimeSha = if ($isDateResetCheckpoint) { $expectedPreviousControlShaForDateReset } elseif ($isTypographyCheckpoint) { $expectedPreviousControlShaForTypography } elseif ($isDateCheckpoint) { $expectedPreviousControlShaForDate } elseif ($isCoverCheckpoint) { $expectedPreviousControlShaForCover } elseif ($isFinalReviewUiCheckpoint) { $expectedReviewUiControlSha } elseif ($isReviewUiCheckpoint) { $expectedBackendControlSha } else { $expectedRuntimeBaselineSha }
 if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISSING' }
 $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
 if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'ANDALUCIA_LOCAL_BACKEND_CANONICAL_IDENTITY_MISMATCH' }
