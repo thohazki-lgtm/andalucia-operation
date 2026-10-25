@@ -12,6 +12,7 @@ param(
   [string]$ShutdownCheckpointSha,
   [string]$WeeklyReportCheckpointSha,
   [string]$WeeklyReportFinalUiCheckpointSha,
+  [string]$WeeklyReportTypographyCheckpointSha,
   [string]$RepositoryRoot
 )
 
@@ -38,13 +39,15 @@ $expectedPreviousControlShaForWeekly = '701af9bed5f301ae7a94b19f090a96af1324ca00
 $expectedWeeklyReportCheckpointSha = '7c0dbe6be26acfb0e1fa8bef5bffaa7bc3f968ca'
 $expectedPreviousControlShaForWeeklyFinalUi = 'efc64b9411a1144fb15692c11d182bf05f02df8e'
 $expectedWeeklyReportFinalUiCheckpointSha = '5fd181e4b2dfc55c2dbe5f53e0a59be793d3790b'
+$expectedPreviousControlShaForWeeklyTypography = 'ac833893e80897aab984e71ed7565d27c1c2025b'
+$expectedWeeklyReportTypographyCheckpointSha = 'e1dd8ade75cc43ef1ea801be14c6fb325de119ce'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 $manifestPath = Join-Path $projectRoot '.runtime\andalucia-local-ui-approval.json'
-if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT','YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
-if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT') -and $ReviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED' }
+if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT','YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
+if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT') -and $ReviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT' -and $ReviewUiCheckpointSha -ne $expectedReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT' -and $FinalReviewUiCheckpointSha -ne $expectedFinalReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FINAL_UI_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT' -and $CoverCheckpointSha -ne $expectedCoverSha) { throw 'ANDALUCIA_LOCAL_DAILY_REPORT_COVER_CHECKPOINT_SHA_NOT_APPROVED' }
@@ -54,6 +57,7 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT' -and $ShutdownCheckpointSha -ne $expectedShutdownCheckpointSha) { throw 'ANDALUCIA_LOCAL_WINDOWS_SHUTDOWN_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT' -and $WeeklyReportCheckpointSha -ne $expectedWeeklyReportCheckpointSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT' -and $WeeklyReportFinalUiCheckpointSha -ne $expectedWeeklyReportFinalUiCheckpointSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_FINAL_UI_CHECKPOINT_SHA_NOT_APPROVED' }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT' -and $WeeklyReportTypographyCheckpointSha -ne $expectedWeeklyReportTypographyCheckpointSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT_SHA_NOT_APPROVED' }
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_PRIOR_APPROVAL_MISSING' }
 . $resolverPath
@@ -66,7 +70,27 @@ $activeSourceSha = Resolve-AndaluciaGitRef $projectRoot 'HEAD'
 $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/main'
 $resolvedCheckpoint = Resolve-AndaluciaGitRef $projectRoot $ReviewedCheckpointSha
 $resolvedControlCommit = Resolve-AndaluciaGitRef $projectRoot $ControlCommitSha
-if (($ManagerApproval -notin @('YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT') -and $resolvedCheckpoint -ne $expectedCheckpointSha) -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FULL_SHA_REQUIRED' }
+if (($ManagerApproval -notin @('YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT') -and $resolvedCheckpoint -ne $expectedCheckpointSha) -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_BACKEND_FULL_SHA_REQUIRED' }
+
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT') {
+  $resolvedTypographyCheckpoint = Resolve-AndaluciaGitRef $projectRoot $WeeklyReportTypographyCheckpointSha
+  if ($resolvedTypographyCheckpoint -ne $expectedWeeklyReportTypographyCheckpointSha -or $resolvedCheckpoint -ne $expectedWeeklyReportTypographyCheckpointSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_FULL_SHA_REQUIRED' }
+  try { $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_PRIOR_APPROVAL_INVALID' }
+  if ($priorManifest.version -ne 'andalucia-local-weekly-report-approval-v2' -or $priorManifest.mode -ne 'approved_local_weekly_report_final_ui' -or $priorManifest.managerApproval -ne 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT' -or [string]$priorManifest.controlCommitSha -ne $expectedPreviousControlShaForWeeklyTypography -or [string]$priorManifest.activeSourceSha -ne $expectedPreviousControlShaForWeeklyTypography -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_PRIOR_APPROVAL_INVALID' }
+  Assert-AndaluciaGitAncestor $projectRoot $expectedPreviousControlShaForWeeklyTypography $resolvedTypographyCheckpoint 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_NOT_BASED_ON_PRIOR_CONTROL'
+  Assert-AndaluciaGitAncestor $projectRoot $resolvedTypographyCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_CONTROL_NOT_BASED_ON_CHECKPOINT'
+  $typographyPaths = @(Get-AndaluciaReviewedWeeklyReportFinalUiPaths)
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedPreviousControlShaForWeeklyTypography $resolvedTypographyCheckpoint $typographyPaths 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_PATH_MISMATCH')
+  [void](Assert-AndaluciaChangedPaths $projectRoot $resolvedTypographyCheckpoint $resolvedControlCommit 'backend_control')
+  $manifest = [ordered]@{ version='andalucia-local-weekly-report-approval-v3'; mode='approved_local_weekly_report_typography_correction'; managerApproval=$ManagerApproval; approvedAt=[DateTime]::UtcNow.ToString('o'); approvedMainSha=$approvedMainSha; previousControlCommitSha=$expectedPreviousControlShaForWeeklyTypography; weeklyReportTypographyCheckpointSha=$resolvedTypographyCheckpoint; controlCommitSha=$resolvedControlCommit; activeSourceSha=$activeSourceSha; branch=$branch; weeklyReportTypographyPaths=$typographyPaths; launcherSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 $resolverPath; backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+  New-Item -ItemType Directory -Path (Split-Path $manifestPath -Parent) -Force | Out-Null
+  $temporaryPath = "$manifestPath.tmp"
+  [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 6) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
+  $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
+  [ordered]@{ status='APPROVED_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 7
+  exit 0
+}
 
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT') {
   $resolvedFinalUiCheckpoint = Resolve-AndaluciaGitRef $projectRoot $WeeklyReportFinalUiCheckpointSha

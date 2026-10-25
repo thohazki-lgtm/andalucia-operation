@@ -202,8 +202,26 @@ function Get-AndaluciaApprovedSourceState {
   $isWindowsShutdownApproval = $manifest.version -eq 'andalucia-local-system-approval-v1' -and $manifest.mode -eq 'approved_local_windows_shutdown_reliability' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT'
   $isWeeklyReportApproval = $manifest.version -eq 'andalucia-local-weekly-report-approval-v1' -and $manifest.mode -eq 'approved_local_weekly_report_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT'
   $isWeeklyReportFinalUiApproval = $manifest.version -eq 'andalucia-local-weekly-report-approval-v2' -and $manifest.mode -eq 'approved_local_weekly_report_final_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isWeeklyReportTypographyApproval = $manifest.version -eq 'andalucia-local-weekly-report-approval-v3' -and $manifest.mode -eq 'approved_local_weekly_report_typography_correction' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isWeeklyReportTypographyApproval) {
+    $expectedPreviousControlSha = 'ac833893e80897aab984e71ed7565d27c1c2025b'
+    $expectedTypographyCheckpointSha = 'e1dd8ade75cc43ef1ea801be14c6fb325de119ce'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.weeklyReportTypographyCheckpointSha -ne $expectedTypographyCheckpointSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedTypographyCheckpointSha 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedTypographyCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $typographyPaths = @(Get-AndaluciaReviewedWeeklyReportFinalUiPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedTypographyCheckpointSha $typographyPaths 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedTypographyCheckpointSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($typographyPaths | Sort-Object) @($manifest.weeklyReportTypographyPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_WEEKLY_REPORT_TYPOGRAPHY_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_weekly_report_typography_correction'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; WeeklyReportTypographyCheckpointSha=$expectedTypographyCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isWeeklyReportFinalUiApproval) {
     $expectedPreviousControlSha = 'efc64b9411a1144fb15692c11d182bf05f02df8e'
