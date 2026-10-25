@@ -25,6 +25,7 @@ const expectedMonthlyReportUiCheckpoint = 'acc72417bbc857187d01c0288b2269a9c31bd
 const expectedMonthlyReportCompactCheckpoint = '9032042bcb520264949a77b2fb3950b7637d584f'
 const expectedMonthlyReportTypographyCheckpoint = 'e645140222da9fc63f57b23f2417c335311b17e5'
 const expectedMonthlyReportAlignmentCheckpoint = '8ff75ae31e598750ddca1672d660f35b84b0fa35'
+const expectedCustomReportCheckpoint = '2a4a00e60187b38cab85fda26766e1500b5fd4ad'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -80,6 +81,9 @@ try {
   const wrongMonthlyAlignment = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-MonthlyReportAlignmentCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongMonthlyAlignment.status, 0)
   assert.match(wrongMonthlyAlignment.output, /ANDALUCIA_LOCAL_MONTHLY_REPORT_ALIGNMENT_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongCustomReport = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-CustomReportCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongCustomReport.status, 0)
+  assert.match(wrongCustomReport.output, /ANDALUCIA_LOCAL_CUSTOM_REPORT_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
@@ -199,16 +203,22 @@ try {
   assert.match(resolverSource, new RegExp(expectedMonthlyReportAlignmentCheckpoint))
   assert.match(approvalSource, new RegExp(expectedMonthlyReportAlignmentCheckpoint))
   assert.match(activationSource, new RegExp(expectedMonthlyReportAlignmentCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedCustomReportCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedCustomReportCheckpoint))
+  assert.match(activationSource, new RegExp(expectedCustomReportCheckpoint))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT[^\n]+\*/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_ACTIVATION/)
+  assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT[^\n]+\*/)
   assert.match(activationSource, /VERIFIED_RECENT_BACKUP_REQUIRED/)
   assert.match(activationSource, /RUNTIME_TASK_SAFETY_DRIFT/)
   assert.match(activationSource, /GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED/)
   assert.doesNotMatch(activationSource, /Remove-Item|Stop-Process|taskkill/)
 
-  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, wrongMonthlyAlignmentRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, exactTypographyCheckpoint: expectedTypographyCheckpoint, exactDateResetCheckpoint: expectedDateResetCheckpoint, exactShutdownCheckpoint: expectedShutdownCheckpoint, exactWeeklyReportCheckpoint: expectedWeeklyReportCheckpoint, exactWeeklyReportFinalUiCheckpoint: expectedWeeklyReportFinalUiCheckpoint, exactWeeklyReportTypographyCheckpoint: expectedWeeklyReportTypographyCheckpoint, exactWeeklyReportTypographyFinalCheckpoint: expectedWeeklyReportTypographyFinalCheckpoint, exactWeeklyReportCompactCheckpoint: expectedWeeklyReportCompactCheckpoint, exactWeeklyReportFinalRefinementCheckpoint: expectedWeeklyReportFinalRefinementCheckpoint, exactMonthlyReportCheckpoint: expectedMonthlyReportCheckpoint, exactMonthlyReportUiCheckpoint: expectedMonthlyReportUiCheckpoint, exactMonthlyReportCompactCheckpoint: expectedMonthlyReportCompactCheckpoint, exactMonthlyReportTypographyCheckpoint: expectedMonthlyReportTypographyCheckpoint, exactMonthlyReportAlignmentCheckpoint: expectedMonthlyReportAlignmentCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ disposableRepository: true, powershellSyntax: true, exactPathAllowlist: true, unexpectedPathRejected: true, wrongCheckpointRejected: true, wrongReviewUiRejected: true, wrongFinalReviewUiRejected: true, wrongMonthlyAlignmentRejected: true, wrongCustomReportRejected: true, exactCheckpoint: expectedCheckpoint, exactReviewUiCheckpoint: expectedReviewUiCheckpoint, exactFinalReviewUiCheckpoint: expectedFinalReviewUiCheckpoint, exactCoverCheckpoint: expectedCoverCheckpoint, exactDateCheckpoint: expectedDateCheckpoint, exactTypographyCheckpoint: expectedTypographyCheckpoint, exactDateResetCheckpoint: expectedDateResetCheckpoint, exactShutdownCheckpoint: expectedShutdownCheckpoint, exactWeeklyReportCheckpoint: expectedWeeklyReportCheckpoint, exactWeeklyReportFinalUiCheckpoint: expectedWeeklyReportFinalUiCheckpoint, exactWeeklyReportTypographyCheckpoint: expectedWeeklyReportTypographyCheckpoint, exactWeeklyReportTypographyFinalCheckpoint: expectedWeeklyReportTypographyFinalCheckpoint, exactWeeklyReportCompactCheckpoint: expectedWeeklyReportCompactCheckpoint, exactWeeklyReportFinalRefinementCheckpoint: expectedWeeklyReportFinalRefinementCheckpoint, exactMonthlyReportCheckpoint: expectedMonthlyReportCheckpoint, exactMonthlyReportUiCheckpoint: expectedMonthlyReportUiCheckpoint, exactMonthlyReportCompactCheckpoint: expectedMonthlyReportCompactCheckpoint, exactMonthlyReportTypographyCheckpoint: expectedMonthlyReportTypographyCheckpoint, exactMonthlyReportAlignmentCheckpoint: expectedMonthlyReportAlignmentCheckpoint, exactCustomReportCheckpoint: expectedCustomReportCheckpoint, recentBackupRequired: true, schedulerSafetyRequired: true, gracefulReleaseRequired: true, destructiveRecoveryAbsent: true, generalBackendAuthorization: false, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }

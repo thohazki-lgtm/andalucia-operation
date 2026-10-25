@@ -194,6 +194,14 @@ function Get-AndaluciaReviewedMonthlyReportAlignmentPaths {
   )
 }
 
+function Get-AndaluciaReviewedCustomReportRedesignPaths {
+  return @(
+    'server/reports-custom-monthly-browser.test.ts',
+    'src/reports.css',
+    'src/reports.tsx'
+  )
+}
+
 function Assert-AndaluciaExactChangedPaths {
   param([string]$ProjectRoot, [string]$From, [string]$To, [string[]]$ExpectedPaths, [string]$Code)
   $actual = @(& git -C $ProjectRoot diff --name-only "$From..$To" | Sort-Object)
@@ -245,8 +253,26 @@ function Get-AndaluciaApprovedSourceState {
   $isMonthlyReportGuestExperienceCompactApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v3' -and $manifest.mode -eq 'approved_local_monthly_report_guest_experience_compact_ui' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_GUEST_EXPERIENCE_COMPACT_CHECKPOINT'
   $isMonthlyReportTypographyApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v4' -and $manifest.mode -eq 'approved_local_monthly_report_typography_refinement' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_TYPOGRAPHY_REFINEMENT_CHECKPOINT'
   $isMonthlyReportAlignmentApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v5' -and $manifest.mode -eq 'approved_local_monthly_report_table_alignment' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isCustomReportRedesignApproval = $manifest.version -eq 'andalucia-local-monthly-report-approval-v6' -and $manifest.mode -eq 'approved_local_custom_report_redesign' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isCustomReportRedesignApproval) {
+    $expectedPreviousControlSha = '32d1f255383ec74290dd5c3b1585c6dac34f9b76'
+    $expectedCustomReportCheckpointSha = '2a4a00e60187b38cab85fda26766e1500b5fd4ad'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.customReportCheckpointSha -ne $expectedCustomReportCheckpointSha) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedCustomReportCheckpointSha 'ANDALUCIA_LOCAL_CUSTOM_REPORT_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedCustomReportCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_CUSTOM_REPORT_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $customReportPaths = @(Get-AndaluciaReviewedCustomReportRedesignPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedCustomReportCheckpointSha $customReportPaths 'ANDALUCIA_LOCAL_CUSTOM_REPORT_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedCustomReportCheckpointSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($customReportPaths | Sort-Object) @($manifest.customReportPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_CUSTOM_REPORT_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_CUSTOM_REPORT_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_custom_report_redesign'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; CustomReportCheckpointSha=$expectedCustomReportCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isMonthlyReportAlignmentApproval) {
     $expectedPreviousControlSha = 'f4f4ce237d50bdc59621b90903ceb19a9d692824'
