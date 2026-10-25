@@ -6,7 +6,7 @@ import { addCalendarDays, addCalendarMonths, monthRange, serviceDate, weekRange 
 import { bookingTimeWindow } from './booking-time'
 import { managerReviewWasPersisted, serviceChargesWerePersisted } from './daily-report-save-integrity'
 import { buildDailyReportWhatsAppMessage, dailyReportExportStatus, type DailyReportWhatsAppFormat } from './daily-report-whatsapp'
-import { clearLegacyDailyReportDate, dailyReportUrlForDate, initialDailyReportDate, persistDailyReportDate } from './report-date-selection'
+import { clearLegacyDailyReportDate, clearPersistedDailyReportDate, dailyReportUrlWithoutDate, initialDailyReportDate } from './report-date-selection'
 import { ActionButton, DateControl, IconAction, StatusPill } from './action-system'
 import { blankDailyReportManualPayload, hydrateDailyReportManualPayload } from './daily-report-manual'
 
@@ -25,10 +25,10 @@ export function ReportsPage({ onToast, onPeriodLabelChange, onOpenBooking, onUns
   const [dailyUnsaved, setDailyUnsaved] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const [transitionMinHeight, setTransitionMinHeight] = useState<number | null>(null)
-  useEffect(() => { clearLegacyDailyReportDate(); persistDailyReportDate(dailyDate); window.history.replaceState(window.history.state, '', dailyReportUrlForDate(window.location.href, dailyDate)) }, [])
+  useEffect(() => { clearLegacyDailyReportDate(); clearPersistedDailyReportDate(); window.history.replaceState(window.history.state, '', dailyReportUrlWithoutDate(window.location.href)) }, [])
   useEffect(() => { onUnsavedChange(dailyUnsaved); return () => onUnsavedChange(false) }, [dailyUnsaved, onUnsavedChange])
   const reportReady = useCallback(() => setTransitionMinHeight(null), [])
-  const selectDailyDate = useCallback((value: string) => { persistDailyReportDate(value); setDailyDate(value); window.history.replaceState(window.history.state, '', dailyReportUrlForDate(window.location.href, value)) }, [])
+  const selectDailyDate = useCallback((value: string) => { setDailyDate(value) }, [])
   const selectMode = (next: 'daily' | 'week' | 'month' | 'custom') => { if (next === mode) return; if (mode === 'daily' && next !== 'daily' && dailyUnsaved && !window.confirm('You have unsaved Daily Report changes. Leave this report and discard them?')) return; setTransitionMinHeight(contentRef.current?.getBoundingClientRect().height || null); if (next !== 'daily') setDailyUnsaved(false); setMode(next) }
   return <section className="reports-page">
     <nav className="report-mode-tabs" aria-label="Report period"><ActionButton className={mode === 'daily' ? 'active' : ''} onClick={() => selectMode('daily')}>Daily</ActionButton><ActionButton className={mode === 'week' ? 'active' : ''} onClick={() => selectMode('week')}>Weekly</ActionButton><ActionButton className={mode === 'month' ? 'active' : ''} onClick={() => selectMode('month')}>Monthly</ActionButton><ActionButton className={mode === 'custom' ? 'active' : ''} onClick={() => selectMode('custom')}>Custom</ActionButton></nav>

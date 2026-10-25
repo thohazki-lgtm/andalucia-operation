@@ -31,15 +31,25 @@ export const persistDailyReportDate = (date: string, storage: DailyReportDateSto
   try { storage?.setItem(dailyReportDateStorageKey, date); return true } catch { return false }
 }
 
-export const initialDailyReportDate = (search = typeof window === 'undefined' ? '' : window.location.search, now = new Date(), storage: DailyReportDateStorage | undefined = browserLocalStorage()) => {
-  const selected = new URLSearchParams(search).get(dailyReportDateParameter)
-  return validDate(selected) ? selected! : storedDailyReportDate(storage) || currentMaldivesReportDate(now)
+export const initialDailyReportDate = (_search = typeof window === 'undefined' ? '' : window.location.search, now = new Date(), storage: DailyReportDateStorage | undefined = browserLocalStorage()) => {
+  try { storage?.removeItem(dailyReportDateStorageKey) } catch { /* Browser storage is optional. */ }
+  return currentMaldivesReportDate(now)
 }
 
 export const dailyReportUrlForDate = (href: string, date: string) => {
   const url = new URL(href)
   if (validDate(date)) url.searchParams.set(dailyReportDateParameter, date)
   return `${url.pathname}${url.search}${url.hash}`
+}
+
+export const dailyReportUrlWithoutDate = (href: string) => {
+  const url = new URL(href)
+  url.searchParams.delete(dailyReportDateParameter)
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+export const clearPersistedDailyReportDate = (storage: Pick<Storage, 'removeItem'> | undefined = browserLocalStorage()) => {
+  try { storage?.removeItem(dailyReportDateStorageKey) } catch { /* Browser storage is optional. */ }
 }
 
 export const clearLegacyDailyReportDate = (storage: Pick<Storage, 'removeItem'> | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage) => {
