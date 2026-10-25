@@ -17,6 +17,7 @@ assert.equal((app.match(/<PublicHolidaySettingsManager \/>/g) || []).length, 1, 
 assert.doesNotMatch(app.match(/function ConfigurationView[\s\S]*?\n\}/)?.[0] || '', /DutyCodeManager/, 'Duty Codes must remain in Duty Roster settings.')
 
 assert.match(workforce, /CORE_DUTY_CODES\.map/, 'Leave Types must reuse the protected core definitions.')
+assert.match(workforce, /LEAVE_CLASSIFICATION_LABELS\[item\.classification\] !== item\.label/, 'Duplicate Leave Type subtitles must be omitted without changing authoritative names.')
 for (const code of ['AL', 'SL', 'EL', 'PAT', 'BT', 'CIR', 'HAJ', 'RR', 'OFF', 'PH']) assert.match(domain, new RegExp(`code: '${code}'`), `Missing protected ${code} definition.`)
 assert.match(workforce, /Historical <b>SK<\/b> assignments remain compatible/)
 assert.match(workforce, /staffApi\.entitlementPolicies\(\)/, 'Policy manager must reuse the protected entitlement configuration API.')
@@ -31,6 +32,10 @@ assert.match(styles, /\.leave-entitlement-tabs\{display:grid;grid-template-colum
 assert.match(styles, /@media\(max-width:700px\)/)
 assert.match(styles, /\.leave-entitlement-tabs\{grid-template-columns:1fr 1fr\}/, 'Tabs must reflow on mobile.')
 assert.match(styles, /\.leave-type-grid\{grid-template-columns:1fr\}/, 'Leave Type cards must stack on mobile.')
+assert.match(styles, /\.panel\.leave-types-panel\{[^}]*border:1px solid #dec58f[^}]*border-radius:12px[^}]*background:#fffdf8/, 'Leave Types must use a scoped selector that preserves the approved Reports gold and ivory panel treatment over the global panel style.')
+assert.match(styles, /\.leave-type-card\{[^}]*min-height:58px[^}]*border:1px solid #dec58f/, 'Leave Type cards must remain compact and gold bordered.')
+assert.match(styles, /\.leave-type-state\.active\{[^}]*min-width:100px[^}]*border:1px solid #9fc9b7/, 'Configured indicators must use the standardized compact status treatment.')
+assert.match(styles, /\.activate-duty-code\{[^}]*min-height:34px[^}]*border-color:#dec58f/, 'Duty Code activation controls must use the standardized action treatment.')
 assert.match(styles, /\.entitlement-policy-row\{grid-template-columns:44px minmax\(0,1fr\) auto/, 'Policy rows must reflow on mobile.')
 assert.match(styles, /\.workforce-record-card\{min-width:0;/, 'Mobile workforce cards must shrink within their grid without causing page overflow.')
 assert.match(styles, /\.workforce-card-actions\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/, 'Mobile employee entitlement actions must remain contained in a two-column grid.')
