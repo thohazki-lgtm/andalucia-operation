@@ -91,7 +91,7 @@ try {
     assert.equal(state.dateTypography.spacing, 'normal')
     assert.equal(state.performanceLabelTypography.size, '10px')
     assert.equal(state.performanceLabelTypography.weight, '700')
-    assert.equal(state.performanceValueTypography.size, '18px')
+    assert.equal(state.performanceValueTypography.size, viewport.width > 650 ? '20px' : '18px')
     assert.equal(state.performanceValueTypography.weight, '650')
     assert.equal(state.revenueLabelTypography.size, '10px')
     assert.equal(state.revenueLabelTypography.weight, '600')
