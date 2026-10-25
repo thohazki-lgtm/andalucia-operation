@@ -40,12 +40,20 @@ export function EntitlementPoliciesPanel() {
   return <article className="panel workforce-foundation-panel entitlement-policies-panel">
     <div className="panel-title workforce-section-title"><div><p className="eyebrow">DEFAULT ALLOWANCES</p><h3>Entitlement Policies</h3><p>Defaults apply only when an employee-specific override does not exist. Protected leave identities and calculation rules remain unchanged.</p></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
-    {loading ? <p className="workforce-loading">Loading entitlement policies…</p> : <div className="entitlement-policy-list" aria-label="Entitlement policy defaults">{items.map(item => <article key={item.classification} className="entitlement-policy-row">
-      <span className="policy-code">{item.code}</span><div><strong>{item.label}</strong><small>{LEAVE_CLASSIFICATION_LABELS[item.classification]}</small></div>
-      <div className="policy-allowance"><span>Default allowance</span><b>{item.defaultAllowance === null ? 'Pending activation' : item.defaultAllowance}</b><small>{item.cadence === 'annual' ? 'days per year' : 'days per week'}{item.activationRequired ? ` · approved ${item.approvedAllowance}` : ''}</small></div>
-      <span className={item.persisted ? 'policy-source saved' : 'policy-source'}>{item.persisted ? 'Manager configured' : item.activationRequired ? 'Approved · not active' : 'Existing default'}</span>
-      <button className="secondary" onClick={() => setEditing(item)}>{item.activationRequired ? 'Prepare Default' : 'Edit Default'}</button>
-    </article>)}</div>}
+    {loading ? <p className="workforce-loading">Loading entitlement policies…</p> : <div className="entitlement-policy-list" aria-label="Entitlement policy defaults">{items.map(item => {
+      const definition = CORE_DUTY_CODES.find(candidate => candidate.classification === item.classification)
+      return <article key={item.classification} className="entitlement-policy-row">
+        <div className="policy-card-header">
+          <span className="policy-code" style={{ borderColor: definition?.color, color: definition?.color }}>{item.code}</span>
+          <div className="policy-identity"><strong>{item.label}</strong>{LEAVE_CLASSIFICATION_LABELS[item.classification] !== item.label && <small>{LEAVE_CLASSIFICATION_LABELS[item.classification]}</small>}</div>
+          <span className={item.persisted ? 'policy-source saved' : 'policy-source'}>{item.persisted ? 'Manager configured' : item.activationRequired ? 'Approved · not active' : 'Existing default'}</span>
+        </div>
+        <div className="policy-card-detail">
+          <div className="policy-allowance"><span>Default allowance</span><div><b>{item.defaultAllowance === null ? 'Pending activation' : item.defaultAllowance}</b><small>{item.cadence === 'annual' ? 'days per year' : 'days per week'}{item.activationRequired ? ` · approved ${item.approvedAllowance}` : ''}</small></div></div>
+          <button className="secondary" aria-label={`Edit ${item.label} default`} onClick={() => setEditing(item)}>Edit</button>
+        </div>
+      </article>
+    })}</div>}
     <p className="configuration-source-note"><b>Separation preserved:</b> recurring OFF and PH allowances are policy values; Public Holiday Calendar remains the source for named calendar dates. Confirmed usage comes only from Duty Roster, while Booked/Future remains a separate planning deduction.</p>
     {editing && <EntitlementPolicyForm policy={editing} onClose={() => setEditing(null)} onSave={saved} />}
   </article>
