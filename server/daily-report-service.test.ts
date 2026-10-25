@@ -61,11 +61,16 @@ try {
     assert.equal(guestExperience.content.servicePerformance.totalCovers,20, 'classification overlap must not inflate booking covers')
     const performanceDate = '2026-10-17'
     const noShowStatus = (await db.query<any>("select value from configuration_options where group_key='booking_statuses' and (metadata->>'serviceStage'='noShow' or metadata->>'bookingMetric'='noShow') order by sort_order limit 1")).rows[0]?.value
+    const cancelledStatus = (await db.query<any>("select value from configuration_options where group_key='booking_statuses' and metadata->>'serviceStage'='excluded' order by sort_order limit 1")).rows[0]?.value
     assert.ok(noShowStatus, 'disposable Schema 025 must expose the authoritative no-show status')
+    assert.ok(cancelledStatus, 'disposable Schema 025 must expose the authoritative cancelled status')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'No-show Room Pair','301, 302',3), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-1', bookingStatus:noShowStatus },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Duplicate No-show Room','301',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-2', bookingStatus:noShowStatus },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Roomed Walk-in','401',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-1', bookingSource:'walk_in' },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Unroomed Walk-in','',1), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-2', bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'No-show Walk-in','405',6), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-NOSHOW', bookingStatus:noShowStatus, bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Cancelled Walk-in','406',7), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-CANCELLED', bookingStatus:cancelledStatus, bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Cancelled Reservation','407',4), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-CANCELLED-1', bookingStatus:cancelledStatus },'R2 test')
     const importedHeadingId = randomUUID()
     await bookingRepository.save({ ...bookingFixture(importedHeadingId,'Imported Walk In Heading','402',6), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-IMPORTED-1', bookingSource:'activity_program' },'R2 test')
     await db.query("update bookings set source_activity_label='Andalucía Walk In Guests',raw_import_payload=$2 where id=$1",[importedHeadingId,JSON.stringify({ effective:{ walkIn:true } })])
@@ -73,8 +78,8 @@ try {
     assert.equal(performance.content.servicePerformance.totalCovers,9, 'Daily Report Total Covers must match Bookings expected covers and keep no-shows separate')
     assert.equal(performance.content.servicePerformance.adults + performance.content.servicePerformance.kids,9, 'Daily Report adult and child totals must reconcile to Bookings Total Covers')
     assert.equal(performance.content.servicePerformance.bookingByTimeSlot.reduce((sum,row)=>sum+Number(row.covers),0),9, 'time-slot covers must use the same expected-cover definition')
-    assert.equal(performance.content.servicePerformance.noShowCovers,5, 'no-show metric must remain a cover total')
-    assert.deepEqual(performance.content.servicePerformance.noShowRooms,['301','302'], 'no-show room evidence must be distinct and complete')
+    assert.equal(performance.content.servicePerformance.noShowCovers,11, 'no-show metric must remain separate and include no-show walk-in evidence')
+    assert.deepEqual([...performance.content.servicePerformance.noShowRooms].sort(),['301','302','405'], 'no-show room evidence must be distinct and complete')
     assert.equal(performance.content.servicePerformance.walkIns,2, 'walk-in metric definition must remain booking based')
     assert.equal(performance.content.servicePerformance.walkInCovers,3, 'walk-in covers must sum only persisted manual walk-in bookings')
     assert.deepEqual(performance.content.servicePerformance.walkInRooms,['401'], 'walk-ins without a room must not receive fabricated room evidence')

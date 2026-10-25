@@ -94,9 +94,13 @@ export class DailyReportService {
     const report = await this.reporting.report('today', serviceDate, serviceDate)
     const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.covers,b.booking_source,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
     const noShowRooms = bookingEvidence.filter(row => { const metadata = parseJson(row.status_metadata); return metadata.serviceStage === 'noShow' || metadata.bookingMetric === 'noShow' }).flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
-    const walkInEvidence = bookingEvidence.filter(isWalkInBookingEvidence)
+    const validCoverEvidence = bookingEvidence.filter(row => parseJson(row.status_metadata).excludesFromExpectedCovers !== true)
+    const walkInEvidence = validCoverEvidence.filter(isWalkInBookingEvidence)
+    const reservationEvidence = validCoverEvidence.filter(row => !isWalkInBookingEvidence(row))
     const walkIns = walkInEvidence.length
     const walkInCovers = walkInEvidence.reduce((sum, row) => sum + Math.max(0, Number(row.covers) || 0), 0)
+    const reservationCovers = reservationEvidence.reduce((sum, row) => sum + Math.max(0, Number(row.covers) || 0), 0)
+    const totalCovers = reservationCovers + walkInCovers
     const walkInRooms = walkInEvidence.flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
     const chargeables = report.chargeables.financialProofRecords.map(row => ({ id: row.id, item: row.item, quantity: row.quantity, soldBy: row.waiter, staffNumber: '', roomNumber: row.roomNumber, checkInvoiceNumber: row.checkInvoiceNumber, amount: fixed(row.grossTotal), source: 'Chargeable' as const }))
     const wineRows = (await this.wineSpirits.list({ start: serviceDate, end: serviceDate, outletScopeId })).filter(row => !row.archived && row.status === 'charged')
@@ -109,7 +113,7 @@ export class DailyReportService {
     const roomDetails = report.occasions.records.map(row => ({ occasionId: row.id, bookingId: row.bookingId, category: row.category, categoryKeys: row.categoryKeys, label: row.occasionType, guestName: row.guestName, roomNumber: row.roomNumber, covers: row.covers }))
     const categories = DEFAULT_CATEGORIES.map(([key, label]) => { const rows = roomDetails.filter(row => Array.isArray(row.categoryKeys) ? row.categoryKeys.includes(key) : row.category === key || row.label.toLowerCase() === label.toLowerCase()); return { key, label, count: rows.length, covers: rows.reduce((sum, row) => sum + row.covers, 0) } })
     return {
-      servicePerformance: { totalCovers: report.bookings.expectedCovers, adults: report.bookings.adults, kids: report.bookings.kids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInCovers, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.expectedCovers, adults: row.adults, kids: row.kids, noShows: row.noShowCovers, status: row.status })) },
+      servicePerformance: { totalCovers, adults: report.bookings.adults, kids: report.bookings.kids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInCovers, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.expectedCovers, adults: row.adults, kids: row.kids, noShows: row.noShowCovers, status: row.status })) },
       symphony: emptyDailyReportManualPayload().symphony,
       serviceVerification: { doubleDinePax: 0, details: [] }, serviceCharges: emptyDailyReportManualPayload().serviceCharges,
       upselling: { chargeables, wineSpirits, details, totalUpsellRevenue: fixed(details.reduce((sum, row) => sum + Number(row.amount), 0)), itemsSold: details.reduce((sum, row) => sum + row.quantity, 0), topItem, topSeller },
