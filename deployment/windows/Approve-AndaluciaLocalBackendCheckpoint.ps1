@@ -35,6 +35,7 @@ param(
   [string]$PublicHolidayCalendarCheckpointSha,
   [string]$BookingCustomizationCheckpointSha,
   [string]$BookingAlignmentCheckpointSha,
+  [string]$TrainingCustomizationCheckpointSha,
   [string]$RepositoryRoot
 )
 
@@ -112,6 +113,8 @@ $expectedPreviousControlShaForBookingCustomization = '8bfbc280336096b13121b669a3
 $expectedBookingCustomizationCheckpointSha = '160db95b49c8403dbbce423c1b268f8c03e1a2de'
 $expectedPreviousControlShaForBookingAlignment = '822596e34372e60fdde2959a8e820ee1e985ea3f'
 $expectedBookingAlignmentCheckpointSha = 'fbf2572b94cc2a7ee8f1853215d1d01bd56df12a'
+$expectedPreviousControlShaForTrainingCustomization = 'bdd2713463454181ca13677a8ab6b2d2af604384'
+$expectedTrainingCustomizationCheckpointSha = '3e5d4b21399ebf0b1ce1150f3355acc8602c08d5'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
@@ -121,6 +124,37 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANU
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT') { $expectedCheckpointSha = $expectedPublicHolidayCalendarCheckpointSha }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT') { $expectedCheckpointSha = $expectedBookingCustomizationCheckpointSha }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT') { $expectedCheckpointSha = $expectedBookingAlignmentCheckpointSha }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT') { $expectedCheckpointSha = $expectedTrainingCustomizationCheckpointSha }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT') {
+  if ($TrainingCustomizationCheckpointSha -ne $expectedTrainingCustomizationCheckpointSha -or $ReviewedCheckpointSha -ne $expectedTrainingCustomizationCheckpointSha) { throw 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_CHECKPOINT_SHA_NOT_APPROVED' }
+  if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
+  if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_PRIOR_APPROVAL_MISSING' }
+  . $resolverPath
+  $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
+  if ($branch -notmatch '^codex/local-ui-[a-z0-9._-]+$') { throw "ANDALUCIA_LOCAL_BACKEND_BRANCH_NOT_ALLOWED:$branch" }
+  $trackedChanges = @(& git -C $projectRoot status --porcelain --untracked-files=no)
+  if ($trackedChanges.Count -gt 0) { throw 'ANDALUCIA_LOCAL_BACKEND_SOURCE_DIRTY' }
+  $activeSourceSha = Resolve-AndaluciaGitRef $projectRoot 'HEAD'
+  $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/main'
+  $resolvedTrainingCheckpoint = Resolve-AndaluciaGitRef $projectRoot $TrainingCustomizationCheckpointSha
+  $resolvedControlCommit = Resolve-AndaluciaGitRef $projectRoot $ControlCommitSha
+  if ($resolvedTrainingCheckpoint -ne $expectedTrainingCustomizationCheckpointSha -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_FULL_SHA_REQUIRED' }
+  $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  if ($priorManifest.version -ne 'andalucia-local-bookings-approval-v2' -or $priorManifest.mode -ne 'approved_local_booking_alignment' -or $priorManifest.managerApproval -ne 'YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT' -or [string]$priorManifest.controlCommitSha -ne $expectedPreviousControlShaForTrainingCustomization -or [string]$priorManifest.activeSourceSha -ne $expectedPreviousControlShaForTrainingCustomization -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_PRIOR_APPROVAL_INVALID' }
+  Assert-AndaluciaGitAncestor $projectRoot $expectedPreviousControlShaForTrainingCustomization $resolvedTrainingCheckpoint 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_NOT_BASED_ON_PRIOR_CONTROL'
+  Assert-AndaluciaGitAncestor $projectRoot $resolvedTrainingCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_CONTROL_NOT_BASED_ON_CHECKPOINT'
+  $trainingPaths = @(Get-AndaluciaReviewedTrainingCustomizationPaths)
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedPreviousControlShaForTrainingCustomization $resolvedTrainingCheckpoint $trainingPaths 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_REVIEWED_PATH_MISMATCH')
+  [void](Assert-AndaluciaChangedPaths $projectRoot $resolvedTrainingCheckpoint $resolvedControlCommit 'backend_control')
+  Assert-AndaluciaPathContentMatches $projectRoot $resolvedTrainingCheckpoint $resolvedControlCommit $trainingPaths 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_CONTENT_MISMATCH'
+  $manifest = [ordered]@{ version='andalucia-local-training-approval-v1'; mode='approved_local_training_customization'; managerApproval=$ManagerApproval; approvedAt=[DateTime]::UtcNow.ToString('o'); approvedMainSha=$approvedMainSha; previousControlCommitSha=$expectedPreviousControlShaForTrainingCustomization; trainingCustomizationCheckpointSha=$resolvedTrainingCheckpoint; controlCommitSha=$resolvedControlCommit; activeSourceSha=$activeSourceSha; branch=$branch; trainingCustomizationPaths=$trainingPaths; launcherSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 $resolverPath; backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+  $temporaryPath = "$manifestPath.tmp"
+  [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 7) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
+  $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
+  [ordered]@{ status='APPROVED_LOCAL_TRAINING_CUSTOMIZATION_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 7
+  exit 0
+}
 if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT','YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT') -and $ManagerApproval -notin @('YES_I_APPROVE_EXACT_DAILY_REPORT_BACKEND_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_COVER_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_DAILY_REPORT_DATE_RESET_CHECKPOINT','YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_FINAL_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_COMPACT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_REFINEMENT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_GUEST_EXPERIENCE_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_GUEST_EXPERIENCE_COMPACT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_TYPOGRAPHY_REFINEMENT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT','YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT','YES_I_APPROVE_EXACT_CUSTOM_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT','YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT','YES_I_APPROVE_EXACT_OFF_DAYS_SUMMARY_CHECKPOINT','YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT','YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_BALANCE_POLISH_CHECKPOINT','YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT','YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT')) { throw 'ANDALUCIA_LOCAL_BACKEND_MANAGER_APPROVAL_REQUIRED' }
 if ($ManagerApproval -notin @('YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT','YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT') -and $ManagerApproval -notin @('YES_I_APPROVE_EXACT_WINDOWS_SHUTDOWN_RELIABILITY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_TYPOGRAPHY_FINAL_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_COMPACT_CHECKPOINT','YES_I_APPROVE_EXACT_WEEKLY_REPORT_FINAL_REFINEMENT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_GUEST_EXPERIENCE_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_GUEST_EXPERIENCE_COMPACT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_TYPOGRAPHY_REFINEMENT_CHECKPOINT','YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT','YES_I_APPROVE_EXACT_CUSTOM_REPORT_REDESIGN_CHECKPOINT','YES_I_APPROVE_EXACT_CUSTOM_REPORT_FINAL_UI_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_TYPES_CHECKPOINT','YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT','YES_I_APPROVE_EXACT_OFF_DAYS_SUMMARY_CHECKPOINT','YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT','YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT','YES_I_APPROVE_EXACT_LEAVE_BALANCE_POLISH_CHECKPOINT','YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT') -and $ReviewedCheckpointSha -ne $expectedCheckpointSha) { throw 'ANDALUCIA_LOCAL_BACKEND_CHECKPOINT_SHA_NOT_APPROVED' }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_DAILY_REPORT_REVIEW_UI_CHECKPOINT' -and $ReviewUiCheckpointSha -ne $expectedReviewUiSha) { throw 'ANDALUCIA_LOCAL_BACKEND_UI_CHECKPOINT_SHA_NOT_APPROVED' }
