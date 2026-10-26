@@ -71,15 +71,17 @@ main{min-width:0}
 
 /* Customization Center category foundation */
 .customization-center,.customization-category-panel{min-width:0}
-.customization-category-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-bottom:20px;padding:7px;border:1px solid #dce5e9;border-radius:10px;background:#fff;box-shadow:0 2px 12px #123a5608}
-.customization-category-nav button{justify-content:center;min-width:0;min-height:44px;padding:9px 10px;border:1px solid transparent;border-radius:7px;color:#526d7e;text-align:center;font:700 11px inherit;line-height:1.25}
-.customization-category-nav button:hover{border-color:#d9e3e7;background:#f5f8f9;color:#173e58}
+.customization-category-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px;padding:10px;border:1px solid #dec58f;border-radius:12px;background:#fffaf0;box-shadow:0 2px 12px #123a5608}
+.customization-category-nav.seven-categories{grid-template-columns:repeat(7,minmax(0,1fr))}
+.customization-category-nav button{justify-content:center;min-width:0;min-height:42px;padding:8px 8px;border:1px solid #dec58f;border-radius:9px;background:#fffdf8;color:#294b61;text-align:center;font:600 11px/1.25 'DM Sans',sans-serif}
+.customization-category-nav button:hover{border-color:#c5a45e;background:#fbf5e7;color:#173e58}
 .customization-category-nav button.selected{border-color:#173c57;background:#173c57;color:#fff;box-shadow:inset 0 -3px #d5ad61}
 .customization-category-nav button:focus-visible{outline:3px solid #d5ad61;outline-offset:2px}
+.customization-category-panel{padding:14px;border:1px solid #dec58f;border-radius:12px;background:#fffaf0}
 .customization-category-panel>section{min-width:0}
 .workforce-config-grid .config-card:first-child{grid-column:1/-1;border-top:3px solid #bd9854}
-@media(max-width:1050px){.customization-category-nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:700px){.customization-category-nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:16px;padding:6px}.customization-category-nav button{min-height:46px;padding:8px 6px}.workforce-config-grid .config-card:first-child{grid-column:auto}}
+@media(max-width:1100px){.customization-category-nav,.customization-category-nav.seven-categories{grid-template-columns:repeat(3,minmax(0,1fr))}.customization-category-nav.seven-categories{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.customization-category-nav,.customization-category-nav.seven-categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px;padding:10px}.customization-category-nav button{min-height:44px;padding:8px 6px}.customization-category-panel{padding:10px}.workforce-config-grid .config-card:first-child{grid-column:auto}}
 
 /* Advanced Duty Code Manager */
 .duty-code-manager{grid-column:1/-1;min-width:0;border-top:3px solid #bd9854}

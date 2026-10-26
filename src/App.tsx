@@ -141,7 +141,7 @@ function CustomizationCenter({ configuration, trainingCustomization, staff, onTr
  const [category, setCategory] = useState<CustomizationCategory>('workforce')
  const categories = user.isOwner ? [...customizationCategories, { id: 'platform' as const, label: 'Platform' }] : customizationCategories
  return <section className="customization-center">
- <nav className="customization-category-nav" aria-label="Customization categories">{categories.map(item => <button key={item.id} type="button" className={category === item.id ? 'selected' : ''} aria-current={category === item.id ? 'page' : undefined} onClick={() => setCategory(item.id)}>{item.label}</button>)}</nav>
+ <nav className={`customization-category-nav${categories.length === 7 ? ' seven-categories' : ''}`} aria-label="Customization categories">{categories.map(item => <button key={item.id} type="button" className={category === item.id ? 'selected' : ''} aria-current={category === item.id ? 'page' : undefined} onClick={() => setCategory(item.id)}>{item.label}</button>)}</nav>
  <div className="customization-category-panel" aria-label={`${categories.find(item => item.id === category)?.label} configuration`}>
  {category === 'workforce' && <ConfigurationView configuration={configuration} onActivateDutyCode={onActivateDutyCode} />}
  {category === 'bookings' && <BookingConfigurationManager configuration={{ statuses: configuration.bookingStatuses, sources: configuration.bookingSources, tables: configuration.restaurantTables, tableRanges: configuration.restaurantTableRanges, walkInFields: configuration.bookingWalkInFields }} onSave={onSaveBooking} onResetWalkIn={onResetWalkIn} />}
