@@ -29,6 +29,7 @@ try {
   await fixture.db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
   const position = (await fixture.db.query<{ value: string }>("select value from configuration_options where group_key='staff_positions' and active=true order by sort_order limit 1")).rows[0]?.value || 'F&B Attendant'
   await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'ENT-001','Aisha Ibrahim',$2,'active','2024-01-01'),($3,'ENT-002','Mohamed Rasheed',$2,'active','2025-02-01')", [randomUUID(), position, randomUUID()])
+  await fixture.db.query("insert into public_holidays(id,holiday_name,holiday_date,days,active,created_by,updated_by) values($1,'New Year Holiday','2026-01-01',1,true,'isolated-ui-test','isolated-ui-test'),($2,'National Celebration','2026-07-26',2,true,'isolated-ui-test','isolated-ui-test'),($3,'Archived Holiday','2026-12-01',1,false,'isolated-ui-test','isolated-ui-test')", [randomUUID(), randomUUID(), randomUUID()])
   await fixture.db.close()
 
   const node = process.execPath
@@ -61,6 +62,7 @@ try {
   const policyResults: Record<string, unknown> = {}
   const employeeResults: Record<string, unknown> = {}
   const offSummaryResults: Record<string, unknown> = {}
+  const holidayResults: Record<string, unknown> = {}
   for (const width of [1440, 1024, 768, 430, 390, 360]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
@@ -161,11 +163,47 @@ try {
     const offSummaryCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `off-days-summary-${width}.png`), Buffer.from(offSummaryCapture.data, 'base64'))
     await cdp.evaluate(`document.querySelector('.entitlement-balance-modal .close')?.click()`)
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Public Holiday Calendar')?.click()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.holiday-record')`)) break; await sleep(100) }
+    const holidayResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.public-holidays-panel');const rows=Array.from(panel.querySelectorAll('.holiday-record'));const first=rows[0];const command=panel.querySelector('.holiday-command');const actions=Array.from(first.querySelectorAll('.holiday-record-actions button'));const dates=rows.map(row=>row.querySelector('time').dateTime);return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:panel.scrollWidth>panel.clientWidth+1,rows:rows.length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,commandColumns:getComputedStyle(command).gridTemplateColumns.split(' ').length,commandBorder:Array.from(command.children).every(child=>getComputedStyle(child).borderColor==='rgb(222, 197, 143)'),rowBorder:getComputedStyle(first).borderColor,rowBackground:getComputedStyle(first).backgroundColor,rowColumns:getComputedStyle(first).gridTemplateColumns.split(' ').length,labels:Array.from(panel.querySelectorAll('.holiday-record-labels span')).map(label=>label.textContent.trim()),dates,actions:actions.map(button=>button.textContent.trim()),actionHeights:actions.map(button=>Math.round(button.getBoundingClientRect().height)),addHeight:Math.round(panel.querySelector('.holiday-add-action').getBoundingClientRect().height),activeDays:panel.querySelector('.holiday-active-summary strong').textContent.trim()}})()`)
+    assert.equal(holidayResult.overflow, false, `Public Holiday Calendar page overflow at ${width}px.`)
+    assert.equal(holidayResult.panelOverflow, false, `Public Holiday Calendar panel overflow at ${width}px.`)
+    assert.equal(holidayResult.rows, 3)
+    assert.equal(holidayResult.panelBorder, 'rgb(222, 197, 143)')
+    assert.equal(holidayResult.panelBackground, 'rgb(255, 253, 248)')
+    assert.equal(holidayResult.commandColumns, width <= 700 ? 1 : 2)
+    assert.equal(holidayResult.commandBorder, true)
+    assert.equal(holidayResult.rowBorder, 'rgb(222, 197, 143)')
+    assert.ok(['rgb(255, 255, 255)', 'rgb(255, 250, 240)'].includes(holidayResult.rowBackground))
+    assert.equal(holidayResult.rowColumns, width <= 900 ? 2 : 5)
+    assert.deepEqual(holidayResult.labels, ['Holiday', 'Date', 'Days', 'Status', 'Actions'])
+    assert.deepEqual(holidayResult.dates, [...holidayResult.dates].sort(), 'Public holidays must remain chronological.')
+    assert.deepEqual(holidayResult.actions, ['Edit', 'Delete'])
+    assert.equal(holidayResult.activeDays, '3')
+    assert.ok(holidayResult.addHeight >= (width <= 700 ? 44 : 36))
+    if (width <= 700) assert.equal(holidayResult.actionHeights.every((height:number)=>height>=44), true)
+    holidayResults[String(width)] = holidayResult
+    await cdp.evaluate(`document.querySelector('.public-holidays-panel')?.scrollIntoView({block:'start'})`)
+    await sleep(100)
+    const holidayCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+    await writeFile(join(output, `public-holiday-calendar-${width}.png`), Buffer.from(holidayCapture.data, 'base64'))
+    if (width === 430) {
+      await cdp.evaluate(`document.querySelector('.holiday-add-action')?.click()`)
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-modal')`), true)
+      await cdp.evaluate(`(()=>{const input=document.querySelector('.public-holiday-form input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'Unsaved Holiday');input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+      await sleep(100)
+      await cdp.evaluate(`window.confirm=()=>false;document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`)
+      await sleep(100)
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-modal')`), true, 'Unsafe backdrop dismissal must be blocked when edits are unsaved.')
+      await cdp.evaluate(`window.confirm=()=>true;document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`)
+      await sleep(100)
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-modal')`), false, 'Escape must dismiss after discard confirmation.')
+    }
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).find(button=>button.textContent?.trim()==='Leave Types')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-type-card')`)) break; await sleep(100) }
   }
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), employeeResponsiveWidths: Object.keys(employeeResults), offSummaryResponsiveWidths: Object.keys(offSummaryResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`, `artifacts/visual-validation/leave-types/employee-entitlements-${width}.png`, `artifacts/visual-validation/leave-types/off-days-summary-${width}.png`]) }, null, 2))
+  console.log(JSON.stringify({ responsiveWidths: Object.keys(results), policyResponsiveWidths: Object.keys(policyResults), employeeResponsiveWidths: Object.keys(employeeResults), offSummaryResponsiveWidths: Object.keys(offSummaryResults), publicHolidayResponsiveWidths: Object.keys(holidayResults), dutyColorsPreserved: true, runtimeErrors: cdp.errors.length, screenshots: Object.keys(results).flatMap(width => [`artifacts/visual-validation/leave-types/after-${width}.png`, `artifacts/visual-validation/leave-types/entitlement-policies-${width}.png`, `artifacts/visual-validation/leave-types/employee-entitlements-${width}.png`, `artifacts/visual-validation/leave-types/off-days-summary-${width}.png`, `artifacts/visual-validation/leave-types/public-holiday-calendar-${width}.png`]) }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }
