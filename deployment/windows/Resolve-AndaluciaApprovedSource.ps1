@@ -261,6 +261,14 @@ function Get-AndaluciaReviewedEntitlementManageCleanupPaths {
   )
 }
 
+function Get-AndaluciaReviewedLeaveRenewalRulesPaths {
+  return @(
+    'server/leave-renewal-rules.test.ts',
+    'server/staff-repository.ts',
+    'server/yearly-leave-entitlement-calculator.ts'
+  )
+}
+
 function Assert-AndaluciaPathContentMatches {
   param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
   foreach ($path in $ExpectedPaths) {
@@ -328,8 +336,26 @@ function Get-AndaluciaApprovedSourceState {
   $isOffDaysSummaryApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v4' -and $manifest.mode -eq 'approved_local_off_days_summary' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_OFF_DAYS_SUMMARY_CHECKPOINT'
   $isEntitlementBalanceSimplificationApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v5' -and $manifest.mode -eq 'approved_local_entitlement_balance_simplification' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT'
   $isEntitlementManageCleanupApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v6' -and $manifest.mode -eq 'approved_local_entitlement_manage_cleanup' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isLeaveRenewalRulesApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v7' -and $manifest.mode -eq 'approved_local_leave_renewal_rules' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isLeaveRenewalRulesApproval) {
+    $expectedPreviousControlSha = '3c6b0270f1ce3d4a0aa1b412b5dafdde4ea53aac'
+    $expectedLeaveRenewalRulesCheckpointSha = 'b8d641909ce62bef9ca9741f584b663d59dfea68'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.leaveRenewalRulesCheckpointSha -ne $expectedLeaveRenewalRulesCheckpointSha) { throw 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedLeaveRenewalRulesCheckpointSha 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedLeaveRenewalRulesCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $leaveRenewalRulesPaths = @(Get-AndaluciaReviewedLeaveRenewalRulesPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedLeaveRenewalRulesCheckpointSha $leaveRenewalRulesPaths 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedLeaveRenewalRulesCheckpointSha $controlCommitSha 'backend_control')
+    if (@(Compare-Object ($leaveRenewalRulesPaths | Sort-Object) @($manifest.leaveRenewalRulesPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_leave_renewal_rules'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; LeaveRenewalRulesCheckpointSha=$expectedLeaveRenewalRulesCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isEntitlementManageCleanupApproval) {
     $expectedPreviousControlSha = 'bc2423f24656c5871955f4cf2aa33ab15eefb478'
