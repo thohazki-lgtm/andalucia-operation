@@ -21,8 +21,8 @@ const seeds: Record<BookingConfigGroup, Array<Omit<ConfigOption, 'id'>>> = {
     { value: 'completed', label: 'Completed', color: '#5d7180', active: true, metadata: { serviceStage: 'completed' } }
   ],
   sources: [...['Activity Program', 'Guest', 'Chat Agent', 'Reception', 'Manual', 'Other'].map(label => ({ value: label.toLowerCase().replaceAll(' ', '_'), label, active: true })), { value: 'walk_in', label: 'Walk-In', active: true, metadata: { systemControlled: true, protected: true } }],
-  tables: Array.from({ length: 12 }, (_, index) => ({ value: `T${String(index + 1).padStart(2, '0')}`, label: `Table ${index + 1}`, active: true })),
-  tableRanges: [[10, 29], [30, 39], [40, 49], [60, 69], [70, 79]].map(([start, end]) => ({ value: `${start}-${end}`, label: `${start}–${end}`, active: true, metadata: { tableRangeStart: start, tableRangeEnd: end } })),
+  tables: [],
+  tableRanges: [[20, 29], [30, 39], [40, 49], [60, 69], [70, 79]].map(([start, end]) => ({ value: `${start}-${end}`, label: `${start}–${end}`, active: true, metadata: { tableRangeStart: start, tableRangeEnd: end } })),
   walkInFields: walkInFieldSeeds
 }
 
@@ -55,12 +55,15 @@ export class BookingRepository {
       const result = await this.db.query<any>('select id, value, label, color, metadata, active, sort_order "sortOrder" from configuration_options where group_key=$1 order by sort_order, label', [groupKeys[group]])
       output[group] = result.rows.map(mapOption)
     }
-    const expanded = output.tableRanges.filter(option => option.active).flatMap(option => {
+    const expanded = new Map<number, ConfigOption>()
+    for (const option of output.tableRanges.filter(range => range.active)) {
       const start = Number(option.metadata?.tableRangeStart); const end = Number(option.metadata?.tableRangeEnd)
-      return Number.isInteger(start) && Number.isInteger(end) && start <= end && end - start <= 100 ? Array.from({ length: end - start + 1 }, (_, index) => ({ id: `${option.id}:${start + index}`, value: String(start + index), label: `Table ${start + index}`, active: true, metadata: { systemControlled: true } } as ConfigOption)) : []
-    })
-    const existingValues = new Set(output.tables.map(option => option.value))
-    output.tables = [...output.tables, ...expanded.filter(option => !existingValues.has(option.value))]
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start > end || end - start > 100) continue
+      for (let table = start; table <= end; table++) if (!expanded.has(table)) expanded.set(table, { id: `${option.id}:${table}`, value: String(table), label: `Table ${table}`, active: true, metadata: { systemControlled: true } })
+    }
+    // Legacy restaurant_tables rows remain stored for historical display, but only
+    // active range-derived numbers are valid choices for new assignments.
+    output.tables = [...expanded.entries()].sort(([left], [right]) => left - right).map(([, option]) => option)
     return output
   }
 
@@ -132,6 +135,10 @@ export class BookingRepository {
 
   async save(booking: BookingRecord, actor = 'Venue Manager'): Promise<BookingRecord> {
     const previous = await this.find(booking.id)
+    if (booking.tableNumber && booking.tableNumber !== previous?.tableNumber) {
+      const configured = await this.configuration()
+      if (!configured.tables.some(option => option.active && option.value === booking.tableNumber)) throw new Error('Select an active configured restaurant table.')
+    }
     if (booking.waiterId && booking.waiterId !== previous?.waiterId) {
       const waiter = await this.db.query<{ eligible: boolean }>("select coalesce((select (c.metadata->>'eligibleForAssignments')::boolean from configuration_options c where c.group_key='employment_statuses' and c.value=s.employment_status_key),s.employment_status_key='active') and coalesce((select (p.metadata->>'serviceAssignmentEligible')::boolean from configuration_options p where p.group_key='staff_positions' and p.value=s.position_key),lower(s.position_key) in ('venue manager','assistant restaurant manager','restaurant supervisor','f&b attendant','waiter')) eligible from staff s where s.id=$1", [booking.waiterId])
       if (!waiter.rows[0]) throw new Error('The selected waiter no longer exists.')

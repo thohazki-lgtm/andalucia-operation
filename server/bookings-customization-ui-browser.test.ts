@@ -4,6 +4,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+import { serviceDate } from '../src/service-date.js'
 
 const fixture = await createDisposableDevelopmentStore('bookings-customization-ui')
 const profile = join(fixture.root, 'edge-profile')
@@ -27,6 +28,8 @@ try {
   const owner = (await fixture.db.query<any>("select u.id from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
   assert.ok(owner)
   await fixture.db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
+  const liveDate = serviceDate(new Date())
+  await fixture.db.query("insert into bookings(id,guest_name,reservation_date,reservation_time,booking_status,covers,booking_source,room_number,table_number,booked_by,created_by,updated_by) values($1,'Active Range Guest',$2,'19:00','confirmed',2,'manual','220','20','UI Test','UI Test','UI Test'),($3,'Historical Range Guest',$2,'19:30','confirmed',2,'manual','221','T01','UI Test','UI Test','UI Test')", [randomUUID(), liveDate, randomUUID()])
   await fixture.db.close()
 
   const node = process.execPath
@@ -56,6 +59,7 @@ try {
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-types-panel')`)) break; await sleep(100) }
   await cdp.evaluate(`Array.from(document.querySelectorAll('.customization-category-nav button')).find(button=>button.textContent?.trim()==='Bookings')?.click()`)
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.booking-config-r2')`)) break; await sleep(100) }
+  for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.booking-status-config-row .protected-config')`)) break; await sleep(100) }
   await sleep(500)
 
   const baseline = await cdp.evaluate<any>(`({statuses:document.querySelectorAll('.booking-status-config-row').length,protected:document.querySelectorAll('.booking-status-config-row .protected-config').length,ranges:document.querySelectorAll('.table-range-row').length,walkInFields:document.querySelectorAll('.walk-in-field-row').length})`)
@@ -68,11 +72,11 @@ try {
   for (const width of [1440, 1024, 768, 430, 390, 360]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 940 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(180)
-    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.booking-config-r2');const panels=Array.from(root.querySelectorAll('.booking-config-section'));const status=panels[0],ranges=panels[1],walkIn=panels[2];const statusRows=Array.from(status.querySelectorAll('.booking-status-config-row'));const rangeRows=Array.from(ranges.querySelectorAll('.table-range-row'));const fieldRows=Array.from(walkIn.querySelectorAll('.walk-in-field-row'));const modes=Array.from(walkIn.querySelectorAll('.field-mode-control'));const actionButtons=Array.from(root.querySelectorAll('.compact-config-action'));return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rootOverflow:root.scrollWidth>root.clientWidth+1,columns:getComputedStyle(root).gridTemplateColumns.split(' ').length,panelBorders:panels.map(panel=>getComputedStyle(panel).borderColor),panelBackgrounds:panels.map(panel=>getComputedStyle(panel).backgroundColor),panelRadii:panels.map(panel=>getComputedStyle(panel).borderRadius),balanced:Math.abs(status.getBoundingClientRect().width-ranges.getBoundingClientRect().width)<2,statuses:statusRows.length,protected:status.querySelectorAll('.protected-config').length,ranges:rangeRows.length,walkInFields:fieldRows.length,statusHeights:statusRows.map(row=>Math.round(row.getBoundingClientRect().height)),rangeHeights:rangeRows.map(row=>Math.round(row.getBoundingClientRect().height)),walkInColumns:getComputedStyle(walkIn.querySelector('.walk-in-field-list')).gridTemplateColumns.split(' ').length,fieldHeights:fieldRows.map(row=>Math.round(row.getBoundingClientRect().height)),modeContained:modes.every(mode=>mode.scrollWidth<=mode.clientWidth+1),modeButtonHeights:Array.from(walkIn.querySelectorAll('.field-mode-control button')).map(button=>Math.round(button.getBoundingClientRect().height)),actionHeights:actionButtons.map(button=>Math.round(button.getBoundingClientRect().height)),swatchesPreserved:Array.from(status.querySelectorAll('.booking-config-swatch')).every(swatch=>getComputedStyle(swatch).backgroundColor!=='rgba(0, 0, 0, 0)')}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.booking-config-r2');const panels=Array.from(root.querySelectorAll('.booking-config-section'));const status=panels[0],ranges=panels[1],walkIn=panels[2];const statusRows=Array.from(status.querySelectorAll('.booking-status-config-row'));const rangeRows=Array.from(ranges.querySelectorAll('.table-range-row'));const fieldRows=Array.from(walkIn.querySelectorAll('.walk-in-field-row'));const modes=Array.from(walkIn.querySelectorAll('.field-mode-control'));const actionButtons=Array.from(root.querySelectorAll('.compact-config-action'));const verticalOffset=row=>{const identity=(row.matches('.table-range-row')?row.querySelector(':scope>span:first-child'):row.querySelector(':scope>b')).getBoundingClientRect(),actions=row.querySelector('.booking-config-row-actions').getBoundingClientRect();return Math.round(Math.abs((identity.top+identity.bottom)/2-(actions.top+actions.bottom)/2))};const mobileOffsets=[...statusRows,...rangeRows].map(verticalOffset);return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rootOverflow:root.scrollWidth>root.clientWidth+1,columns:getComputedStyle(root).gridTemplateColumns.split(' ').length,panelBorders:panels.map(panel=>getComputedStyle(panel).borderColor),panelBackgrounds:panels.map(panel=>getComputedStyle(panel).backgroundColor),panelRadii:panels.map(panel=>getComputedStyle(panel).borderRadius),balanced:Math.abs(status.getBoundingClientRect().width-ranges.getBoundingClientRect().width)<2,equalPanelHeights:Math.abs(status.getBoundingClientRect().height-ranges.getBoundingClientRect().height)<2,statuses:statusRows.length,protected:status.querySelectorAll('.protected-config').length,ranges:rangeRows.length,walkInFields:fieldRows.length,statusHeights:statusRows.map(row=>Math.round(row.getBoundingClientRect().height)),rangeHeights:rangeRows.map(row=>Math.round(row.getBoundingClientRect().height)),mobileOffsets,compactMobileRows:${width}>700||mobileOffsets.every(offset=>offset<5),walkInColumns:getComputedStyle(walkIn.querySelector('.walk-in-field-list')).gridTemplateColumns.split(' ').length,fieldHeights:fieldRows.map(row=>Math.round(row.getBoundingClientRect().height)),modeContained:modes.every(mode=>mode.scrollWidth<=mode.clientWidth+1),modeButtonHeights:Array.from(walkIn.querySelectorAll('.field-mode-control button')).map(button=>Math.round(button.getBoundingClientRect().height)),actionHeights:actionButtons.map(button=>Math.round(button.getBoundingClientRect().height)),swatchesPreserved:Array.from(status.querySelectorAll('.booking-config-swatch')).every(swatch=>getComputedStyle(swatch).backgroundColor!=='rgba(0, 0, 0, 0)')}})()`)
     assert.equal(result.overflow, false, `Page overflow at ${width}px.`)
     assert.equal(result.rootOverflow, false, `Bookings customization overflow at ${width}px.`)
     assert.equal(result.columns, width <= 900 ? 1 : 2)
-    if (width > 900) assert.equal(result.balanced, true)
+    if (width > 900) { assert.equal(result.balanced, true); assert.equal(result.equalPanelHeights, true) }
     assert.equal(result.panelBorders.every((value: string) => value === 'rgb(222, 197, 143)'), true, `${width}px panel borders: ${result.panelBorders.join(', ')}`)
     assert.equal(result.panelBackgrounds.every((value: string) => value === 'rgb(255, 253, 248)'), true)
     assert.equal(result.panelRadii.every((value: string) => value === '12px'), true)
@@ -85,6 +89,7 @@ try {
     assert.equal(result.modeButtonHeights.every((height: number) => height >= (width <= 700 ? 40 : 30)), true)
     assert.equal(result.actionHeights.every((height: number) => height >= (width <= 700 ? 44 : 36)), true, `${width}px action heights: ${result.actionHeights.join(', ')}`)
     assert.equal(result.swatchesPreserved, true)
+    assert.equal(result.compactMobileRows, true, `${width}px row offsets: ${result.mobileOffsets.join(', ')}`)
     responsive[String(width)] = result
     await cdp.evaluate(`document.querySelector('.booking-config-r2')?.scrollIntoView({block:'start'})`)
     await sleep(80)
@@ -106,9 +111,18 @@ try {
   assert.deepEqual(rangeModal.buttons, ['Cancel', 'Save'])
   await cdp.evaluate(`document.querySelector('.booking-config-modal .form-actions button')?.click()`)
 
+  await cdp.evaluate(`Array.from(document.querySelectorAll('.status-config-section button')).find(button=>button.textContent?.includes('Add Status'))?.click()`)
+  const desktopActiveAlignment = await cdp.evaluate<any>(`(()=>{const grid=document.querySelector('.booking-status-form-grid'),active=grid.querySelector('.compact-active-control'),code=Array.from(grid.querySelectorAll('label')).find(label=>label.textContent.includes('Internal Code'));return{topGap:Math.round(active.getBoundingClientRect().top-code.getBoundingClientRect().top),overflow:grid.scrollWidth>grid.clientWidth+1}})()`)
+  assert.ok(desktopActiveAlignment.topGap <= 2, `Desktop Active checkbox top gap was ${desktopActiveAlignment.topGap}px.`)
+  assert.equal(desktopActiveAlignment.overflow, false)
+  await cdp.evaluate(`document.querySelector('.booking-config-modal .form-actions button')?.click()`)
+
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 900, deviceScaleFactor: 1, mobile: false })
   await cdp.evaluate(`Array.from(document.querySelectorAll('.status-config-section button')).find(button=>button.textContent?.includes('Add Status'))?.click()`)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.booking-config-modal .booking-status-form-grid')`), true)
+  const activeAlignment = await cdp.evaluate<any>(`(()=>{const grid=document.querySelector('.booking-status-form-grid'),active=grid.querySelector('.compact-active-control'),code=Array.from(grid.querySelectorAll('label')).find(label=>label.textContent.includes('Internal Code'));return{verticalGap:Math.round(active.getBoundingClientRect().top-code.getBoundingClientRect().bottom),overflow:grid.scrollWidth>grid.clientWidth+1}})()`)
+  assert.ok(activeAlignment.verticalGap <= 12, `Mobile Active checkbox gap was ${activeAlignment.verticalGap}px.`)
+  assert.equal(activeAlignment.overflow, false)
   await cdp.evaluate(`(()=>{const input=document.querySelector('.booking-status-form-grid input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'Unsaved Status');input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
   await sleep(80)
   await cdp.evaluate(`window.confirm=()=>false;document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`)
@@ -116,8 +130,21 @@ try {
   await cdp.evaluate(`window.confirm=()=>true;document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`)
   await sleep(80)
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.booking-config-modal')`), false, 'Escape must dismiss after discard confirmation.')
+
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+  await cdp.evaluate(`document.querySelector('button[aria-label="Bookings"]')?.click()`)
+  for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('select[aria-label="Filter by table"]')&&!!document.querySelector('select[aria-label="Table for Active Range Guest"]')`)) break; await sleep(100) }
+  const tableOptions = await cdp.evaluate<any>(`(()=>{const values=select=>Array.from(select.options).map(option=>option.value);const labels=select=>Array.from(select.options).map(option=>option.textContent.trim());const filter=document.querySelector('select[aria-label="Filter by table"]');const active=document.querySelector('select[aria-label="Table for Active Range Guest"]');const historical=document.querySelector('select[aria-label="Table for Historical Range Guest"]');const expected=[...Array(10)].map((_,i)=>String(20+i)).concat([...Array(10)].map((_,i)=>String(30+i)),[...Array(10)].map((_,i)=>String(40+i)),[...Array(10)].map((_,i)=>String(60+i)),[...Array(10)].map((_,i)=>String(70+i)));return{filterValues:values(filter).slice(2),activeValues:values(active).slice(1),historicalValues:values(historical),historicalLabels:labels(historical),historicalSelected:historical.value,historicalDisabled:Array.from(historical.options).find(option=>option.value==='T01')?.disabled,expected,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+  assert.deepEqual(tableOptions.filterValues, tableOptions.expected)
+  assert.deepEqual(tableOptions.activeValues, tableOptions.expected)
+  assert.equal(tableOptions.filterValues.includes('T01'), false)
+  assert.equal(tableOptions.filterValues.includes('50'), false)
+  assert.equal(tableOptions.historicalSelected, 'T01')
+  assert.equal(tableOptions.historicalDisabled, true)
+  assert.equal(tableOptions.historicalLabels.includes('T01 · Historical'), true)
+  assert.equal(tableOptions.pageOverflow, false)
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ responsiveWidths: Object.keys(responsive), protectedStatusesPreserved: baseline.protected, screenshots: Object.keys(responsive).map(width => `artifacts/visual-validation/bookings-customization/bookings-customization-${width}.png`), runtimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ responsiveWidths: Object.keys(responsive), protectedStatusesPreserved: baseline.protected, rangeOnlyBookingTableOptions: true, historicalAssignmentVisible: true, screenshots: Object.keys(responsive).map(width => `artifacts/visual-validation/bookings-customization/bookings-customization-${width}.png`), runtimeErrors: cdp.errors.length }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }

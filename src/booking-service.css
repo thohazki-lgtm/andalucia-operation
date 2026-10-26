@@ -85,6 +85,27 @@
 .service-table{min-width:1010px}.service-table th:nth-child(3){width:180px}.service-table th:nth-child(9){width:190px}.service-table .service-actions{flex-wrap:nowrap;margin-top:5px}.service-table .service-actions button{padding:4px 6px;min-height:25px}.compact-operation-card{border-top:3px solid #bd9854;background:linear-gradient(135deg,#fffaf0,#fff)}.compact-operation-card .booking-detail{grid-template-columns:145px minmax(0,1fr)}.booking-source-evidence{overflow:hidden;border:1px solid #e1e8eb;border-radius:9px;background:#fff}.booking-source-evidence>summary{padding:13px 16px;color:#315167;font-size:11px;font-weight:800;cursor:pointer;list-style-position:inside}.booking-source-evidence[open]>summary{border-bottom:1px solid #e8edef}.booking-source-evidence .source-section{border:0;border-radius:0}.booking-detail-actions{position:sticky;bottom:-28px;background:#fff;padding-bottom:2px}
 @media(max-width:700px){.booking-guest-trigger.mobile{max-width:100%}.mobile-card-actions:empty{display:none}.compact-operation-card .booking-detail{grid-template-columns:1fr}.booking-source-evidence>summary{min-height:44px}.booking-detail-actions{bottom:-22px}.service-summary .warning small{color:#8c6728;font-weight:700}}
 
+/* Booking customization final alignment */
+.booking-config-r2{align-items:stretch}
+.booking-config-section{box-sizing:border-box}
+.status-config-section,.table-range-section{height:100%}
+.booking-status-form-grid .compact-active-control{align-self:start}
+@media(max-width:700px){
+  .booking-status-config-row{grid-template-columns:10px minmax(64px,1fr) auto;gap:5px;padding:7px}
+  .booking-status-config-row .booking-config-row-actions{grid-column:auto;justify-self:end}
+  .table-range-row{grid-template-columns:minmax(60px,1fr) auto;gap:5px;padding:7px}
+  .booking-status-form-grid .compact-active-control{margin-top:-10px!important}
+}
+@media(max-width:390px){
+  .table-range-row{grid-template-columns:minmax(60px,1fr) auto}
+  .table-range-row .booking-config-row-actions{grid-column:auto}
+  .booking-config-row-actions{gap:3px}
+  .booking-status-config-row .booking-config-row-actions{grid-template-columns:44px 32px 56px;gap:3px}
+  .booking-status-config-row .compact-state{width:44px}
+  .booking-status-config-row .compact-edit-action{width:32px}
+  .booking-status-config-row .protected-config{width:56px}
+}
+
 /* Final booking-table balance keeps operational controls visible on normal desktops. */
 .booking-table-wrap{max-width:100%;overflow-x:auto}
 .service-table{min-width:1000px}
