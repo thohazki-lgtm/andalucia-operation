@@ -8,11 +8,10 @@ const employeeList = workforce.match(/<div className="employee-entitlement-list"
 for (const heading of ['Service Year', 'Next Availability']) assert.ok(employeeList.includes(heading), `Missing compact entitlement header field: ${heading}`)
 for (const metric of ['Available', 'Used', 'Remaining', 'Accruing Next Year', 'Future Booked', 'Available After Booked']) assert.ok(employeeList.includes(metric), `Missing visible entitlement metric: ${metric}`)
 for (const removedMetric of ['Projected Balance', 'Additional Leave', 'Confirmed AL Used']) assert.ok(!employeeList.includes(removedMetric), `The compact entitlement list must not show ${removedMetric}.`)
-const manageActions = workforce.match(/<div className="entitlement-manage-menu">([\s\S]*?)<\/div>/)?.[1] || ''
-assert.equal((manageActions.match(/>Leave Balance</g) || []).length, 1, 'The Manage menu must contain Leave Balance exactly once.')
-assert.equal((manageActions.match(/<button/g) || []).length, 1, 'The Manage menu must contain exactly one action.')
-for (const removedAction of ['Carry Forward', 'Edit Year', 'Settings']) assert.ok(!manageActions.includes(`>${removedAction}<`), `The Manage menu must not expose ${removedAction}.`)
-assert.equal((employeeList.match(/<summary>Manage<\/summary>/g) || []).length, 1, 'Each rendered employee row must expose one Manage control.')
+assert.doesNotMatch(workforce, /Show inactive staff/, 'The Employee Entitlements view must not expose inactive-staff filtering.')
+assert.doesNotMatch(workforce, /<details className="entitlement-manage"/, 'Manage must open Leave Balance directly without a redundant menu.')
+assert.equal((employeeList.match(/className="entitlement-manage"/g) || []).length, 1, 'Each rendered employee row must expose one direct Manage button.')
+assert.match(employeeList, /className="entitlement-manage"[^>]*onClick=\{\(\) => setViewing\(item\)\}[^>]*>Manage<\/button>/, 'Manage must open the existing Leave Balance window directly.')
 assert.doesNotMatch(workforce, />Reconcile(?: Year)?</, 'The employee reconciliation action must be removed from desktop and mobile views.')
 assert.doesNotMatch(workforce, /Entitlement Reconciliation Preview/, 'The manager-facing reconciliation preview must be removed.')
 
@@ -20,7 +19,6 @@ assert.match(styles, /\.staff-entitlements-panel \.employee-entitlement-row\{dis
 assert.match(styles, /\.staff-entitlements-panel \.employee-entitlement-header\{display:grid;grid-template-columns:minmax\(170px,1\.15fr\)/, 'Desktop cards must keep identity, service-year context, and Manage in one header.')
 assert.match(styles, /\.staff-entitlements-panel \.employee-entitlement-metrics\{grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/, 'All six AL figures must share one desktop row.')
 assert.match(styles, /@media\(max-width:1050px\).*?\.staff-entitlements-panel \.employee-entitlement-metrics\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/s, 'Tablet cards must use three metric columns.')
-assert.match(styles, /\.entitlement-manage-menu\{position:absolute/, 'Existing actions must be consolidated in one Manage menu.')
 assert.doesNotMatch(styles, /entitlement-reconciliation-modal|reconciliation-lines|reconciliation-evidence/, 'Reconciliation-only presentation styles must be removed.')
 assert.match(styles, /@media\(max-width:700px\)/, 'Mobile breakpoint must remain available.')
 assert.match(styles, /@media\(max-width:700px\).*?\.staff-entitlements-panel \.employee-entitlement-metrics\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/s, 'Mobile entitlement cards must use two metric columns without overflow.')
@@ -53,7 +51,11 @@ assert.match(styles, /\.additional-entitlement-balances>div\{grid-template-colum
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.additional-entitlement-balances>div\{grid-template-columns:1fr\}/, 'Non-AL cards must stack on mobile.')
 assert.match(styles, /\.additional-entitlement-balances dl\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Each non-AL card must keep Entitled, Booked, and Balance in one row.')
 assert.match(styles, /\.additional-entitlement-balances article\{display:flex;min-height:96px/, 'Non-AL balance cards must use a compact, consistent height.')
-assert.match(styles, /\.balance-carry-forward-form\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(155px,\.48fr\) auto/, 'Carry Forward description, input, and review action must align compactly on desktop.')
+assert.match(styles, /\.balance-carry-forward-form\{grid-template-columns:minmax\(155px,1fr\) auto/, 'Carry Forward input and review action must align in one compact desktop row.')
+assert.doesNotMatch(balanceDialog, /Automatic Annual Leave remains calculated from Date of Joining\. Enter only manager-approved additional days\./, 'The redundant Carry Forward explanation must be removed.')
+assert.match(balanceDialog, /event\.target === event\.currentTarget/, 'Safe backdrop dismissal must remain explicit.')
+assert.match(balanceDialog, /event\.key === 'Escape'/, 'Escape dismissal must be supported.')
+assert.match(balanceDialog, /Discard the unsaved Carry Forward value\?/, 'Unsaved Carry Forward values must be protected before modal dismissal.')
 assert.match(styles, /\.modal\.entitlement-balance-modal>h2\{position:sticky/, 'The Leave Balance heading must remain visible while scrolling.')
 
 console.log(JSON.stringify({
