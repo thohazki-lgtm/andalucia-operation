@@ -40,6 +40,7 @@ const expectedLeaveRenewalRulesTestFixCheckpoint = '289f476a59724a1e20ecb67ddd82
 const expectedLeaveBalancePolishCheckpoint = 'df08221297fceb2cba302175d529f46c79860602'
 const expectedEmployeeEntitlementsFinalCleanupCheckpoint = 'f93628908b2a7820a4cd294213a17ff827387d7c'
 const expectedPublicHolidayCalendarCheckpoint = 'ae951424705563f8f9bde812d03fb3772b713d2b'
+const expectedBookingCustomizationCheckpoint = '160db95b49c8403dbbce423c1b268f8c03e1a2de'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -295,6 +296,9 @@ try {
   assert.match(resolverSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
   assert.match(approvalSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
   assert.match(activationSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedBookingCustomizationCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedBookingCustomizationCheckpoint))
+  assert.match(activationSource, new RegExp(expectedBookingCustomizationCheckpoint))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
@@ -346,6 +350,10 @@ try {
   assert.match(resolverSource, /approved_local_public_holiday_calendar/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_ACTIVATION/)
+  assert.match(resolverSource, /approved_local_booking_customization/)
+  assert.match(resolverSource, /server\/bookings-customization-ui-browser\.test\.ts/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_ACTIVATION/)
   assert.match(resolverSource, /server\/staff-repository\.ts/)
   assert.match(resolverSource, /server\/index\.ts/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT[^\n]+\*/)
