@@ -29,8 +29,8 @@ assert.match(styles, /@media\(max-width:700px\).*?\.staff-entitlements-panel \.e
 assert.match(workforce, /displayEntitlement\(serviceYear \? serviceYear\.availableLeave/, 'Available Leave rendering must preserve Unconfigured versus zero.')
 assert.match(workforce, /summary\?\.bookedFuture/, 'Booked/Future must remain separately rendered.')
 const offSummaryPosition = workforce.indexOf('OFF Days Summary')
-const annualLeavePosition = workforce.indexOf('aria-label="Yearly leave entitlement balances"')
-assert.ok(offSummaryPosition > 0 && offSummaryPosition < annualLeavePosition, 'OFF Days Summary must appear before Annual Leave balances.')
+const nonAnnualBalancePosition = workforce.indexOf('aria-label="Non-Annual Leave entitlement balances"')
+assert.ok(offSummaryPosition > 0 && offSummaryPosition < nonAnnualBalancePosition, 'OFF Days Summary must remain before the simplified non-AL balances.')
 for (const label of ['OFF Taken', 'Accumulated OFF', 'Available Balance', 'Weekly OFF Review', 'Required', 'Assigned', 'Difference', 'Status']) assert.ok(workforce.includes(label), `Missing OFF summary label: ${label}`)
 assert.match(workforce, /staffApi\.accumulatedOffBalance\(item\.staffId\)/, 'OFF summary must use the existing accumulated-OFF balance service.')
 assert.match(workforce, /weeklyOff\.status === 'pending' \? 'Pending'/, 'Incomplete weeks must render Pending.')
@@ -38,6 +38,16 @@ assert.match(workforce, /weeklyOff\.complete \?/, 'Incomplete weeks must not dis
 assert.match(styles, /\.off-days-summary\{[^}]*border:1px solid #dec58f[^}]*border-radius:12px/, 'OFF summary must use the approved gold card treatment.')
 assert.match(styles, /\.off-days-metrics\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'The three OFF figures must share one horizontal desktop row.')
 assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:7px/, 'Weekly OFF Review must remain compact.')
+const balanceDialog = workforce.match(/function EntitlementBalanceDialog[\s\S]*?\n\}/)?.[0] || ''
+assert.match(balanceDialog, /yearlyLeave\.filter\(line => line\.classification !== 'annualLeave'\)/, 'The duplicated Annual Leave card must be excluded from the Balance dialog.')
+assert.match(balanceDialog, /<dt>Entitled<\/dt>/)
+assert.match(balanceDialog, /<dt>Booked<\/dt>/)
+assert.match(balanceDialog, /<dt>Balance<\/dt>/)
+for (const removedMetric of ['Accrued', 'Carried Forward', 'Used', 'Available After Booked']) assert.ok(!balanceDialog.includes(`<dt>${removedMetric}</dt>`), `The Balance dialog must not render ${removedMetric}.`)
+assert.match(balanceDialog, /availableAfterBooked \?\? line\.remaining/, 'The simplified Balance must reuse the existing calculated post-booking balance with the existing remaining-balance fallback.')
+assert.match(styles, /\.additional-entitlement-balances>div\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Non-AL cards must use two desktop columns.')
+assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.additional-entitlement-balances>div\{grid-template-columns:1fr\}/, 'Non-AL cards must stack on mobile.')
+assert.match(styles, /\.additional-entitlement-balances dl\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Each non-AL card must keep Entitled, Booked, and Balance in one row.')
 
 console.log(JSON.stringify({
   compactEmployeeRows: true,
@@ -48,5 +58,7 @@ console.log(JSON.stringify({
   consolidatedManageActions: true,
   reconciliationUiRemoved: true,
   offDaysSummaryFirst: true,
+  duplicatedAnnualLeaveRemoved: true,
+  nonAnnualMetrics: ['Entitled', 'Booked', 'Balance'],
   rosterAuthoritativeOffBalance: true,
 }, null, 2))

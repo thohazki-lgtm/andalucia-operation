@@ -66,7 +66,7 @@
 .balance-annual-grid dl div,.weekly-balance dl div{padding:9px 6px;border-radius:6px;background:#f0f4f5;text-align:center}
 .balance-annual-grid dt,.weekly-balance dt{color:#718492;font-size:9px}
 .balance-annual-grid dd,.weekly-balance dd{margin:4px 0 0;color:#173d56;font-size:15px;font-weight:700}
-.additional-entitlement-balances{margin-top:14px}.additional-entitlement-balances>h3{margin:0;color:#173d56;font:700 16px 'Playfair Display',serif}.additional-entitlement-balances>p{margin:4px 0 10px;color:#718492;font-size:10px}.additional-entitlement-balances>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.additional-entitlement-balances article{padding:11px;border:1px solid #e1e8eb;border-radius:8px;background:#fafcfc}.additional-entitlement-balances article header{display:flex;align-items:center;gap:7px;color:#173d56}.additional-entitlement-balances article header b{display:grid;place-items:center;min-width:34px;min-height:28px;border-radius:5px;background:#173d56;color:#fff;font-size:10px}.additional-entitlement-balances article header span{font-size:11px;font-weight:700}.additional-entitlement-balances dl{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:9px 0 0}.additional-entitlement-balances dl div{padding:6px 4px;border-radius:5px;background:#f0f4f5;text-align:center}.additional-entitlement-balances dt{color:#718492;font-size:8px}.additional-entitlement-balances dd{margin:3px 0 0;color:#173d56;font-size:11px;font-weight:700}
+.additional-entitlement-balances{margin-top:14px}.additional-entitlement-balances>h3{margin:0;color:#173d56;font:700 16px 'Playfair Display',serif}.additional-entitlement-balances>p{margin:4px 0 10px;color:#718492;font-size:10px}.additional-entitlement-balances>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.additional-entitlement-balances article{padding:11px;border:1px solid #dec58f;border-radius:10px;background:#fffdf8}.additional-entitlement-balances article header{display:flex;align-items:center;gap:7px;padding-bottom:8px;border-bottom:1px solid rgba(222,197,143,.78);color:#173d56}.additional-entitlement-balances article header b{display:grid;place-items:center;min-width:34px;min-height:28px;border-radius:5px;background:#173d56;color:#fff;font-size:10px}.additional-entitlement-balances article header span{font-size:11px;font-weight:600}.additional-entitlement-balances dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:9px 0 0}.additional-entitlement-balances dl div{min-width:0;padding:7px 4px;border-radius:7px;background:#f8f2e7;text-align:center}.additional-entitlement-balances dt{color:#617988;font:500 9px/1.25 "DM Sans",sans-serif}.additional-entitlement-balances dd{margin:3px 0 0;color:#173d56;font:600 12px/1.25 "DM Sans",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .weekly-balance{margin-top:12px}
 .weekly-balance>div{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .weekly-balance>div small{color:#718492;font-size:10px}
@@ -143,20 +143,16 @@
 #entitlement-title~form .entitlement-fieldset:first-of-type legend::after{content:' · legacy policy settings';color:#8a6927;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
 .additional-entitlement-balances,.additional-entitlement-balances>div,.additional-entitlement-balances article{min-width:0}
 .additional-entitlement-balances>div{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-.additional-entitlement-balances article{padding:13px}
-.additional-entitlement-balances article:first-child{grid-column:1/-1;border-left:4px solid #b38b3a;background:#fffdf8}
-.additional-entitlement-balances article:first-child header::after{content:'Schema 022 service year';margin-left:auto;padding:4px 7px;border-radius:999px;background:#f1e6cb;color:#765a22;font-size:8px;font-weight:800;letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
+.additional-entitlement-balances article{padding:12px}
 .additional-entitlement-balances article header{min-width:0;flex-wrap:wrap}.additional-entitlement-balances article header span{min-width:0}
-.additional-entitlement-balances dl{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.additional-entitlement-balances dl{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .additional-entitlement-balances dl div{min-width:0}
 .additional-entitlement-balances dd{font-variant-numeric:tabular-nums;white-space:nowrap;overflow-wrap:normal}
 
 @media(max-width:700px){
   .modal.entitlement-edit-modal,.modal.entitlement-balance-modal{width:calc(100vw - 24px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:22px 18px}
   .additional-entitlement-balances>div{grid-template-columns:1fr}
-  .additional-entitlement-balances article:first-child{grid-column:auto}
-  .additional-entitlement-balances article:first-child header::after{white-space:normal;text-align:right}
-  .additional-entitlement-balances dl{grid-template-columns:1fr}
+  .additional-entitlement-balances dl{grid-template-columns:repeat(3,minmax(0,1fr))}
   #entitlement-title~form .entitlement-fieldset:first-of-type legend::after{display:block;margin-top:3px}
 }
 
