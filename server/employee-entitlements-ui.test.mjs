@@ -9,10 +9,9 @@ for (const heading of ['Service Year', 'Next Availability']) assert.ok(employeeL
 for (const metric of ['Available', 'Used', 'Remaining', 'Accruing Next Year', 'Future Booked', 'Available After Booked']) assert.ok(employeeList.includes(metric), `Missing visible entitlement metric: ${metric}`)
 for (const removedMetric of ['Projected Balance', 'Additional Leave', 'Confirmed AL Used']) assert.ok(!employeeList.includes(removedMetric), `The compact entitlement list must not show ${removedMetric}.`)
 const manageActions = workforce.match(/<div className="entitlement-manage-menu">([\s\S]*?)<\/div>/)?.[1] || ''
-for (const action of ['Balance', 'Carry Forward', 'Edit Year', 'Settings']) {
-  assert.equal((manageActions.match(new RegExp(`>${action}<`, 'g')) || []).length, 1, `The Manage menu must contain ${action} exactly once.`)
-}
-assert.equal((manageActions.match(/<button/g) || []).length, 4, 'The Manage menu must contain exactly four actions.')
+assert.equal((manageActions.match(/>Leave Balance</g) || []).length, 1, 'The Manage menu must contain Leave Balance exactly once.')
+assert.equal((manageActions.match(/<button/g) || []).length, 1, 'The Manage menu must contain exactly one action.')
+for (const removedAction of ['Carry Forward', 'Edit Year', 'Settings']) assert.ok(!manageActions.includes(`>${removedAction}<`), `The Manage menu must not expose ${removedAction}.`)
 assert.equal((employeeList.match(/<summary>Manage<\/summary>/g) || []).length, 1, 'Each rendered employee row must expose one Manage control.')
 assert.doesNotMatch(workforce, />Reconcile(?: Year)?</, 'The employee reconciliation action must be removed from desktop and mobile views.')
 assert.doesNotMatch(workforce, /Entitlement Reconciliation Preview/, 'The manager-facing reconciliation preview must be removed.')
@@ -39,6 +38,11 @@ assert.match(styles, /\.off-days-summary\{[^}]*border:1px solid #dec58f[^}]*bord
 assert.match(styles, /\.off-days-metrics\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'The three OFF figures must share one horizontal desktop row.')
 assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:7px/, 'Weekly OFF Review must remain compact.')
 const balanceDialog = workforce.match(/function EntitlementBalanceDialog[\s\S]*?\n\}/)?.[0] || ''
+assert.match(balanceDialog, /<AnnualLeaveCarryForwardSection item=\{item\}/, 'Carry Forward must be embedded in Leave Balance.')
+assert.ok(balanceDialog.indexOf('AnnualLeaveCarryForwardSection') > balanceDialog.indexOf('OFF Days Summary'), 'Carry Forward must appear directly after the OFF summary.')
+assert.match(workforce, /CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD/, 'Carry Forward confirmation protection must remain intact.')
+const employeeManager = workforce.match(/export function StaffEntitlementsManager[\s\S]*?\n\}/)?.[0] || ''
+assert.doesNotMatch(employeeManager, /<EntitlementForm|<YearlyEntitlementForm|AnnualLeaveCarryForwardForm/, 'Legacy entitlement edit workflows must not remain exposed in Employee Entitlements.')
 assert.match(balanceDialog, /yearlyLeave\.filter\(line => line\.classification !== 'annualLeave'\)/, 'The duplicated Annual Leave card must be excluded from the Balance dialog.')
 assert.match(balanceDialog, /<dt>Entitled<\/dt>/)
 assert.match(balanceDialog, /<dt>Booked<\/dt>/)
@@ -56,6 +60,8 @@ console.log(JSON.stringify({
   unconfiguredPreserved: true,
   serviceYearPresentationPreserved: true,
   consolidatedManageActions: true,
+  embeddedCarryForward: true,
+  legacyEditWorkflowsHidden: true,
   reconciliationUiRemoved: true,
   offDaysSummaryFirst: true,
   duplicatedAnnualLeaveRemoved: true,
