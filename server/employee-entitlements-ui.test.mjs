@@ -36,7 +36,7 @@ assert.match(workforce, /weeklyOff\.status === 'pending' \? 'Pending'/, 'Incompl
 assert.match(workforce, /weeklyOff\.complete \?/, 'Incomplete weeks must not display a shortage difference.')
 assert.match(styles, /\.off-days-summary\{[^}]*border:1px solid #dec58f[^}]*border-radius:12px/, 'OFF summary must use the approved gold card treatment.')
 assert.match(styles, /\.off-days-metrics\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'The three OFF figures must share one horizontal desktop row.')
-assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:7px/, 'Weekly OFF Review must remain compact.')
+assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:6px/, 'Weekly OFF Review must remain compact.')
 const balanceDialog = workforce.match(/function EntitlementBalanceDialog[\s\S]*?\n\}/)?.[0] || ''
 assert.match(balanceDialog, /<AnnualLeaveCarryForwardSection item=\{item\}/, 'Carry Forward must be embedded in Leave Balance.')
 assert.ok(balanceDialog.indexOf('AnnualLeaveCarryForwardSection') > balanceDialog.indexOf('OFF Days Summary'), 'Carry Forward must appear directly after the OFF summary.')
@@ -52,6 +52,9 @@ assert.match(balanceDialog, /availableAfterBooked \?\? line\.remaining/, 'The si
 assert.match(styles, /\.additional-entitlement-balances>div\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Non-AL cards must use two desktop columns.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.additional-entitlement-balances>div\{grid-template-columns:1fr\}/, 'Non-AL cards must stack on mobile.')
 assert.match(styles, /\.additional-entitlement-balances dl\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Each non-AL card must keep Entitled, Booked, and Balance in one row.')
+assert.match(styles, /\.additional-entitlement-balances article\{display:flex;min-height:96px/, 'Non-AL balance cards must use a compact, consistent height.')
+assert.match(styles, /\.balance-carry-forward-form\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(155px,\.48fr\) auto/, 'Carry Forward description, input, and review action must align compactly on desktop.')
+assert.match(styles, /\.modal\.entitlement-balance-modal>h2\{position:sticky/, 'The Leave Balance heading must remain visible while scrolling.')
 
 console.log(JSON.stringify({
   compactEmployeeRows: true,
