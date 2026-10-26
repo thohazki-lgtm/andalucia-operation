@@ -213,42 +213,38 @@ export function GuestOccasionConfigurationManager({ configuration, onSave }: { c
     return (left.sortOrder ?? 100) - (right.sortOrder ?? 100) || left.label.localeCompare(right.label)
   })
   const workflow = configuration.statuses.filter(option => option.active && ['attention', 'prepared', 'completed'].includes(String(option.metadata?.occasionWorkflow)))
-  return <section className="panel occasion-config">
+  return <section className="panel occasion-config guest-experience-config">
 <div className="panel-title">
 <div>
 <p className="eyebrow">GUEST EXPERIENCE CONFIGURATION</p>
-<h3>Customize presentation and operational workflow</h3>
-<p className="occasion-config-subtitle">Detection rules are protected.</p>
+<h3>Guest Experience</h3>
+<p className="occasion-config-subtitle">Manage guest presentation and service workflow. Detection rules remain protected.</p>
 </div>
 </div>
 <div className="occasion-config-grid">
 <div className="occasion-config-card">
 <div className="occasion-config-heading">
-<div><h4>Guest Types</h4><p>Colors apply consistently across Guest Experience.</p></div>
-<button className="primary compact" onClick={() => setEditing({ group: 'types', option: { id: crypto.randomUUID(), value: '', label: '', color: '#1b6288', active: true, metadata: { manualOnly: true, defaultStatus: configuration.statuses.find(status => status.active)?.value } } })}>Add manual type</button>
+<div><p className="eyebrow">CLASSIFICATION</p><h4>Guest Types</h4><p>Display colors apply consistently across Guest Experience.</p></div>
+<ActionButton variant="primary" compact icon="add" onClick={() => setEditing({ group: 'types', option: { id: crypto.randomUUID(), value: '', label: '', color: '#1b6288', active: true, metadata: { manualOnly: true, defaultStatus: configuration.statuses.find(status => status.active)?.value } } })}>Add Type</ActionButton>
 </div>{types.map(option => { const protectedType = Boolean(option.metadata?.systemControlled); return <div className={`occasion-config-row ${protectedType ? 'protected' : 'manual'}`} key={option.id}>
-<div>
-<b>
-<span className="status-dot" style={{ background: option.color }}>
-</span>{protectedType && <span className="config-lock" aria-label="Protected type" title="Protected type">🔒</span>}{option.label}</b>
-{!protectedType && <small>Manual guest type</small>}
+<div className="occasion-config-identity">
+<span className="occasion-config-swatch" style={{ background: option.color }} aria-label={`${option.label} color`} />
+<span><b>{option.label}</b><small>{protectedType ? 'Automatic classification' : 'Manual guest type'}</small></span>
 </div>
-{protectedType ? <span className="config-protected-state">Protected</span> : <span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Archived'}</span>}
-<button className="link" onClick={() => setEditing({ group: 'types', option })}>{protectedType ? 'Edit color' : 'Edit'}</button>
-{!protectedType && <button className="link" onClick={() => void onSave('types', { ...option, active: !option.active })}>{option.active ? 'Archive' : 'Restore'}</button>}
+{protectedType ? <span className="config-protected-state"><span aria-hidden="true">◆</span> Protected</span> : <span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Archived'}</span>}
+<div className="occasion-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'types', option })}>{protectedType ? 'Edit Color' : 'Edit'}</ActionButton>
+{!protectedType && <ActionButton compact icon={option.active ? 'archive' : 'restore'} onClick={() => void onSave('types', { ...option, active: !option.active })}>{option.active ? 'Archive' : 'Restore'}</ActionButton>}</div>
 </div>})}</div>
 <div className="occasion-config-card">
 <div className="occasion-config-heading">
-<div><h4>Workflow</h4><p>Attention → Prepared → Completed</p></div>
+<div><p className="eyebrow">SERVICE LIFECYCLE</p><h4>Workflow</h4><p>Attention → Prepared → Completed</p></div>
 </div>{workflow.map(option => <div className="occasion-config-row workflow" key={option.id}>
-<div>
-<b>
-<span className="status-dot" style={{ background: option.color }}>
-</span>{option.label}</b>
-<small>{option.metadata?.occasionWorkflow === 'attention' ? 'Requires action' : option.metadata?.occasionWorkflow === 'prepared' ? 'Handled and ready' : option.metadata?.occasionWorkflow === 'completed' ? 'Delivered / closed' : 'Historical status'}</small>
+<div className="occasion-config-identity">
+<span className="occasion-config-swatch" style={{ background: option.color }} aria-label={`${option.label} color`} />
+<span><b>{option.label}</b><small>{option.metadata?.occasionWorkflow === 'attention' ? 'Requires action' : option.metadata?.occasionWorkflow === 'prepared' ? 'Handled and ready' : option.metadata?.occasionWorkflow === 'completed' ? 'Delivered / closed' : 'Historical status'}</small></span>
 </div>
-<span className="config-protected-state">Protected</span>
-<button className="link" onClick={() => setEditing({ group: 'statuses', option })}>Edit color</button>
+<span className="config-protected-state"><span aria-hidden="true">◆</span> Protected</span>
+<div className="occasion-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'statuses', option })}>Edit Color</ActionButton></div>
 </div>)}</div>
 </div>{editing && <GuestOccasionConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}</section>
 }
@@ -257,15 +253,17 @@ function GuestOccasionConfigForm({ group, option, onClose, onSave }: { group: 't
   const [form, setForm] = useState(option); const [error, setError] = useState('')
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.label.trim()) return setError('Name is required.'); try { await onSave({ ...form, label: form.label.trim() }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save occasion configuration.') } }
   const protectedEditor = group === 'statuses' || Boolean(option.metadata?.systemControlled)
-  return <OccasionModal title={group === 'types' ? option.value ? `Edit ${option.label}` : 'Add Manual Guest Type' : `Edit ${option.label}`} onClose={onClose}>
-<form className="staff-form" onSubmit={event => void submit(event)}>
+  const dirty = JSON.stringify(form) !== JSON.stringify(option)
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved configuration changes?')) onClose() }
+  return <OccasionModal title={group === 'types' ? option.value ? `Edit ${option.label}` : 'Add Manual Guest Type' : `Edit ${option.label}`} className="guest-config-modal" dismissOnBackdrop dismissOnEscape onClose={requestClose}>
+<form className="staff-form guest-config-form" onSubmit={event => void submit(event)}>
 {protectedEditor ? <label>{group === 'types' ? 'Guest type' : 'Workflow status'}<input value={form.label} readOnly aria-readonly="true" /></label> : <label>Name<input value={form.label} onChange={event => setForm({ ...form, label: event.target.value })} /></label>}
-<label>Display color<input type="color" value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />
+<label className="guest-config-color">Display color<input type="color" value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />
 </label>{protectedEditor ? <p className="drawer-help">This system definition is protected. Only its display color can be changed.</p> : <p className="drawer-help">Manual guest types are available only for manager-created records and cannot alter source interpretation.</p>}
 {group === 'types' && !protectedEditor && <label className="check-label">
 <input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>}{error && <p className="save-error">{error}</p>}<div className="form-actions">
-<button type="button" className="secondary" onClick={onClose}>Cancel</button>
-<button className="primary">Save configuration</button>
+<ActionButton onClick={requestClose}>Cancel</ActionButton>
+<ActionButton type="submit" variant="primary" icon="save">Save Configuration</ActionButton>
 </div>
 </form>
 </OccasionModal>

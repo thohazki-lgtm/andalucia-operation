@@ -59,9 +59,9 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3002' }, stdio: 'inherit' }))
-  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3002' }, stdio: 'inherit' }))
-  await Promise.all([waitFor('http://127.0.0.1:3002/api/health'), waitFor('http://127.0.0.1:5174/')])
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '33002' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '33002' }, stdio: 'inherit' }))
+  await Promise.all([waitFor('http://127.0.0.1:33002/api/health'), waitFor('http://127.0.0.1:5174/')])
 
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--edge-skip-compat-layer-relaunch', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' })
   processes.push(edge)
@@ -243,8 +243,34 @@ try {
     assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.occasion-drawer')`), true)
     results.push({ viewport: viewport.name, ...result })
   }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Customization Center"]');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 40; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.customization-category-nav')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.customization-category-nav button')).find(node=>node.textContent?.trim()==='Guest Experience');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 40; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.guest-experience-config')`)) break; await sleep(100) }
+  const customizationResults: Array<Record<string, unknown>> = []
+  for (const width of [1440, 1024, 768, 430, 390, 360]) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 860 : 920, deviceScaleFactor: 1, mobile: false })
+    await sleep(120)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.guest-experience-config');const grid=document.querySelector('.occasion-config-grid');const cards=Array.from(document.querySelectorAll('.occasion-config-card'));const rows=Array.from(document.querySelectorAll('.occasion-config-row'));const actions=Array.from(document.querySelectorAll('.occasion-config-actions button'));const first=cards[0]?.getBoundingClientRect();const second=cards[1]?.getBoundingClientRect();return{width:innerWidth,headings:cards.map(card=>card.querySelector('h4')?.textContent?.trim()),cardCount:cards.length,rowCount:rows.length,columns:getComputedStyle(grid).gridTemplateColumns,twoPanel:first&&second?Math.abs(first.top-second.top)<2&&second.left>first.left:false,singlePanel:first&&second?second.top>first.bottom:false,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rootOverflow:root.scrollWidth>root.clientWidth+1,minActionHeight:Math.min(...actions.map(node=>Math.round(node.getBoundingClientRect().height))),goldCards:cards.every(card=>getComputedStyle(card).borderColor==='rgb(222, 197, 143)'),ivorySurface:getComputedStyle(root).backgroundColor==='rgb(255, 253, 248)',protectedCount:root.querySelectorAll('.config-protected-state').length,swatches:root.querySelectorAll('.occasion-config-swatch').length}})()`)
+    assert.deepEqual(result.headings, ['Guest Types', 'Workflow'])
+    const resultMessage = `Guest Experience customization at ${width}px: ${JSON.stringify(result)}`
+    assert.equal(result.cardCount, 2, resultMessage); assert.ok(result.rowCount >= 10, resultMessage); assert.equal(result.pageOverflow, false, resultMessage); assert.equal(result.rootOverflow, false, resultMessage); assert.equal(result.goldCards, true, resultMessage); assert.equal(result.ivorySurface, true, resultMessage); assert.ok(result.protectedCount >= 10, resultMessage); assert.equal(result.swatches, result.rowCount, resultMessage)
+    if (width > 1024) assert.equal(result.twoPanel, true, `Expected desktop two-panel layout at ${width}px: ${JSON.stringify(result)}`)
+    else assert.equal(result.singlePanel, true, `Expected responsive single-column layout at ${width}px: ${JSON.stringify(result)}`)
+    if (width <= 430) assert.ok(result.minActionHeight >= 44)
+    const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: true })
+    await writeFile(join(output, `guest-experience-customization-${width}.png`), Buffer.from(screenshot.data, 'base64'))
+    customizationResults.push(result)
+  }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.occasion-config-row.protected button')).find(node=>node.textContent?.includes('Edit Color'));if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 20; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.guest-config-modal')`)) break; await sleep(50) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const modal=document.querySelector('.guest-config-modal');const input=modal?.querySelector('input[type=color]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'#123456');input.dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;document.querySelector('.modal-backdrop')?.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return true})()`), true)
+  await sleep(80); assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.guest-config-modal')`), true)
+  await cdp.evaluate(`window.confirm=()=>true;window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`)
+  for (let attempt = 0; attempt < 20; attempt++) { if (await cdp.evaluate<boolean>(`!document.querySelector('.guest-config-modal')`)) break; await sleep(50) }
+  assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.guest-config-modal')`), true)
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ status: 'PASS', isolated: true, sevenProtectedTypesRendered: true, distinctAttentionAndOccasionSections: true, sourceColumnHiddenFromDesktopTable: true, attentionViewColumnRemoved: true, attentionGuestNamesOpenDetails: true, allergyAndTlcRendered: true, occasionPlusAttentionGuestValidated: true, exactDietaryEvidencePreserved: true, longOccasionPillsReadable: true, mobileDateHeaderResponsive: true, dateNavigationAndPickerFunctional: true, addManualAccessible: true, managerEditRefreshPersistence: true, completionRefreshPersistence: true, approvedOccasionDetailsPreserved: true, technicalMetadataHidden: true, actionsAccessible: true, allRequestedWidths: true, screenshots: ['artifacts/guest-occasions-mobile-tab-fix/guest-occasions-after-desktop-1440.png', 'artifacts/guest-occasions-mobile-tab-fix/guest-occasions-after-mobile-390.png', 'artifacts/guest-occasions-mobile-tab-fix/guest-occasion-details-after-mobile-390.png'], results, consoleErrors: cdp.errors, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', isolated: true, sevenProtectedTypesRendered: true, distinctAttentionAndOccasionSections: true, sourceColumnHiddenFromDesktopTable: true, attentionViewColumnRemoved: true, attentionGuestNamesOpenDetails: true, allergyAndTlcRendered: true, occasionPlusAttentionGuestValidated: true, exactDietaryEvidencePreserved: true, longOccasionPillsReadable: true, mobileDateHeaderResponsive: true, dateNavigationAndPickerFunctional: true, addManualAccessible: true, managerEditRefreshPersistence: true, completionRefreshPersistence: true, approvedOccasionDetailsPreserved: true, technicalMetadataHidden: true, actionsAccessible: true, allRequestedWidths: true, guestExperienceCustomization: { responsive: true, protectedTypesRetained: true, safeDismissal: true, results: customizationResults }, screenshots: ['artifacts/guest-occasions-mobile-tab-fix/guest-experience-customization-1440.png', 'artifacts/guest-occasions-mobile-tab-fix/guest-experience-customization-390.png'], results, consoleErrors: cdp.errors, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   socket?.close()
   for (const child of processes.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() }

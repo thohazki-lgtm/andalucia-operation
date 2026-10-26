@@ -42,37 +42,35 @@
 .linked-booking-note{margin:10px 0;color:#55707f;font-size:12px;background:#edf5f7;border-radius:8px;padding:9px 11px}
 .occasion-detail{display:grid;grid-template-columns:155px 1fr;gap:11px 18px}
 .occasion-detail span{color:#6d7d86}
-.occasion-config{margin-top:18px}
-.occasion-config-subtitle{margin:5px 0 0;color:#627680;font-size:12px;line-height:1.45}
-.occasion-config-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:18px;align-items:start}
-.occasion-config-card{min-width:0;border:1px solid #e2e9ed;border-radius:12px;background:#fff;padding:16px;align-self:start}
-.occasion-config-heading{justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
-.occasion-config-heading h4{margin:0;color:#294858;font-size:15px}
-.occasion-config-heading p{margin:4px 0 0;color:#6a7c86;font-size:11px;line-height:1.45}
-.occasion-config-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e4ebef;min-width:0}
-.occasion-config-row:last-child{border-bottom:0}
-.occasion-config-row b,.occasion-config-row small{display:block}
-.occasion-config-row b{min-width:0;color:#294858;font-size:13px;overflow-wrap:anywhere}
-.occasion-config-row small{margin-top:3px;color:#75858e;font-size:11px}
-.occasion-config-row .status-dot{display:inline-block;margin-right:8px}
-.config-lock{display:inline-block;margin-right:5px;font-size:11px;line-height:1;vertical-align:1px}
-.config-protected-state{color:#657985;font-size:11px;font-weight:600;white-space:nowrap}
-.occasion-config-row .link{min-height:40px;padding-inline:8px;white-space:nowrap}
+.panel.occasion-config{margin-top:12px;padding:14px;border:1px solid #dec58f;border-radius:12px;background:#fffdf8;font-family:'DM Sans',sans-serif}
+.occasion-config>.panel-title{margin-bottom:12px;padding:0 2px 10px;border-bottom:1px solid #eadfca}
+.occasion-config>.panel-title h3{margin:2px 0 0;color:#173d56;font:600 19px/1.25 'Playfair Display',serif}
+.occasion-config-subtitle{margin:4px 0 0;color:#627680;font-size:11.5px;font-weight:400;line-height:1.4}
+.occasion-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.occasion-config-card{min-width:0;border:1px solid #dec58f;border-radius:11px;background:linear-gradient(180deg,#fffaf0 0,#fffdf8 70px,#fff 100%);padding:12px;align-self:stretch}
+.occasion-config-heading{min-height:48px;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 0 9px;border-bottom:1px solid #dec58f;flex-wrap:nowrap}
+.occasion-config-heading>div{min-width:0}.occasion-config-heading .eyebrow{margin:0 0 2px;color:#a17b35;font-size:8.5px;font-weight:700;letter-spacing:.1em}.occasion-config-heading h4{margin:0;color:#173d56;font:600 16px/1.25 'Playfair Display',serif}.occasion-config-heading p:not(.eyebrow){margin:2px 0 0;color:#6a7c86;font-size:10.5px;font-weight:400;line-height:1.35}.occasion-config-heading .ao-action{flex:0 0 auto;min-height:36px;margin-left:10px}
+.occasion-config-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eadfca;min-width:0}.occasion-config-row:last-child{border-bottom:0}
+.occasion-config-identity{display:flex;min-width:0;align-items:center;gap:9px}.occasion-config-identity>span:last-child{min-width:0}.occasion-config-row b,.occasion-config-row small{display:block}.occasion-config-row b{min-width:0;color:#173d56;font-size:12.5px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}.occasion-config-row small{margin-top:2px;color:#75858e;font-size:10px;font-weight:400;line-height:1.3}
+.occasion-config-swatch{box-sizing:border-box;display:block;width:22px;height:22px;flex:0 0 22px;border:1px solid #bd9854;border-radius:7px;box-shadow:inset 0 0 0 2px #ffffff80}.config-protected-state{display:inline-flex;align-items:center;gap:4px;color:#657985;font-size:10px;font-weight:600;white-space:nowrap}.config-protected-state span{color:#b38b3a;font-size:8px}
+.occasion-config-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px}.occasion-config-actions .ao-action{min-height:34px;padding:6px 8px;font-size:10.5px;white-space:nowrap}.occasion-config-actions .ao-icon{width:15px;height:15px}
+.guest-config-modal{box-sizing:border-box;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid #dec58f;border-top:3px solid #bd9854;border-radius:12px;background:#fffdf8;padding:16px}.guest-config-modal>h2{margin:0 42px 12px 0;padding-bottom:10px;border-bottom:1px solid #dec58f;color:#173d56;font:600 19px/1.25 'Playfair Display',serif}.guest-config-form{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:10px 12px}.guest-config-form label{margin:0;color:#4f6978;font-size:11px;font-weight:600}.guest-config-form input{box-sizing:border-box;width:100%;min-height:40px;margin-top:5px;border:1px solid #dec58f;border-radius:9px;background:#fff;color:#173d56;font:500 13px/1.3 'DM Sans',sans-serif}.guest-config-form input:focus-visible{outline:2px solid #bd9854;outline-offset:1px}.guest-config-form .guest-config-color input{height:40px;padding:4px 6px;cursor:pointer}.guest-config-form .drawer-help,.guest-config-form .check-label,.guest-config-form .save-error,.guest-config-form .form-actions{grid-column:1/-1}.guest-config-form .drawer-help{margin:0;padding:8px 10px;border:1px solid #eadfca;border-radius:8px;background:#fffaf0;color:#627680;font-size:10.5px;line-height:1.4}.guest-config-form .check-label{display:flex;min-height:40px;align-items:center;gap:8px}.guest-config-form .check-label input{width:18px;min-height:18px;height:18px;margin:0}.guest-config-form .form-actions{display:flex;justify-content:flex-end;gap:8px;margin:2px 0 0;padding-top:10px;border-top:1px solid #dec58f}.guest-config-form .form-actions .ao-action{min-height:40px}
 .occasion-drawer-backdrop{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,31,43,.38);backdrop-filter:blur(2px)}.occasion-drawer{display:flex;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);flex-direction:column;overflow:hidden;border:1px solid #dec58f;border-top:3px solid #bd9854;border-radius:14px;background:#fff;box-shadow:0 22px 60px rgba(20,48,63,.24);color:#294b61;animation:occasion-drawer-in .16s ease-out}.occasion-drawer>header{display:block;flex:none;margin:0;padding:16px 20px 14px;border-bottom:1px solid #dec58f;background:linear-gradient(110deg,#fffaf0 0%,#fffdf8 70%,#fff 100%)}.occasion-drawer>header>div{min-width:0}.occasion-drawer>header h2{margin:2px 0 8px;color:#173d56;font-size:22px;line-height:1.18}.occasion-drawer-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-height:0;overflow-y:auto;padding:12px;background:#f8f5ee;overscroll-behavior:contain}.occasion-drawer>footer{display:flex;flex:none;justify-content:flex-end;gap:8px;padding:11px 14px;border-top:1px solid #dec58f;background:#fffaf0;flex-wrap:wrap}.drawer-section{min-width:0;padding:11px 12px;border:1px solid #dec58f;border-radius:8px;background:#fff}.drawer-section-wide{grid-column:1/-1}.drawer-section h3{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid #eadfca;color:#506a78;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.drawer-section>div{display:grid;gap:6px}.drawer-detail{display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;align-items:start}.drawer-detail span{color:#71818a;font-size:11px}.drawer-detail b{color:#173d56;font-size:12px;font-weight:650;overflow-wrap:anywhere}.occasion-alert-copy{margin:0;border-left:3px solid #b38b3a;border-radius:0 7px 7px 0;background:#fff9ed;padding:9px 11px;color:#59461f;font-size:11.5px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}.occasion-alert-copy.danger{border-left-color:#b74b45;background:#fff4f2;color:#6f302b}.attention-detail-type{display:inline-flex;min-height:28px;align-items:center;padding:5px 10px}.drawer-help{margin:0 0 10px;color:#627680;font-size:12px;line-height:1.5}@keyframes occasion-drawer-in{from{transform:translateY(12px);opacity:.7}to{transform:translateY(0);opacity:1}}
-@media(max-width:1000px){.occasion-config-grid{grid-template-columns:1fr}
+@media(max-width:1024px){.occasion-config-grid{grid-template-columns:1fr}
 .occasion-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
 .occasion-toolbar{flex-wrap:wrap}.occasion-date-controls{flex:1 1 360px}.occasion-date-summary{margin-left:auto}
 }
 @media(max-width:700px){.guest-occasions-page-header{margin-bottom:8px}.guest-occasions-page-header h1{font-size:23px}.occasion-form-grid{grid-template-columns:1fr}
 .occasion-summary{grid-template-columns:1fr}
 .occasion-toolbar{display:grid;grid-template-columns:44px repeat(4,minmax(0,1fr)) 44px;gap:7px;margin-bottom:12px;padding:8px;align-items:stretch}.occasion-toolbar>div{display:contents}.occasion-date-previous{grid-column:1;grid-row:1}.occasion-date-picker{grid-column:2/6;grid-row:1;min-width:0}.occasion-date-next{grid-column:6;grid-row:1}.occasion-date-today{grid-column:1/4;grid-row:2}.occasion-add-manual{grid-column:4/7;grid-row:2;width:100%}.occasion-toolbar :is(.occasion-date-previous,.occasion-date-today,.occasion-date-next,.occasion-add-manual){min-width:0;min-height:44px;justify-content:center;padding-inline:7px}.occasion-date-picker .ao-date-control input{height:44px;min-height:44px;padding:7px 36px 7px 14px;text-align:center;font-size:12px;font-weight:650}.occasion-date-picker .ao-date-control__icon{right:10px;color:#173d56}
-.occasion-config-card{padding:13px}
-.occasion-config-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
-.occasion-config-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}
-.occasion-config-row>div{grid-column:1/-1}
+.panel.occasion-config{padding:10px}.occasion-config>.panel-title{margin-bottom:10px}.occasion-config-card{padding:10px}
+.occasion-config-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;min-height:0;align-items:center}
+.occasion-config-heading .ao-action__label{font-size:0}.occasion-config-heading .ao-action__label::after{content:'Add';font-size:10.5px}
+.occasion-config-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 8px;padding:8px 0}
+.occasion-config-row>.occasion-config-identity{grid-column:1/-1}
 .occasion-config-row .config-protected-state,.occasion-config-row .badge{justify-self:start}
-.occasion-config-row .link{justify-self:end;min-height:44px}
-.occasion-config-row.manual .link:last-child{grid-column:2}
+.occasion-config-actions{grid-column:2;justify-self:end;flex-wrap:wrap}.occasion-config-actions .ao-action{min-height:44px}
+.guest-config-modal{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:13px}.guest-config-form{grid-template-columns:1fr}.guest-config-form>*{grid-column:1}.guest-config-form .form-actions{display:grid;grid-template-columns:1fr 1fr}.guest-config-form .form-actions .ao-action{width:100%;min-width:0;min-height:44px}
 }
 @media(max-width:1050px) and (min-width:701px){.occasion-tabs{display:flex}.occasion-tabs button{flex:0 0 150px}.occasion-table{min-width:840px}.occasion-table th,.occasion-table td{padding:10px 9px}.occasion-table th:first-child,.occasion-table td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:8px 0 12px -12px #173d56}.occasion-table th:first-child{z-index:3;background:#fffaf0}}
 @media(min-width:1200px){.occasion-table,.attention-table{min-width:100%}}

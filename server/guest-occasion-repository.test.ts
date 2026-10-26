@@ -12,7 +12,9 @@ const waiterOne = randomUUID(); const waiterTwo = randomUUID()
 await db.query('insert into staff (id, staff_number, full_name, position_key, employment_status_key, join_date) values ($1,$2,$3,$4,$5,$6),($7,$8,$9,$10,$11,$12)', [waiterOne, 'OCC-001', 'Occasion Waiter One', 'Waiter', 'active', '2026-01-01', waiterTwo, 'OCC-002', 'Occasion Waiter Two', 'Waiter', 'active', '2026-01-01'])
 const bookings = new BookingRepository(db); await bookings.initialize()
 const occasions = new GuestOccasionRepository(db); await occasions.initialize()
-const booking = (guestName: string, notes: string, time: string): BookingRecord => ({ id: randomUUID(), guestName, roomNumber: '201', birthDate: null, arrivalDate: null, departureDate: null, mealPeriod: 'Dinner', reservationDate: '2026-09-02', reservationTime: time, bookingNumber: `OCC-${time.replace(':', '')}`, covers: 2, bookingStatus: 'confirmed', bookingSource: 'manual', bookedBy: 'Test', guestNotes: notes, tableNumber: 'T01', waiterId: waiterOne, waiter: null, importSource: 'manual' })
+const configuredTables = (await bookings.configuration()).tables
+assert.ok(configuredTables.length >= 2)
+const booking = (guestName: string, notes: string, time: string): BookingRecord => ({ id: randomUUID(), guestName, roomNumber: '201', birthDate: null, arrivalDate: null, departureDate: null, mealPeriod: 'Dinner', reservationDate: '2026-09-02', reservationTime: time, bookingNumber: `OCC-${time.replace(':', '')}`, covers: 2, bookingStatus: 'confirmed', bookingSource: 'manual', bookedBy: 'Test', guestNotes: notes, tableNumber: configuredTables[0].value, waiterId: waiterOne, waiter: null, importSource: 'manual' })
 
 const honeymoonBooking = await bookings.save(booking('Honeymoon Guest', 'Please prepare a honeymoon table.', '18:00'))
 const firstDetection = await occasions.detectForBooking(honeymoonBooking.id)
@@ -22,9 +24,9 @@ assert.match(firstDetection[0].sourceText, /matched “honeymoon”/i)
 assert.equal((await occasions.detectForBooking(honeymoonBooking.id)).length, 0)
 assert.equal((await occasions.list('2026-09-02')).filter(item => item.bookingId === honeymoonBooking.id).length, 1)
 
-await bookings.save({ ...honeymoonBooking, reservationTime: '18:15', tableNumber: 'T02', waiterId: waiterTwo })
+await bookings.save({ ...honeymoonBooking, reservationTime: '18:15', tableNumber: configuredTables[1].value, waiterId: waiterTwo })
 const linked = (await occasions.list('2026-09-02')).find(item => item.bookingId === honeymoonBooking.id)!
-assert.equal(linked.tableNumber, 'T02')
+assert.equal(linked.tableNumber, configuredTables[1].value)
 assert.equal(linked.waiterId, waiterTwo)
 assert.equal(linked.reservationTime, '18:15')
 
