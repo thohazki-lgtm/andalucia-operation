@@ -36,6 +36,7 @@ param(
   [string]$BookingCustomizationCheckpointSha,
   [string]$BookingAlignmentCheckpointSha,
   [string]$TrainingCustomizationCheckpointSha,
+  [string]$GuestExperienceCustomizationCheckpointSha,
   [string]$RepositoryRoot
 )
 
@@ -115,6 +116,8 @@ $expectedPreviousControlShaForBookingAlignment = '822596e34372e60fdde2959a8e820e
 $expectedBookingAlignmentCheckpointSha = 'fbf2572b94cc2a7ee8f1853215d1d01bd56df12a'
 $expectedPreviousControlShaForTrainingCustomization = 'bdd2713463454181ca13677a8ab6b2d2af604384'
 $expectedTrainingCustomizationCheckpointSha = '3e5d4b21399ebf0b1ce1150f3355acc8602c08d5'
+$expectedPreviousControlShaForGuestExperienceCustomization = '9dfbfe58f7797806edaa863167563e0d99a84709'
+$expectedGuestExperienceCustomizationCheckpointSha = '6823c31839d2b0c1eba3397fb5aa08f079f233a9'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
@@ -125,6 +128,37 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT') { $expectedCheckpointSha = $expectedBookingCustomizationCheckpointSha }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT') { $expectedCheckpointSha = $expectedBookingAlignmentCheckpointSha }
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT') { $expectedCheckpointSha = $expectedTrainingCustomizationCheckpointSha }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_GUEST_EXPERIENCE_CUSTOMIZATION_CHECKPOINT') { $expectedCheckpointSha = $expectedGuestExperienceCustomizationCheckpointSha }
+if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_GUEST_EXPERIENCE_CUSTOMIZATION_CHECKPOINT') {
+  if ($GuestExperienceCustomizationCheckpointSha -ne $expectedGuestExperienceCustomizationCheckpointSha -or $ReviewedCheckpointSha -ne $expectedGuestExperienceCustomizationCheckpointSha) { throw 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_CHECKPOINT_SHA_NOT_APPROVED' }
+  if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
+  if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_PRIOR_APPROVAL_MISSING' }
+  . $resolverPath
+  $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
+  if ($branch -notmatch '^codex/local-ui-[a-z0-9._-]+$') { throw "ANDALUCIA_LOCAL_BACKEND_BRANCH_NOT_ALLOWED:$branch" }
+  $trackedChanges = @(& git -C $projectRoot status --porcelain --untracked-files=no)
+  if ($trackedChanges.Count -gt 0) { throw 'ANDALUCIA_LOCAL_BACKEND_SOURCE_DIRTY' }
+  $activeSourceSha = Resolve-AndaluciaGitRef $projectRoot 'HEAD'
+  $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/main'
+  $resolvedGuestExperienceCheckpoint = Resolve-AndaluciaGitRef $projectRoot $GuestExperienceCustomizationCheckpointSha
+  $resolvedControlCommit = Resolve-AndaluciaGitRef $projectRoot $ControlCommitSha
+  if ($resolvedGuestExperienceCheckpoint -ne $expectedGuestExperienceCustomizationCheckpointSha -or $resolvedControlCommit -ne $ControlCommitSha -or $resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_FULL_SHA_REQUIRED' }
+  $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  if ($priorManifest.version -ne 'andalucia-local-training-approval-v1' -or $priorManifest.mode -ne 'approved_local_training_customization' -or $priorManifest.managerApproval -ne 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT' -or [string]$priorManifest.controlCommitSha -ne $expectedPreviousControlShaForGuestExperienceCustomization -or [string]$priorManifest.activeSourceSha -ne $expectedPreviousControlShaForGuestExperienceCustomization -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_PRIOR_APPROVAL_INVALID' }
+  Assert-AndaluciaGitAncestor $projectRoot $expectedPreviousControlShaForGuestExperienceCustomization $resolvedGuestExperienceCheckpoint 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_NOT_BASED_ON_PRIOR_CONTROL'
+  Assert-AndaluciaGitAncestor $projectRoot $resolvedGuestExperienceCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_CONTROL_NOT_BASED_ON_CHECKPOINT'
+  $guestExperiencePaths = @(Get-AndaluciaReviewedGuestExperienceCustomizationPaths)
+  [void](Assert-AndaluciaExactChangedPaths $projectRoot $expectedPreviousControlShaForGuestExperienceCustomization $resolvedGuestExperienceCheckpoint $guestExperiencePaths 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_REVIEWED_PATH_MISMATCH')
+  [void](Assert-AndaluciaChangedPaths $projectRoot $resolvedGuestExperienceCheckpoint $resolvedControlCommit 'backend_control')
+  Assert-AndaluciaPathContentMatches $projectRoot $resolvedGuestExperienceCheckpoint $resolvedControlCommit $guestExperiencePaths 'ANDALUCIA_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_CONTENT_MISMATCH'
+  $manifest = [ordered]@{ version='andalucia-local-guest-experience-approval-v1'; mode='approved_local_guest_experience_customization'; managerApproval=$ManagerApproval; approvedAt=[DateTime]::UtcNow.ToString('o'); approvedMainSha=$approvedMainSha; previousControlCommitSha=$expectedPreviousControlShaForGuestExperienceCustomization; guestExperienceCustomizationCheckpointSha=$resolvedGuestExperienceCheckpoint; controlCommitSha=$resolvedControlCommit; activeSourceSha=$activeSourceSha; branch=$branch; guestExperienceCustomizationPaths=$guestExperiencePaths; launcherSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 $resolverPath; backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $projectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+  $temporaryPath = "$manifestPath.tmp"
+  [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 7) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
+  $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
+  [ordered]@{ status='APPROVED_LOCAL_GUEST_EXPERIENCE_CUSTOMIZATION_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 7
+  exit 0
+}
 if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT') {
   if ($TrainingCustomizationCheckpointSha -ne $expectedTrainingCustomizationCheckpointSha -or $ReviewedCheckpointSha -ne $expectedTrainingCustomizationCheckpointSha) { throw 'ANDALUCIA_LOCAL_TRAINING_CUSTOMIZATION_CHECKPOINT_SHA_NOT_APPROVED' }
   if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'ANDALUCIA_LOCAL_BACKEND_RESOLVER_MISSING' }
