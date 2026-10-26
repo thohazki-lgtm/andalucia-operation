@@ -303,6 +303,19 @@ function Get-AndaluciaReviewedBookingCustomizationPaths {
   )
 }
 
+function Get-AndaluciaReviewedBookingAlignmentPaths {
+  return @(
+    'server/booking-correction-workflow.test.ts',
+    'server/booking-import-review.test.ts',
+    'server/booking-import.test.ts',
+    'server/booking-repository.ts',
+    'server/booking-walk-in-r2.test.ts',
+    'server/bookings-customization-ui-browser.test.ts',
+    'src/booking-service.css',
+    'src/bookings.tsx'
+  )
+}
+
 function Assert-AndaluciaPathContentMatches {
   param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
   foreach ($path in $ExpectedPaths) {
@@ -376,8 +389,26 @@ function Get-AndaluciaApprovedSourceState {
   $isEmployeeEntitlementsFinalCleanupApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v10' -and $manifest.mode -eq 'approved_local_employee_entitlements_final_cleanup' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT'
   $isPublicHolidayCalendarApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v11' -and $manifest.mode -eq 'approved_local_public_holiday_calendar' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT'
   $isBookingCustomizationApproval = $manifest.version -eq 'andalucia-local-bookings-approval-v1' -and $manifest.mode -eq 'approved_local_booking_customization' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_CUSTOMIZATION_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval -and -not $isPublicHolidayCalendarApproval -and -not $isBookingCustomizationApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isBookingAlignmentApproval = $manifest.version -eq 'andalucia-local-bookings-approval-v2' -and $manifest.mode -eq 'approved_local_booking_alignment' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval -and -not $isPublicHolidayCalendarApproval -and -not $isBookingCustomizationApproval -and -not $isBookingAlignmentApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isBookingAlignmentApproval) {
+    $expectedPreviousControlSha = '822596e34372e60fdde2959a8e820ee1e985ea3f'
+    $expectedBookingCheckpointSha = 'fbf2572b94cc2a7ee8f1853215d1d01bd56df12a'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.bookingAlignmentCheckpointSha -ne $expectedBookingCheckpointSha) { throw 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedBookingCheckpointSha 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedBookingCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $bookingPaths = @(Get-AndaluciaReviewedBookingAlignmentPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedBookingCheckpointSha $bookingPaths 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedBookingCheckpointSha $controlCommitSha 'backend_control')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $expectedBookingCheckpointSha $controlCommitSha $bookingPaths 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_CONTENT_MISMATCH'
+    if (@(Compare-Object ($bookingPaths | Sort-Object) @($manifest.bookingAlignmentPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_MANIFEST_PATH_MISMATCH' }
+    if ([string]$manifest.launcherSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1')) -or [string]$manifest.resolverSha256 -ne (Get-AndaluciaFileSha256 $PSCommandPath) -or [string]$manifest.backendApprovalScriptSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1')) -or [string]$manifest.backendActivationScriptSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1'))) { throw 'ANDALUCIA_LOCAL_BOOKING_ALIGNMENT_CONTROL_HASH_MISMATCH' }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_booking_alignment'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; BookingAlignmentCheckpointSha=$expectedBookingCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isBookingCustomizationApproval) {
     $expectedPreviousControlSha = '8bfbc280336096b13121b669a3303d7d5df98dd7'
