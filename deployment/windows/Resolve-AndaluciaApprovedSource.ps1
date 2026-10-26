@@ -277,6 +277,16 @@ function Get-AndaluciaReviewedLeaveBalancePolishPaths {
   )
 }
 
+function Get-AndaluciaReviewedEmployeeEntitlementsFinalCleanupPaths {
+  return @(
+    'server/employee-entitlement-modals.test.mjs',
+    'server/employee-entitlements-ui.test.mjs',
+    'server/leave-types-ui-browser.test.ts',
+    'src/workforce.css',
+    'src/workforce.tsx'
+  )
+}
+
 function Assert-AndaluciaPathContentMatches {
   param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
   foreach ($path in $ExpectedPaths) {
@@ -347,8 +357,27 @@ function Get-AndaluciaApprovedSourceState {
   $isLeaveRenewalRulesApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v7' -and $manifest.mode -eq 'approved_local_leave_renewal_rules' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT'
   $isLeaveRenewalRulesTestFixApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v8' -and $manifest.mode -eq 'approved_local_leave_renewal_rules_with_test_fix' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT'
   $isLeaveBalancePolishApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v9' -and $manifest.mode -eq 'approved_local_leave_balance_polish' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_BALANCE_POLISH_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isEmployeeEntitlementsFinalCleanupApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v10' -and $manifest.mode -eq 'approved_local_employee_entitlements_final_cleanup' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isEmployeeEntitlementsFinalCleanupApproval) {
+    $expectedPreviousControlSha = 'ebfc95da6ae438b47142742e7fd9dd034806f31d'
+    $expectedCleanupCheckpointSha = 'f93628908b2a7820a4cd294213a17ff827387d7c'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.employeeEntitlementsFinalCleanupCheckpointSha -ne $expectedCleanupCheckpointSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedCleanupCheckpointSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedCleanupCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $cleanupPaths = @(Get-AndaluciaReviewedEmployeeEntitlementsFinalCleanupPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedCleanupCheckpointSha $cleanupPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedCleanupCheckpointSha $controlCommitSha 'backend_control')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $expectedCleanupCheckpointSha $controlCommitSha $cleanupPaths 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CONTENT_MISMATCH'
+    if (@(Compare-Object ($cleanupPaths | Sort-Object) @($manifest.employeeEntitlementsFinalCleanupPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_MANIFEST_PATH_MISMATCH' }
+    $hashes = [ordered]@{ launcherSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1'); resolverSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1'); backendApprovalScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1'); backendActivationScriptSha256=Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1') }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_employee_entitlements_final_cleanup'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; EmployeeEntitlementsFinalCleanupCheckpointSha=$expectedCleanupCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isLeaveBalancePolishApproval) {
     $expectedPreviousControlSha = 'd8145add55e674ff5acd4525ca027f961ad0160c'
