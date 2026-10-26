@@ -105,6 +105,7 @@ $expectedPreviousControlShaForEmployeeEntitlementsFinalCleanup = 'ebfc95da6ae438
 $expectedEmployeeEntitlementsFinalCleanupCheckpointSha = 'f93628908b2a7820a4cd294213a17ff827387d7c'
 $expectedPreviousControlShaForPublicHolidayCalendar = '614b598e5dc962d1e3ba7e1abb904dfe49cbe229'
 $expectedPublicHolidayCalendarCheckpointSha = 'ae951424705563f8f9bde812d03fb3772b713d2b'
+$expectedPreparedControlShaForPublicHolidayCalendar = 'eed15cfa800c53f456ead3835d548e8e2ef08d80'
 $expectedPreviousUiCheckpointSha = '310b3f36b89555fb90c9d2464a34d7f038e5a2de'
 $expectedPreviousControlSha = '072cd10ccd0905601f554020cb489fedd740dd73'
 $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
@@ -164,7 +165,9 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT
   $resolvedCalendarCheckpoint = Resolve-AndaluciaGitRef $projectRoot $PublicHolidayCalendarCheckpointSha
   if ($resolvedCalendarCheckpoint -ne $expectedPublicHolidayCalendarCheckpointSha -or $resolvedCheckpoint -ne $expectedPublicHolidayCalendarCheckpointSha) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_FULL_SHA_REQUIRED' }
   $priorManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-  if ($priorManifest.version -ne 'andalucia-local-workforce-approval-v10' -or $priorManifest.mode -ne 'approved_local_employee_entitlements_final_cleanup' -or $priorManifest.managerApproval -ne 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT' -or [string]$priorManifest.controlCommitSha -ne $expectedPreviousControlShaForPublicHolidayCalendar -or [string]$priorManifest.activeSourceSha -ne $expectedPreviousControlShaForPublicHolidayCalendar -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_PRIOR_APPROVAL_INVALID' }
+  $priorBaselineApproval = $priorManifest.version -eq 'andalucia-local-workforce-approval-v10' -and $priorManifest.mode -eq 'approved_local_employee_entitlements_final_cleanup' -and $priorManifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT' -and [string]$priorManifest.controlCommitSha -eq $expectedPreviousControlShaForPublicHolidayCalendar -and [string]$priorManifest.activeSourceSha -eq $expectedPreviousControlShaForPublicHolidayCalendar
+  $priorPreparedApproval = $priorManifest.version -eq 'andalucia-local-workforce-approval-v11' -and $priorManifest.mode -eq 'approved_local_public_holiday_calendar' -and $priorManifest.managerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT' -and [string]$priorManifest.publicHolidayCalendarCheckpointSha -eq $expectedPublicHolidayCalendarCheckpointSha -and [string]$priorManifest.controlCommitSha -eq $expectedPreparedControlShaForPublicHolidayCalendar -and [string]$priorManifest.activeSourceSha -eq $expectedPreparedControlShaForPublicHolidayCalendar
+  if ((-not $priorBaselineApproval -and -not $priorPreparedApproval) -or [string]$priorManifest.branch -ne $branch) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_PRIOR_APPROVAL_INVALID' }
   Assert-AndaluciaGitAncestor $projectRoot $expectedPreviousControlShaForPublicHolidayCalendar $resolvedCalendarCheckpoint 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_NOT_BASED_ON_PRIOR_CONTROL'
   Assert-AndaluciaGitAncestor $projectRoot $resolvedCalendarCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_CONTROL_NOT_BASED_ON_CHECKPOINT'
   $calendarPaths = @(Get-AndaluciaReviewedPublicHolidayCalendarPaths)
