@@ -36,6 +36,7 @@ const expectedEntitlementBalanceSimplificationCheckpoint = '3c0eac9c07d90f29e0b9
 const expectedEntitlementBalanceSimplificationIntegration = 'b498106e9d1506f8d2e2e09517adbbfd57334ecd'
 const expectedEntitlementManageCleanupCheckpoint = '2418cdad39a4e1816bfce3d401521fb9666a8d33'
 const expectedLeaveRenewalRulesCheckpoint = 'b8d641909ce62bef9ca9741f584b663d59dfea68'
+const expectedLeaveRenewalRulesTestFixCheckpoint = '289f476a59724a1e20ecb67ddd82241d90e504f2'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -115,6 +116,9 @@ try {
   const wrongLeaveRenewalRules = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-LeaveRenewalRulesCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongLeaveRenewalRules.status, 0)
   assert.match(wrongLeaveRenewalRules.output, /ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongLeaveRenewalRulesTestFix = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-LeaveRenewalRulesCheckpointSha', checkpoint, '-CarryForwardTestFixCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongLeaveRenewalRulesTestFix.status, 0)
+  assert.match(wrongLeaveRenewalRulesTestFix.output, /ANDALUCIA_LOCAL_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
@@ -267,6 +271,9 @@ try {
   assert.match(resolverSource, new RegExp(expectedLeaveRenewalRulesCheckpoint))
   assert.match(approvalSource, new RegExp(expectedLeaveRenewalRulesCheckpoint))
   assert.match(activationSource, new RegExp(expectedLeaveRenewalRulesCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedLeaveRenewalRulesTestFixCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedLeaveRenewalRulesTestFixCheckpoint))
+  assert.match(activationSource, new RegExp(expectedLeaveRenewalRulesTestFixCheckpoint))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
@@ -302,6 +309,10 @@ try {
   assert.match(resolverSource, /approved_local_leave_renewal_rules/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_ACTIVATION/)
+  assert.match(resolverSource, /andalucia-local-workforce-approval-v8/)
+  assert.match(resolverSource, /approved_local_leave_renewal_rules_with_test_fix/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_ACTIVATION/)
   assert.match(resolverSource, /server\/staff-repository\.ts/)
   assert.match(resolverSource, /server\/index\.ts/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT[^\n]+\*/)
