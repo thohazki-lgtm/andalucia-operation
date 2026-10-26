@@ -67,11 +67,11 @@ const guestAlerts = (booking: BookingRecord): GuestAlert[] => {
   return detectBookingAllergyEvidence(note).map(alert => ({ label: alert.label, note }))
 }
 
-function BookingModal({ title, children, onClose, wide = false, side = false, className = '' }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; side?: boolean; className?: string }) {
+function BookingModal({ title, children, onClose, wide = false, side = false, className = '', closeOnBackdrop = false, showClose = true }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; side?: boolean; className?: string; closeOnBackdrop?: boolean; showClose?: boolean }) {
   const dialogRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (!side) return
+    if (!side && !closeOnBackdrop) return
 
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialogRef.current?.focus()
@@ -83,14 +83,14 @@ function BookingModal({ title, children, onClose, wide = false, side = false, cl
       window.removeEventListener('keydown', dismissOnEscape)
       if (previouslyFocused?.isConnected) previouslyFocused.focus()
     }
-  }, [onClose, side])
+  }, [closeOnBackdrop, onClose, side])
 
   return <div
     className={`modal-backdrop${side ? ' booking-drawer-backdrop' : ''}`}
-    onClick={side ? event => { if (event.target === event.currentTarget) onClose() } : undefined}
+    onMouseDown={side || closeOnBackdrop ? event => { if (event.target === event.currentTarget) onClose() } : undefined}
   >
-<section ref={dialogRef} className={`${side ? 'modal booking-detail-drawer' : wide ? 'modal booking-modal-wide' : 'modal'}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={side ? -1 : undefined}>
-{!side && <IconAction className="close" icon="close" label="Close dialog" onClick={onClose}/>}
+<section ref={dialogRef} className={`${side ? 'modal booking-detail-drawer' : wide ? 'modal booking-modal-wide' : 'modal'}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={side || closeOnBackdrop ? -1 : undefined}>
+{!side && showClose && <IconAction className="close" icon="close" label="Close dialog" onClick={onClose}/>}
 <h2>{title}</h2>{children}</section>
 </div>
 }
@@ -898,7 +898,7 @@ export function BookingConfigurationManager({ configuration, onSave, onResetWalk
 </article>
 {error && <p className="save-error booking-config-error" role="alert">{error}</p>}
 {editing && <BookingConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}
-{confirmReset && <div className="modal-backdrop nested-config-confirm"><section className="modal" role="dialog" aria-modal="true" aria-label="Reset Walk-in Guest Form"><IconAction className="close" icon="close" label="Close reset confirmation" onClick={() => setConfirmReset(false)}/><p className="eyebrow">WALK-IN GUEST FORM</p><h2>Reset field settings?</h2><p className="config-confirm-copy">This restores only the approved Required, Optional and Hidden field defaults. Bookings, sources, statuses and tables are not changed.</p><div className="form-actions"><ActionButton onClick={() => setConfirmReset(false)}>Cancel</ActionButton><ActionButton variant="primary" icon="restore" onClick={() => void onResetWalkIn().then(() => setConfirmReset(false)).catch(saveError => { setConfirmReset(false); setError(saveError instanceof Error ? saveError.message : 'Unable to reset the Walk-in form.') })}>Reset Form Settings</ActionButton></div></section></div>}
+{confirmReset && <BookingModal title="Reset Walk-in Guest Form" className="booking-config-modal booking-reset-modal" closeOnBackdrop showClose={false} onClose={() => setConfirmReset(false)}><p className="eyebrow">WALK-IN GUEST FORM</p><p className="config-confirm-copy">This restores only the approved Required, Optional and Hidden field defaults. Bookings, sources, statuses and tables are not changed.</p><div className="form-actions"><ActionButton onClick={() => setConfirmReset(false)}>Cancel</ActionButton><ActionButton variant="primary" icon="restore" onClick={() => void onResetWalkIn().then(() => setConfirmReset(false)).catch(saveError => { setConfirmReset(false); setError(saveError instanceof Error ? saveError.message : 'Unable to reset the Walk-in form.') })}>Reset Form Settings</ActionButton></div></BookingModal>}
 </section>
 }
 
@@ -908,17 +908,19 @@ function BookingConfigForm({ group, option, onClose, onSave }: { group: 'statuse
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const protectedStatus = group === 'statuses' && Boolean(form.metadata?.protected)
+  const dirty = JSON.stringify(form) !== JSON.stringify(option)
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved configuration changes?')) onClose() }
   const submit = async (event: FormEvent) => { event.preventDefault(); if (group === 'statuses' && (!form.value.trim() || !form.label.trim())) return setError('Status name and internal code are required.'); setSaving(true); setError(''); try { await onSave(group === 'statuses' ? { ...form, value: form.value.trim().toLowerCase().replaceAll(' ', '_'), label: form.label.trim() } : form) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save configuration.') } finally { setSaving(false) } }
-  return <BookingModal title={group === 'statuses' ? (option.value ? 'Edit Booking Status' : 'Add Booking Status') : (option.value ? 'Edit Table Range' : 'Add Table Range')} onClose={onClose}>
+  return <BookingModal title={group === 'statuses' ? (option.value ? 'Edit Booking Status' : 'Add Booking Status') : (option.value ? 'Edit Table Range' : 'Add Table Range')} className="booking-config-modal" closeOnBackdrop showClose={false} onClose={requestClose}>
 <form className="staff-form booking-config-form" onSubmit={event => void submit(event)}>
-{group === 'statuses' ? <>
+{group === 'statuses' ? <div className="booking-config-form-grid booking-status-form-grid">
 <label>Status Name<input value={form.label} onChange={event => setForm({ ...form, label: event.target.value })} /></label>
 <label>Color<input type="color" disabled={protectedStatus} title={protectedStatus ? 'This operational color is protected.' : undefined} value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />{protectedStatus && <small>Protected operational color</small>}</label>
-<label className="check-label"><input type="checkbox" disabled={protectedStatus} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>
 <label>Internal Code<input readOnly={Boolean(option.value)} value={form.value} onChange={event => setForm({ ...form, value: event.target.value })} /><small>{option.value ? 'Immutable after creation' : 'Created once and retained for history'}</small></label>
+<label className="check-label compact-active-control"><input type="checkbox" disabled={protectedStatus} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>
 <details open={advanced} onToggle={event => setAdvanced(event.currentTarget.open)} className="booking-status-advanced"><summary>Advanced Operational Behavior</summary><label>Service Stage<select disabled={protectedStatus} value={form.metadata?.serviceStage || 'remaining'} onChange={event => setForm({ ...form, metadata: { ...form.metadata, serviceStage: event.target.value as NonNullable<ConfigOption['metadata']>['serviceStage'] } })}><option value="remaining">Remaining</option><option value="arrived">Arrived</option><option value="completed">Completed</option><option value="noShow">No-Show</option><option value="excluded">Excluded</option></select></label><label>Dashboard Metric<select disabled={protectedStatus} value={form.metadata?.bookingMetric || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, bookingMetric: (event.target.value || undefined) as 'arrived' | 'noShow' | undefined } })}><option value="">None</option><option value="arrived">Arrived</option><option value="noShow">No-Shows</option></select></label><label className="check-label"><input type="checkbox" disabled={protectedStatus} checked={Boolean(form.metadata?.excludesFromExpectedCovers)} onChange={event => setForm({ ...form, metadata: { ...form.metadata, excludesFromExpectedCovers: event.target.checked } })} /> Exclude from expected covers</label>{protectedStatus && <small>Protected operational behavior</small>}</details>
-</> : <div className="table-range-form"><label>First Table<input type="number" min="1" value={form.metadata?.tableRangeStart || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeStart: Number(event.target.value) } })} /></label><label>Last Table<input type="number" min="1" value={form.metadata?.tableRangeEnd || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeEnd: Number(event.target.value) } })} /></label><label className="check-label"><input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label></div>}
-{error && <p className="save-error">{error}</p>}<div className="form-actions"><ActionButton onClick={onClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save'}</ActionButton></div>
+</div> : <div className="table-range-form"><label>First Table<input type="number" min="1" value={form.metadata?.tableRangeStart || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeStart: Number(event.target.value) } })} /></label><label>Last Table<input type="number" min="1" value={form.metadata?.tableRangeEnd || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeEnd: Number(event.target.value) } })} /></label><label className="check-label compact-active-control"><input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label></div>}
+{error && <p className="save-error">{error}</p>}<div className="form-actions"><ActionButton onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save'}</ActionButton></div>
 </form>
 </BookingModal>
 }
