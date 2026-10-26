@@ -32,6 +32,8 @@ function Assert-AndaluciaChangedPaths {
     'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
     'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
     'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1',
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
+    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
     'server/local-ui-activation.test.ts',
     'server/database-scheduler.test.ts'
   )
@@ -351,6 +353,18 @@ function Assert-AndaluciaExactChangedPaths {
   return $actual
 }
 
+function Assert-AndaluciaReviewedUiPaths {
+  param([string[]]$Paths)
+  $allowedPattern = '^(src/|public/|server/[^/]+\.test\.(ts|tsx|mjs)$)'
+  $invalid = @($Paths | Where-Object {
+    $_ -notmatch $allowedPattern -or
+    $_ -match '(^|/)(\.env($|\.)|credentials?($|[._-])|secrets?($|[._-])|postmaster\.pid$|.*\.(db|sqlite|sqlite3|backup|wal)$)' -or
+    $_ -match '^(\.data|\.backups|deployment|sources)/' -or
+    $_ -match '(^|/)\.\.?(/|$)'
+  })
+  if ($invalid.Count -gt 0) { throw "ANDALUCIA_LOCAL_REVIEWED_UI_PATH_NOT_APPROVED:$($invalid -join ',')" }
+}
+
 function Get-AndaluciaApprovedSourceState {
   param(
     [Parameter(Mandatory = $true)][string]$ProjectRoot,
@@ -409,8 +423,40 @@ function Get-AndaluciaApprovedSourceState {
   $isBookingAlignmentApproval = $manifest.version -eq 'andalucia-local-bookings-approval-v2' -and $manifest.mode -eq 'approved_local_booking_alignment' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_BOOKING_ALIGNMENT_CHECKPOINT'
   $isTrainingCustomizationApproval = $manifest.version -eq 'andalucia-local-training-approval-v1' -and $manifest.mode -eq 'approved_local_training_customization' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_TRAINING_CUSTOMIZATION_CHECKPOINT'
   $isGuestExperienceCustomizationApproval = $manifest.version -eq 'andalucia-local-guest-experience-approval-v1' -and $manifest.mode -eq 'approved_local_guest_experience_customization' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_GUEST_EXPERIENCE_CUSTOMIZATION_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval -and -not $isPublicHolidayCalendarApproval -and -not $isBookingCustomizationApproval -and -not $isBookingAlignmentApproval -and -not $isTrainingCustomizationApproval -and -not $isGuestExperienceCustomizationApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isReviewedUiApproval = $manifest.version -eq 'andalucia-local-reviewed-ui-approval-v1' -and $manifest.mode -eq 'approved_local_reviewed_ui_checkpoint' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isReviewedUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval -and -not $isPublicHolidayCalendarApproval -and -not $isBookingCustomizationApproval -and -not $isBookingAlignmentApproval -and -not $isTrainingCustomizationApproval -and -not $isGuestExperienceCustomizationApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isReviewedUiApproval) {
+    $previousLiveSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.previousLiveSha)
+    $reviewedCheckpointSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.reviewedCheckpointSha)
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($previousLiveSha -ne [string]$manifest.previousLiveSha -or $reviewedCheckpointSha -ne [string]$manifest.reviewedCheckpointSha -or $controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_REVIEWED_UI_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $originMainSha $previousLiveSha 'ANDALUCIA_LOCAL_REVIEWED_UI_PREVIOUS_LIVE_NOT_BASED_ON_MAIN'
+    Assert-AndaluciaGitAncestor $ProjectRoot $previousLiveSha $reviewedCheckpointSha 'ANDALUCIA_LOCAL_REVIEWED_UI_CHECKPOINT_NOT_BASED_ON_PREVIOUS_LIVE'
+    Assert-AndaluciaGitAncestor $ProjectRoot $reviewedCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_REVIEWED_UI_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $reviewedPaths = @($manifest.reviewedPaths | ForEach-Object { [string]$_ })
+    if ($reviewedPaths.Count -eq 0 -or @($reviewedPaths | Sort-Object -Unique).Count -ne $reviewedPaths.Count) { throw 'ANDALUCIA_LOCAL_REVIEWED_UI_PATHS_INVALID' }
+    Assert-AndaluciaReviewedUiPaths $reviewedPaths
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $previousLiveSha $reviewedCheckpointSha $reviewedPaths 'ANDALUCIA_LOCAL_REVIEWED_UI_EXACT_SCOPE_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $reviewedCheckpointSha $controlCommitSha 'control')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $reviewedCheckpointSha $controlCommitSha $reviewedPaths 'ANDALUCIA_LOCAL_REVIEWED_UI_CONTENT_MISMATCH'
+    foreach ($path in $reviewedPaths) {
+      $expectedSha256 = [string]$manifest.reviewedFileSha256.PSObject.Properties[$path].Value
+      $expectedBlob = [string]$manifest.reviewedBlobIds.PSObject.Properties[$path].Value
+      $actualBlob = (& git -C $ProjectRoot rev-parse "$reviewedCheckpointSha`:$path" 2>$null).Trim()
+      if (-not $expectedSha256 -or $expectedSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot $path)) -or -not $expectedBlob -or $expectedBlob -ne $actualBlob) { throw "ANDALUCIA_LOCAL_REVIEWED_UI_CONTENT_HASH_MISMATCH:$path" }
+    }
+    $hashes = [ordered]@{
+      launcherSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1')
+      resolverSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Resolve-AndaluciaApprovedSource.ps1')
+      approvalScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1')
+      preflightScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1')
+      activationScriptSha256 = Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1')
+    }
+    foreach ($name in $hashes.Keys) { if ([string]$manifest.$name -ne [string]$hashes[$name]) { throw "ANDALUCIA_LOCAL_REVIEWED_UI_CONTROL_HASH_MISMATCH:$name" } }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_reviewed_ui_checkpoint'; ApprovedMainSha=$originMainSha; PreviousLiveSha=$previousLiveSha; ReviewedCheckpointSha=$reviewedCheckpointSha; ControlCommitSha=$controlCommitSha; ReviewedPaths=$reviewedPaths }
+  }
 
   if ($isGuestExperienceCustomizationApproval) {
     $expectedPreviousControlSha = '9dfbfe58f7797806edaa863167563e0d99a84709'

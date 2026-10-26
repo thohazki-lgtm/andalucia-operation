@@ -3,7 +3,8 @@ param(
     [string]$ExpectedSha,
     [string]$RepositoryRoot,
     [int]$MaximumBackupAgeHours = 24,
-    [switch]$AllowReviewedNonUiPaths
+    [switch]$AllowReviewedNonUiPaths,
+    [switch]$AllowApprovedLocalCheckpoint
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,14 +25,21 @@ try {
     $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
     if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $projectRoot) { Stop-Readiness 'SOURCE_NOT_AUTHORITATIVE' $projectRoot }
     $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
-    if ($branch -ne 'main') { Stop-Readiness 'SOURCE_BRANCH_NOT_MAIN' $branch }
     $trackedChanges = @(& git -C $projectRoot status --porcelain --untracked-files=no)
     if ($trackedChanges.Count -gt 0) { Stop-Readiness 'SOURCE_TRACKED_CHANGES_PRESENT' ($trackedChanges -join '; ') }
     $headSha = (& git -C $projectRoot rev-parse HEAD 2>$null).Trim()
     $originSha = (& git -C $projectRoot rev-parse refs/remotes/origin/main 2>$null).Trim()
-    if (-not $ExpectedSha) { $ExpectedSha = $originSha }
+    if ($branch -ne 'main') {
+        if (-not $AllowApprovedLocalCheckpoint) { Stop-Readiness 'SOURCE_BRANCH_NOT_MAIN' $branch }
+        $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
+        if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { Stop-Readiness 'APPROVED_SOURCE_RESOLVER_MISSING' $resolverPath }
+        . $resolverPath
+        try { $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot } catch { Stop-Readiness 'APPROVED_LOCAL_SOURCE_INVALID' $_.Exception.Message }
+        if ($approvedSource.Mode -ne 'approved_local_reviewed_ui_checkpoint' -or $approvedSource.Sha -ne $headSha) { Stop-Readiness 'APPROVED_LOCAL_SOURCE_MODE_MISMATCH' ([string]$approvedSource.Mode) }
+    }
+    if (-not $ExpectedSha) { $ExpectedSha = if ($branch -eq 'main') { $originSha } else { $headSha } }
     $expectedFullSha = (& git -C $projectRoot rev-parse $ExpectedSha 2>$null).Trim()
-    if (-not $headSha -or $headSha -ne $originSha -or $headSha -ne $expectedFullSha) { Stop-Readiness 'SOURCE_SHA_MISMATCH' "head=$headSha origin=$originSha expected=$expectedFullSha" }
+    if (-not $headSha -or $headSha -ne $expectedFullSha -or ($branch -eq 'main' -and $headSha -ne $originSha)) { Stop-Readiness 'SOURCE_SHA_MISMATCH' "head=$headSha origin=$originSha expected=$expectedFullSha" }
 
     if (-not (Test-Path -LiteralPath (Join-Path $canonicalData 'PG_VERSION') -PathType Leaf)) { Stop-Readiness 'CANONICAL_STORE_MISSING' $canonicalData }
     if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { Stop-Readiness 'CANONICAL_IDENTITY_MISSING' $identityPath }

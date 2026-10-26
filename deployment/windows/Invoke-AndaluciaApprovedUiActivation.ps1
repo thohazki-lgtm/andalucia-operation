@@ -16,8 +16,16 @@ $stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedAp
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
 $canonicalMarker = Join-Path $projectRoot '.data\postgres\postmaster.pid'
 
+$resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
+if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'APPROVED_SOURCE_RESOLVER_MISSING' }
+. $resolverPath
+$approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
+$isApprovedLocalCheckpoint = $approvedSource.Mode -eq 'approved_local_reviewed_ui_checkpoint'
+if ($approvedSource.Sha -ne $ExpectedSha) { throw "APPROVED_SOURCE_SHA_MISMATCH:$($approvedSource.Sha):$ExpectedSha" }
+
 $preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-RepositoryRoot',$projectRoot)
-if ($AllowReviewedNonUiPaths) { $preflightArguments += '-AllowReviewedNonUiPaths' }
+if ($AllowReviewedNonUiPaths -or $isApprovedLocalCheckpoint) { $preflightArguments += '-AllowReviewedNonUiPaths' }
+if ($isApprovedLocalCheckpoint) { $preflightArguments += '-AllowApprovedLocalCheckpoint' }
 $preflightOutput = & powershell.exe @preflightArguments
 if ($LASTEXITCODE -ne 0) { $preflightOutput; exit $LASTEXITCODE }
 $preflight = ($preflightOutput -join [Environment]::NewLine) | ConvertFrom-Json
@@ -47,7 +55,7 @@ $healthy = $null
 for ($attempt = 0; $attempt -lt 90; $attempt++) {
     try {
         $candidate = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 3
-        if ($candidate.ok -and $candidate.application.sha -eq $preflight.targetSha -and $candidate.application.branch -eq 'main' -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
+        if ($candidate.ok -and $candidate.application.sha -eq $preflight.targetSha -and $candidate.application.branch -eq $preflight.branch -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
     } catch {}
     Start-Sleep -Seconds 1
 }

@@ -34,6 +34,8 @@ try {
     'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
     'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
     'deployment/windows/Approve-AndaluciaLocalUiCheckpoint.ps1',
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
+    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
   ]) {
     await mkdir(join(testRoot, file, '..'), { recursive: true })
     await cp(join(sourceRoot, file), join(testRoot, file))
@@ -73,7 +75,52 @@ try {
   assert.notEqual(mismatched.status, 0)
   assert.match(mismatched.output, /ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH/)
 
-  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
+  const reviewedApproval = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File',
+    join(testRoot, 'deployment', 'windows', 'Approve-AndaluciaLocalUiCheckpoint.ps1'),
+    '-RepositoryRoot', testRoot,
+    '-PreviousLiveSha', mainSha,
+    '-ReviewedCheckpointSha', uiSha,
+    '-ControlCommitSha', controlSha,
+    '-ReviewedPaths', 'src/ui.ts',
+    '-ManagerApproval', 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT',
+  ])
+  assert.match(reviewedApproval.output, /APPROVED_LOCAL_REVIEWED_UI_CHECKPOINT/)
+  const reviewedManifest = JSON.parse(await readFile(join(testRoot, '.runtime', 'andalucia-local-ui-approval.json'), 'utf8'))
+  assert.equal(reviewedManifest.previousLiveSha, mainSha)
+  assert.equal(reviewedManifest.reviewedCheckpointSha, uiSha)
+  assert.deepEqual(reviewedManifest.reviewedPaths, ['src/ui.ts'])
+  assert.match(reviewedManifest.reviewedFileSha256['src/ui.ts'], /^[A-F0-9]{64}$/)
+  assert.match(reviewedManifest.reviewedBlobIds['src/ui.ts'], /^[a-f0-9]{40,64}$/)
+  const reviewedVerified = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', verifyCommand])
+  assert.match(reviewedVerified.output, /approved_local_reviewed_ui_checkpoint/)
+
+  await writeFile(join(testRoot, 'src', 'ui.ts'), "export const label = 'future reviewed local ui'\n", 'utf8')
+  run('git', ['add', 'src/ui.ts'])
+  run('git', ['commit', '-m', 'future reviewed local UI'])
+  const futureUiSha = run('git', ['rev-parse', 'HEAD']).stdout.trim()
+  const futureApproval = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File',
+    join(testRoot, 'deployment', 'windows', 'Approve-AndaluciaLocalUiCheckpoint.ps1'),
+    '-RepositoryRoot', testRoot,
+    '-PreviousLiveSha', controlSha,
+    '-ReviewedCheckpointSha', futureUiSha,
+    '-ControlCommitSha', futureUiSha,
+    '-ReviewedPaths', 'src/ui.ts',
+    '-ManagerApproval', 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT',
+  ])
+  assert.match(futureApproval.output, /APPROVED_LOCAL_REVIEWED_UI_CHECKPOINT/)
+  const futureVerified = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', verifyCommand])
+  assert.match(futureVerified.output, /approved_local_reviewed_ui_checkpoint/)
+
+  const futureManifest = JSON.parse(await readFile(join(testRoot, '.runtime', 'andalucia-local-ui-approval.json'), 'utf8'))
+  futureManifest.reviewedPaths = ['src/not-reviewed.ts']
+  await writeFile(join(testRoot, '.runtime', 'andalucia-local-ui-approval.json'), `${JSON.stringify(futureManifest, null, 2)}\n`, 'utf8')
+  const scopeTamper = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', verifyCommand], testRoot, false)
+  assert.notEqual(scopeTamper.status, 0)
+  assert.match(scopeTamper.output, /ANDALUCIA_LOCAL_REVIEWED_UI_EXACT_SCOPE_MISMATCH/)
+
+  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
