@@ -34,6 +34,7 @@ const expectedOffDaysSummaryCheckpoint = 'bffece4a6e2ae6b8601c10adcd088f9cf08d8f
 const expectedOffDaysSummaryIntegration = '5ecd4a86b1d1e021d11a4c01b4aa6f5869016ee8'
 const expectedEntitlementBalanceSimplificationCheckpoint = '3c0eac9c07d90f29e0b91ebcab77ca3651437df6'
 const expectedEntitlementBalanceSimplificationIntegration = 'b498106e9d1506f8d2e2e09517adbbfd57334ecd'
+const expectedEntitlementManageCleanupCheckpoint = '2418cdad39a4e1816bfce3d401521fb9666a8d33'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -107,6 +108,9 @@ try {
   const wrongEntitlementBalanceSimplification = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-EntitlementBalanceSimplificationCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongEntitlementBalanceSimplification.status, 0)
   assert.match(wrongEntitlementBalanceSimplification.output, /ANDALUCIA_LOCAL_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongEntitlementManageCleanup = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-EntitlementManageCleanupCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongEntitlementManageCleanup.status, 0)
+  assert.match(wrongEntitlementManageCleanup.output, /ANDALUCIA_LOCAL_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
@@ -253,6 +257,9 @@ try {
   assert.match(resolverSource, new RegExp(expectedEntitlementBalanceSimplificationIntegration))
   assert.match(approvalSource, new RegExp(expectedEntitlementBalanceSimplificationIntegration))
   assert.match(activationSource, new RegExp(expectedEntitlementBalanceSimplificationIntegration))
+  assert.match(resolverSource, new RegExp(expectedEntitlementManageCleanupCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedEntitlementManageCleanupCheckpoint))
+  assert.match(activationSource, new RegExp(expectedEntitlementManageCleanupCheckpoint))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
@@ -280,6 +287,10 @@ try {
   assert.match(resolverSource, /approved_local_entitlement_balance_simplification/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_ENTITLEMENT_BALANCE_SIMPLIFICATION_ACTIVATION/)
+  assert.match(resolverSource, /andalucia-local-workforce-approval-v6/)
+  assert.match(resolverSource, /approved_local_entitlement_manage_cleanup/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_ENTITLEMENT_MANAGE_CLEANUP_ACTIVATION/)
   assert.match(resolverSource, /server\/staff-repository\.ts/)
   assert.match(resolverSource, /server\/index\.ts/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT[^\n]+\*/)
