@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [source, baseStyles, stageStyles, actionSource, actionStyles] = await Promise.all([
+const [source, baseStyles, stageStyles, customizationStyles, actionSource, actionStyles] = await Promise.all([
   readFile('src/maintenance.tsx', 'utf8'),
   readFile('src/maintenance.css', 'utf8'),
   readFile('src/maintenance-stage1.css', 'utf8'),
+  readFile('src/maintenance-customization.css', 'utf8'),
   readFile('src/action-system.tsx', 'utf8'),
   readFile('src/action-system.css', 'utf8')
 ])
@@ -52,6 +53,15 @@ assert.match(source, /event\.key === 'Escape'/, 'Maintenance modal must retain E
 assert.match(source, /event\.currentTarget === event\.target/, 'Maintenance modal must dismiss from backdrop clicks only')
 assert.match(stageStyles, /border: 1px solid #dec58f;/, 'Maintenance cards and panels must use the approved gold border')
 assert.match(baseStyles, /\.maintenance-form-grid\{display:grid/, 'Maintenance must retain its responsive form grid foundation')
+assert.match(source, /<h3>Maintenance Settings<\/h3>/, 'Maintenance customization must use the approved section title')
+assert.match(source, /configuration\.areas\.map/, 'All active and archived maintenance categories must remain rendered')
+assert.equal(source.includes('<small>Protected workflow</small>'), false, 'Workflow protection wording must not repeat on every row')
+assert.match(source, /className="maintenance-protection-note"/, 'Workflow protection must remain explained once')
+assert.match(source, /Discard unsaved maintenance configuration changes\?/, 'Configuration modal dismissal must protect unsaved changes')
+assert.match(customizationStyles, /\.maintenance-config-card \{[\s\S]*?border: 1px solid #dec58f;/, 'Customization panels must use the approved gold frame')
+assert.match(customizationStyles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/, 'Desktop customization must retain two balanced panels')
+assert.match(customizationStyles, /@media \(max-width: 820px\)[\s\S]*?grid-template-columns: 1fr;/, 'Maintenance customization must stack below the desktop breakpoint')
+assert.match(customizationStyles, /\.modal\.maintenance-config-modal \{ width: min\(560px, calc\(100vw - 32px\)\)/, 'Maintenance configuration dialogs must use a readable centered width')
 for (const component of ['ActionButton', 'IconAction', 'StatusPill', 'StatusSelect', 'OverflowMenu']) assert.match(actionSource, new RegExp(`export function ${component}`), `Shared action system is missing ${component}`)
 assert.match(actionSource, /<svg[\s\S]*?aria-hidden="true"[\s\S]*?focusable="false"/, 'Shared icons must be decorative inside labelled controls')
 assert.match(actionStyles, /@media \(max-width: 700px\)[\s\S]*?\.ao-action \{ min-height: 44px; \}/, 'Mobile actions must meet the 44px touch target')
