@@ -329,52 +329,57 @@ function ChargeableDetail({ label, value }: { label: string; value: string }) { 
 export function ChargeableConfigurationManager({ configuration, onSave }: { configuration: Pick<ChargeableConfiguration, 'items' | 'statuses'> & { wineCatalog: ConfigOption[] }; onSave: (group: 'items' | 'statuses' | 'wine-catalog', option: ConfigOption) => Promise<void> }) {
   const [editing, setEditing] = useState<{ group: 'items' | 'statuses' | 'wine-catalog'; option: ConfigOption } | null>(null)
   return <section className="panel chargeable-config">
-<div className="panel-title">
+<header className="chargeable-config-hero">
 <div>
 <p className="eyebrow">CHARGEABLE CONFIGURATION</p>
-<h3>Items and statuses</h3>
+<h3>Chargeable Settings</h3>
+<p>Manage approved chargeable definitions and presentation without changing historical financial records.</p>
 </div>
-</div>
+</header>
 <div className="chargeable-config-grid">
-<div>
-<div className="config-heading">
+<article className="chargeable-config-card">
+<header className="config-heading">
+<div><p className="eyebrow">SALE DEFINITIONS</p>
 <h4>Chargeable items</h4>
-<button className="primary compact" onClick={() => setEditing({ group: 'items', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: { category: '', price: 0 } } })}>Add item</button>
-</div>{configuration.items.map(option => <div className="chargeable-config-row" key={option.id}>
-<div>
+<small>Names, categories and selling prices used for new records.</small></div>
+<ActionButton compact variant="primary" icon="add" onClick={() => setEditing({ group: 'items', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: { category: '', price: 0 } } })}>Add item</ActionButton>
+</header><div className="chargeable-config-list">{configuration.items.map(option => <div className="chargeable-config-row chargeable-item-config-row" key={option.id}>
+<div className="chargeable-config-identity">
 <b>{option.label}</b>
-<small>{option.metadata?.category || 'Uncategorized'} · {money(Number(option.metadata?.price || 0))}</small>
+<span><small>{option.metadata?.category || 'Uncategorized'}</small><strong>{money(Number(option.metadata?.price || 0))}</strong></span>
 </div>
-<span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Inactive'}</span>
-<button className="link" onClick={() => setEditing({ group: 'items', option })}>Edit</button>
-<button className="link" onClick={() => void onSave('items', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Activate'}</button>
-</div>)}</div>
-<div>
-<div className="config-heading">
+<StatusPill tone={option.active ? 'navy' : 'neutral'}>{option.active ? 'Active' : 'Inactive'}</StatusPill>
+<div className="chargeable-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'items', option })}>Edit</ActionButton>
+<ActionButton compact onClick={() => void onSave('items', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Reactivate'}</ActionButton></div>
+</div>)}</div></article>
+<article className="chargeable-config-card">
+<header className="config-heading">
+<div><p className="eyebrow">FINANCIAL WORKFLOW</p>
 <h4>Chargeable statuses</h4>
-</div><div className="chargeable-status-header" aria-hidden="true"><span>Status</span><span>Protected</span><span>Edit color</span></div>{configuration.statuses.map(option => <div className="chargeable-config-row chargeable-status-protected" key={option.id}>
-<div>
-<span className="status-dot" style={{ background: option.color }}>
-</span>
-<b>{option.label}</b>
+<small>Display colors for the protected transaction lifecycle.</small></div>
+</header><div className="chargeable-config-list">{configuration.statuses.map(option => <div className="chargeable-config-row chargeable-status-config-row" key={option.id}>
+<div className="chargeable-config-identity chargeable-status-identity">
+<span className="status-dot" style={{ background: option.color }} aria-hidden="true" />
+<span><b>{option.label}</b>
 <small>{option.metadata?.countsAsRealizedRevenue ? 'Realized revenue' : option.metadata?.countsAsPendingValue ? 'Pending value' : option.metadata?.excludesFromChargeableTotals ? 'Excluded' : 'Not counted'}</small>
+</span></div>
+<ActionButton compact icon="edit" onClick={() => setEditing({ group: 'statuses', option })}>Edit color</ActionButton>
+</div>)}</div><p className="chargeable-protection-note">Pending, Charged and Cancelled identities and financial behavior are protected. Only their display colors can be changed.</p></article>
 </div>
-<span className="config-protected-state" title="Status identity, availability and financial semantics are system protected">Protected</span>
-<button className="link" onClick={() => setEditing({ group: 'statuses', option })}>Edit color</button>
-</div>)}</div>
-</div>
-<div className="wine-catalog-foundation">
-<div className="config-heading"><div><h4>Wine / bottle catalog</h4><small>Optional approved definitions. Existing manually entered sales and stored incentive snapshots remain unchanged.</small></div><button className="primary compact" onClick={() => setEditing({ group: 'wine-catalog', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: {} } })}>Add approved bottle</button></div>
-{configuration.wineCatalog.length === 0 ? <p className="inline-empty">No approved bottle catalog has been provided. Wine / Spirits entry remains exact signed-check entry.</p> : configuration.wineCatalog.map(option => { const metadata = option.metadata as Record<string, unknown> | undefined; return <div className="chargeable-config-row" key={option.id}><div><b>{option.label}</b><small>Selling {metadata?.sellingPrice == null ? '—' : money(Number(metadata.sellingPrice))} · Eligible {metadata?.eligiblePrice == null ? '—' : money(Number(metadata.eligiblePrice))} · Rule {String(metadata?.incentiveRuleKey || 'Awaiting approved association')}</small></div><span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Archived'}</span><button className="link" onClick={() => setEditing({ group: 'wine-catalog', option })}>Edit</button><button className="link" onClick={() => void onSave('wine-catalog', { ...option, active: !option.active })}>{option.active ? 'Archive' : 'Activate'}</button></div> })}
-</div>{editing && <ChargeableConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}</section>
+<article className="wine-catalog-foundation chargeable-config-card">
+<header className="config-heading"><div><p className="eyebrow">APPROVED CATALOG</p><h4>Wine &amp; Bottle Catalog</h4><small>Optional approved definitions. Existing manually entered sales and stored incentive snapshots remain unchanged.</small></div><ActionButton compact variant="primary" icon="add" onClick={() => setEditing({ group: 'wine-catalog', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: {} } })}>Add Approved Bottle</ActionButton></header>
+{configuration.wineCatalog.length === 0 ? <div className="chargeable-catalog-empty"><b>No approved bottles yet</b><span>Wine &amp; Spirits entries continue to use the exact signed-check description.</span></div> : <div className="chargeable-config-list">{configuration.wineCatalog.map(option => { const metadata = option.metadata as Record<string, unknown> | undefined; return <div className="chargeable-config-row chargeable-catalog-row" key={option.id}><div className="chargeable-config-identity"><b>{option.label}</b><small>Selling {metadata?.sellingPrice == null ? '—' : money(Number(metadata.sellingPrice))} · Eligible {metadata?.eligiblePrice == null ? '—' : money(Number(metadata.eligiblePrice))} · Rule {String(metadata?.incentiveRuleKey || 'Awaiting approved association')}</small></div><StatusPill tone={option.active ? 'navy' : 'neutral'}>{option.active ? 'Active' : 'Archived'}</StatusPill><div className="chargeable-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'wine-catalog', option })}>Edit</ActionButton><ActionButton compact onClick={() => void onSave('wine-catalog', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Reactivate'}</ActionButton></div></div> })}</div>}
+</article>{editing && <ChargeableConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}</section>
 }
 
 function ChargeableConfigForm({ group, option, onClose, onSave }: { group: 'items' | 'statuses' | 'wine-catalog'; option: ConfigOption; onClose: () => void; onSave: (option: ConfigOption) => Promise<void> }) {
   const [form, setForm] = useState(option); const [error, setError] = useState('')
+  const dirty = JSON.stringify(form) !== JSON.stringify(option)
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved Chargeable configuration changes?')) onClose() }
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.label.trim()) return setError('Name is required.'); if (group === 'items' && (!form.metadata?.category?.trim() || !Number.isFinite(Number(form.metadata?.price)) || Number(form.metadata?.price) < 0)) return setError('Category and a valid non-negative price are required.'); const generatedValue = form.value || `${form.label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${form.id.slice(0, 8)}`; try { await onSave({ ...form, value: generatedValue }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save configuration.') } }
   const catalog = form.metadata as Record<string, unknown> | undefined
-  return <ChargeableModal title={group === 'items' ? `${option.value ? 'Edit' : 'Add'} Chargeable Item` : group === 'statuses' ? 'Edit Chargeable Status Color' : `${option.value ? 'Edit' : 'Add'} Approved Bottle`} onClose={onClose}>
-<form className="staff-form" onSubmit={event => void submit(event)}>
+  return <ChargeableModal title={group === 'items' ? `${option.value ? 'Edit' : 'Add'} Chargeable Item` : group === 'statuses' ? 'Edit Chargeable Status Color' : `${option.value ? 'Edit' : 'Add'} Approved Bottle`} onClose={requestClose} dismissible className="chargeable-config-modal">
+<form className="staff-form chargeable-config-form" onSubmit={event => void submit(event)}>
 <label>Name<input value={form.label} readOnly={group === 'statuses'} aria-readonly={group === 'statuses'} onChange={event => setForm({ ...form, label: event.target.value })} />
 </label>{group === 'items' ? <>
 <label>Category<input value={form.metadata?.category || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, category: event.target.value } })} />
@@ -390,9 +395,9 @@ function ChargeableConfigForm({ group, option, onClose, onSave }: { group: 'item
 <label>Color<input type="color" value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />
 </label>
 <p className="config-protected-note">Status name, availability and financial reporting behavior are protected by the system. Only the display color may be changed.</p>
-</>}{group !== 'statuses' && <label className="check-label">
+</>}{group !== 'statuses' && <label className="check-label chargeable-config-active">
 <input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>}{error && <p className="save-error">{error}</p>}<div className="form-actions">
-<button type="button" className="secondary" onClick={onClose}>Cancel</button>
+<button type="button" className="secondary" onClick={requestClose}>Cancel</button>
 <button className="primary">Save configuration</button>
 </div>
 </form>

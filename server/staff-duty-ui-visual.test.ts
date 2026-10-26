@@ -570,7 +570,7 @@ try {
   await cdp.evaluate(`document.querySelector('button[aria-label="Customization Center"]')?.click()`)
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.customization-category-nav')`)) break; await sleep(100) }
   const customizationDesktop = await cdp.evaluate<any>(`(()=>{const nav=document.querySelector('.customization-category-nav');const buttons=Array.from(nav.querySelectorAll('button'));return{categories:buttons.map(button=>button.textContent.trim()),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,columns:getComputedStyle(nav).gridTemplateColumns.split(' ').length,workforceTabs:Array.from(document.querySelectorAll('.leave-entitlement-tabs button')).map(button=>button.textContent.trim())}})()`)
-  assert.deepEqual(customizationDesktop.categories, ['Workforce','Bookings','Training','Guest Experience','Commercial','Maintenance','Platform'])
+  assert.deepEqual(customizationDesktop.categories, ['Workforce','Bookings','Training','Guest Experience','Chargeable','Maintenance','Platform'])
   assert.deepEqual(customizationDesktop.workforceTabs, ['Leave Types','Entitlement Policies','Employee Entitlements','Public Holiday Calendar'])
   assert.equal(customizationDesktop.pageOverflow, false)
   assert.equal(customizationDesktop.columns, 6)
