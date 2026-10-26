@@ -76,7 +76,7 @@ try {
 
   const ui = await readFile('src/workforce.tsx', 'utf8')
   const api = await readFile('server/index.ts', 'utf8')
-  assert(ui.includes('Review Before Saving') && ui.includes('Confirm Carry Forward'))
+  assert(ui.includes('Review before saving') && ui.includes('Confirm Carry Forward'))
   assert(ui.includes('Annual Leave Carry Forward') && !ui.includes('Annual Leave opening balance effective date'))
   assert(api.includes('assertTrustedOrigin(request)') && api.includes('saveAnnualLeaveCarryForward'))
   console.log(JSON.stringify({ automaticServiceYear: true, zeroCarryBaseline: true, previewReadOnly: true, explicitZeroDistinct: true, uniqueServiceYearUpdate: true, auditLogged: true, dutyRosterAuthority: true, bookedFutureSeparate: true, confirmationRequired: true, trustedOriginProtected: true, canonicalDatabaseTouched: false }, null, 2))
