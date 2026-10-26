@@ -287,6 +287,14 @@ function Get-AndaluciaReviewedEmployeeEntitlementsFinalCleanupPaths {
   )
 }
 
+function Get-AndaluciaReviewedPublicHolidayCalendarPaths {
+  return @(
+    'server/leave-types-ui-browser.test.ts',
+    'src/workforce.css',
+    'src/workforce.tsx'
+  )
+}
+
 function Assert-AndaluciaPathContentMatches {
   param([string]$ProjectRoot, [string]$ReviewedRef, [string]$IntegratedRef, [string[]]$ExpectedPaths, [string]$Code)
   foreach ($path in $ExpectedPaths) {
@@ -358,8 +366,26 @@ function Get-AndaluciaApprovedSourceState {
   $isLeaveRenewalRulesTestFixApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v8' -and $manifest.mode -eq 'approved_local_leave_renewal_rules_with_test_fix' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_RENEWAL_RULES_TEST_FIX_CHECKPOINT'
   $isLeaveBalancePolishApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v9' -and $manifest.mode -eq 'approved_local_leave_balance_polish' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_LEAVE_BALANCE_POLISH_CHECKPOINT'
   $isEmployeeEntitlementsFinalCleanupApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v10' -and $manifest.mode -eq 'approved_local_employee_entitlements_final_cleanup' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT'
-  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
+  $isPublicHolidayCalendarApproval = $manifest.version -eq 'andalucia-local-workforce-approval-v11' -and $manifest.mode -eq 'approved_local_public_holiday_calendar' -and $manifest.managerApproval -eq 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT'
+  if (-not $isUiApproval -and -not $isDailyReportBackendApproval -and -not $isDailyReportBackendUiApproval -and -not $isDailyReportBackendFinalUiApproval -and -not $isDailyReportCoverApproval -and -not $isDailyReportDateApproval -and -not $isDailyReportTypographyApproval -and -not $isDailyReportDateResetApproval -and -not $isWindowsShutdownApproval -and -not $isWeeklyReportApproval -and -not $isWeeklyReportFinalUiApproval -and -not $isWeeklyReportTypographyApproval -and -not $isWeeklyReportTypographyFinalApproval -and -not $isWeeklyReportCompactApproval -and -not $isWeeklyReportFinalRefinementApproval -and -not $isMonthlyReportApproval -and -not $isMonthlyReportGuestExperienceApproval -and -not $isMonthlyReportGuestExperienceCompactApproval -and -not $isMonthlyReportTypographyApproval -and -not $isMonthlyReportAlignmentApproval -and -not $isCustomReportRedesignApproval -and -not $isCustomReportFinalUiApproval -and -not $isLeaveTypesApproval -and -not $isEmployeeEntitlementsApproval -and -not $isOffDaysSummaryApproval -and -not $isEntitlementBalanceSimplificationApproval -and -not $isEntitlementManageCleanupApproval -and -not $isLeaveRenewalRulesApproval -and -not $isLeaveRenewalRulesTestFixApproval -and -not $isLeaveBalancePolishApproval -and -not $isEmployeeEntitlementsFinalCleanupApproval -and -not $isPublicHolidayCalendarApproval) { throw 'ANDALUCIA_LOCAL_APPROVAL_MANIFEST_INVALID' }
   if ([string]$manifest.branch -ne $branch -or [string]$manifest.activeSourceSha -ne $headSha -or [string]$manifest.approvedMainSha -ne $originMainSha) { throw 'ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH' }
+
+  if ($isPublicHolidayCalendarApproval) {
+    $expectedPreviousControlSha = '614b598e5dc962d1e3ba7e1abb904dfe49cbe229'
+    $expectedCalendarCheckpointSha = 'ae951424705563f8f9bde812d03fb3772b713d2b'
+    if ([string]$manifest.previousControlCommitSha -ne $expectedPreviousControlSha -or [string]$manifest.publicHolidayCalendarCheckpointSha -ne $expectedCalendarCheckpointSha) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_IDENTITY_MISMATCH' }
+    $controlCommitSha = Resolve-AndaluciaGitRef $ProjectRoot ([string]$manifest.controlCommitSha)
+    if ($controlCommitSha -ne [string]$manifest.controlCommitSha -or $controlCommitSha -ne $headSha) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_NONCANONICAL_SHA' }
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedPreviousControlSha $expectedCalendarCheckpointSha 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_NOT_BASED_ON_PRIOR_CONTROL'
+    Assert-AndaluciaGitAncestor $ProjectRoot $expectedCalendarCheckpointSha $controlCommitSha 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_CONTROL_NOT_BASED_ON_CHECKPOINT'
+    $calendarPaths = @(Get-AndaluciaReviewedPublicHolidayCalendarPaths)
+    [void](Assert-AndaluciaExactChangedPaths $ProjectRoot $expectedPreviousControlSha $expectedCalendarCheckpointSha $calendarPaths 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_REVIEWED_PATH_MISMATCH')
+    [void](Assert-AndaluciaChangedPaths $ProjectRoot $expectedCalendarCheckpointSha $controlCommitSha 'backend_control')
+    Assert-AndaluciaPathContentMatches $ProjectRoot $expectedCalendarCheckpointSha $controlCommitSha $calendarPaths 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_CONTENT_MISMATCH'
+    if (@(Compare-Object ($calendarPaths | Sort-Object) @($manifest.publicHolidayCalendarPaths | ForEach-Object { [string]$_ } | Sort-Object)).Count -gt 0) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_MANIFEST_PATH_MISMATCH' }
+    if ([string]$manifest.launcherSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Start-AndaluciaGuardedApplication.ps1')) -or [string]$manifest.resolverSha256 -ne (Get-AndaluciaFileSha256 $PSCommandPath) -or [string]$manifest.backendApprovalScriptSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Approve-AndaluciaLocalBackendCheckpoint.ps1')) -or [string]$manifest.backendActivationScriptSha256 -ne (Get-AndaluciaFileSha256 (Join-Path $ProjectRoot 'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1'))) { throw 'ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_CONTROL_HASH_MISMATCH' }
+    return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='approved_local_public_holiday_calendar'; ApprovedMainSha=$originMainSha; PreviousControlCommitSha=$expectedPreviousControlSha; PublicHolidayCalendarCheckpointSha=$expectedCalendarCheckpointSha; ControlCommitSha=$controlCommitSha }
+  }
 
   if ($isEmployeeEntitlementsFinalCleanupApproval) {
     $expectedPreviousControlSha = 'ebfc95da6ae438b47142742e7fd9dd034806f31d'

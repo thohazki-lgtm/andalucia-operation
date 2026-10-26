@@ -39,6 +39,7 @@ const expectedLeaveRenewalRulesCheckpoint = 'b8d641909ce62bef9ca9741f584b663d59d
 const expectedLeaveRenewalRulesTestFixCheckpoint = '289f476a59724a1e20ecb67ddd82241d90e504f2'
 const expectedLeaveBalancePolishCheckpoint = 'df08221297fceb2cba302175d529f46c79860602'
 const expectedEmployeeEntitlementsFinalCleanupCheckpoint = 'f93628908b2a7820a4cd294213a17ff827387d7c'
+const expectedPublicHolidayCalendarCheckpoint = 'ae951424705563f8f9bde812d03fb3772b713d2b'
 
 function run(command: string, args: string[], cwd = testRoot, expectSuccess = true) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', windowsHide: true })
@@ -127,6 +128,9 @@ try {
   const wrongEmployeeEntitlementsFinalCleanup = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-EmployeeEntitlementsFinalCleanupCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
   assert.notEqual(wrongEmployeeEntitlementsFinalCleanup.status, 0)
   assert.match(wrongEmployeeEntitlementsFinalCleanup.output, /ANDALUCIA_LOCAL_(?:BACKEND|EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP)_CHECKPOINT_SHA_NOT_APPROVED/)
+  const wrongPublicHolidayCalendar = run('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', approvalPath, '-ReviewedCheckpointSha', checkpoint, '-PublicHolidayCalendarCheckpointSha', checkpoint, '-ControlCommitSha', checkpoint, '-ManagerApproval', 'YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT', '-RepositoryRoot', testRoot], testRoot, false)
+  assert.notEqual(wrongPublicHolidayCalendar.status, 0)
+  assert.match(wrongPublicHolidayCalendar.output, /ANDALUCIA_LOCAL_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT_SHA_NOT_APPROVED/)
 
   const resolverSource = await readFile(join(deploymentRoot, 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const approvalSource = await readFile(approvalPath, 'utf8')
@@ -288,6 +292,9 @@ try {
   assert.match(resolverSource, new RegExp(expectedEmployeeEntitlementsFinalCleanupCheckpoint))
   assert.match(approvalSource, new RegExp(expectedEmployeeEntitlementsFinalCleanupCheckpoint))
   assert.match(activationSource, new RegExp(expectedEmployeeEntitlementsFinalCleanupCheckpoint))
+  assert.match(resolverSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
+  assert.match(approvalSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
+  assert.match(activationSource, new RegExp(expectedPublicHolidayCalendarCheckpoint))
   assert.match(resolverSource, /approved_local_monthly_report_table_alignment/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_MONTHLY_REPORT_TABLE_ALIGNMENT_ACTIVATION/)
@@ -335,6 +342,10 @@ try {
   assert.match(resolverSource, /approved_local_employee_entitlements_final_cleanup/)
   assert.match(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_CHECKPOINT/)
   assert.match(activationSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_FINAL_CLEANUP_ACTIVATION/)
+  assert.match(resolverSource, /andalucia-local-workforce-approval-v11/)
+  assert.match(resolverSource, /approved_local_public_holiday_calendar/)
+  assert.match(approvalSource, /YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_CHECKPOINT/)
+  assert.match(activationSource, /YES_I_APPROVE_EXACT_PUBLIC_HOLIDAY_CALENDAR_ACTIVATION/)
   assert.match(resolverSource, /server\/staff-repository\.ts/)
   assert.match(resolverSource, /server\/index\.ts/)
   assert.doesNotMatch(approvalSource, /YES_I_APPROVE_EXACT_EMPLOYEE_ENTITLEMENTS_CHECKPOINT[^\n]+\*/)
