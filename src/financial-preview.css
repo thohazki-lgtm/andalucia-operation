@@ -265,6 +265,7 @@
 .earnings-team-summary .financial-table-wrap{margin-top:12px}
 .earnings-summary-table .emphasized-total{background:#f5ead3}
 .earnings-summary-table .emphasized-total b{font-size:12px}
+.staff-incentive-table :is(th,td):not(:first-child),.earnings-summary-table :is(th,td):not(:first-child){text-align:center}
 .earnings-staff-cards{display:none}
 
 @media(max-width:700px){

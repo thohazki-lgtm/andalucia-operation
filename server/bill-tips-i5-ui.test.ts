@@ -29,5 +29,6 @@ assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
 assert.match(styles, /\.financial-primary-tabs\{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
 assert.match(styles, /\.financial-primary-tabs button\{width:100%;max-width:none;min-width:0/)
 assert.match(styles, /\.financial-main\{align-self:start;margin:0 auto\}/)
+assert.match(styles, /\.staff-incentive-table :is\(th,td\):not\(:first-child\),\.earnings-summary-table :is\(th,td\):not\(:first-child\)\{text-align:center\}/)
 
 console.log('Bill Tips I5 UI assertions passed.')
