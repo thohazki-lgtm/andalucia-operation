@@ -68,7 +68,7 @@
   .intelligence-detail-heading{display:grid}
   .intelligence-evidence-list header{align-items:flex-start}
   .intelligence-evidence-list p{overflow-wrap:break-word}
-  .booking-modal-wide:has(.import-workflow){width:calc(100vw - 16px);max-width:calc(100vw - 16px)}
+  .booking-modal-wide:has(.import-workflow){width:calc(100vw - 24px);max-width:calc(100vw - 24px)}
   .import-workflow,.import-review-section,.import-record-cards,.import-preview-card{min-width:0;max-width:100%}
   .duplicate-section>header{display:grid}
   .reanalyze-intelligence{width:100%;white-space:normal}
