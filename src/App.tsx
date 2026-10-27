@@ -95,7 +95,7 @@ function App() {
 <small>Venue operations</small>
 </div>
 </aside>
-<main>
+<main className={page === 'Incentives & Bill Tips' ? 'financial-main' : undefined}>
 <div className="mobile-topbar">
 <button className="menu-button" type="button" aria-label="Open navigation menu" title="Open navigation menu" aria-expanded={mobileNavigationOpen} aria-controls="application-navigation" onClick={() => setMobileNavigationOpen(true)}>☰</button>
 <div className="mobile-brand">

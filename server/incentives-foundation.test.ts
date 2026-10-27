@@ -38,6 +38,21 @@ try {
   const operations = new OperationsRepository(db)
   await incentives.initialize(); await chargeables.initialize(); await operations.initialize()
 
+  const protectedManagerChoices = [
+    ['PAT', true, 1],
+    ['CIR', false, 0],
+    ['HAJ', true, 0],
+  ] as const
+  for (const [code] of protectedManagerChoices) {
+    const activated = await staffRepository.activateProtectedDutyCode(code, 'Financial policy test manager')
+    assert.equal(activated.metadata?.billTipEligible, undefined, `${code} must not receive an invented Bill Tip default`)
+  }
+  for (const [code, billTipEligible, billTipWorkedDayUnits] of protectedManagerChoices) {
+    const option = (await staffRepository.configuration()).dutyCodes.find(item => item.metadata?.displayCode === code)!
+    const saved = await staffRepository.saveConfiguration('duty-codes', { ...option, metadata: { ...option.metadata, billTipEligible, billTipWorkedDayUnits } }, 'Financial policy test manager')
+    assert.deepEqual([saved.metadata?.billTipEligible, saved.metadata?.billTipWorkedDayUnits], [billTipEligible, billTipWorkedDayUnits])
+  }
+
   const dutyCodes = (await staffRepository.configuration()).dutyCodes
   const eligibility = Object.fromEntries(dutyCodes.map(option => [option.metadata?.displayCode || option.value, option.metadata?.billTipEligible]))
   assert.equal(eligibility.AL, false)

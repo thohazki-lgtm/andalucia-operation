@@ -33,7 +33,7 @@ export const resolvedWorkedDayUnits = (duty: DutyPolicyInput): number | null => 
   const approved = approvedDutyFinancialRule(duty)
   if (approved) return approved.workedDayUnits
   const explicit = duty.metadata?.billTipWorkedDayUnits
-  if (typeof explicit === 'number' && Number.isInteger(explicit) && explicit >= 0) return explicit
+  if (explicit === 0 || explicit === 1) return explicit
   return null
 }
 
