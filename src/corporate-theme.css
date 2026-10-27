@@ -40,6 +40,8 @@ body,
   background: var(--ao-midnight-teal);
   color: var(--ao-soft-ivory);
   border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
+  min-height: 82px;
+  padding: 13px 24px;
 }
 
 main.module-dashboard {
@@ -164,6 +166,21 @@ main[class*='module-'] > .page-header::before {
   border-radius: 999px;
   background: var(--ao-module-accent);
   content: '';
+}
+
+/* Dashboard uses a clean editorial heading above its identity banner. */
+main.module-dashboard > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-dashboard > .page-header::before {
+  display: none;
+  content: none;
 }
 
 main[class*='module-'] > .page-header > div:first-of-type {
@@ -454,6 +471,16 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
 
   main[class*='module-'] > .page-header::before {
     width: 2px;
+  }
+
+  main.module-dashboard > .page-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .module-dashboard .dashboard-hero {
+    min-height: 74px;
+    padding: 11px 18px;
   }
 
   .app-sidebar .brand {
