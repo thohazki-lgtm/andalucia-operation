@@ -35,10 +35,35 @@ body,
 .module-customization-center { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
 .module-my-timesheet { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
 
+/* Let the persistent navigation share the active module accent without
+   changing its established navy selected state or gold authority marker. */
+.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-duty-roster) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+
+.app-sidebar nav .selected {
+  background: linear-gradient(90deg, #173c57 0%, color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 20%, #173c57) 100%);
+  box-shadow: inset 3px 0 #d5ad61, inset 0 -2px var(--ao-shell-highlight, var(--ao-turquoise-coral)), 0 0 0 1px rgb(255 255 255 / 9%);
+}
+
+.app-sidebar nav .selected .nav-icon {
+  color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
+}
+
 main[class*='module-'] > .page-header {
   position: relative;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--ao-champagne-gold);
+  padding: 10px 12px;
+  border: 1px solid var(--ao-champagne-gold);
+  border-radius: 10px;
+  background: linear-gradient(102deg, color-mix(in srgb, var(--ao-module-accent-soft) 24%, var(--ao-surface)) 0%, var(--ao-surface) 56%, transparent 100%);
 }
 
 main[class*='module-'] > .page-header::before {
@@ -56,6 +81,38 @@ main[class*='module-'] > .page-header > div:first-of-type {
 main[class*='module-'] > .page-header .eyebrow,
 main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .monthly-dashboard-section > header) > div > .eyebrow {
   color: var(--ao-module-accent-ink);
+}
+
+/* A quiet wash and inset ribbon make the palette visible in section hierarchy
+   while leaving operational badges, duty codes, configured swatches and
+   financial status colors untouched. */
+main[class*='module-'] :is(
+  .panel-title,
+  .section-heading,
+  .workforce-section-title,
+  .config-heading,
+  .mobile-card-heading,
+  .monthly-dashboard-section > header
+) {
+  border-radius: 7px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ao-module-accent-soft) 22%, var(--ao-surface)) 0%, transparent 78%);
+  box-shadow: inset 3px 0 var(--ao-module-accent);
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+  padding: 7px 9px;
+}
+
+main[class*='module-'] :is(
+  .dashboard-metric-grid,
+  .staff-summary,
+  .attendance-summary,
+  .training-kpis,
+  .chargeable-summary,
+  .financial-summary,
+  .maintenance-summary
+) > :is(article, div) {
+  box-shadow: inset 0 2px color-mix(in srgb, var(--ao-module-accent) 72%, var(--ao-module-accent-soft));
 }
 
 main[class*='module-'] :is(input, select, textarea):focus-visible {
@@ -92,7 +149,7 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note) {
 @media (max-width: 700px) {
   main[class*='module-'] > .page-header {
     gap: 9px;
-    padding-bottom: 10px;
+    padding: 9px 10px;
   }
 
   main[class*='module-'] > .page-header::before {

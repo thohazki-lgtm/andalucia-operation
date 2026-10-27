@@ -51,12 +51,22 @@ try {
     for (const [label, className] of modules) {
       assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('nav button[aria-label=${JSON.stringify(label)}]');button?.click();return !!button})()`), true, `${label} navigation unavailable`)
       for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`document.querySelector('.page-header h1')?.textContent===${JSON.stringify(label)}`)) break; await sleep(75) }
-      const result = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main'),header=main.querySelector(':scope > .page-header'),bar=getComputedStyle(header,'::before'),eyebrow=header.querySelector('.eyebrow'),logo=document.querySelector('.sidebar-wordmark .andalucia-wordmark-image');const box=logo.getBoundingClientRect();return{page:header.querySelector('h1')?.textContent,className:main.classList.contains(${JSON.stringify(className)}),barWidth:parseFloat(bar.width),barColor:bar.backgroundColor,eyebrowColor:getComputedStyle(eyebrow).color,overflow:document.documentElement.scrollWidth-innerWidth,logoRatio:box.width/box.height,canvas:getComputedStyle(main).backgroundColor}})()`)
+      const result = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main'),header=main.querySelector(':scope > .page-header'),headerStyle=getComputedStyle(header),bar=getComputedStyle(header,'::before'),eyebrow=header.querySelector('.eyebrow'),selected=document.querySelector('.app-sidebar nav .selected'),selectedStyle=getComputedStyle(selected),selectedIcon=selected.querySelector('.nav-icon'),sectionHeading=main.querySelector('.panel-title,.section-heading,.workforce-section-title,.config-heading,.monthly-dashboard-section>header'),sectionStyle=sectionHeading?getComputedStyle(sectionHeading):null,logo=document.querySelector('.sidebar-wordmark .andalucia-wordmark-image');const box=logo.getBoundingClientRect();return{page:header.querySelector('h1')?.textContent,className:main.classList.contains(${JSON.stringify(className)}),barWidth:parseFloat(bar.width),barColor:bar.backgroundColor,headerBackground:headerStyle.backgroundImage,headerBorder:headerStyle.borderTopWidth,headerRadius:headerStyle.borderTopLeftRadius,eyebrowColor:getComputedStyle(eyebrow).color,selectedBackground:selectedStyle.backgroundImage,selectedShadow:selectedStyle.boxShadow,selectedIconColor:getComputedStyle(selectedIcon).color,sectionBackground:sectionStyle?.backgroundImage||null,sectionShadow:sectionStyle?.boxShadow||null,overflow:document.documentElement.scrollWidth-innerWidth,logoRatio:box.width/box.height,canvas:getComputedStyle(main).backgroundColor}})()`)
       assert.equal(result.page, label)
       assert.equal(result.className, true, `${label} has no module theme class`)
       assert.ok(result.barWidth >= 2 && result.barWidth <= 3, `${label} accent is not restrained`)
       assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(result.barColor), `${label} accent is invisible`)
       assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(result.eyebrowColor), `${label} heading accent is invisible`)
+      assert.notEqual(result.headerBackground, 'none', `${label} page header has no corporate wash`)
+      assert.equal(result.headerBorder, '1px', `${label} page header lost its fine border`)
+      assert.equal(result.headerRadius, '10px', `${label} page header radius is inconsistent`)
+      assert.notEqual(result.selectedBackground, 'none', `${label} selected navigation has no module treatment`)
+      assert.match(result.selectedShadow, /inset/, `${label} selected navigation lost its authority markers`)
+      assert.ok(!['rgb(255, 255, 255)', 'rgb(23, 60, 87)'].includes(result.selectedIconColor), `${label} selected navigation icon has no corporate highlight`)
+      if (result.sectionBackground) {
+        assert.notEqual(result.sectionBackground, 'none', `${label} section heading has no corporate wash`)
+        assert.match(result.sectionShadow, /inset/, `${label} section heading has no module ribbon`)
+      }
       assert.ok(result.overflow <= 1, `${label} overflows at ${viewport.width}px`)
       assert.ok(result.logoRatio > 2.98 && result.logoRatio < 3.02, `${label} logo proportions changed`)
       assert.equal(result.canvas, 'rgb(255, 251, 243)', `${label} does not use the warm corporate canvas`)
