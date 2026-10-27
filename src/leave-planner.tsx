@@ -10,18 +10,19 @@ const labels = LEAVE_CLASSIFICATION_LABELS
 const displayDate = (value: string) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Indian/Maldives' }).format(new Date(`${value}T00:00:00Z`))
 const readableText = (color?: string) => { const hex = color?.replace('#', '') || ''; if (!/^[0-9a-f]{6}$/i.test(hex)) return '#173d56'; const [r, g, b] = [0, 2, 4].map(index => Number.parseInt(hex.slice(index, index + 2), 16)); return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? '#173d56' : '#fff' }
 
-export function LeavePlannerPanel({ staff, dutyOptions, initialStaffId }: { staff: Staff[]; dutyOptions: ConfigOption[]; initialStaffId?: string }) {
-  const [view, setView] = useState<'planner' | 'history'>(initialStaffId ? 'history' : 'planner')
+export function LeavePlannerPanel({ staff, dutyOptions, initialStaffId, view: controlledView, hideTabs = false }: { staff: Staff[]; dutyOptions: ConfigOption[]; initialStaffId?: string; view?: 'planner' | 'history'; hideTabs?: boolean }) {
+  const [internalView, setInternalView] = useState<'planner' | 'history'>(initialStaffId ? 'history' : 'planner')
+  const view = controlledView || internalView
   const [contentFloor, setContentFloor] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (initialStaffId) setView('history') }, [initialStaffId])
+  useEffect(() => { if (initialStaffId && !controlledView) setInternalView('history') }, [controlledView, initialStaffId])
   const switchView = (next: 'planner' | 'history') => {
     if (next === view) return
     const outgoingHeight = contentRef.current?.getBoundingClientRect().height || 0
     if (outgoingHeight > 0) setContentFloor(current => Math.max(current, Math.ceil(outgoingHeight)))
-    setView(next)
+    setInternalView(next)
   }
-  return <div className="leave-planner-shell"><nav className="leave-planner-tabs" aria-label="Leave Planner views"><button className={view === 'planner' ? 'selected' : ''} aria-pressed={view === 'planner'} onClick={() => switchView('planner')}>Planner</button><button className={view === 'history' ? 'selected' : ''} aria-pressed={view === 'history'} onClick={() => switchView('history')}>Leave History</button></nav><div ref={contentRef} className="leave-planner-view" style={contentFloor ? { minHeight: contentFloor } : undefined}>{view === 'planner' ? <Planner /> : <LeaveRecordsPanel staff={staff} dutyOptions={dutyOptions} initialStaffId={initialStaffId} />}</div></div>
+  return <div className="leave-planner-shell">{!hideTabs && <nav className="leave-planner-tabs" aria-label="Leave Planner views"><button className={view === 'planner' ? 'selected' : ''} aria-pressed={view === 'planner'} onClick={() => switchView('planner')}>Planner</button><button className={view === 'history' ? 'selected' : ''} aria-pressed={view === 'history'} onClick={() => switchView('history')}>Leave History</button></nav>}<div ref={contentRef} className="leave-planner-view" style={contentFloor ? { minHeight: contentFloor } : undefined}>{view === 'planner' ? <Planner /> : <LeaveRecordsPanel staff={staff} dutyOptions={dutyOptions} initialStaffId={initialStaffId} />}</div></div>
 }
 
 function Planner() {

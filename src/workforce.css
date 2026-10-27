@@ -1,4 +1,9 @@
 .workforce-foundation-panel{grid-column:1/-1;min-width:0}
+.leave-planner-workspace{display:grid;min-width:0;gap:10px;font-family:'DM Sans',Arial,sans-serif;color:#294f63}
+.leave-planner-module-tabs{display:grid;width:100%;box-sizing:border-box;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:0;padding:5px;border:1px solid #dec58f;border-radius:12px;background:#fffdf8}
+.leave-planner-module-tabs button{width:100%;min-width:0;min-height:40px;padding:7px 8px;border:1px solid #dec58f;border-radius:8px;background:#fff;color:#4d6879;font:600 10px/1.25 'DM Sans',Arial,sans-serif;cursor:pointer}
+.leave-planner-module-tabs button:hover{background:#fffaf0;color:#173d56}.leave-planner-module-tabs button.active{border-color:#173e54;background:#173e54;box-shadow:inset 0 -3px #bd9854;color:#fff}
+.leave-planner-module-content{min-width:0}.leave-planner-module-content>.leave-planner-shell{min-width:0}
 .leave-entitlements-foundation{min-width:0;font-family:'DM Sans',Arial,sans-serif;color:#294f63}
 .leave-entitlements-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px;padding:12px 14px;border:1px solid #dec58f;border-top:3px solid #bd9854;border-radius:12px;background:linear-gradient(120deg,#fffaf0 0%,#fffdf8 58%,#fff 100%);box-shadow:0 4px 14px rgba(23,62,84,.07);color:#173e54}
 .leave-entitlements-heading h2{margin:2px 0 0;color:#173e54;font:600 21px/1.2 'Playfair Display',serif}
@@ -94,11 +99,14 @@
 
 @media(max-width:1050px){.staff-entitlements-panel .employee-entitlement-header{grid-template-columns:minmax(150px,1fr) minmax(210px,1.35fr) minmax(130px,.85fr) auto;gap:8px}.staff-entitlements-panel .employee-entitlement-metrics{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:8px}.staff-entitlements-panel .employee-entitlement-metrics div:nth-child(4){border-left:0}.staff-entitlements-panel .employee-entitlement-metrics div{padding-inline:7px}}
 
+@media(max-width:1100px){.leave-planner-module-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
 @media(max-width:900px){
   .holiday-record-labels{display:none}.holiday-record{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.holiday-record-name{grid-column:1/-1;padding-bottom:7px;border-bottom:1px solid rgba(222,197,143,.72)}.holiday-record-name b{font-size:13px;white-space:normal}.holiday-record-value,.holiday-record-status{padding:6px 7px;border-radius:7px;background:#fffaf0}.holiday-mobile-label{display:block;margin-bottom:3px;color:#718492;font-size:8px;font-weight:500;text-transform:uppercase}.holiday-record-actions{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding-top:1px}.holiday-record-actions button{width:100%}
 }
 
 @media(max-width:700px){
+  .leave-planner-workspace{gap:8px}.leave-planner-module-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:5px}.leave-planner-module-tabs button{min-height:44px;padding:7px 5px;font-size:9.5px}
   .leave-entitlements-heading{align-items:flex-start;flex-direction:column;gap:6px;padding:10px 11px}.leave-entitlements-heading h2{font-size:19px}.leave-entitlements-heading>p{text-align:left}
   .leave-entitlement-tabs{width:100%;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0 0 10px;padding:4px;overflow:visible}.leave-entitlement-tabs button{width:100%;min-height:44px;padding:6px}
   .panel.leave-types-panel{padding:10px}.leave-types-panel .workforce-section-title{gap:8px}.leave-type-grid{grid-template-columns:1fr}.leave-type-card{grid-template-columns:42px minmax(0,1fr) auto;gap:8px;padding:8px}
