@@ -910,3 +910,34 @@ main{min-width:0}
 @media(max-width:390px){
  .leave-record-evidence-grid{grid-template-columns:1fr}
 }
+
+/* Official Andalucía mosaic wordmark */
+.andalucia-wordmark{display:flex;min-width:0;flex-direction:column;align-items:center}
+.andalucia-wordmark-image{display:block;width:100%;height:auto;object-fit:contain}
+.brand-operation{display:block;width:auto;height:auto;margin-top:-2px;border:0;border-radius:0;color:#d7b86f;font:600 8px/1 'DM Sans',Arial,sans-serif;letter-spacing:.28em;text-align:center}
+.auth-brand{justify-content:center}
+.auth-brand .login-wordmark{width:min(320px,72vw)}
+.auth-brand .brand-operation{margin-top:0;color:#ddc17f;font-size:9px;letter-spacing:.34em}
+.app-sidebar .brand{align-items:flex-start}
+.app-sidebar .brand .sidebar-wordmark{display:flex;width:100%;max-width:204px}
+.app-sidebar .brand .brand-operation,.mobile-brand .brand-operation{display:block;width:auto;height:auto;border:0;border-radius:0;font-family:'DM Sans',Arial,sans-serif;place-items:initial}
+.app-sidebar .brand .brand-operation{font-size:7px}
+.app-sidebar .drawer-close{display:none}
+.mobile-brand .mobile-wordmark{width:150px}
+.mobile-brand .brand-operation{font-size:6px;letter-spacing:.24em}
+@media(max-width:1050px) and (min-width:701px){
+ .app-sidebar .brand{justify-content:center;padding:0 0 24px}
+ .app-sidebar .brand .sidebar-wordmark{display:flex;width:58px}
+ .app-sidebar .brand .brand-operation{margin-top:0;font-size:5px;letter-spacing:.12em}
+}
+@media(max-width:700px){
+ .app-sidebar .brand{align-items:flex-start;justify-content:space-between}
+ .app-sidebar .brand .sidebar-wordmark{display:flex;width:200px}
+ .app-sidebar .drawer-close{display:grid}
+ .mobile-brand{justify-content:center}
+ .mobile-brand .mobile-wordmark{width:145px}
+ .auth-brand .login-wordmark{width:min(300px,82vw)}
+}
+@media(max-width:390px){
+ .mobile-brand .mobile-wordmark{width:132px}
+}

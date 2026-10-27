@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { authApi } from './api'
+import { BrandWordmark } from './brand'
 import type { AuthenticatedUser, AuthorizationPermissionKey } from './domain'
 
 type AuthContextValue = { user: AuthenticatedUser; logout: () => Promise<void>; can: (permission: AuthorizationPermissionKey) => boolean; canForOutlet: (permission: AuthorizationPermissionKey, outletScopeId: string) => boolean }
@@ -56,7 +57,7 @@ function LoginForm({ serviceError, onLogin }: { serviceError: string; onLogin: (
   return <AuthFrame><section className="auth-card"><p className="eyebrow">SECURE PLATFORM ACCESS</p><h1>Welcome back</h1><p>Sign in to continue to ANDALUCÍA OPERATION.</p><form onSubmit={event => void submit(event)}><label>Username or email<input autoComplete="username" required value={identifier} onChange={event => setIdentifier(event.target.value)} /></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="primary" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign In'}</button></form></section></AuthFrame>
 }
 
-function AuthFrame({ children }: { children: ReactNode }) { return <main className="auth-page"><div className="auth-brand"><span>Á</span><div><b>ANDALUCÍA</b><small>OPERATION</small></div></div>{children}<p className="auth-location">Siyam World Maldives · Venue operations</p></main> }
+function AuthFrame({ children }: { children: ReactNode }) { return <main className="auth-page"><div className="auth-brand"><BrandWordmark className="login-wordmark" /></div>{children}<p className="auth-location">Siyam World Maldives · Venue operations</p></main> }
 
 export function AuthUserButton() {
   const { user, logout } = useAuth(); const [open, setOpen] = useState(false)

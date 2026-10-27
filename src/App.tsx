@@ -26,6 +26,7 @@ import { designationLabel, staffDirectorySearchText } from './staff-directory-vi
 import { shareOrDownloadRosterPdf } from './roster-pdf'
 import { approvedDutyFinancialRule } from './duty-financial-policy'
 import { ActionButton, DateControl, IconAction, StatusPill, SvgIcon } from './action-system'
+import { BrandWordmark } from './brand'
 
 const navigation = [
  { label: 'Dashboard', icon: '⌂', eyebrow: 'OPERATIONS OVERVIEW' },
@@ -82,9 +83,7 @@ function App() {
 {mobileNavigationOpen && <button className="navigation-backdrop" aria-label="Close navigation menu" onClick={() => setMobileNavigationOpen(false)} />}
 <aside id="application-navigation" className={`app-sidebar${mobileNavigationOpen ? ' mobile-open' : ''}`}>
 <div className="brand">
-<span>Á</span>
-<div>ANDALUCÍA<small>OPERATION</small>
-</div>
+<BrandWordmark className="sidebar-wordmark" />
 <IconAction icon="close" className="drawer-close" label="Close navigation menu" onClick={() => setMobileNavigationOpen(false)}/>
 </div>
 <nav aria-label="Application modules">{visibleNavigation.map(item => <button key={item.label} type="button" aria-current={page === item.label ? 'page' : undefined} aria-label={item.label} title={item.label} onClick={() => navigate(item.label)} className={page === item.label ? 'selected' : ''}>
@@ -99,9 +98,7 @@ function App() {
 <div className="mobile-topbar">
 <button className="menu-button" type="button" aria-label="Open navigation menu" title="Open navigation menu" aria-expanded={mobileNavigationOpen} aria-controls="application-navigation" onClick={() => setMobileNavigationOpen(true)}>☰</button>
 <div className="mobile-brand">
-<span>Á</span>
-<b>ANDALUCÍA <small>OPERATION</small>
-</b>
+<BrandWordmark className="mobile-wordmark" />
 </div>
 <AuthUserButton />
 </div>
