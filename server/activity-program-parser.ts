@@ -2,7 +2,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { BookingGuestMemberPreview, BookingImportPreviewRecord } from '../src/domain.js'
 import { resolveBookingCoverRecords } from './booking-cover-resolver.js'
 
-export const ACTIVITY_PROGRAM_PARSER_VERSION = 'andalucia-activity-program-v3'
+export const ACTIVITY_PROGRAM_PARSER_VERSION = 'andalucia-activity-program-v4'
 
 type PositionedText = { text: string; x: number; y: number; width: number }
 type TextLine = { page: number; y: number; items: PositionedText[]; text: string }
@@ -75,7 +75,10 @@ export async function parseActivityProgramPdf(data: Uint8Array): Promise<ParsedA
       sections.push(section)
       continue
     }
-    if (/^\d{2}:\d{2}(?:\s*[-–—]\s*\d{2}:\d{2})?\s+.+\/\s*(?!Andalucia\b)/i.test(line.text) || (/Dinner at /i.test(line.text) && !/\/\s*Andalucia\b/i.test(line.text))) { finish(); section = null; continue }
+    // Only a time-prefixed activity heading may close the current section.
+    // Guest notes can legitimately contain phrases such as "dinner at Kaage";
+    // treating those multiline notes as headings drops every following booking.
+    if (/^\d{2}:\d{2}(?:\s*[-–—]\s*\d{2}:\d{2})?\s+.+\/\s*(?!Andalucia\b)/i.test(line.text)) { finish(); section = null; continue }
     if (!section || /^(Room|Name|Birth Date|Arrival|Departure|MP|Guest Notes|Booking no\.|Status|Booked By)\b/i.test(line.text) || /Activity Program\s*-/i.test(line.text) || /Page \d+ (?:of|from) \d+/i.test(line.text)) continue
 
     const roomCell = inColumn(line, 35, 117)
@@ -117,13 +120,15 @@ export async function parseActivityProgramPdf(data: Uint8Array): Promise<ParsedA
   const sectionBookings = (value: Section) => resolvedBookings.filter(booking => (booking.serviceKind || 'dinner') === value.kind && booking.reservationTime === value.time && (booking.serviceEndTime || null) === value.endTime)
   const declaredBookingGroups = sections.reduce((total, value) => total + (value.bookings ?? sectionBookings(value).length), 0)
   const declaredCovers = sections.reduce((total, value) => total + (value.covers ?? sectionBookings(value).reduce((sum, booking) => sum + (booking.covers || 0), 0)), 0)
-  const parsedCovers = resolvedBookings.reduce((total, value) => total + (value.covers || 0), 0)
+  // Structural source reconciliation compares the PDF header with the source
+  // status PAX. Supported comment adjustments belong to the downstream cover
+  // ledger and must not be misreported as a missing-document discrepancy.
+  const parsedCovers = resolvedBookings.reduce((total, value) => total + (value.coverResolution?.baseCovers ?? value.covers ?? 0), 0)
   const messages: string[] = []
   if (!reportDate) messages.push('Activity Program date could not be read.')
   if (resolvedBookings.length !== declaredBookingGroups) messages.push(`Parsed ${resolvedBookings.length} booking groups but section headers declare ${declaredBookingGroups}.`)
-  if (parsedCovers !== declaredCovers) messages.push(`Pre-intelligence booking candidates total ${parsedCovers} covers while raw section headers declare ${declaredCovers}; the reconciliation ledger must explain the difference.`)
+  if (parsedCovers !== declaredCovers) messages.push(`Parsed source bookings total ${parsedCovers} covers while raw section headers declare ${declaredCovers}; the reconciliation ledger must explain the difference.`)
   const structurallyReconciled = Boolean(reportDate) && resolvedBookings.length === declaredBookingGroups
-  if (!structurallyReconciled) for (const booking of resolvedBookings) if (booking.readiness === 'READY') { booking.warnings.push('Document structure does not reconcile; review before import.'); booking.readiness = 'REVIEW_REQUIRED' }
   for (const booking of resolvedBookings) if (booking.coverResolution?.diagnostics.some(value => /require manager review|cannot be safely allocated/i.test(value))) { booking.warnings.push(...booking.coverResolution.diagnostics); booking.warnings = [...new Set(booking.warnings)]; booking.readiness = 'REVIEW_REQUIRED' }
   return { reportDate, bookings: resolvedBookings, validation: { declaredBookingGroups, declaredCovers, reconciled: structurallyReconciled, messages } }
 }

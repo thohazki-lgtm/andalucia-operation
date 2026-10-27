@@ -31,6 +31,14 @@ function parseInstruction(text: string, baseCovers = 0): Instruction | null {
     const first = numberValue(arithmetic[1]); const kids = numberValue(arithmetic[3])
     return { total: first + kids, explicitKids: kids, source: 'arithmetic_expression', evidence: arithmetic[0] }
   }
+  // Activity Program comments also use compact party notation (for example
+  // "B: 414/415 4+2pax"). It is an explicit larger-party correction, not a
+  // trailing two-pax override. Resolve it before the generic `N pax` rule.
+  const compactArithmetic = normalized.match(/\b(\d+)\s*\+\s*(\d+)\s*(?:pax|people|persons?|guests?)\b/i)
+  if (compactArithmetic) {
+    const first = Number(compactArithmetic[1]); const second = Number(compactArithmetic[2])
+    return { total: first + second, explicitKids: 0, source: 'arithmetic_expression', evidence: compactArithmetic[0] }
+  }
   const incremental = normalized.match(/(?:\bADD\s+(\d+)\s+MORE\s+(?:PEOPLE|PERSONS?|GUESTS?|PAX)\b|\b(\d+)\s+ADDITIONAL\s+(?:PEOPLE|PERSONS?|GUESTS?|PAX)\b|(?:^|[\s:;(])\+(\d+)\s*(?:PEOPLE|PERSONS?|GUESTS?|PAX)\b)/i)
   const incrementalCount = incremental?.[1] || incremental?.[2] || incremental?.[3]
   if (incrementalCount && baseCovers > 0) return { total: baseCovers + Number(incrementalCount), explicitKids: 0, source: 'incremental_addition', evidence: incremental![0] }
