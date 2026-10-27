@@ -120,7 +120,43 @@ try {
   assert.notEqual(scopeTamper.status, 0)
   assert.match(scopeTamper.output, /ANDALUCIA_LOCAL_REVIEWED_UI_EXACT_SCOPE_MISMATCH/)
 
-  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
+  await mkdir(join(testRoot, 'server'), { recursive: true })
+  await writeFile(join(testRoot, 'server', 'financial-service.ts'), "export const calculate = () => 1\n", 'utf8')
+  run('git', ['add', 'server/financial-service.ts'])
+  run('git', ['commit', '-m', 'reviewed backend checkpoint'])
+  const backendSha = run('git', ['rev-parse', 'HEAD']).stdout.trim()
+  const backendWithUiApproval = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File',
+    join(testRoot, 'deployment', 'windows', 'Approve-AndaluciaLocalUiCheckpoint.ps1'),
+    '-RepositoryRoot', testRoot,
+    '-PreviousLiveSha', futureUiSha,
+    '-ReviewedCheckpointSha', backendSha,
+    '-ControlCommitSha', backendSha,
+    '-ReviewedPaths', 'server/financial-service.ts',
+    '-ManagerApproval', 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT',
+  ], testRoot, false)
+  assert.notEqual(backendWithUiApproval.status, 0)
+  assert.match(backendWithUiApproval.output, /ANDALUCIA_LOCAL_REVIEWED_UI_PATH_NOT_APPROVED/)
+
+  const reviewedBackendApproval = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File',
+    join(testRoot, 'deployment', 'windows', 'Approve-AndaluciaLocalUiCheckpoint.ps1'),
+    '-RepositoryRoot', testRoot,
+    '-PreviousLiveSha', futureUiSha,
+    '-ReviewedCheckpointSha', backendSha,
+    '-ControlCommitSha', backendSha,
+    '-ReviewedPaths', 'server/financial-service.ts',
+    '-AllowReviewedBackendPaths',
+    '-ManagerApproval', 'YES_I_APPROVE_EXACT_REVIEWED_BACKEND_CHECKPOINT',
+  ])
+  assert.match(reviewedBackendApproval.output, /APPROVED_LOCAL_REVIEWED_BACKEND_CHECKPOINT/)
+  const backendManifest = JSON.parse(await readFile(join(testRoot, '.runtime', 'andalucia-local-ui-approval.json'), 'utf8'))
+  assert.equal(backendManifest.reviewedCheckpointSha, backendSha)
+  assert.deepEqual(backendManifest.reviewedPaths, ['server/financial-service.ts'])
+  const reviewedBackendVerified = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', verifyCommand])
+  assert.match(reviewedBackendVerified.output, /approved_local_reviewed_backend_checkpoint/)
+
+  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, reviewedBackendRequiresDistinctAuthorization: true, uiApprovalRejectsBackend: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }

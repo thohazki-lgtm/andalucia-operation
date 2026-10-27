@@ -6,6 +6,7 @@ param(
   [string]$PreviousLiveSha,
   [string]$ReviewedCheckpointSha,
   [string[]]$ReviewedPaths,
+  [switch]$AllowReviewedBackendPaths,
   [string]$RepositoryRoot
 )
 
@@ -24,7 +25,7 @@ if ($trackedChanges.Count -gt 0) { throw 'ANDALUCIA_LOCAL_UI_SOURCE_DIRTY' }
 $activeSourceSha = Resolve-AndaluciaGitRef $projectRoot 'HEAD'
 $approvedMainSha = Resolve-AndaluciaGitRef $projectRoot 'refs/remotes/origin/main'
 
-if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT') {
+if ($ManagerApproval -in @('YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT', 'YES_I_APPROVE_EXACT_REVIEWED_BACKEND_CHECKPOINT')) {
   if (-not $PreviousLiveSha -or -not $ReviewedCheckpointSha -or -not $ControlCommitSha -or -not $ReviewedPaths -or $ReviewedPaths.Count -eq 0) { throw 'ANDALUCIA_LOCAL_REVIEWED_UI_APPROVAL_ARGUMENTS_REQUIRED' }
   $resolvedPreviousLive = Resolve-AndaluciaGitRef $projectRoot $PreviousLiveSha
   $resolvedReviewedCheckpoint = Resolve-AndaluciaGitRef $projectRoot $ReviewedCheckpointSha
@@ -33,7 +34,9 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT') {
   if ($resolvedControlCommit -ne $activeSourceSha) { throw 'ANDALUCIA_LOCAL_REVIEWED_UI_CONTROL_NOT_HEAD' }
   $normalizedPaths = @($ReviewedPaths | ForEach-Object { ([string]$_).Replace('\','/').Trim() } | Where-Object { $_ })
   if (@($normalizedPaths | Sort-Object -Unique).Count -ne $normalizedPaths.Count) { throw 'ANDALUCIA_LOCAL_REVIEWED_UI_DUPLICATE_PATH' }
-  Assert-AndaluciaReviewedUiPaths $normalizedPaths
+  $isReviewedBackendApproval = $ManagerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_BACKEND_CHECKPOINT'
+  if ($isReviewedBackendApproval -and -not $AllowReviewedBackendPaths) { throw 'ANDALUCIA_LOCAL_REVIEWED_BACKEND_SWITCH_REQUIRED' }
+  if ($isReviewedBackendApproval) { Assert-AndaluciaReviewedBackendPaths $normalizedPaths } else { Assert-AndaluciaReviewedUiPaths $normalizedPaths }
   Assert-AndaluciaGitAncestor $projectRoot $approvedMainSha $resolvedPreviousLive 'ANDALUCIA_LOCAL_REVIEWED_UI_PREVIOUS_LIVE_NOT_BASED_ON_MAIN'
   Assert-AndaluciaGitAncestor $projectRoot $resolvedPreviousLive $resolvedReviewedCheckpoint 'ANDALUCIA_LOCAL_REVIEWED_UI_CHECKPOINT_NOT_BASED_ON_PREVIOUS_LIVE'
   Assert-AndaluciaGitAncestor $projectRoot $resolvedReviewedCheckpoint $resolvedControlCommit 'ANDALUCIA_LOCAL_REVIEWED_UI_CONTROL_NOT_BASED_ON_CHECKPOINT'
@@ -48,8 +51,8 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT') {
     if (-not $blobIds[$path]) { throw "ANDALUCIA_LOCAL_REVIEWED_UI_BLOB_MISSING:$path" }
   }
   $manifest = [ordered]@{
-    version = 'andalucia-local-reviewed-ui-approval-v1'
-    mode = 'approved_local_reviewed_ui_checkpoint'
+    version = if ($isReviewedBackendApproval) { 'andalucia-local-reviewed-backend-approval-v1' } else { 'andalucia-local-reviewed-ui-approval-v1' }
+    mode = if ($isReviewedBackendApproval) { 'approved_local_reviewed_backend_checkpoint' } else { 'approved_local_reviewed_ui_checkpoint' }
     managerApproval = $ManagerApproval
     approvedAt = [DateTime]::UtcNow.ToString('o')
     approvedMainSha = $approvedMainSha
@@ -72,7 +75,8 @@ if ($ManagerApproval -eq 'YES_I_APPROVE_EXACT_REVIEWED_UI_CHECKPOINT') {
   [IO.File]::WriteAllText($temporaryPath, (($manifest | ConvertTo-Json -Depth 8) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
   Move-Item -LiteralPath $temporaryPath -Destination $manifestPath -Force
   $verified = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot -ManifestPath $manifestPath
-  [ordered]@{ status='APPROVED_LOCAL_REVIEWED_UI_CHECKPOINT'; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 8
+  $approvalStatus = if ($isReviewedBackendApproval) { 'APPROVED_LOCAL_REVIEWED_BACKEND_CHECKPOINT' } else { 'APPROVED_LOCAL_REVIEWED_UI_CHECKPOINT' }
+  [ordered]@{ status=$approvalStatus; manifestPath=$manifestPath; source=$verified; mutationPerformed='local_manifest_only' } | ConvertTo-Json -Depth 8
   exit 0
 }
 

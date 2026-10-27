@@ -20,7 +20,7 @@ $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaAppr
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'APPROVED_SOURCE_RESOLVER_MISSING' }
 . $resolverPath
 $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
-$isApprovedLocalCheckpoint = $approvedSource.Mode -eq 'approved_local_reviewed_ui_checkpoint'
+$isApprovedLocalCheckpoint = $approvedSource.Mode -in @('approved_local_reviewed_ui_checkpoint', 'approved_local_reviewed_backend_checkpoint')
 if ($approvedSource.Sha -ne $ExpectedSha) { throw "APPROVED_SOURCE_SHA_MISMATCH:$($approvedSource.Sha):$ExpectedSha" }
 
 $preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-RepositoryRoot',$projectRoot)

@@ -35,7 +35,7 @@ try {
         if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { Stop-Readiness 'APPROVED_SOURCE_RESOLVER_MISSING' $resolverPath }
         . $resolverPath
         try { $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot } catch { Stop-Readiness 'APPROVED_LOCAL_SOURCE_INVALID' $_.Exception.Message }
-        if ($approvedSource.Mode -ne 'approved_local_reviewed_ui_checkpoint' -or $approvedSource.Sha -ne $headSha) { Stop-Readiness 'APPROVED_LOCAL_SOURCE_MODE_MISMATCH' ([string]$approvedSource.Mode) }
+        if ($approvedSource.Mode -notin @('approved_local_reviewed_ui_checkpoint', 'approved_local_reviewed_backend_checkpoint') -or $approvedSource.Sha -ne $headSha) { Stop-Readiness 'APPROVED_LOCAL_SOURCE_MODE_MISMATCH' ([string]$approvedSource.Mode) }
     }
     if (-not $ExpectedSha) { $ExpectedSha = if ($branch -eq 'main') { $originSha } else { $headSha } }
     $expectedFullSha = (& git -C $projectRoot rev-parse $ExpectedSha 2>$null).Trim()
