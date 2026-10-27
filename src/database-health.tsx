@@ -7,10 +7,21 @@ const formatDateTime = (value?: string | null) => value ? new Intl.DateTimeForma
 const formatBytes = (value: number) => value >= 1024 ** 3 ? `${(value / 1024 ** 3).toFixed(1)} GB` : `${(value / 1024 ** 2).toFixed(1)} MB`
 const categoryLabel = (value: string) => value.replace(/^automatic-/, '').replaceAll('-', ' ').replace(/\b\w/g, letter => letter.toUpperCase())
 const restoreLabel = (value: string) => value.replace('RESTORE_TEST_', '').replaceAll('_', ' ')
+let cachedDatabaseHealth: DatabaseAdminHealth | null = null
+
+function DatabaseHealthLoadingState() {
+  return <section className="database-health-admin database-health-loading" role="status" aria-live="polite" aria-busy="true">
+    <header className="database-health-heading platform-card"><div><p className="eyebrow">OWNER PLATFORM ADMINISTRATION</p><h2>Database Health</h2><p>Loading verified recovery points and restore readiness…</p></div><span className="database-loading-action" aria-hidden="true" /></header>
+    <div className="database-health-cards" aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <article className="database-loading-card" key={index}><span /><strong /></article>)}</div>
+    <aside className="database-health-warnings database-loading-note">Loading protected health notes…</aside>
+    <section className="panel backup-history database-loading-history"><header><div><p className="eyebrow">RECOVERY POINTS</p><h3>Backup History</h3></div></header><div className="database-loading-rows" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <span key={index} />)}</div></section>
+    <section className="panel recovery-history database-loading-recovery"><header><div><p className="eyebrow">DISASTER RECOVERY</p><h3>Recovery Incidents</h3></div></header></section>
+  </section>
+}
 
 export function DatabaseHealthPanel() {
-  const [health, setHealth] = useState<DatabaseAdminHealth | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(''); const [notice, setNotice] = useState(''); const [selected, setSelected] = useState<DatabaseBackupInventoryItem | null>(null); const [backupCategory, setBackupCategory] = useState('all'); const [backupPage, setBackupPage] = useState(1)
-  const load = async () => { setError(''); try { setHealth(await databaseAdminApi.health()) } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Database health is unavailable.') } }
+  const [health, setHealth] = useState<DatabaseAdminHealth | null>(() => cachedDatabaseHealth); const [error, setError] = useState(''); const [busy, setBusy] = useState(''); const [notice, setNotice] = useState(''); const [selected, setSelected] = useState<DatabaseBackupInventoryItem | null>(null); const [backupCategory, setBackupCategory] = useState('all'); const [backupPage, setBackupPage] = useState(1)
+  const load = async () => { setError(''); try { const nextHealth = await databaseAdminApi.health(); cachedDatabaseHealth = nextHealth; setHealth(nextHealth) } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Database health is unavailable.') } }
   useEffect(() => { void load() }, [])
   useEffect(() => { if (selected) void databaseAdminApi.inspect(selected.backupId).catch(() => undefined) }, [selected])
   useEffect(() => { if (!selected) return; const dismiss = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelected(null) }; document.addEventListener('keydown', dismiss); return () => document.removeEventListener('keydown', dismiss) }, [selected])
@@ -21,7 +32,7 @@ export function DatabaseHealthPanel() {
   useEffect(() => { setBackupPage(1) }, [backupCategory])
   useEffect(() => { if (backupPage > backupPageCount) setBackupPage(backupPageCount) }, [backupPage, backupPageCount])
   const act = async (key: string, action: () => Promise<unknown>, message: string) => { setBusy(key); setError(''); setNotice(''); try { await action(); setNotice(message); await load() } catch (actionError) { setError(actionError instanceof Error ? actionError.message : 'The database administration action failed.') } finally { setBusy('') } }
-  if (!health && !error) return <section className="panel database-health-state" role="status">Loading protected database health…</section>
+  if (!health && !error) return <DatabaseHealthLoadingState />
   if (!health) return <section className="panel database-health-state error-state"><p>{error}</p><button className="secondary" onClick={() => void load()}>Try Again</button></section>
   const databaseHealthy = health.database.status === 'HEALTHY' || health.database.status === 'BACKUP_RECOMMENDED'
   const recovery = health.recovery; const incident = recovery.activeIncident
