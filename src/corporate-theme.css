@@ -12,6 +12,9 @@
   --ao-orange-glow: #fca851;
   --ao-premium-navy: #173e54;
   --ao-champagne-gold: #dec58f;
+  --ao-midnight-teal: #123e48;
+  --ao-soft-ivory: #faf7ef;
+  --ao-champagne: #d5bb89;
   --ao-canvas: #fffbf3;
   --ao-surface: #fffdf8;
 }
@@ -29,6 +32,29 @@ body,
   --ao-module-accent-soft: var(--ao-turquoise-coral);
   --ao-module-canvas-primary: var(--ao-turquoise-coral);
   --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+/* Dashboard welcome banner: retain the established proportions and type while
+   giving the identity panel its approved Midnight Teal + Champagne treatment. */
+.module-dashboard .dashboard-hero {
+  background: var(--ao-midnight-teal);
+  color: var(--ao-soft-ivory);
+  border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
+}
+
+.module-dashboard .dashboard-hero h2,
+.module-dashboard .dashboard-manager strong {
+  color: var(--ao-soft-ivory);
+}
+
+.module-dashboard .dashboard-hero .eyebrow,
+.module-dashboard .dashboard-manager span {
+  color: var(--ao-champagne);
+}
+
+.module-dashboard .dashboard-hero::after {
+  border-color: var(--ao-champagne);
+  opacity: 0.28;
 }
 
 .module-duty-roster,
