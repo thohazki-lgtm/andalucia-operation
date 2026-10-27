@@ -41,6 +41,7 @@ try {
   const cdp = new Cdp(socket); await cdp.send('Runtime.enable'); await cdp.send('Page.enable'); await mkdir(screenshots, { recursive: true })
   assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5214/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
   const results = []
+  const screenshotPaths: string[] = []
   for (const viewport of viewports) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width <= 430 })
     await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5214/' })
@@ -51,34 +52,45 @@ try {
     for (const [label, className] of modules) {
       assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('nav button[aria-label=${JSON.stringify(label)}]');button?.click();return !!button})()`), true, `${label} navigation unavailable`)
       for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`document.querySelector('.page-header h1')?.textContent===${JSON.stringify(label)}`)) break; await sleep(75) }
-      const result = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main'),mainStyle=getComputedStyle(main),header=main.querySelector(':scope > .page-header'),headerStyle=getComputedStyle(header),bar=getComputedStyle(header,'::before'),eyebrow=header.querySelector('.eyebrow'),selected=document.querySelector('.app-sidebar nav .selected'),selectedStyle=getComputedStyle(selected),selectedIcon=selected.querySelector('.nav-icon'),sectionHeading=main.querySelector('.panel-title,.section-heading,.workforce-section-title,.config-heading,.monthly-dashboard-section>header'),sectionStyle=sectionHeading?getComputedStyle(sectionHeading):null,logo=document.querySelector('.sidebar-wordmark .andalucia-wordmark-image');const box=logo.getBoundingClientRect();return{page:header.querySelector('h1')?.textContent,className:main.classList.contains(${JSON.stringify(className)}),barWidth:parseFloat(bar.width),barColor:bar.backgroundColor,headerBackground:headerStyle.backgroundImage,headerBorder:headerStyle.borderTopWidth,headerRadius:headerStyle.borderTopLeftRadius,eyebrowColor:getComputedStyle(eyebrow).color,selectedBackground:selectedStyle.backgroundImage,selectedShadow:selectedStyle.boxShadow,selectedIconColor:getComputedStyle(selectedIcon).color,sectionBackground:sectionStyle?.backgroundImage||null,sectionShadow:sectionStyle?.boxShadow||null,overflow:document.documentElement.scrollWidth-innerWidth,logoRatio:box.width/box.height,canvas:mainStyle.backgroundColor,canvasImage:mainStyle.backgroundImage}})()`)
+      const result = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main'),mainStyle=getComputedStyle(main),header=main.querySelector(':scope > .page-header'),headerStyle=getComputedStyle(header),bar=getComputedStyle(header,'::before'),eyebrow=header.querySelector('.eyebrow'),selected=document.querySelector('.app-sidebar nav .selected'),selectedStyle=getComputedStyle(selected),selectedIcon=selected.querySelector('.nav-icon'),sectionHeading=main.querySelector('.panel-title,.section-heading,.workforce-section-title,.config-heading,.monthly-dashboard-section>header'),sectionStyle=sectionHeading?getComputedStyle(sectionHeading):null,panel=main.querySelector('.panel'),panelStyle=panel?getComputedStyle(panel):null,tableCell=main.querySelector('table th,table td'),tableCellStyle=tableCell?getComputedStyle(tableCell):null,structural=[...main.querySelectorAll('.panel,section,article,[class$="-row"],[class*="-row "],[class$="-rows"],[class*="-rows "],[class$="-list"],[class*="-list "],[class$="-cards"],[class*="-cards "],table th,table td')].filter(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return r.width>0&&r.height>0&&s.borderTopStyle!=='none'&&!node.matches('.error-state,.exception,.attention,.attention-card,.urgent,.danger,.open,.progress,.complete,.achieved,.cancelled')});const goldStructuralBorders=structural.filter(node=>getComputedStyle(node).borderTopColor==='rgb(222, 197, 143)').length,logo=document.querySelector('.sidebar-wordmark .andalucia-wordmark-image');const box=logo.getBoundingClientRect();return{page:header.querySelector('h1')?.textContent,className:main.classList.contains(${JSON.stringify(className)}),barWidth:parseFloat(bar.width),barColor:bar.backgroundColor,headerBackground:headerStyle.backgroundImage,headerBackgroundColor:headerStyle.backgroundColor,headerBorder:headerStyle.borderTopWidth,headerBorderColor:headerStyle.borderTopColor,headerRadius:headerStyle.borderTopLeftRadius,eyebrowColor:getComputedStyle(eyebrow).color,selectedBackground:selectedStyle.backgroundImage,selectedBackgroundColor:selectedStyle.backgroundColor,selectedBorderColor:selectedStyle.borderTopColor,selectedShadow:selectedStyle.boxShadow,selectedIconColor:getComputedStyle(selectedIcon).color,sectionBackground:sectionStyle?.backgroundImage||null,sectionBackgroundColor:sectionStyle?.backgroundColor||null,sectionShadow:sectionStyle?.boxShadow||null,panelBorderColor:panelStyle?.borderTopColor||null,panelBackgroundColor:panelStyle?.backgroundColor||null,tableBorderColor:tableCellStyle?.borderBottomColor||null,goldStructuralBorders,overflow:document.documentElement.scrollWidth-innerWidth,logoRatio:box.width/box.height,canvas:mainStyle.backgroundColor,canvasImage:mainStyle.backgroundImage}})()`)
       assert.equal(result.page, label)
       assert.equal(result.className, true, `${label} has no module theme class`)
       assert.ok(result.barWidth >= 2 && result.barWidth <= 3, `${label} accent is not restrained`)
       assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(result.barColor), `${label} accent is invisible`)
       assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(result.eyebrowColor), `${label} heading accent is invisible`)
-      assert.notEqual(result.headerBackground, 'none', `${label} page header has no corporate wash`)
+      assert.equal(result.headerBackground, 'none', `${label} page header still uses a decorative gradient`)
+      assert.notEqual(result.headerBackgroundColor, 'rgba(0, 0, 0, 0)', `${label} page header has no corporate surface`)
       assert.equal(result.headerBorder, '1px', `${label} page header lost its fine border`)
+      assert.notEqual(result.headerBorderColor, 'rgb(222, 197, 143)', `${label} page header is still gold-dominated`)
       assert.equal(result.headerRadius, '10px', `${label} page header radius is inconsistent`)
-      assert.notEqual(result.selectedBackground, 'none', `${label} selected navigation has no module treatment`)
+      assert.equal(result.selectedBackground, 'none', `${label} selected navigation still uses a decorative gradient`)
+      assert.notEqual(result.selectedBackgroundColor, 'rgba(0, 0, 0, 0)', `${label} selected navigation has no module treatment`)
+      assert.notEqual(result.selectedBorderColor, 'rgb(222, 197, 143)', `${label} selected navigation is still gold-outlined`)
       assert.match(result.selectedShadow, /inset/, `${label} selected navigation lost its authority markers`)
       assert.ok(!['rgb(255, 255, 255)', 'rgb(23, 60, 87)'].includes(result.selectedIconColor), `${label} selected navigation icon has no corporate highlight`)
       if (result.sectionBackground) {
-        assert.notEqual(result.sectionBackground, 'none', `${label} section heading has no corporate wash`)
+        assert.equal(result.sectionBackground, 'none', `${label} section heading still uses a decorative gradient`)
+        assert.notEqual(result.sectionBackgroundColor, 'rgba(0, 0, 0, 0)', `${label} section heading has no corporate surface`)
         assert.match(result.sectionShadow, /inset/, `${label} section heading has no module ribbon`)
       }
+      if (result.panelBorderColor) assert.notEqual(result.panelBorderColor, 'rgb(222, 197, 143)', `${label} panels are still gold-dominated`)
+      if (result.tableBorderColor) assert.notEqual(result.tableBorderColor, 'rgb(222, 197, 143)', `${label} table dividers are still gold-dominated`)
+      assert.equal(result.goldStructuralBorders, 0, `${label} still has decorative gold structural borders`)
       assert.ok(result.overflow <= 1, `${label} overflows at ${viewport.width}px`)
       assert.ok(result.logoRatio > 2.98 && result.logoRatio < 3.02, `${label} logo proportions changed`)
-      assert.equal(result.canvas, 'rgb(255, 251, 243)', `${label} does not use the warm corporate canvas`)
-      assert.notEqual(result.canvasImage, 'none', `${label} has no module-specific canvas treatment`)
+      assert.notEqual(result.canvas, 'rgb(255, 251, 243)', `${label} canvas does not show its module family`)
+      assert.equal(result.canvasImage, 'none', `${label} canvas still uses decorative gradients`)
+      const moduleSlug = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      const moduleScreenshot = join(screenshots, `corporate-palette-${viewport.name}-${moduleSlug}.png`)
+      const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true })
+      await writeFile(moduleScreenshot, Buffer.from(shot.data, 'base64'))
+      screenshotPaths.push(moduleScreenshot.replaceAll('\\', '/'))
       moduleResults.push({ label, ...result })
     }
-    const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true })
-    await writeFile(join(screenshots, `corporate-palette-${viewport.name}.png`), Buffer.from(shot.data, 'base64'))
     results.push({ viewport: viewport.name, modules: moduleResults })
   }
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ status: 'PASS', isolated: true, canonicalDatabaseTouched: false, viewports: viewports.map(item => item.name), modules: modules.map(item => item[0]), screenshots: viewports.map(item => `artifacts/corporate-palette/corporate-palette-${item.name}.png`), results }, null, 2))
+  console.log(JSON.stringify({ status: 'PASS', isolated: true, canonicalDatabaseTouched: false, viewports: viewports.map(item => item.name), modules: modules.map(item => item[0]), screenshots: screenshotPaths, results }, null, 2))
 } finally {
   socket?.close(); for (const child of children.reverse()) { if (child.exitCode === null) child.kill(); child.removeAllListeners(); child.unref() } await sleep(800); await rm(fixture.root, { recursive: true, force: true, maxRetries: 4, retryDelay: 250 }).catch(() => undefined)
 }

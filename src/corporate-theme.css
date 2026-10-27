@@ -84,10 +84,13 @@ body,
 }
 
 main[class*='module-'] {
-  background-color: var(--ao-canvas);
-  background-image:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--ao-module-canvas-secondary) 7%, transparent) 0%, transparent 38%),
-    linear-gradient(145deg, color-mix(in srgb, var(--ao-module-canvas-primary) 13%, var(--ao-canvas)) 0%, var(--ao-canvas) 50%, color-mix(in srgb, var(--ao-module-canvas-secondary) 5%, var(--ao-canvas)) 100%);
+  --ao-module-line: color-mix(in srgb, var(--ao-module-accent-ink) 46%, var(--ao-surface));
+  --ao-module-divider: color-mix(in srgb, var(--ao-module-accent-ink) 28%, var(--ao-surface));
+  --ao-module-surface: color-mix(in srgb, var(--ao-module-accent-soft) 12%, var(--ao-surface));
+  --ao-module-surface-strong: color-mix(in srgb, var(--ao-module-accent-soft) 21%, var(--ao-surface));
+  --financial-gold: var(--ao-module-line);
+  background-color: color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-canvas));
+  background-image: none;
 }
 
 /* Let the persistent navigation share the active module accent without
@@ -105,8 +108,9 @@ main[class*='module-'] {
 .app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
 
 .app-sidebar nav .selected {
-  background: linear-gradient(90deg, #173c57 0%, color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 20%, #173c57) 100%);
-  box-shadow: inset 3px 0 #d5ad61, inset 0 -2px var(--ao-shell-highlight, var(--ao-turquoise-coral)), 0 0 0 1px rgb(255 255 255 / 9%);
+  border-color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
+  background: color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 22%, #173c57);
+  box-shadow: inset 3px 0 var(--ao-shell-highlight, var(--ao-turquoise-coral)), inset 0 -2px var(--ao-shell-accent, var(--ao-lagoon-teal)), 0 0 0 1px rgb(255 255 255 / 9%);
 }
 
 .app-sidebar nav .selected .nav-icon {
@@ -116,9 +120,9 @@ main[class*='module-'] {
 main[class*='module-'] > .page-header {
   position: relative;
   padding: 10px 12px;
-  border: 1px solid var(--ao-champagne-gold);
+  border: 1px solid var(--ao-module-line);
   border-radius: 10px;
-  background: linear-gradient(102deg, color-mix(in srgb, var(--ao-module-accent-soft) 24%, var(--ao-surface)) 0%, var(--ao-surface) 56%, transparent 100%);
+  background: var(--ao-module-surface-strong);
 }
 
 main[class*='module-'] > .page-header::before {
@@ -150,7 +154,7 @@ main[class*='module-'] :is(
   .monthly-dashboard-section > header
 ) {
   border-radius: 7px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--ao-module-accent-soft) 22%, var(--ao-surface)) 0%, transparent 78%);
+  background: var(--ao-module-surface-strong);
   box-shadow: inset 3px 0 var(--ao-module-accent);
 }
 
@@ -171,14 +175,139 @@ main[class*='module-'] :is(
 }
 
 main[class*='module-'] :is(input, select, textarea):focus-visible {
-  border-color: var(--ao-champagne-gold);
+  border-color: var(--ao-module-accent-ink);
   outline: 3px solid color-mix(in srgb, var(--ao-module-accent-soft) 55%, transparent);
   outline-offset: 1px;
 }
 
-/* Warm supporting surfaces, without replacing the existing premium white cards. */
-main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note) {
-  background-color: var(--ao-linen-grey);
+/* Corporate color replaces decorative gold on structural surfaces only.
+   Semantic states, configured swatches, duty codes and financial indicators
+   retain their own authoritative colors. */
+main[class*='module-'] :is(
+  .panel,
+  .customization-category-panel,
+  .booking-config-section,
+  .maintenance-config-card,
+  .workforce-foundation-panel,
+  .financial-subsection,
+  .report-section,
+  .weekly-report-section,
+  .monthly-dashboard-section,
+  .custom-report-section
+):not(.error-state):not(.exception):not(.attention-card) {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(
+  section,
+  article,
+  [class$='-row'],
+  [class*='-row '],
+  [class$='-rows'],
+  [class*='-rows '],
+  [class$='-list'],
+  [class*='-list '],
+  [class$='-cards'],
+  [class*='-cards '],
+  [class$='-fields'],
+  [class*='-fields '],
+  [class$='-grid'],
+  [class*='-grid ']
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .ao-action,
+  .config-icon-action,
+  .compact-edit-action,
+  .date-control,
+  .month-control
+):not(.danger):not(.remove) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) button {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) button:is(.selected, .active, [aria-pressed='true']) {
+  border-color: var(--ao-module-accent-ink);
+  box-shadow: inset 0 -2px var(--ao-module-accent);
+}
+
+main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] table :is(th, td) {
+  border-color: var(--ao-module-divider);
+}
+
+main[class*='module-'] table th {
+  background-color: var(--ao-module-surface-strong);
+}
+
+main[class*='module-'] :is(
+  .dashboard-metric-grid,
+  .staff-summary,
+  .attendance-summary,
+  .training-kpis,
+  .training-r2-kpis,
+  .chargeable-summary,
+  .financial-metrics,
+  .maintenance-summary,
+  .daily-kpis,
+  .weekly-kpis,
+  .monthly-primary-metrics,
+  .custom-report-kpis
+) > :is(article, div) {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .dashboard-empty, .tonight-zero) {
+  border-color: var(--ao-module-divider);
+  background-color: var(--ao-module-surface-strong);
 }
 
 /* Logo contrast and breathing room only; the image dimensions and asset stay unchanged. */
