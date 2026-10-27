@@ -19,9 +19,15 @@ const palette = {
 }
 
 for (const [token, value] of Object.entries(palette)) assert.match(theme, new RegExp(`${token}:\\s*${value}`, 'i'), `${token} is missing`)
-for (const moduleName of ['dashboard', 'staff-management', 'duty-roster', 'leave-planner', 'training', 'bookings', 'guest-occasions', 'incentives-and-bill-tips', 'maintenance', 'reports', 'customization-center']) assert.match(theme, new RegExp(`\\.module-${moduleName}\\s*\\{`), `${moduleName} has no restrained accent assignment`)
+for (const moduleName of ['dashboard', 'staff-management', 'duty-roster', 'leave-planner', 'training', 'bookings', 'guest-occasions', 'incentives-and-bill-tips', 'maintenance', 'reports', 'customization-center']) assert.match(theme, new RegExp(`\\.module-${moduleName}(?:\\s*[,\\{])`), `${moduleName} has no restrained accent assignment`)
 assert.match(app, /moduleThemeClass\(page\)/)
 assert.match(main, /import '\.\/corporate-theme\.css'/)
+assert.match(theme, /main\[class\*='module-'\]\s*\{[\s\S]*background-image:[\s\S]*radial-gradient[\s\S]*linear-gradient/, 'module canvas treatment is missing')
+assert.match(theme, /var\(--ao-module-canvas-primary\)/, 'primary module canvas token is unused')
+assert.match(theme, /var\(--ao-module-canvas-secondary\)/, 'secondary module canvas token is unused')
+assert.match(theme, /--ao-module-canvas-secondary:\s*var\(--ao-violet-hour\)/, 'violet module canvas is missing')
+assert.match(theme, /--ao-module-canvas-secondary:\s*var\(--ao-sunset-orange\)/, 'sunset module canvas is missing')
+assert.match(theme, /--ao-module-canvas-secondary:\s*var\(--ao-lagoon-teal\)/, 'teal module canvas is missing')
 assert.match(theme, /\.app-shell:has\(> main\.module-dashboard\)/, 'active module accent is not exposed to persistent navigation')
 assert.match(theme, /\.app-sidebar nav \.selected \{[\s\S]*var\(--ao-shell-highlight/, 'selected navigation lacks a corporate highlight')
 assert.match(theme, /page-header \{[\s\S]*linear-gradient/, 'page headers lack a visible corporate wash')
@@ -30,4 +36,4 @@ assert.doesNotMatch(theme, /!important/)
 assert.doesNotMatch(theme, /\.badge|\.status-dot|\[style\]/, 'corporate palette must not override semantic or configured status colors')
 assert.equal(createHash('sha256').update(logo).digest('hex'), 'ee7fde7ba4f1e99a81fea8981b2282e2f6ff9f36e21ce17141a04916082bb41d', 'official wordmark asset changed')
 
-console.log(JSON.stringify({ paletteTokens: Object.keys(palette).length, moduleAccents: 11, selectedNavigationAccents: true, sectionHierarchyAccents: true, semanticColorsPreserved: true, logoPreserved: true }, null, 2))
+console.log(JSON.stringify({ paletteTokens: Object.keys(palette).length, moduleAccents: 11, moduleCanvasFamilies: ['teal', 'sunset', 'violet'], selectedNavigationAccents: true, sectionHierarchyAccents: true, semanticColorsPreserved: true, logoPreserved: true }, null, 2))

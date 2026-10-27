@@ -1,5 +1,5 @@
 /* Official Andalucía corporate palette.
-   Module accents are deliberately limited to navigation and headings so that
+   Module accents stay on structural surfaces, navigation and headings so that
    operational status colors and manager-configured colors remain authoritative. */
 :root {
   --ao-moonlight-black: #000000;
@@ -22,18 +22,73 @@ body,
   background: var(--ao-canvas);
 }
 
-.module-dashboard { --ao-module-accent: var(--ao-lagoon-teal); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
-.module-staff-management { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
-.module-duty-roster { --ao-module-accent: var(--ao-orange-glow); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
-.module-leave-planner { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
-.module-training { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
-.module-bookings { --ao-module-accent: var(--ao-orange-glow); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
-.module-guest-occasions { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
-.module-incentives-and-bill-tips { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
-.module-maintenance { --ao-module-accent: var(--ao-sunset-orange); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
-.module-reports { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
-.module-customization-center { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
-.module-my-timesheet { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-dashboard,
+.module-staff-management {
+  --ao-module-accent: var(--ao-lagoon-teal);
+  --ao-module-accent-ink: var(--ao-lagoon-teal);
+  --ao-module-accent-soft: var(--ao-turquoise-coral);
+  --ao-module-canvas-primary: var(--ao-turquoise-coral);
+  --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+.module-duty-roster,
+.module-bookings {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #9b4b29;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: var(--ao-linen-grey);
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
+.module-leave-planner,
+.module-reports {
+  --ao-module-accent: var(--ao-lilac-calm);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-lilac-calm);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+.module-training,
+.module-incentives-and-bill-tips,
+.module-my-timesheet {
+  --ao-module-accent: var(--ao-lagoon-teal);
+  --ao-module-accent-ink: var(--ao-lagoon-teal);
+  --ao-module-accent-soft: var(--ao-turquoise-coral);
+  --ao-module-canvas-primary: var(--ao-turquoise-coral);
+  --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+.module-guest-occasions {
+  --ao-module-accent: var(--ao-lilac-calm);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-lilac-calm);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+.module-maintenance {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #9b4b29;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: var(--ao-orange-glow);
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
+.module-customization-center {
+  --ao-module-accent: var(--ao-violet-hour);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-linen-grey);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+main[class*='module-'] {
+  background-color: var(--ao-canvas);
+  background-image:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--ao-module-canvas-secondary) 7%, transparent) 0%, transparent 38%),
+    linear-gradient(145deg, color-mix(in srgb, var(--ao-module-canvas-primary) 13%, var(--ao-canvas)) 0%, var(--ao-canvas) 50%, color-mix(in srgb, var(--ao-module-canvas-secondary) 5%, var(--ao-canvas)) 100%);
+}
 
 /* Let the persistent navigation share the active module accent without
    changing its established navy selected state or gold authority marker. */
@@ -47,7 +102,7 @@ body,
 .app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
 .app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
 
 .app-sidebar nav .selected {
   background: linear-gradient(90deg, #173c57 0%, color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 20%, #173c57) 100%);
