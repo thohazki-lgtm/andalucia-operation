@@ -88,6 +88,9 @@ main[class*='module-'] {
   --ao-module-divider: color-mix(in srgb, var(--ao-module-accent-ink) 28%, var(--ao-surface));
   --ao-module-surface: color-mix(in srgb, var(--ao-module-accent-soft) 12%, var(--ao-surface));
   --ao-module-surface-strong: color-mix(in srgb, var(--ao-module-accent-soft) 21%, var(--ao-surface));
+  --ao-module-card-radius: 10px;
+  --ao-module-control-radius: 8px;
+  --ao-module-control-height: 40px;
   --financial-gold: var(--ao-module-line);
   background-color: color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-canvas));
   background-image: none;
@@ -196,7 +199,82 @@ main[class*='module-'] :is(
   .custom-report-section
 ):not(.error-state):not(.exception):not(.attention-card) {
   border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
+}
+
+/* These three legacy containers have equal-or-higher component specificity;
+   name their existing wrappers so the shared corporate frame wins without
+   resorting to priority flags or editing module CSS. */
+main[class*='module-'] .staff-directory-page .staff-tools,
+main[class*='module-'] .booking-panel.service-panel .service-tools,
+main[class*='module-'] .maintenance-panel .maintenance-filters {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+/* Legacy module toolbars used fixed gold borders and uneven spacing.  Keep
+   their layout decisions intact while giving every filter surface the same
+   corporate frame, rhythm and control typography. */
+main[class*='module-'] :is(
+  .staff-tools,
+  .training-tools,
+  .booking-tools,
+  .service-tools,
+  .occasion-filters,
+  .chargeable-filters,
+  .maintenance-filters,
+  .attendance-toolbar,
+  .report-controls
+) {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ao-module-line);
+  border-radius: var(--ao-module-card-radius);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='color']),
+  select,
+  textarea
+) {
+  min-height: var(--ao-module-control-height);
+  border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-control-radius);
+  background-color: var(--ao-surface);
+  color: var(--ao-premium-navy);
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+main[class*='module-'] :is(
+  .ao-action--secondary,
+  .ao-icon-action,
+  .secondary,
+  .view,
+  .field-mode-control,
+  .config-icon-action
+):not(.danger) {
+  border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-control-radius);
+}
+
+main[class*='module-'] :is(.ao-action--primary, .primary):not(.danger) {
+  border-color: var(--ao-module-accent-ink);
+  background-color: var(--ao-module-accent-ink);
+  color: #fff;
+}
+
+main[class*='module-'] :is(.ao-action--primary, .primary):not(.danger):hover:not(:disabled) {
+  border-color: var(--ao-module-accent-ink);
+  background-color: color-mix(in srgb, var(--ao-module-accent-ink) 88%, var(--ao-premium-navy));
+}
+
+main[class*='module-'] .field-mode-control button {
+  border-color: var(--ao-module-divider);
 }
 
 main[class*='module-'] :is(
@@ -287,6 +365,10 @@ main[class*='module-'] table th {
   background-color: var(--ao-module-surface-strong);
 }
 
+main[class*='module-'] :is(th, td) {
+  line-height: 1.35;
+}
+
 main[class*='module-'] :is(
   .dashboard-metric-grid,
   .staff-summary,
@@ -331,6 +413,10 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
 }
 
 @media (max-width: 700px) {
+  main[class*='module-'] {
+    --ao-module-control-height: 44px;
+  }
+
   main[class*='module-'] > .page-header {
     gap: 9px;
     padding: 9px 10px;
