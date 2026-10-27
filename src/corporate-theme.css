@@ -42,6 +42,10 @@ body,
   border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
 }
 
+main.module-dashboard {
+  background-color: #f2ede4;
+}
+
 .module-dashboard .dashboard-hero h2,
 .module-dashboard .dashboard-manager strong {
   color: var(--ao-soft-ivory);
