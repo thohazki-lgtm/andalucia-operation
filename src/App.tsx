@@ -42,6 +42,7 @@ const navigation = [
  { label: 'Customization Center', icon: '⚙', eyebrow: 'SYSTEM CONFIGURATION' }
 ] as const
 const employeeNavigation = [{ label: 'My Timesheet', icon: '◷', eyebrow: 'EMPLOYEE SELF SERVICE' }] as const
+const moduleThemeClass = (page: string) => `module-${page.toLowerCase().replaceAll('&', 'and').replaceAll(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
 const dutyDisplayCode = (option?: ConfigOption) => option?.metadata?.displayCode?.trim() || option?.value || ''
 const isLegacySickLeave = (option?: ConfigOption) => dutyDisplayCode(option).toUpperCase() === 'SK'
 const dutyFinancialRuleView = (option: ConfigOption) => {
@@ -94,7 +95,7 @@ function App() {
 <small>Venue operations</small>
 </div>
 </aside>
-<main className={page === 'Incentives & Bill Tips' ? 'financial-main' : undefined}>
+<main className={`${moduleThemeClass(page)}${page === 'Incentives & Bill Tips' ? ' financial-main' : ''}`}>
 <div className="mobile-topbar">
 <button className="menu-button" type="button" aria-label="Open navigation menu" title="Open navigation menu" aria-expanded={mobileNavigationOpen} aria-controls="application-navigation" onClick={() => setMobileNavigationOpen(true)}>☰</button>
 <div className="mobile-brand">

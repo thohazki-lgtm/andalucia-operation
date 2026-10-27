@@ -10,5 +10,6 @@ import './staff-membership-baseline.css'
 import './auth.css'
 import './my-timesheet.css'
 import './manager-timesheets.css'
+import './corporate-theme.css'
 
 createRoot(document.getElementById('root')!).render(<StrictMode><AuthGate><App /></AuthGate></StrictMode>)

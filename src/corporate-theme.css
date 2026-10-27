@@ -1,0 +1,107 @@
+/* Official Andalucía corporate palette.
+   Module accents are deliberately limited to navigation and headings so that
+   operational status colors and manager-configured colors remain authoritative. */
+:root {
+  --ao-moonlight-black: #000000;
+  --ao-violet-hour: #45176b;
+  --ao-turquoise-coral: #b1e4dc;
+  --ao-lilac-calm: #c0b7f0;
+  --ao-lagoon-teal: #0c675c;
+  --ao-sunset-orange: #ce6233;
+  --ao-linen-grey: #fff6e4;
+  --ao-orange-glow: #fca851;
+  --ao-premium-navy: #173e54;
+  --ao-champagne-gold: #dec58f;
+  --ao-canvas: #fffbf3;
+  --ao-surface: #fffdf8;
+}
+
+body,
+.app-shell,
+.app-shell > main {
+  background: var(--ao-canvas);
+}
+
+.module-dashboard { --ao-module-accent: var(--ao-lagoon-teal); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-staff-management { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-duty-roster { --ao-module-accent: var(--ao-orange-glow); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
+.module-leave-planner { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
+.module-training { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-bookings { --ao-module-accent: var(--ao-orange-glow); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
+.module-guest-occasions { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
+.module-incentives-and-bill-tips { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-maintenance { --ao-module-accent: var(--ao-sunset-orange); --ao-module-accent-ink: #9b4b29; --ao-module-accent-soft: var(--ao-orange-glow); }
+.module-reports { --ao-module-accent: var(--ao-lilac-calm); --ao-module-accent-ink: var(--ao-violet-hour); --ao-module-accent-soft: var(--ao-lilac-calm); }
+.module-customization-center { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+.module-my-timesheet { --ao-module-accent: var(--ao-turquoise-coral); --ao-module-accent-ink: var(--ao-lagoon-teal); --ao-module-accent-soft: var(--ao-turquoise-coral); }
+
+main[class*='module-'] > .page-header {
+  position: relative;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ao-champagne-gold);
+}
+
+main[class*='module-'] > .page-header::before {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 999px;
+  background: var(--ao-module-accent);
+  content: '';
+}
+
+main[class*='module-'] > .page-header > div:first-of-type {
+  flex: 1 1 auto;
+}
+
+main[class*='module-'] > .page-header .eyebrow,
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .monthly-dashboard-section > header) > div > .eyebrow {
+  color: var(--ao-module-accent-ink);
+}
+
+main[class*='module-'] :is(input, select, textarea):focus-visible {
+  border-color: var(--ao-champagne-gold);
+  outline: 3px solid color-mix(in srgb, var(--ao-module-accent-soft) 55%, transparent);
+  outline-offset: 1px;
+}
+
+/* Warm supporting surfaces, without replacing the existing premium white cards. */
+main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note) {
+  background-color: var(--ao-linen-grey);
+}
+
+/* Logo contrast and breathing room only; the image dimensions and asset stay unchanged. */
+.app-sidebar .brand {
+  margin: 0 0 8px;
+  padding-top: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgb(177 228 220 / 22%);
+}
+
+.app-sidebar .brand .sidebar-wordmark {
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 22%));
+}
+
+.mobile-topbar {
+  border-bottom: 1px solid rgb(192 183 240 / 28%);
+}
+
+.mobile-brand .mobile-wordmark {
+  filter: drop-shadow(0 1px 6px rgb(0 0 0 / 24%));
+}
+
+@media (max-width: 700px) {
+  main[class*='module-'] > .page-header {
+    gap: 9px;
+    padding-bottom: 10px;
+  }
+
+  main[class*='module-'] > .page-header::before {
+    width: 2px;
+  }
+
+  .app-sidebar .brand {
+    margin-bottom: 6px;
+    padding-top: 4px;
+    padding-bottom: 18px;
+  }
+}
