@@ -839,3 +839,205 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
     padding-bottom: 18px;
   }
 }
+
+/* Staff Management final polish: use Dashboard's open editorial header while
+   retaining Staff Management's established Lagoon Teal identity. */
+.app-shell:has(> main.module-staff-management) {
+  --ao-page-canvas-top: #f4f8f5;
+  --ao-page-canvas-tint: #b8ddd2;
+  background-color: #f4f8f5;
+  background-image: linear-gradient(to bottom, #f4f8f5 0%, #d8ebe5 56%, #b8ddd2 100%);
+}
+
+main.module-staff-management {
+  margin: 0 auto;
+}
+
+main.module-staff-management > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-staff-management > .page-header::before {
+  display: none;
+  content: none;
+}
+
+main.module-staff-management .staff-section-bar .staff-section-tabs button {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 46%, white);
+}
+
+main.module-staff-management .staff-section-bar .staff-section-tabs button.selected {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  box-shadow: inset 0 3px var(--ao-turquoise-coral), 0 4px 10px rgb(12 103 92 / 16%);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel,
+main.module-staff-management .staff-directory-page .staff-panel,
+main.module-staff-management .staff-directory-page .staff-tools,
+main.module-staff-management .staff-directory-page .staff-mobile-card {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 42%, white);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel {
+  border-top-color: var(--ao-lagoon-teal);
+  background: #f7fbf9;
+  box-shadow: 0 6px 16px rgb(12 103 92 / 7%);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(2),
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(3),
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(4) {
+  border-top-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .staff-directory-page .staff-tools,
+main.module-staff-management .staff-directory-page .staff-mobile-cards {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-directory-page .staff-tools :is(input, select),
+main.module-staff-management .staff-profile-drawer :is(input, select) {
+  border-color: #a8cec5;
+}
+
+main.module-staff-management .staff-directory-page .staff-tools :is(input, select):focus {
+  border-color: var(--ao-lagoon-teal);
+  box-shadow: 0 0 0 3px rgb(177 228 220 / 42%);
+}
+
+main.module-staff-management .staff-directory-page .staff-table-wrap {
+  overflow-x: auto;
+  border-top-color: #acd0c7;
+  scrollbar-gutter: stable;
+}
+
+main.module-staff-management .staff-directory-page .staff-table {
+  min-width: 920px;
+  table-layout: fixed;
+}
+
+main.module-staff-management .staff-directory-page .staff-table th,
+main.module-staff-management .staff-directory-page .staff-table td {
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+main.module-staff-management .staff-directory-page .staff-table th {
+  border-bottom-color: var(--ao-lagoon-teal);
+  background: #eef7f4;
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .staff-directory-page .staff-table td {
+  border-bottom-color: #d8e9e4;
+}
+
+main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
+  background: #f4faf8;
+}
+
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(1) { width: 22%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(2) { width: 11%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(4) { width: 11%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(5) { width: 11%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(7) { width: 150px; text-align: center; }
+
+main.module-staff-management .staff-table-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+main.module-staff-management .staff-table-identity b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-icon-actions {
+  justify-content: center;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-icon-action:hover {
+  border-color: var(--ao-lagoon-teal);
+  background: #eef7f4;
+}
+
+main.module-staff-management .staff-profile-drawer {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-profile-drawer > .staff-profile-header {
+  border-bottom-color: #9fc9bf;
+  background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
+}
+
+main.module-staff-management .staff-profile-heading .eyebrow,
+main.module-staff-management .staff-profile-scroll > section > .eyebrow,
+main.module-staff-management .staff-profile-drawer .staff-training-history > .eyebrow {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .staff-profile-heading h2,
+main.module-staff-management .staff-profile-drawer .staff-training-history h3 {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+main.module-staff-management .staff-profile-scroll > section,
+main.module-staff-management .staff-profile-drawer .staff-training-history,
+main.module-staff-management .staff-profile-grid > div,
+main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
+main.module-staff-management .staff-training-summary article,
+main.module-staff-management .staff-training-table-wrap {
+  border-color: #b7d6ce;
+}
+
+main.module-staff-management .staff-profile-grid > div,
+main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
+main.module-staff-management .staff-training-summary article {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-profile-drawer .staff-training-history th {
+  background: #eaf5f1;
+}
+
+main.module-staff-management .staff-profile-drawer > footer {
+  border-top-color: #9fc9bf;
+  box-shadow: 0 -8px 20px rgb(12 103 92 / 8%);
+}
+
+main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staff-profile-archive) {
+  border-color: var(--ao-lagoon-teal);
+  color: var(--ao-lagoon-teal);
+}
+
+@media (max-width: 700px) {
+  main.module-staff-management > .page-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-table-wrap {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-cards {
+    display: none;
+  }
+}

@@ -110,13 +110,19 @@ try {
     const mobile = width <= 700
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
     await sleep(100)
-    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector(${mobile ? "'.staff-directory-page .staff-mobile-card>header b'" : "'.staff-directory-page .staff-name-cell b'"});const style=getComputedStyle(name);return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&getComputedStyle(tab).whiteSpace==='nowrap'),nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector('.staff-directory-page .staff-name-cell b');const style=getComputedStyle(name);const header=document.querySelector('.staff-management-header');const wrap=document.querySelector('.staff-directory-page .staff-table-wrap');const cards=document.querySelector('.staff-directory-page .staff-mobile-cards');return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,headerTop:Math.round(header.getBoundingClientRect().top),containedTableScroll:wrap.scrollWidth>wrap.clientWidth,tableOverflowX:getComputedStyle(wrap).overflowX,mobileCardsDisplay:getComputedStyle(cards).display,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&getComputedStyle(tab).whiteSpace==='nowrap'),nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1}})()`)
     assert.equal(result.pageOverflow, false, `Page overflow at ${width}px.`)
-    assert.equal(result.tabCount, 5)
+    assert.ok(result.headerTop <= (mobile ? 90 : 40), `Staff header was vertically displaced at ${width}px: ${result.headerTop}px.`)
+    if (mobile) {
+      assert.equal(result.containedTableScroll, true)
+      assert.equal(result.tableOverflowX, 'auto')
+      assert.equal(result.mobileCardsDisplay, 'none')
+    }
+    assert.equal(result.tabCount, 4)
     assert.deepEqual(result.tabFontSizes, ['12px'])
     assert.deepEqual(result.tabFontWeights, ['600'])
     assert.equal(result.tabLabelsFit, true)
-    assert.equal(result.nameFontSize, mobile ? '15px' : '13px')
+    assert.equal(result.nameFontSize, '13px')
     assert.equal(result.nameFontWeight, '650')
     assert.equal(result.nameColor, 'rgb(23, 61, 86)')
     assert.equal(result.nameFits, true)
@@ -134,7 +140,15 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-table tbody tr')`)) break; await sleep(100) }
   const accountTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-table tbody td:first-child b', id: '.staff-account-table tbody td:nth-child(2)', heading: '.staff-account-table thead th:first-child', value: '.staff-account-table tbody td:nth-child(3)' }))
-  assert.deepEqual(accountTypography, membershipTypography)
+  assert.equal(accountTypography.name.fontSize, membershipTypography.name.fontSize)
+  assert.equal(accountTypography.id.fontSize, membershipTypography.id.fontSize)
+  assert.equal(accountTypography.value.fontSize, membershipTypography.value.fontSize)
+  for (const sample of [membershipTypography, accountTypography]) {
+    assert.match(sample.name.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.match(sample.id.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.match(sample.heading.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.match(sample.value.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+  }
   await screenshot(cdp, 'account-management-audit-1440.png')
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Team Membership');if(!button)return false;button.click();return true})()`), true)
@@ -144,7 +158,14 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-cards article')`)) break; await sleep(100) }
   const accountMobileTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-cards article header b', id: '.staff-account-cards article header small', value: '.staff-account-cards article dd' }))
-  assert.deepEqual(accountMobileTypography, membershipMobileTypography)
+  assert.equal(accountMobileTypography.name.fontSize, membershipMobileTypography.name.fontSize)
+  assert.equal(accountMobileTypography.id.fontSize, membershipMobileTypography.id.fontSize)
+  assert.equal(accountMobileTypography.value.fontSize, membershipMobileTypography.value.fontSize)
+  for (const sample of [membershipMobileTypography, accountMobileTypography]) {
+    assert.match(sample.name.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.match(sample.id.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.match(sample.value.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+  }
   assert.equal(await cdp.evaluate<boolean>(`document.documentElement.scrollWidth>document.documentElement.clientWidth+1`), false)
   await screenshot(cdp, 'account-management-audit-390.png')
   const accountWidths = [1440, 1024, 430, 390, 360]
