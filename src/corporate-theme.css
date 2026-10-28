@@ -49,7 +49,12 @@
   --ao-midnight-teal: #123e48;
   --ao-soft-ivory: #faf7ef;
   --ao-champagne: #d5bb89;
+  --ao-royal-purple: #5b146f;
+  --ao-soft-lavender: #c89feb;
+  --ao-forest-green: #1e5b53;
+  --ao-soft-mint: #c9e7dd;
   --ao-canvas: #fffbf3;
+  --ao-module-canvas-base: var(--ao-canvas);
   --ao-surface: #fffdf8;
 }
 
@@ -83,7 +88,15 @@ body,
   background: var(--ao-canvas);
 }
 
-.module-dashboard,
+.module-dashboard {
+  --ao-module-accent: var(--ao-royal-purple);
+  --ao-module-accent-ink: var(--ao-royal-purple);
+  --ao-module-accent-soft: var(--ao-soft-lavender);
+  --ao-module-canvas-primary: var(--ao-soft-lavender);
+  --ao-module-canvas-secondary: var(--ao-royal-purple);
+  --ao-module-canvas-base: #f2ede4;
+}
+
 .module-staff-management {
   --ao-module-accent: var(--ao-lagoon-teal);
   --ao-module-accent-ink: var(--ao-lagoon-teal);
@@ -100,10 +113,6 @@ body,
   border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
   min-height: 82px;
   padding: 13px 24px;
-}
-
-main.module-dashboard {
-  background-color: #f2ede4;
 }
 
 .module-dashboard .dashboard-hero h2,
@@ -173,11 +182,11 @@ main.module-dashboard {
 }
 
 .module-customization-center {
-  --ao-module-accent: var(--ao-violet-hour);
-  --ao-module-accent-ink: var(--ao-violet-hour);
-  --ao-module-accent-soft: var(--ao-lilac-calm);
-  --ao-module-canvas-primary: var(--ao-linen-grey);
-  --ao-module-canvas-secondary: var(--ao-violet-hour);
+  --ao-module-accent: var(--ao-forest-green);
+  --ao-module-accent-ink: var(--ao-forest-green);
+  --ao-module-accent-soft: var(--ao-soft-mint);
+  --ao-module-canvas-primary: var(--ao-soft-mint);
+  --ao-module-canvas-secondary: var(--ao-forest-green);
 }
 
 main[class*='module-'] {
@@ -189,13 +198,19 @@ main[class*='module-'] {
   --ao-module-control-radius: 8px;
   --ao-module-control-height: 40px;
   --financial-gold: var(--ao-module-line);
-  background-color: color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-canvas));
-  background-image: none;
+  background-color: var(--ao-module-canvas-base);
+  background-image: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-module-canvas-base)) 0%,
+    color-mix(in srgb, var(--ao-module-canvas-primary) 6%, var(--ao-module-canvas-base)) 48%,
+    var(--ao-module-canvas-base) 82%
+  );
+  background-repeat: no-repeat;
 }
 
 /* Let the persistent navigation share the active module accent without
    changing its established navy selected state or gold authority marker. */
-.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-royal-purple); --ao-shell-highlight: var(--ao-soft-lavender); }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-duty-roster) {
   --ao-shell-accent: var(--ao-sunset-orange);
@@ -213,7 +228,15 @@ main[class*='module-'] {
 .app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
 .app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); }
+
+/* The hostess service board uses an established operational teal treatment;
+   keep it stable while the wider Dashboard identity moves to Royal Purple. */
+.module-dashboard .tonight-count-badge {
+  border-color: var(--ao-lagoon-teal);
+  background: #e2f5f1;
+  color: var(--ao-premium-navy);
+}
 
 .app-sidebar nav .selected {
   border-color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
