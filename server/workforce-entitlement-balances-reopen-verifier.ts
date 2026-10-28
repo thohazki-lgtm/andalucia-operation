@@ -11,7 +11,7 @@ const repository = new StaffRepository('snapshot-verification', database)
 
 try {
   await repository.initialize()
-  const balance = await repository.entitlementBalance(staffId, 2026, '2026-09-14', '2026-09-20')
+  const balance = await repository.entitlementBalance(staffId, 2026, '2026-09-13', '2026-09-19')
   console.log(JSON.stringify({
     annualLeave: balance.annualLeave,
     publicHoliday: balance.publicHoliday,

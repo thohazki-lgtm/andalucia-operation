@@ -1,5 +1,6 @@
-.financial-module{min-width:0}.financial-primary-tabs{display:flex;width:100%;max-width:900px;gap:11px;margin:-5px 0 20px;padding:0;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none}.financial-primary-tabs::-webkit-scrollbar{display:none}.financial-primary-tabs button{flex:1 1 0;max-width:220px;min-height:52px;padding:0 21px;border:1px solid #d7e1e5;border-radius:11px;background:#fff;color:#173d56;font:700 12px/1.2 inherit;white-space:nowrap;cursor:pointer;scroll-snap-align:start;transition:border-color .16s ease,background-color .16s ease,color .16s ease,box-shadow .16s ease}.financial-primary-tabs button:hover{border-color:#c5a25b;background:#fffaf0}.financial-primary-tabs button:focus-visible{outline:3px solid #d7b663;outline-offset:2px}.financial-primary-tabs button.selected{border-color:#173d56;background:#173d56;color:#fff;box-shadow:0 4px 10px #173d5622}.financial-command{display:flex;justify-content:space-between;align-items:flex-end;gap:22px}.financial-command h2{font:700 22px 'Playfair Display',serif;color:#173d56}.financial-command>div:first-child>p:last-child,.external-allocations header p,.financial-subsection header p{margin-top:6px;color:#6e828d;font-size:11px}.financial-command-controls{display:flex;align-items:flex-end;gap:9px}.financial-command-controls label,.external-list label{display:grid;gap:5px;color:#667b87;font-size:9px;font-weight:700;text-transform:uppercase}.financial-command-controls input,.external-list input{height:38px;border:1px solid #d8e2e6;border-radius:7px;background:#fff;padding:0 10px;color:#294b60;font:11px inherit}.financial-command-controls .primary{height:38px}.external-allocations>header,.financial-subsection>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.external-allocations h3,.financial-subsection h3{color:#173d56}.external-list{display:grid;gap:9px;margin-top:15px}.external-list article{display:grid;grid-template-columns:1.1fr 1fr 1fr .65fr 1.3fr auto auto;gap:8px;align-items:end;padding:11px;border:1px solid #e1e8eb;border-radius:8px;background:#fafcfc}.quick-amounts{display:flex;gap:3px}.quick-amounts button{height:38px;border:1px solid #d8e2e6;background:#fff;color:#365a70;font-size:9px;cursor:pointer}.danger-link{color:#9a4d45!important}.external-allocations footer{text-align:right;margin-top:13px}.financial-empty{margin-top:15px;padding:18px;border:1px dashed #d8e2e6;border-radius:8px;color:#7b8d96;font-size:11px;text-align:center}.financial-state{text-align:center;color:#657b87}.error-state{color:#934d47}.error-state p{margin:7px 0 13px}.financial-preview-results{display:grid;gap:16px}.financial-preview-banner{display:grid;grid-template-columns:auto 1fr auto;gap:5px 12px;align-items:center;padding:15px 18px;border:1px solid #d9e5e8;border-left:4px solid #b58b3c;border-radius:9px;background:#fff}.financial-preview-banner>span{grid-row:1/3;padding:5px 8px;border-radius:4px;background:#f4ead6;color:#8b6525;font-size:9px;font-weight:800;letter-spacing:.06em}.financial-preview-banner b{color:#173d56}.financial-preview-banner small{grid-column:2;color:#6d818c}.financial-preview-banner em{grid-column:3;grid-row:1/3;color:#8a6729;font-size:10px;font-style:normal;font-weight:750}.financial-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.financial-metrics article{padding:15px;border:1px solid #e0e8eb;border-top:3px solid #d1ae68;border-radius:9px;background:#fff}.financial-metrics span,.financial-metrics strong{display:block}.financial-metrics span{color:#71848e;font-size:9px;text-transform:uppercase;letter-spacing:.04em}.financial-metrics strong{margin-top:7px;color:#173d56;font:700 20px 'Playfair Display',serif}.financial-subsection{margin:0;min-width:0}.financial-table-wrap{max-width:100%;overflow-x:auto;margin-top:15px}.financial-table-wrap table{min-width:840px}.bill-tip-table{min-width:1120px!important}.financial-table-wrap td small{display:block;margin-top:3px;color:#7b8d96}.financial-status{display:inline-block;padding:4px 8px;border-radius:10px;background:#e9f3ed;color:#387058;font-size:9px;font-weight:800;text-transform:uppercase}.financial-status.review_required{background:#f8ecd7;color:#916925}.financial-status.provisional{background:#edf1f3;color:#59717f}.source-pending{max-width:260px;color:#936d2d;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.financial-reconciliation{display:flex;align-items:center;justify-content:center;gap:13px;margin:0;color:#617681;font-size:11px}.financial-reconciliation strong{color:#173d56}.incentive-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.seller-review{color:#946623;font-weight:750}.incentive-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+.financial-main{align-self:start;margin:0 auto}.financial-module{--financial-gold:#dec58f;--financial-gold-strong:#c5a45e;min-width:0}.financial-primary-tabs{display:flex;width:100%;max-width:900px;gap:11px;margin:-5px 0 20px;padding:0;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none}.financial-primary-tabs::-webkit-scrollbar{display:none}.financial-primary-tabs button{flex:1 1 0;max-width:220px;min-height:52px;padding:0 21px;border:1px solid #d7e1e5;border-radius:11px;background:#fff;color:#173d56;font:700 12px/1.2 inherit;white-space:nowrap;cursor:pointer;scroll-snap-align:start;transition:border-color .16s ease,background-color .16s ease,color .16s ease,box-shadow .16s ease}.financial-primary-tabs button:hover{border-color:#c5a25b;background:#fffaf0}.financial-primary-tabs button:focus-visible{outline:3px solid #d7b663;outline-offset:2px}.financial-primary-tabs button.selected{border-color:#173d56;background:#173d56;color:#fff;box-shadow:0 4px 10px #173d5622}.financial-command{display:flex;justify-content:space-between;align-items:flex-end;gap:22px}.financial-command h2{font:700 22px 'Playfair Display',serif;color:#173d56}.financial-command>div:first-child>p:last-child,.external-allocations header p,.financial-subsection header p{margin-top:6px;color:#6e828d;font-size:11px}.financial-command-controls{display:flex;align-items:flex-end;gap:9px}.financial-command-controls label,.external-list label{display:grid;gap:5px;color:#667b87;font-size:9px;font-weight:700;text-transform:uppercase}.financial-command-controls input,.external-list input{height:38px;border:1px solid #d8e2e6;border-radius:7px;background:#fff;padding:0 10px;color:#294b60;font:11px inherit}.financial-command-controls .primary{height:38px}.external-allocations>header,.financial-subsection>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.external-allocations h3,.financial-subsection h3{color:#173d56}.external-list{display:grid;gap:9px;margin-top:15px}.external-list article{display:grid;grid-template-columns:1.1fr 1fr 1fr .65fr 1.3fr auto auto;gap:8px;align-items:end;padding:11px;border:1px solid #e1e8eb;border-radius:8px;background:#fafcfc}.quick-amounts{display:flex;gap:3px}.quick-amounts button{height:38px;border:1px solid #d8e2e6;background:#fff;color:#365a70;font-size:9px;cursor:pointer}.danger-link{color:#9a4d45!important}.external-allocations footer{text-align:right;margin-top:13px}.financial-empty{margin-top:15px;padding:18px;border:1px dashed #d8e2e6;border-radius:8px;color:#7b8d96;font-size:11px;text-align:center}.financial-state{text-align:center;color:#657b87}.error-state{color:#934d47}.error-state p{margin:7px 0 13px}.financial-preview-results{display:grid;gap:16px}.financial-preview-banner{display:grid;grid-template-columns:auto 1fr auto;gap:5px 12px;align-items:center;padding:15px 18px;border:1px solid #d9e5e8;border-left:4px solid #b58b3c;border-radius:9px;background:#fff}.financial-preview-banner>span{grid-row:1/3;padding:5px 8px;border-radius:4px;background:#f4ead6;color:#8b6525;font-size:9px;font-weight:800;letter-spacing:.06em}.financial-preview-banner b{color:#173d56}.financial-preview-banner small{grid-column:2;color:#6d818c}.financial-preview-banner em{grid-column:3;grid-row:1/3;color:#8a6729;font-size:10px;font-style:normal;font-weight:750}.financial-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.financial-metrics article{padding:15px;border:1px solid #e0e8eb;border-top:3px solid #d1ae68;border-radius:9px;background:#fff}.financial-metrics span,.financial-metrics strong{display:block}.financial-metrics span{color:#71848e;font-size:9px;text-transform:uppercase;letter-spacing:.04em}.financial-metrics strong{margin-top:7px;color:#173d56;font:700 20px 'Playfair Display',serif}.financial-subsection{margin:0;min-width:0}.financial-table-wrap{max-width:100%;overflow-x:auto;margin-top:15px}.financial-table-wrap table{min-width:840px}.bill-tip-table{min-width:1120px!important}.financial-table-wrap td small{display:block;margin-top:3px;color:#7b8d96}.financial-status{display:inline-block;padding:4px 8px;border-radius:10px;background:#e9f3ed;color:#387058;font-size:9px;font-weight:800;text-transform:uppercase}.financial-status.review_required{background:#f8ecd7;color:#916925}.financial-status.provisional{background:#edf1f3;color:#59717f}.source-pending{max-width:260px;color:#936d2d;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.financial-reconciliation{display:flex;align-items:center;justify-content:center;gap:13px;margin:0;color:#617681;font-size:11px}.financial-reconciliation strong{color:#173d56}.incentive-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.seller-review{color:#946623;font-weight:750}.incentive-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
 .financial-review-reason{display:block;min-width:150px;max-width:220px;margin-top:5px;color:#7a6134!important;font-size:9px!important;line-height:1.35;text-transform:none}.external-list article>*{min-width:0;max-width:100%}.external-list input{width:100%;min-width:0}
+.financial-state.error-state{display:grid;justify-items:center;gap:8px}.financial-state.error-state p{margin:0}.financial-state.error-state small{display:block;max-width:780px;line-height:1.5}.financial-state.error-state>.ao-action{margin-top:2px}
 .financial-primary-tabs button{font-family:inherit;font-size:12px;font-weight:700;line-height:1.2}
 @media(max-width:1100px){.financial-command{align-items:stretch;flex-direction:column}.financial-command-controls{flex-wrap:wrap}.external-list article{grid-template-columns:repeat(3,minmax(0,1fr))}.external-remarks{grid-column:span 2}.financial-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.financial-primary-tabs button{flex:0 0 auto;max-width:none;min-width:150px;padding-inline:20px}}
@@ -83,25 +84,25 @@
 .financial-status.ao-status-pill--gold,.period-pill.ao-status-pill--gold{border-color:#dcc082;background:#fff8e8;color:#80601f}
 .financial-status.ao-status-pill--navy{border-color:#aac0cb;background:#edf4f7;color:#173b52}
 
-/* Stage 5D: Earnings Summary uses the shared controls without adopting Bill Tips surfaces. */
-.financial-command.earnings-command{align-items:center;gap:16px;margin-bottom:16px}
+/* Earnings Summary command structure. */
+.financial-command.earnings-command{align-items:center;gap:16px;margin-bottom:12px}
 .earnings-command .financial-command-controls{align-items:center}
 .earnings-command .financial-command-controls .ao-date-control{width:168px}
-.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:38px;padding:0 37px 0 10px;border:1px solid #d8e2e6;border-radius:7px;background:#fff;color:#294b60;font:11px inherit}
+.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:42px;padding:0 37px 0 10px;border:1px solid var(--financial-gold);border-radius:9px;background:#fffdf8;color:#294b60;font:11px inherit}
 .earnings-command .financial-command-controls>.ao-action{min-height:38px}
 
 /* Stage 5C final polish: restrained Bill Tips-only champagne and gold hierarchy. */
 .financial-command.bill-tip-command{align-items:center;margin-bottom:16px;border:1px solid #dec58f;border-top:3px solid #bd9854;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 48%,#fff 100%);box-shadow:0 4px 14px #7b5a1b0b}
 .bill-tip-command .eyebrow,.external-allocations header .eyebrow{margin-top:0;color:#80642e;font-size:10px}
 .bill-tip-command h2{color:#143b55}
-.bill-tip-command .financial-command-controls{padding:9px;border:1px solid #eadbbd;border-radius:10px;background:#ffffffbf}
+.bill-tip-command .financial-command-controls{padding:9px;border:1px solid var(--financial-gold,#dec58f);border-radius:10px;background:#ffffffbf}
 .bill-tip-command .financial-command-controls label{color:#6f592d}
-.bill-tip-command .financial-command-controls input{border-color:#d8c59d}
-.panel.external-allocations{margin-bottom:16px;border-color:#e0c995;border-top:3px solid #c9a252;background:linear-gradient(180deg,#fffdf8 0%,#fff 56%)}
+.bill-tip-command .financial-command-controls input{border-color:var(--financial-gold,#dec58f)}
+.panel.external-allocations{margin-bottom:16px;border-color:var(--financial-gold,#dec58f);border-top:3px solid #c9a252;background:linear-gradient(180deg,#fffdf8 0%,#fff 56%)}
 .external-allocations>header{margin-bottom:0}
 .external-allocations h3{color:#173d56}
-.external-allocations .financial-empty{border-color:#dfcda8;background:#fffdf8;color:#77694b}
-.bill-tip-preview-results>.financial-metrics article{border-color:#e1c990;border-top-color:#c49a48;background:linear-gradient(180deg,#fffdf8 0%,#fff 72%);box-shadow:0 3px 12px #7657190a}
+.external-allocations .financial-empty{border-color:var(--financial-gold,#dec58f);background:#fffdf8;color:#77694b}
+.bill-tip-preview-results>.financial-metrics article{border-color:var(--financial-gold,#dec58f);border-top-color:#c49a48;background:linear-gradient(180deg,#fffdf8 0%,#fff 72%);box-shadow:0 3px 12px #7657190a}
 .bill-tip-preview-results>.financial-metrics span{color:#756744}
 .bill-tip-preview-results>.financial-metrics strong{color:#173d56}
 
@@ -119,8 +120,8 @@
 .bill-tip-command .financial-command-controls label,.bill-tip-command .financial-command-controls .ao-date-control{width:100%;min-width:0}
 .bill-tip-command .financial-command-controls input,.bill-tip-command .financial-command-controls .ao-action{height:42px;min-height:42px}
 .external-allocations>header{align-items:center}
-.external-allocation-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:0 0 auto}
-.external-allocation-actions .ao-action{min-height:40px}
+.external-allocation-actions{display:flex;align-items:stretch;justify-content:flex-end;gap:9px;flex:0 0 auto}
+.external-allocation-actions .ao-action{height:42px;min-height:42px}
 .external-allocations .financial-empty{margin-top:11px;padding:13px 16px}
 .bill-tip-metrics article{display:flex;min-height:94px;flex-direction:column;justify-content:space-between;padding:13px 15px}
 .bill-tip-metrics .financial-metric--financial{background:linear-gradient(180deg,#fffaf0 0%,#fff 78%)}
@@ -141,16 +142,54 @@
 .bill-tip-finalization-card .finalization-guidance,.bill-tip-finalization-card .backup-gate{padding:10px 12px}
 .bill-tip-finalization-card>.ao-action{margin-top:1px}
 
+/* Bill Tips gold-standard visual pass: one restrained hierarchy across every operational surface. */
+.page-header.financial-page-header{margin-bottom:10px}
+.financial-primary-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:900px;margin:-3px 0 12px;overflow:visible}
+.financial-primary-tabs button{width:100%;max-width:none;min-width:0;min-height:50px;border:1px solid var(--financial-gold);border-radius:11px;background:#fffdf8}
+.financial-primary-tabs button:hover{border-color:var(--financial-gold-strong);background:#fff8e9}
+.financial-primary-tabs button.selected{border-color:var(--financial-gold);background:#173d56;color:#fff;box-shadow:inset 0 -3px 0 var(--financial-gold-strong),0 4px 10px #173d5622}
+.financial-command.bill-tip-command,.panel.external-allocations{margin-bottom:12px}
+.bill-tip-preview-results{gap:10px}
+.financial-preview-banner{border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 55%,#fff 100%);box-shadow:0 3px 12px #7657190a}
+.financial-preview-banner>div b{color:#173d56;font-weight:750}
+.financial-preview-banner>em{padding:5px 9px;border:1px solid #e4ca91;border-radius:999px;background:#fff8e9}
+.bill-tip-preview-results>.financial-metrics{gap:10px}
+.bill-tip-preview-results>.financial-metrics article{min-height:92px;border:1px solid var(--financial-gold);border-radius:12px;box-shadow:none}
+.bill-tip-preview-results>.financial-metrics article::before{content:"";display:block;width:28px;height:2px;margin-bottom:9px;border-radius:2px;background:var(--financial-gold-strong)}
+.bill-tip-preview-results>.financial-metrics span{min-height:22px;line-height:1.35}
+.bill-tip-preview-results>.financial-metrics strong{margin-top:6px;line-height:1.05;font-variant-numeric:tabular-nums}
+.financial-module .bill-tip-team-preview{padding:16px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 70%)}
+.bill-tip-team-preview>header{padding-bottom:11px;border-bottom:1px solid #eadbbd}
+.bill-tip-team-preview>header h3{color:#173d56;font:700 19px 'Playfair Display',serif}
+.bill-tip-team-table{overflow:hidden;border:1px solid var(--financial-gold);border-radius:10px;background:#fff}
+.bill-tip-table thead th{border-bottom:1px solid var(--financial-gold);background:#f8f1e3;color:#173d56}
+.bill-tip-table thead th+th{border-left:1px solid #eadbbd}
+.bill-tip-table tbody tr:nth-child(even){background:#fffaf2}
+.bill-tip-table tbody td{border-bottom-color:#eee0c6}
+.bill-tip-table tbody td+td{border-left:1px solid #f2e7d2}
+.financial-reconciliation.panel{min-height:58px;padding:13px 16px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(90deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);color:#5f7280;box-shadow:none}
+.financial-reconciliation b{color:#a47d34}
+.financial-reconciliation strong{font-size:12px;font-weight:800}
+.financial-module .bill-tip-finalization-card{border:1px solid var(--financial-gold);border-top:3px solid var(--financial-gold-strong);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 72%);box-shadow:none}
+.bill-tip-finalization-card>header{padding-bottom:10px;border-bottom:1px solid #eadbbd}
+.bill-tip-finalization-card .finalization-guidance{margin:0;border:1px solid #e6cc98;border-left:3px solid var(--financial-gold-strong);border-radius:8px;background:#fbf5e9}
+.bill-tip-finalization-card .backup-gate{border-color:var(--financial-gold);background:#fff9ee}
+.bill-tip-finalization-card .finalization-requirement{margin:0;padding:8px 10px;border-left:3px solid var(--financial-gold-strong);border-radius:6px;background:#fff8e9;color:#765b28;font-size:10px;font-weight:700}
+.bill-tip-finalization-card>.ao-action{min-height:40px}
+
 @media(min-width:901px){.bill-tip-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:1100px) and (min-width:701px){.financial-primary-tabs button{min-width:0;padding-inline:10px}}
 @media(max-width:900px){.external-allocations>header{align-items:flex-start}.external-allocation-actions{flex-wrap:wrap}.bill-tip-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @media(max-width:700px){
-  .financial-primary-tabs{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px;padding:1px 0 3px;overflow:visible}
+  .page-header.financial-page-header{margin-bottom:8px}
+  .financial-primary-tabs{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px;padding:1px 0 1px;overflow:visible}
   .financial-primary-tabs button{width:100%;max-width:none;min-width:0;min-height:48px;padding-inline:10px}
   .financial-command.bill-tip-command{align-items:stretch;gap:12px;padding:14px;margin-bottom:16px}
   .bill-tip-command .bill-tip-command-eyebrow,.bill-tip-command .bill-tip-month-label{display:none}
-  .bill-tip-command .financial-command-controls{gap:8px;padding:0;border:0;background:transparent}
-  .financial-command-controls .ao-date-control,.financial-command-controls .ao-date-control input,.financial-command-controls>label>input,.financial-command-controls>.ao-action{width:100%;min-height:44px}
+  .bill-tip-command .financial-command-controls{width:100%;min-width:0;grid-template-columns:minmax(0,1fr);gap:7px;padding:0;border:0;background:transparent}
+  .bill-tip-command .financial-command-controls>.ao-action{width:100%;min-width:0;justify-content:center}
+  .bill-tip-command .financial-command-controls .ao-date-control,.bill-tip-command .financial-command-controls .ao-date-control input,.bill-tip-command .financial-command-controls>label>input,.bill-tip-command .financial-command-controls>.ao-action{width:100%;height:44px;min-height:44px}
   .financial-command.earnings-command{align-items:stretch;gap:12px;padding:14px}
   .earnings-command .financial-command-controls{gap:8px}
   .earnings-command .financial-command-controls .ao-date-control{width:100%}
@@ -162,6 +201,7 @@
   .external-allocations .financial-empty{margin-top:10px;padding:12px}
   .bill-tip-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .bill-tip-metrics article{min-height:86px;padding:11px 12px}
+  .bill-tip-preview-results>.financial-metrics article::before{width:22px;margin-bottom:7px}
   .bill-tip-metrics .financial-metric--financial strong{font-size:18px}
   .bill-tip-metrics .financial-metric--secondary strong{font-size:15px}
   .bill-tip-team-preview>header{align-items:flex-start}
@@ -188,8 +228,69 @@
   .external-list input,.external-list article>.ao-icon-action{min-height:44px}
   .external-list article>.ao-icon-action{width:44px;height:44px}
   .bill-tip-finalization-card>.ao-action,.finalized-callout>.ao-action,.version-list .ao-action{width:100%;min-height:44px;justify-content:center}
+  .financial-reconciliation.panel{display:grid;grid-template-columns:1fr auto 1fr;gap:7px 9px;align-items:center;padding:12px 14px}
+  .financial-reconciliation.panel strong{grid-column:1/-1;padding-top:8px;border-top:1px solid #eadbbd;text-align:center}
   .modal.bill-tip-review-modal{width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:18px 16px}
   .bill-tip-review-modal>.close.ao-icon-action{width:44px;height:44px;min-height:44px;top:10px;right:10px}
   .bill-tip-review-modal .form-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   .bill-tip-review-modal .form-actions .ao-action{width:100%;min-width:0;min-height:44px}
+}
+
+/* Earnings Summary premium table and mobile-card system. */
+.financial-command.earnings-command{padding:16px 18px;border:1px solid var(--financial-gold);border-top:3px solid var(--financial-gold-strong);border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 55%,#fff 100%);box-shadow:none}
+.earnings-command .financial-command-controls{padding:8px;border:1px solid var(--financial-gold);border-radius:10px;background:#fffdf8}
+.earnings-command .financial-command-controls .ao-date-control{width:184px}
+.earnings-command .financial-command-controls .ao-date-control input{height:42px}
+.earnings-preview-results{gap:12px}
+.earnings-preview-results>.financial-preview-banner{border-color:var(--financial-gold);border-radius:12px;background:linear-gradient(105deg,#fffaf0 0%,#fffdf8 55%,#fff 100%)}
+.earnings-preview-results>.financial-metrics{gap:10px}
+.earnings-preview-results>.financial-metrics article{min-height:92px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 74%);box-shadow:none}
+.earnings-preview-results>.financial-metrics article::before{content:"";display:block;width:28px;height:2px;margin-bottom:9px;border-radius:2px;background:var(--financial-gold-strong)}
+.earnings-preview-results>.financial-metrics span{min-height:22px;color:#756744;line-height:1.35}
+.earnings-preview-results>.financial-metrics strong{margin-top:6px;color:#173d56;line-height:1.05;font-variant-numeric:tabular-nums}
+.financial-module .earnings-preview-results>.financial-subsection{padding:16px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(180deg,#fffdf8 0%,#fff 70%);box-shadow:none}
+.earnings-preview-results>.financial-subsection>header{align-items:center;padding-bottom:11px;border-bottom:1px solid #eadbbd}
+.earnings-preview-results>.financial-subsection>header h3{color:#173d56;font:700 19px 'Playfair Display',serif}
+.earnings-preview-results .financial-table-wrap{overflow-x:auto;border:1px solid var(--financial-gold);border-radius:10px;background:#fff}
+.earnings-preview-results .financial-table-wrap table{margin:0}
+.earnings-preview-results .financial-table-wrap thead th{border-bottom:1px solid var(--financial-gold);background:#f8f1e3;color:#173d56}
+.earnings-preview-results .financial-table-wrap thead th+th{border-left:1px solid #eadbbd}
+.earnings-preview-results .financial-table-wrap tbody tr:nth-child(even){background:#fffaf2}
+.earnings-preview-results .financial-table-wrap tbody td{border-bottom-color:#eee0c6}
+.earnings-preview-results .financial-table-wrap tbody td+td{border-left:1px solid #f2e7d2}
+.earnings-preview-results .financial-table-wrap .emphasized-total b{color:#173d56;font-weight:850}
+.staff-incentive-summary{justify-self:stretch;width:100%}
+.staff-incentive-summary .financial-table-wrap{margin-top:12px}
+.staff-incentive-table td:first-child b,.earnings-summary-table td:first-child b{color:#173d56;font-weight:750}
+.earnings-team-summary .financial-table-wrap{margin-top:12px}
+.earnings-summary-table .emphasized-total{background:#f5ead3}
+.earnings-summary-table .emphasized-total b{font-size:12px}
+.staff-incentive-table :is(th,td):not(:first-child),.earnings-summary-table :is(th,td):not(:first-child){text-align:center}
+.earnings-staff-cards{display:none}
+
+@media(max-width:700px){
+  .financial-command.earnings-command{gap:10px;padding:14px;margin-bottom:12px}
+  .earnings-command .financial-command-controls{width:100%;min-width:0;padding:0;border:0;background:transparent}
+  .earnings-command .financial-command-controls .ao-date-control,.earnings-command .financial-command-controls .ao-date-control input{width:100%;height:44px;min-height:44px}
+  .earnings-preview-results{gap:10px}
+  .earnings-preview-results>.financial-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .earnings-preview-results>.financial-metrics article{min-height:84px;padding:11px 12px}
+  .earnings-preview-results>.financial-metrics article::before{width:22px;margin-bottom:7px}
+  .financial-module .earnings-preview-results>.financial-subsection{padding:14px}
+  .earnings-preview-results>.financial-subsection>header{align-items:flex-start;gap:9px}
+  .earnings-incentive-preview .financial-table-wrap,.staff-incentive-summary .financial-table-wrap{overflow-x:auto}
+  .earnings-summary-desktop{display:none}
+  .earnings-staff-cards{display:grid;gap:10px;margin-top:12px}
+  .earnings-staff-card{min-width:0;padding:13px;border:1px solid var(--financial-gold);border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%)}
+  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #eadbbd}
+  .earnings-staff-card>header>div{display:grid;gap:3px;min-width:0}
+  .earnings-staff-card>header b{color:#173d56;font-size:13px;line-height:1.2}
+  .earnings-staff-card>header small{color:#6f828c;font-size:10px}
+  .earnings-staff-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 0}
+  .earnings-staff-card dl>div{min-width:0;padding:8px;border-radius:8px;background:#f9f6ef}
+  .earnings-staff-card dt{color:#78878d;font-size:8px;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
+  .earnings-staff-card dd{margin:4px 0 0;color:#294b60;font-size:12px;font-weight:750}
+  .earnings-staff-card .earnings-total{background:#f4ead6}
+  .earnings-staff-card .earnings-total dd{color:#173d56;font:800 16px 'Playfair Display',serif}
+  .earnings-staff-card>.financial-review-reason{max-width:none;margin-top:9px}
 }

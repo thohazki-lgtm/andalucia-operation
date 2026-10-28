@@ -114,26 +114,8 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
       {loading && <div className="inline-state">Loading chargeable records…</div>}{error && <div className="inline-state error-state">
 <p>{error}</p>
 <ActionButton icon="refresh" onClick={() => void load()}>Try again</ActionButton>
-</div>}{!loading && !error && <div className="chargeable-table-wrap" tabIndex={0} aria-label="Chargeable items table">
-<table className="chargeable-table">
-<colgroup><col className="chargeable-col-time"/><col className="chargeable-col-guest"/><col className="chargeable-col-item"/><col className="chargeable-col-qty"/><col className="chargeable-col-money"/><col className="chargeable-col-money"/><col className="chargeable-col-assignment"/><col className="chargeable-col-assignment"/><col className="chargeable-col-status"/><col className="chargeable-col-actions"/></colgroup>
-<thead>
-<tr>
-<th>Time</th>
-<th>Guest / Room</th>
-<th>Item</th>
-<th>Qty</th>
-<th>Unit Price</th>
-<th>Total</th>
-<th>Table</th>
-<th>Waiter</th>
-<th>Status</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody>{visible.map(record => <ChargeableRow key={record.id} record={record} staff={staff} configuration={configuration} onUpdate={quickUpdate} onView={() => setViewing(record)} onEdit={() => setEditing(record)} onArchive={() => void archive(record)} />)}</tbody>
-</table>
-<div className="mobile-chargeable-list">{visible.map(record => <MobileChargeableCard key={record.id} record={record} staff={staff} configuration={configuration} onUpdate={quickUpdate} onView={() => setViewing(record)} onEdit={() => setEditing(record)} onArchive={() => void archive(record)} />)}</div>
+</div>}{!loading && !error && <div className="chargeable-table-wrap" tabIndex={0} aria-label="Chargeable item transactions">
+<div className="mobile-chargeable-list chargeable-card-grid">{visible.map(record => <MobileChargeableCard key={record.id} record={record} staff={staff} configuration={configuration} onUpdate={quickUpdate} onView={() => setViewing(record)} onEdit={() => setEditing(record)} onArchive={() => void archive(record)} />)}</div>
 {visible.length === 0 && <div className="inline-empty">No chargeable records match this date and filters.</div>}</div>}
     </section>
     {editing && <ChargeableForm record={editing === 'new' ? undefined : editing} date={date} bookings={bookings} staff={staff} configuration={configuration} onClose={() => setEditing(null)} onSave={async record => { await save(record); setEditing(null) }} />}
@@ -231,9 +213,10 @@ function ChargeableForm({ record, date, bookings, staff, configuration, onClose,
   const selectFamily = (value: string) => { const family = itemFamilies.find(candidate => candidate.value === value); setFamilyValue(value); if (family?.options[0]) selectItem(family.options[0].value) }
   const selectQuantity = (quantity: number) => setForm(current => ({ ...current, quantity, totalAmount: Number((quantity * current.unitPrice).toFixed(2)) }))
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.date || !form.guestName.trim() || !form.itemValue || form.quantity < 1 || !form.status) return setError('Date, guest, item, quantity and status are required.'); const realized = configuration.statuses.find(option => option.value === form.status)?.metadata?.countsAsRealizedRevenue === true; if (realized && (!form.roomNumber.trim() || !form.checkInvoiceNumber?.trim())) return setError('Room Number and Check / Invoice Number are required for a charged financial record.'); setSaving(true); setError(''); try { const candidate = { ...form, guestName: form.guestName.trim() }; if (!record && !duplicateReviewed) { const matches = await chargeableApi.duplicateReview(candidate); if (matches.length) { setDuplicateWarnings(matches); setSaving(false); return } } await onSave(candidate) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save chargeable record.') } finally { setSaving(false) } }
-  return <ChargeableModal title={record ? 'Edit Chargeable Record' : 'Add Chargeable Item'} onClose={onClose} wide>
+  return <ChargeableModal title={record ? 'Edit Chargeable Record' : 'Add Chargeable Item'} onClose={onClose} wide className="chargeable-entry-modal">
 <form className="staff-form chargeable-form" onSubmit={event => void submit(event)}>
-<div className="chargeable-form-grid">
+<div className="chargeable-form-scroll">
+<section className="chargeable-form-section"><h3>Reservation &amp; Guest</h3><div className="chargeable-form-grid">
 <label>Related booking<select value={form.bookingId || ''} onChange={event => selectBooking(event.target.value)}>
 <option value="">Manual entry / walk-in</option>{bookings.map(booking => <option key={booking.id} value={booking.id}>{booking.reservationTime} · {booking.guestName} · Room {booking.roomNumber || '—'}</option>)}</select>
 </label>
@@ -249,9 +232,8 @@ function ChargeableForm({ record, date, bookings, staff, configuration, onClose,
 <label>Check / Invoice Number<input value={form.checkInvoiceNumber || ''} onChange={event => update('checkInvoiceNumber', event.target.value)} placeholder="Enter exactly as shown on the check" /></label>
 <label>Covers<input readOnly value={form.covers ?? ''} placeholder="—" /></label>
 <label>Reservation time<input readOnly value={form.reservationTime || ''} placeholder="—" /></label>
-<label>Waiter<select value={form.waiterId || ''} onChange={event => update('waiterId', event.target.value || null)}>
-<option value="">Unassigned</option>{availableStaff.map(person => <option key={person.id} value={person.id} disabled={person.employmentStatus !== 'active'}>{person.name} · {person.number}{person.employmentStatus !== 'active' ? ' (Inactive – historical)' : ''}</option>)}</select>
-</label>
+</div></section>
+<section className="chargeable-form-section"><h3>Item &amp; Pricing</h3><div className="chargeable-form-grid">
 <label>Item<select value={selectedFamily?.value || ''} onChange={event => selectFamily(event.target.value)}>{itemFamilies.map(family => <option key={family.value} value={family.value}>{family.label}</option>)}</select>
 </label>
 <label>Package / price<select value={form.itemValue} onChange={event => selectItem(event.target.value)}>{(selectedFamily?.options || [selectedItem]).filter(Boolean).map(option => <option key={option!.id} value={option!.value}>{money(Number(option!.metadata?.price || 0))}</option>)}</select>
@@ -262,11 +244,15 @@ function ChargeableForm({ record, date, bookings, staff, configuration, onClose,
 </label>
 <label>Total amount<input readOnly value={money(form.quantity * form.unitPrice)} />
 </label>
+</div></section>
+<section className="chargeable-form-section"><h3>Operational Details</h3><div className="chargeable-form-grid">
+<label>Waiter<select value={form.waiterId || ''} onChange={event => update('waiterId', event.target.value || null)}>
+<option value="">Unassigned</option>{availableStaff.map(person => <option key={person.id} value={person.id} disabled={person.employmentStatus !== 'active'}>{person.name} · {person.number}{person.employmentStatus !== 'active' ? ' (Inactive – historical)' : ''}</option>)}</select>
+</label>
 <label>Status<select value={form.status} onChange={event => update('status', event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === form.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
 </label>
-</div>
-<label>Notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} placeholder="Optional operational note" />
-</label>{duplicateWarnings.length > 0 && <div className="chargeable-duplicate-warning" role="alert"><b>Possible duplicate transaction</b><p>{duplicateWarnings.length} matching active record{duplicateWarnings.length === 1 ? '' : 's'} use the same service date, check, room, table, item, seller, quantity and price. Review before saving another transaction.</p><label className="check-label"><input type="checkbox" checked={duplicateReviewed} onChange={event => setDuplicateReviewed(event.target.checked)} /> I reviewed the possible duplicate and intend to create a separate transaction.</label></div>}{error && <p className="save-error">{error}</p>}<div className="form-actions">
+<label className="chargeable-form-notes">Notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} placeholder="Optional operational note" />
+</label></div></section>{duplicateWarnings.length > 0 && <div className="chargeable-duplicate-warning" role="alert"><b>Possible duplicate transaction</b><p>{duplicateWarnings.length} matching active record{duplicateWarnings.length === 1 ? '' : 's'} use the same service date, check, room, table, item, seller, quantity and price. Review before saving another transaction.</p><label className="check-label"><input type="checkbox" checked={duplicateReviewed} onChange={event => setDuplicateReviewed(event.target.checked)} /> I reviewed the possible duplicate and intend to create a separate transaction.</label></div>}{error && <p className="save-error">{error}</p>}</div><div className="form-actions">
 <ActionButton type="button" onClick={onClose}>Cancel</ActionButton>
 <ActionButton type="submit" variant="primary" icon="save" disabled={saving || (duplicateWarnings.length > 0 && !duplicateReviewed)}>{saving ? 'Saving…' : 'Save chargeable record'}</ActionButton>
 </div>
@@ -276,6 +262,7 @@ function ChargeableForm({ record, date, bookings, staff, configuration, onClose,
 
 function ChargeableDetails({ record, configuration, canCorrect, onClose, onEdit, onCorrect, onStatus }: { record: ChargeableRecord; configuration: ChargeableConfiguration; canCorrect: boolean; onClose: () => void; onEdit: () => void; onCorrect: () => void; onStatus: (status: string, correctionReason?: string) => void }) {
   const [history, setHistory] = useState<ChargeableCorrectionHistory[]>([])
+  const [cancelling, setCancelling] = useState(false)
   const drawerRef = useRef<HTMLElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
   const pending = configuration.statuses.find(option => option.active && option.metadata?.chargeableStage === 'pending')
@@ -283,18 +270,24 @@ function ChargeableDetails({ record, configuration, canCorrect, onClose, onEdit,
   const cancelled = configuration.statuses.find(option => option.active && option.metadata?.excludesFromChargeableTotals === true)
   const locked = transactionLocked(record, configuration)
   const realized = configuration.statuses.find(option => option.value === record.status)?.metadata?.countsAsRealizedRevenue === true
-  const correct = () => { if (!cancelled) return; const reason = window.prompt('Enter the correction reason. The original realized transaction remains in the audit history.'); if (reason?.trim()) onStatus(cancelled.value, reason.trim()) }
   useEffect(() => { if (canCorrect) void chargeableApi.correctionHistory(record.id).then(setHistory).catch(() => setHistory([])) }, [canCorrect, record.id, record.updatedAt])
   useEffect(() => { openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; drawerRef.current?.focus(); return () => openerRef.current?.focus() }, [])
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
-  return <div className="chargeable-drawer-backdrop" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={drawerRef} tabIndex={-1} className="chargeable-drawer" role="dialog" aria-modal="true" aria-label="Chargeable Item Details">
+  return <><div className="chargeable-drawer-backdrop" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={drawerRef} tabIndex={-1} className="chargeable-drawer" role="dialog" aria-modal="true" aria-label="Chargeable Item Details">
 <header><p className="eyebrow">SERVICE REVENUE</p><div className="chargeable-drawer-heading"><h2>{record.itemLabel}</h2><StatusPill tone="navy" className="chargeable-item-chip">{statusLabel(configuration, record.status)}</StatusPill></div></header>
 <div className="chargeable-drawer-body"><ChargeableDrawerSection title="Financial Proof"><ChargeableDetail label="Guest" value={record.guestName} /><ChargeableDetail label="Room Number" value={record.roomNumber || '—'} /><ChargeableDetail label="Check / Invoice Number" value={record.checkInvoiceNumber || 'Historical · not recorded'} /><ChargeableDetail label="Covers" value={record.covers ? String(record.covers) : '—'} /></ChargeableDrawerSection>
 <ChargeableDrawerSection title="Item Details"><ChargeableDetail label="Item" value={record.itemLabel} /><ChargeableDetail label="Quantity" value={String(record.quantity)} /><ChargeableDetail label="Unit price" value={money(record.unitPrice)} /><ChargeableDetail label="Total" value={money(record.totalAmount)} /></ChargeableDrawerSection>
 <ChargeableDrawerSection title="Booking Information"><ChargeableDetail label="Date / time" value={`${dateLabel(record.reservationDate || record.date)}${record.reservationTime ? ` · ${record.reservationTime}` : ''}`} /><ChargeableDetail label="Table" value={configuration.tables.find(option => option.value === record.tableNumber)?.label || record.tableNumber || 'Unassigned'} /><ChargeableDetail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /><ChargeableDetail label="Source" value={record.importSource === 'activity_program' ? 'Activity Program booking' : record.bookingId ? 'Booking' : 'Manual'} />{record.sourceGuestNotes && <ChargeableDetail label="Source note" value={record.sourceGuestNotes} />}</ChargeableDrawerSection>
 {history.length > 0 && <ChargeableDrawerSection title="Correction History">{history.map(item => <div className="chargeable-correction-history" key={item.id}><b>{item.reason || 'Audited correction'}</b><span>{new Date(item.createdAt).toLocaleString()} · {item.actor}</span><small>{correctionChanges(item)}</small></div>)}</ChargeableDrawerSection>}</div>
-<footer>{!locked && <ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton>}{realized && canCorrect && <ActionButton variant="primary" icon="edit" onClick={onCorrect}>Correct Transaction</ActionButton>}{!locked && pending && record.status !== pending.value && <ActionButton icon="clock" onClick={() => onStatus(pending.value)}>Mark as Pending</ActionButton>}{!locked && charged && record.status !== charged.value && <ActionButton variant="primary" icon="check" onClick={() => onStatus(charged.value)}>Mark as Charged</ActionButton>}{realized && cancelled && <ActionButton icon="close" className="danger" onClick={correct}>Cancel with reason</ActionButton>}</footer>
-</aside></div>
+<footer>{!locked && <ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton>}{realized && canCorrect && <ActionButton variant="primary" icon="edit" onClick={onCorrect}>Correct Transaction</ActionButton>}{!locked && pending && record.status !== pending.value && <ActionButton icon="clock" onClick={() => onStatus(pending.value)}>Mark as Pending</ActionButton>}{!locked && charged && record.status !== charged.value && <ActionButton variant="primary" icon="check" onClick={() => onStatus(charged.value)}>Mark as Charged</ActionButton>}{realized && cancelled && <ActionButton icon="close" className="danger" onClick={() => setCancelling(true)}>Cancel with reason</ActionButton>}</footer>
+</aside></div>{cancelling && cancelled && <ChargeableCancellationForm onClose={() => setCancelling(false)} onConfirm={reason => { onStatus(cancelled.value, reason); setCancelling(false) }} />}</>
+}
+
+function ChargeableCancellationForm({ onClose, onConfirm }: { onClose: () => void; onConfirm: (reason: string) => void }) {
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState('')
+  const requestClose = useCallback(() => { if (reason.trim() && !window.confirm('Discard the cancellation reason?')) return; onClose() }, [reason, onClose])
+  return <ChargeableModal title="Cancel Charged Transaction" onClose={requestClose} dismissible hideClose className="chargeable-cancellation-modal"><form className="chargeable-cancellation-form" onSubmit={event => { event.preventDefault(); if (!reason.trim()) return setError('Enter a cancellation reason.'); onConfirm(reason.trim()) }}><p className="config-protected-note">The original realized transaction remains protected in the financial audit history.</p><label>Cancellation reason<textarea rows={4} value={reason} onChange={event => setReason(event.target.value)} placeholder="Explain why this charged transaction must be cancelled" /></label>{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><ActionButton type="button" onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="check">Confirm Cancellation</ActionButton></div></form></ChargeableModal>
 }
 
 const correctionChanges = (history: ChargeableCorrectionHistory) => {
@@ -310,7 +303,7 @@ function ChargeableCorrectionForm({ record, staff, configuration, onClose, onSav
   const dirty = reason.length > 0 || confirmed || ['guestName','roomNumber','checkInvoiceNumber','tableNumber','itemValue','quantity','unitPrice','waiterId','notes'].some(key => String(form[key as keyof ChargeableRecord] ?? '') !== String(record[key as keyof ChargeableRecord] ?? ''))
   const requestClose = useCallback(() => { if (dirty && !window.confirm('You have unsaved transaction correction changes. Discard them?')) return; onClose() }, [dirty, onClose])
   const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); if (reason.trim().length < 8) return setError('Enter a clear correction reason of at least 8 characters.'); if (!confirmed) return setError('Confirm that the original values will remain in the audit history.'); setSaving(true); try { await onSave({ ...form, correctionReason: reason.trim(), confirmation: 'CORRECT CHARGED TRANSACTION', expectedUpdatedAt: record.updatedAt }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to correct the charged transaction.') } finally { setSaving(false) } }
-  return <ChargeableModal title="Correct Charged Transaction" onClose={requestClose} dismissible wide><form className="chargeable-correction-form" onSubmit={event => void submit(event)}>
+  return <ChargeableModal title="Correct Charged Transaction" onClose={requestClose} dismissible wide hideClose className="chargeable-correction-modal"><form className="chargeable-correction-form" onSubmit={event => void submit(event)}>
 <p className="config-protected-note">Original values remain in the audit history. Approved reports and finalized incentives cannot be silently rewritten.</p>
 <div className="chargeable-correction-head" aria-hidden="true"><span>Field</span><span>Original</span><span>Proposed correction</span></div>
 <CorrectionField label="Guest" original={record.guestName}><input required value={form.guestName} onChange={event => setForm({ ...form, guestName: event.target.value })}/></CorrectionField>
@@ -336,52 +329,57 @@ function ChargeableDetail({ label, value }: { label: string; value: string }) { 
 export function ChargeableConfigurationManager({ configuration, onSave }: { configuration: Pick<ChargeableConfiguration, 'items' | 'statuses'> & { wineCatalog: ConfigOption[] }; onSave: (group: 'items' | 'statuses' | 'wine-catalog', option: ConfigOption) => Promise<void> }) {
   const [editing, setEditing] = useState<{ group: 'items' | 'statuses' | 'wine-catalog'; option: ConfigOption } | null>(null)
   return <section className="panel chargeable-config">
-<div className="panel-title">
+<header className="chargeable-config-hero">
 <div>
 <p className="eyebrow">CHARGEABLE CONFIGURATION</p>
-<h3>Items and statuses</h3>
+<h3>Chargeable Settings</h3>
+<p>Manage approved chargeable definitions and presentation without changing historical financial records.</p>
 </div>
-</div>
+</header>
 <div className="chargeable-config-grid">
-<div>
-<div className="config-heading">
+<article className="chargeable-config-card">
+<header className="config-heading">
+<div><p className="eyebrow">SALE DEFINITIONS</p>
 <h4>Chargeable items</h4>
-<button className="primary compact" onClick={() => setEditing({ group: 'items', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: { category: '', price: 0 } } })}>Add item</button>
-</div>{configuration.items.map(option => <div className="chargeable-config-row" key={option.id}>
-<div>
+<small>Names, categories and selling prices used for new records.</small></div>
+<ActionButton compact variant="primary" icon="add" onClick={() => setEditing({ group: 'items', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: { category: '', price: 0 } } })}>Add item</ActionButton>
+</header><div className="chargeable-config-list">{configuration.items.map(option => <div className="chargeable-config-row chargeable-item-config-row" key={option.id}>
+<div className="chargeable-config-identity">
 <b>{option.label}</b>
-<small>{option.metadata?.category || 'Uncategorized'} · {money(Number(option.metadata?.price || 0))}</small>
+<span><small>{option.metadata?.category || 'Uncategorized'}</small><strong>{money(Number(option.metadata?.price || 0))}</strong></span>
 </div>
-<span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Inactive'}</span>
-<button className="link" onClick={() => setEditing({ group: 'items', option })}>Edit</button>
-<button className="link" onClick={() => void onSave('items', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Activate'}</button>
-</div>)}</div>
-<div>
-<div className="config-heading">
+<StatusPill tone={option.active ? 'navy' : 'neutral'}>{option.active ? 'Active' : 'Inactive'}</StatusPill>
+<div className="chargeable-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'items', option })}>Edit</ActionButton>
+<ActionButton compact onClick={() => void onSave('items', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Reactivate'}</ActionButton></div>
+</div>)}</div></article>
+<article className="chargeable-config-card">
+<header className="config-heading">
+<div><p className="eyebrow">FINANCIAL WORKFLOW</p>
 <h4>Chargeable statuses</h4>
-</div><div className="chargeable-status-header" aria-hidden="true"><span>Status</span><span>Protected</span><span>Edit color</span></div>{configuration.statuses.map(option => <div className="chargeable-config-row chargeable-status-protected" key={option.id}>
-<div>
-<span className="status-dot" style={{ background: option.color }}>
-</span>
-<b>{option.label}</b>
+<small>Display colors for the protected transaction lifecycle.</small></div>
+</header><div className="chargeable-config-list">{configuration.statuses.map(option => <div className="chargeable-config-row chargeable-status-config-row" key={option.id}>
+<div className="chargeable-config-identity chargeable-status-identity">
+<span className="status-dot" style={{ background: option.color }} aria-hidden="true" />
+<span><b>{option.label}</b>
 <small>{option.metadata?.countsAsRealizedRevenue ? 'Realized revenue' : option.metadata?.countsAsPendingValue ? 'Pending value' : option.metadata?.excludesFromChargeableTotals ? 'Excluded' : 'Not counted'}</small>
+</span></div>
+<ActionButton compact icon="edit" onClick={() => setEditing({ group: 'statuses', option })}>Edit color</ActionButton>
+</div>)}</div><p className="chargeable-protection-note">Pending, Charged and Cancelled identities and financial behavior are protected. Only their display colors can be changed.</p></article>
 </div>
-<span className="config-protected-state" title="Status identity, availability and financial semantics are system protected">Protected</span>
-<button className="link" onClick={() => setEditing({ group: 'statuses', option })}>Edit color</button>
-</div>)}</div>
-</div>
-<div className="wine-catalog-foundation">
-<div className="config-heading"><div><h4>Wine / bottle catalog</h4><small>Optional approved definitions. Existing manually entered sales and stored incentive snapshots remain unchanged.</small></div><button className="primary compact" onClick={() => setEditing({ group: 'wine-catalog', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: {} } })}>Add approved bottle</button></div>
-{configuration.wineCatalog.length === 0 ? <p className="inline-empty">No approved bottle catalog has been provided. Wine / Spirits entry remains exact signed-check entry.</p> : configuration.wineCatalog.map(option => { const metadata = option.metadata as Record<string, unknown> | undefined; return <div className="chargeable-config-row" key={option.id}><div><b>{option.label}</b><small>Selling {metadata?.sellingPrice == null ? '—' : money(Number(metadata.sellingPrice))} · Eligible {metadata?.eligiblePrice == null ? '—' : money(Number(metadata.eligiblePrice))} · Rule {String(metadata?.incentiveRuleKey || 'Awaiting approved association')}</small></div><span className={option.active ? 'badge blue' : 'badge'}>{option.active ? 'Active' : 'Archived'}</span><button className="link" onClick={() => setEditing({ group: 'wine-catalog', option })}>Edit</button><button className="link" onClick={() => void onSave('wine-catalog', { ...option, active: !option.active })}>{option.active ? 'Archive' : 'Activate'}</button></div> })}
-</div>{editing && <ChargeableConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}</section>
+<article className="wine-catalog-foundation chargeable-config-card">
+<header className="config-heading"><div><p className="eyebrow">APPROVED CATALOG</p><h4>Wine &amp; Bottle Catalog</h4><small>Optional approved definitions. Existing manually entered sales and stored incentive snapshots remain unchanged.</small></div><ActionButton compact variant="primary" icon="add" onClick={() => setEditing({ group: 'wine-catalog', option: { id: crypto.randomUUID(), value: '', label: '', active: true, metadata: {} } })}>Add Approved Bottle</ActionButton></header>
+{configuration.wineCatalog.length === 0 ? <div className="chargeable-catalog-empty"><b>No approved bottles yet</b><span>Wine &amp; Spirits entries continue to use the exact signed-check description.</span></div> : <div className="chargeable-config-list">{configuration.wineCatalog.map(option => { const metadata = option.metadata as Record<string, unknown> | undefined; return <div className="chargeable-config-row chargeable-catalog-row" key={option.id}><div className="chargeable-config-identity"><b>{option.label}</b><small>Selling {metadata?.sellingPrice == null ? '—' : money(Number(metadata.sellingPrice))} · Eligible {metadata?.eligiblePrice == null ? '—' : money(Number(metadata.eligiblePrice))} · Rule {String(metadata?.incentiveRuleKey || 'Awaiting approved association')}</small></div><StatusPill tone={option.active ? 'navy' : 'neutral'}>{option.active ? 'Active' : 'Archived'}</StatusPill><div className="chargeable-config-actions"><ActionButton compact icon="edit" onClick={() => setEditing({ group: 'wine-catalog', option })}>Edit</ActionButton><ActionButton compact onClick={() => void onSave('wine-catalog', { ...option, active: !option.active })}>{option.active ? 'Deactivate' : 'Reactivate'}</ActionButton></div></div> })}</div>}
+</article>{editing && <ChargeableConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}</section>
 }
 
 function ChargeableConfigForm({ group, option, onClose, onSave }: { group: 'items' | 'statuses' | 'wine-catalog'; option: ConfigOption; onClose: () => void; onSave: (option: ConfigOption) => Promise<void> }) {
   const [form, setForm] = useState(option); const [error, setError] = useState('')
+  const dirty = JSON.stringify(form) !== JSON.stringify(option)
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved Chargeable configuration changes?')) onClose() }
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.label.trim()) return setError('Name is required.'); if (group === 'items' && (!form.metadata?.category?.trim() || !Number.isFinite(Number(form.metadata?.price)) || Number(form.metadata?.price) < 0)) return setError('Category and a valid non-negative price are required.'); const generatedValue = form.value || `${form.label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}_${form.id.slice(0, 8)}`; try { await onSave({ ...form, value: generatedValue }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save configuration.') } }
   const catalog = form.metadata as Record<string, unknown> | undefined
-  return <ChargeableModal title={group === 'items' ? `${option.value ? 'Edit' : 'Add'} Chargeable Item` : group === 'statuses' ? 'Edit Chargeable Status Color' : `${option.value ? 'Edit' : 'Add'} Approved Bottle`} onClose={onClose}>
-<form className="staff-form" onSubmit={event => void submit(event)}>
+  return <ChargeableModal title={group === 'items' ? `${option.value ? 'Edit' : 'Add'} Chargeable Item` : group === 'statuses' ? 'Edit Chargeable Status Color' : `${option.value ? 'Edit' : 'Add'} Approved Bottle`} onClose={requestClose} dismissible className="chargeable-config-modal">
+<form className="staff-form chargeable-config-form" onSubmit={event => void submit(event)}>
 <label>Name<input value={form.label} readOnly={group === 'statuses'} aria-readonly={group === 'statuses'} onChange={event => setForm({ ...form, label: event.target.value })} />
 </label>{group === 'items' ? <>
 <label>Category<input value={form.metadata?.category || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, category: event.target.value } })} />
@@ -397,20 +395,20 @@ function ChargeableConfigForm({ group, option, onClose, onSave }: { group: 'item
 <label>Color<input type="color" value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />
 </label>
 <p className="config-protected-note">Status name, availability and financial reporting behavior are protected by the system. Only the display color may be changed.</p>
-</>}{group !== 'statuses' && <label className="check-label">
+</>}{group !== 'statuses' && <label className="check-label chargeable-config-active">
 <input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>}{error && <p className="save-error">{error}</p>}<div className="form-actions">
-<button type="button" className="secondary" onClick={onClose}>Cancel</button>
+<button type="button" className="secondary" onClick={requestClose}>Cancel</button>
 <button className="primary">Save configuration</button>
 </div>
 </form>
 </ChargeableModal>
 }
 
-function ChargeableModal({ title, children, onClose, wide = false, dismissible = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; dismissible?: boolean }) {
+function ChargeableModal({ title, children, onClose, wide = false, dismissible = false, hideClose = false, className = '' }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; dismissible?: boolean; hideClose?: boolean; className?: string }) {
   useEffect(() => { if (!dismissible) return; const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [dismissible, onClose])
   return <div className="modal-backdrop" onPointerDown={event => { if (dismissible && event.target === event.currentTarget) onClose() }}>
-<section className={`modal${wide ? ' booking-modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} onPointerDown={event => event.stopPropagation()}>
-<IconAction icon="close" className="close" label="Close dialog" onClick={onClose}/>
+<section className={`modal${wide ? ' booking-modal-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title} onPointerDown={event => event.stopPropagation()}>
+{!hideClose && <IconAction icon="close" className="close" label="Close dialog" onClick={onClose}/>}
 <h2>{title}</h2>{children}</section>
 </div> }
 

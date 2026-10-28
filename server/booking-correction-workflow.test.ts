@@ -73,7 +73,7 @@ const waitForHealth = async () => {
 try {
   api = spawn(process.execPath, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], {
     cwd: resolve('.'),
-    env: { ...process.env, ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', NODE_ENV: 'test', APP_ORIGIN: trustedOrigin, API_PORT: String(port) },
+    env: { ...process.env, ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', NODE_ENV: 'test', APP_ORIGIN: trustedOrigin, API_PORT: String(port) },
     stdio: ['ignore', 'pipe', 'pipe']
   })
   api.stdout?.on('data', chunk => { stdout += String(chunk) })

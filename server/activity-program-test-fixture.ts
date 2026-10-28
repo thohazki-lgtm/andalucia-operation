@@ -4,14 +4,17 @@ type Row = { room?: string; name: string; birth?: string; notes?: string; bookin
 
 const escapePdf = (value: string) => value.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)')
 
-function pdf(lines: Array<Array<[number, string]>>) {
-  const stream = lines.map((line, index) => line.map(([x, value]) => `BT /F1 9 Tf 1 0 0 1 ${x} ${1100 - index * 16} Tm (${escapePdf(value)}) Tj ET`).join('\n')).join('\n')
+function pdfPages(pages: Array<Array<Array<[number, string]>>>) {
+  const pageCount = pages.length
+  const fontObject = 3 + pageCount
+  const contentStart = fontObject + 1
+  const streams = pages.map(lines => lines.map((line, index) => line.map(([x, value]) => `BT /F1 9 Tf 1 0 0 1 ${x} ${1100 - index * 16} Tm (${escapePdf(value)}) Tj ET`).join('\n')).join('\n'))
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 900 1200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    `<< /Type /Pages /Kids [${pages.map((_, index) => `${3 + index} 0 R`).join(' ')}] /Count ${pageCount} >>`,
+    ...pages.map((_, index) => `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 900 1200] /Resources << /Font << /F1 ${fontObject} 0 R >> >> /Contents ${contentStart + index} 0 R >>`),
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`
+    ...streams.map(stream => `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`)
   ]
   let output = '%PDF-1.4\n'
   const offsets = [0]
@@ -20,6 +23,8 @@ function pdf(lines: Array<Array<[number, string]>>) {
   output += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
   return new Uint8Array(Buffer.from(output, 'latin1'))
 }
+
+const pdf = (lines: Array<Array<[number, string]>>) => pdfPages([lines])
 
 const bookingLine = (row: Row): Array<[number, string]> => [
   ...(row.room ? [[40, row.room] as [number, string]] : []), [120, row.name],
@@ -51,10 +56,38 @@ export function syntheticActivityProgramPdf(kind: 'import' | 'intelligence' | 'c
     { name: 'Blocked Blocked', notes: 'Blocked capacity', booking: '9100005', status: 'Confirmed (2 pax)', bookedBy: 'Test Agent' },
     { room: '505', name: 'Fictional Single Guest', booking: '9100006', status: 'Confirmed (1 pax)', bookedBy: 'Test Agent' }
   ]
-  const declared = kind === 'import' ? { bookings: 4, covers: 7 } : { bookings: 6, covers: 11 }
+  // The header reconciles source/status PAX. Supported comment overrides are
+  // represented later as explicit operational ledger adjustments.
+  const declared = kind === 'import' ? { bookings: 4, covers: 6 } : { bookings: 6, covers: 11 }
   return pdf([
     [[35, `Activity Program - ${date}`]],
     [[35, `18:30 Dinner / Andalucia ${declared.bookings} Bookings ${declared.covers} Guests`]],
     ...rows.map(bookingLine)
+  ])
+}
+
+export function syntheticActivityProgramBoundaryPdf() {
+  return pdfPages([
+    [
+      [[35, 'Activity Program - 27.10.2026']],
+      [[35, '19:30 - 22:00 Dinner at Andalucia / Andalucia 4 Bookings 14 Guests']],
+      bookingLine({ room: '301', name: 'Fictional First Guest', birth: '12.05.1990', notes: 'TLC requested', booking: '9200001', status: 'Confirmed (2 pax)', bookedBy: 'Test Agent' }),
+      bookingLine({ name: 'Fictional Note Continuation', notes: 'after their dinner at Kaage' }),
+      bookingLine({ room: '302', name: 'Fictional Second Guest', birth: '12.05.2018', booking: '9200002', status: 'Pending (2 pax)', bookedBy: 'Test Agent' })
+    ],
+    [
+      [[35, 'Page 2 of 2']],
+      [[35, 'Room Name Birth Date Arrival Departure MP Guest Notes Booking no. Status Booked By']],
+      bookingLine({ room: '303', name: 'Fictional Third Guest', notes: 'B: 303/304 4+2pax', booking: '9200003', status: 'Confirmed (4 pax)', bookedBy: 'Test Agent' }),
+      bookingLine({ room: '304', name: 'Fictional Fourth Guest', booking: '9200004', status: 'Confirmed (6 pax)', bookedBy: 'Test Agent' })
+    ]
+  ])
+}
+
+export function syntheticActivityProgramMismatchPdf() {
+  return pdf([
+    [[35, 'Activity Program - 27.10.2026']],
+    [[35, '18:30 Dinner / Andalucia 2 Bookings 4 Guests']],
+    bookingLine({ room: '401', name: 'Fictional Valid Guest', booking: '9300001', status: 'Confirmed (2 pax)', bookedBy: 'Test Agent' })
   ])
 }

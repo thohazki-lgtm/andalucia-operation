@@ -7,7 +7,7 @@ import { DailyReportService } from './daily-report-service.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 import { createFinancialFinalizationFingerprint, createOperationalFingerprint } from './database-backup.js'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
-import { managerReviewWasPersisted } from '../src/daily-report-save-integrity.js'
+import { managerReviewWasPersisted, serviceChargesWerePersisted } from '../src/daily-report-save-integrity.js'
 import { BookingRepository } from './booking-repository.js'
 import { GuestOccasionRepository } from './guest-occasion-repository.js'
 
@@ -61,15 +61,27 @@ try {
     assert.equal(guestExperience.content.servicePerformance.totalCovers,20, 'classification overlap must not inflate booking covers')
     const performanceDate = '2026-10-17'
     const noShowStatus = (await db.query<any>("select value from configuration_options where group_key='booking_statuses' and (metadata->>'serviceStage'='noShow' or metadata->>'bookingMetric'='noShow') order by sort_order limit 1")).rows[0]?.value
+    const cancelledStatus = (await db.query<any>("select value from configuration_options where group_key='booking_statuses' and metadata->>'serviceStage'='excluded' order by sort_order limit 1")).rows[0]?.value
     assert.ok(noShowStatus, 'disposable Schema 025 must expose the authoritative no-show status')
+    assert.ok(cancelledStatus, 'disposable Schema 025 must expose the authoritative cancelled status')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'No-show Room Pair','301, 302',3), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-1', bookingStatus:noShowStatus },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Duplicate No-show Room','301',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-NOSHOW-2', bookingStatus:noShowStatus },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Roomed Walk-in','401',2), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-1', bookingSource:'walk_in' },'R2 test')
     await bookingRepository.save({ ...bookingFixture(randomUUID(),'Unroomed Walk-in','',1), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-2', bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'No-show Walk-in','405',6), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-NOSHOW', bookingStatus:noShowStatus, bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Cancelled Walk-in','406',7), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-WALKIN-CANCELLED', bookingStatus:cancelledStatus, bookingSource:'walk_in' },'R2 test')
+    await bookingRepository.save({ ...bookingFixture(randomUUID(),'Cancelled Reservation','407',4), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-CANCELLED-1', bookingStatus:cancelledStatus },'R2 test')
+    const importedHeadingId = randomUUID()
+    await bookingRepository.save({ ...bookingFixture(importedHeadingId,'Imported Walk In Heading','402',6), reservationDate:performanceDate, bookingNumber:'PERFORMANCE-IMPORTED-1', bookingSource:'activity_program' },'R2 test')
+    await db.query("update bookings set source_activity_label='Andalucía Walk In Guests',raw_import_payload=$2 where id=$1",[importedHeadingId,JSON.stringify({ effective:{ walkIn:true } })])
     const performance = await service.view(performanceDate,outlet)
-    assert.equal(performance.content.servicePerformance.noShowCovers,5, 'no-show metric must remain a cover total')
-    assert.deepEqual(performance.content.servicePerformance.noShowRooms,['301','302'], 'no-show room evidence must be distinct and complete')
+    assert.equal(performance.content.servicePerformance.totalCovers,9, 'Daily Report Total Covers must match Bookings expected covers and keep no-shows separate')
+    assert.equal(performance.content.servicePerformance.adults + performance.content.servicePerformance.kids,9, 'Daily Report adult and child totals must reconcile to Bookings Total Covers')
+    assert.equal(performance.content.servicePerformance.bookingByTimeSlot.reduce((sum,row)=>sum+Number(row.covers),0),9, 'time-slot covers must use the same expected-cover definition')
+    assert.equal(performance.content.servicePerformance.noShowCovers,11, 'no-show metric must remain separate and include no-show walk-in evidence')
+    assert.deepEqual([...performance.content.servicePerformance.noShowRooms].sort(),['301','302','405'], 'no-show room evidence must be distinct and complete')
     assert.equal(performance.content.servicePerformance.walkIns,2, 'walk-in metric definition must remain booking based')
+    assert.equal(performance.content.servicePerformance.walkInCovers,3, 'walk-in covers must sum only persisted manual walk-in bookings')
     assert.deepEqual(performance.content.servicePerformance.walkInRooms,['401'], 'walk-ins without a room must not receive fabricated room evidence')
     const before = await createOperationalFingerprint(db); const financialBefore = await createFinancialFinalizationFingerprint(db)
     const initial = await service.view('2026-09-10', outlet)
@@ -84,7 +96,7 @@ try {
     await assert.rejects(() => service.review('2026-09-10', outlet, actor), /not ready/)
     const manual = {
       symphony: { foodRevenue: '100.00', beverageRevenue: '50.00', wineRevenue: '20.00', liquorRevenue: '10.00', totalSale: '150.00', totalDiscount: '10.00', totalVoid: '5.00', netSale: '135.00', totalRevenue: '135.00', voidDetails: [{ amount: '5.00', reason: 'Manager approved void', checkInvoiceNumber: '41034457' }] },
-      serviceVerification: { doubleDinePax: 0, details: [] }, manager: { operationSummary: '', operatingSummary: 'Service ran smoothly with strong guest feedback.', operationsIssues: 'Ice machine follow-up remains open for tomorrow.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
+      serviceVerification: { doubleDinePax: 0, details: [] }, serviceCharges: { amount: '42.5', remarks: 'Separate daily service charge.' }, manager: { operationSummary: '', operatingSummary: 'Service ran smoothly with strong guest feedback.', operationsIssues: 'Ice machine follow-up remains open for tomorrow.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
     }
     const saved = await service.saveDraft('2026-09-10', manual, outlet, actor)
     assert.equal(saved.report?.preparedByName, owner.display_name)
@@ -93,17 +105,22 @@ try {
     assert.equal(saved.readiness.find(item => item.key === 'voids')?.state, 'complete')
     assert.equal(saved.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(saved.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(saved.report?.manualPayload.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     assert.equal(saved.readiness.find(item => item.key === 'manager')?.label, 'Operating Summary')
     const reloadedService = new DailyReportService(db, new ReportingRepository(db))
     const reloaded = await reloadedService.view('2026-09-10', outlet)
     assert.equal(reloaded.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(reloaded.report?.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(reloaded.report?.manualPayload.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     assert.equal(reloaded.content.upselling.details?.some(row => row.id === birthdayBasicId && row.item === 'Birthday Basic' && row.roomNumber === '708' && row.checkInvoiceNumber === 'BIRTHDAY-708' && row.amount === '75.00'), true)
     const independentlyEdited = await reloadedService.saveDraft('2026-09-10', { ...reloaded.report!.manualPayload, manager: { ...reloaded.report!.manualPayload.manager, operationsIssues: 'Updated independently after reload.' } }, outlet, actor)
     assert.equal(independentlyEdited.report?.manualPayload.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(independentlyEdited.report?.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
     assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, independentlyEdited.report?.manualPayload.manager), true)
     assert.equal(managerReviewWasPersisted(independentlyEdited.report!.manualPayload.manager, { operatingSummary: '', operationsIssues: '' }), false)
+    assert.equal(serviceChargesWerePersisted({ amount: '125.5', remarks: ' Dinner service ' }, { amount: '125.50', remarks: 'Dinner service' }), true)
+    assert.equal(serviceChargesWerePersisted({ amount: '0.00', remarks: '' }, { amount: '', remarks: '' }), false)
+    assert.equal(serviceChargesWerePersisted({ amount: '125.50', remarks: 'Dinner service' }, undefined), false)
     const managerAudit = (await db.query<any>("select before_data,after_data from audit_logs where entity_type='daily_report' and entity_id=$1 and action='manual_payload_updated' order by created_at desc,id desc limit 1", [independentlyEdited.report!.id])).rows[0]
     assert.equal(managerAudit.before_data.manualPayload.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
     assert.equal(managerAudit.after_data.manualPayload.manager.operationsIssues, 'Updated independently after reload.')
@@ -140,6 +157,13 @@ try {
     const mismatch = service.readiness(mismatchManual, saved.content).find(item => item.key === 'doubleDine')
     assert.equal(mismatch?.state, 'warning'); assert.equal(mismatch?.blocking, false)
     assert.equal(service.normalizeManual({ ...manual, serviceVerification: { doubleDinePax: '04', details: [] } }).serviceVerification.doubleDinePax, 4)
+    const detailDerived = await service.saveDraft('2026-09-07', { ...manual, serviceVerification: { doubleDinePax: 99, details: [{ roomNumber: '201', pax: 2, sourceOutlet: 'Tempo', note: '' }, { roomNumber: '202', pax: 3, sourceOutlet: 'Andalucía', note: '' }] } }, outlet, actor)
+    assert.equal(detailDerived.report?.manualPayload.serviceVerification.doubleDinePax, 5)
+    assert.match(detailDerived.readiness.find(item => item.key === 'doubleDine')?.message || '', /Detail-derived total: 5/)
+    assert.deepEqual(service.normalizeManual({ ...manual, serviceCharges: { amount: '', remarks: '  ' } }).serviceCharges, { amount: '', remarks: '' })
+    assert.equal(service.normalizeManual({ ...manual, serviceCharges: { amount: '0', remarks: 'Explicit zero.' } }).serviceCharges.amount, '0.00')
+    assert.equal(service.normalizeManual({ ...manual, serviceCharges: { amount: '1.25', remarks: '' } }).serviceCharges.amount, '1.25')
+    for (const amount of ['-1', '1.234', 'abc', '01']) await assert.rejects(() => service.saveDraft('2026-09-08', { ...manual, serviceCharges: { amount, remarks: '' } }, outlet, actor), /Daily Service Charges/)
     const brokenRevenue = service.normalizeManual({ ...manual, symphony: { ...manual.symphony, netSale: '140.00' } })
     const advisory = service.readiness(brokenRevenue, saved.content).find(item => item.key === 'reconciliation')
     assert.equal(advisory?.state, 'warning'); assert.equal(advisory?.blocking, false); assert.equal(advisory?.verificationRequired, true)
@@ -159,6 +183,7 @@ try {
     assert.equal(approved.content.revenueVerification?.acknowledged, true); assert.equal(approved.content.revenueVerification?.verifiedByName, owner.display_name)
     assert.equal(approved.content.manager.operatingSummary, 'Service ran smoothly with strong guest feedback.')
     assert.equal(approved.content.manager.operationsIssues, 'Ice machine follow-up remains open for tomorrow.')
+    assert.deepEqual(approved.content.serviceCharges, { amount: '42.50', remarks: 'Separate daily service charge.' })
     const retry = await service.approve('2026-09-10', 'reports-r1-isolated-approval', outlet, actor); assert.equal(retry.snapshot?.id, approved.snapshot?.id)
     await assert.rejects(() => service.approve('2026-09-10', 'reports-r1-different-key', outlet, actor), /already approved/)
     const snapshotJson = JSON.stringify(approved.content)

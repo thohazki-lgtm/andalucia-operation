@@ -12,11 +12,12 @@ assert.match(app, />Duty Code Settings<\/button>/)
 assert.match(app, /section === 'roster' \? <Roster[^>]+> : <DutyCodeManager/, 'The tabs must switch between the existing roster and Duty Code manager.')
 assert.equal((app.match(/<DutyCodeManager /g) || []).length, 1, 'Duty Code Settings must render only in Duty Roster.')
 
-const customizationView = app.match(/function ConfigurationView\([^\n]*\) \{([\s\S]*?)\n\}/)?.[1] || ''
-assert.ok(customizationView, 'Workforce customization view must remain available.')
-assert.doesNotMatch(customizationView, /DutyCodeManager/, 'Customization Center must no longer render Duty Code Settings.')
-assert.match(customizationView, /StaffEntitlementsManager/)
-assert.match(customizationView, /PublicHolidaySettingsManager/)
+const leavePlannerWorkspace = app.match(/function LeavePlannerWorkspace\([^\n]*\) \{([\s\S]*?)\n\}/)?.[1] || ''
+assert.ok(leavePlannerWorkspace, 'The standalone Leave Planner workspace must be available.')
+assert.doesNotMatch(leavePlannerWorkspace, /DutyCodeManager/, 'Duty Code Settings must remain in Duty Roster.')
+assert.match(leavePlannerWorkspace, /StaffEntitlementsManager/)
+assert.match(leavePlannerWorkspace, /PublicHolidaySettingsManager/)
+assert.doesNotMatch(app, /function ConfigurationView/, 'The retired Workforce customization surface must not remain.')
 
 for (const behavior of ['Display Code', 'Duty Name', 'Counts as Working', 'dutyClassification', 'onReorder', 'onRemove']) assert.ok(app.includes(behavior), `Existing Duty Code behavior must remain: ${behavior}`)
 for (const classification of ['working', 'other']) assert.ok(app.includes(`value="${classification}"`), `Duty classification must remain available: ${classification}`)

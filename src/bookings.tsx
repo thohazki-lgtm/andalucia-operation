@@ -30,6 +30,12 @@ const ageTotals = (bookings: BookingRecord[]) => bookings.reduce((totals, bookin
 }, { adults: 0, kids: 0, unknown: 0, unverified: false })
 
 const optionLabel = (options: ConfigOption[], value: string) => options.find(option => option.value === value)?.label || value || '—'
+const assignmentTableOptions = (tables: ConfigOption[], current = '') => {
+  const active = tables.filter(option => option.active).sort((left, right) => Number(left.value) - Number(right.value))
+  return current && !active.some(option => option.value === current)
+    ? [...active, { id: `historical-table:${current}`, value: current, label: `${current} · Historical`, active: false }]
+    : active
+}
 const bookingStatusTone = (value: string): BookingStatusTone => {
   const normalized = value.toLowerCase().replaceAll('-', '_')
   if (normalized === 'confirmed') return 'navy'
@@ -67,11 +73,11 @@ const guestAlerts = (booking: BookingRecord): GuestAlert[] => {
   return detectBookingAllergyEvidence(note).map(alert => ({ label: alert.label, note }))
 }
 
-function BookingModal({ title, children, onClose, wide = false, side = false, className = '' }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; side?: boolean; className?: string }) {
+function BookingModal({ title, children, onClose, wide = false, side = false, className = '', closeOnBackdrop = false, showClose = true }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; side?: boolean; className?: string; closeOnBackdrop?: boolean; showClose?: boolean }) {
   const dialogRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (!side) return
+    if (!side && !closeOnBackdrop) return
 
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialogRef.current?.focus()
@@ -83,14 +89,14 @@ function BookingModal({ title, children, onClose, wide = false, side = false, cl
       window.removeEventListener('keydown', dismissOnEscape)
       if (previouslyFocused?.isConnected) previouslyFocused.focus()
     }
-  }, [onClose, side])
+  }, [closeOnBackdrop, onClose, side])
 
   return <div
     className={`modal-backdrop${side ? ' booking-drawer-backdrop' : ''}`}
-    onClick={side ? event => { if (event.target === event.currentTarget) onClose() } : undefined}
+    onMouseDown={side || closeOnBackdrop ? event => { if (event.target === event.currentTarget) onClose() } : undefined}
   >
-<section ref={dialogRef} className={`${side ? 'modal booking-detail-drawer' : wide ? 'modal booking-modal-wide' : 'modal'}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={side ? -1 : undefined}>
-{!side && <IconAction className="close" icon="close" label="Close dialog" onClick={onClose}/>}
+<section ref={dialogRef} className={`${side ? 'modal booking-detail-drawer' : wide ? 'modal booking-modal-wide' : 'modal'}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={side || closeOnBackdrop ? -1 : undefined}>
+{!side && showClose && <IconAction className="close" icon="close" label="Close dialog" onClick={onClose}/>}
 <h2>{title}</h2>{children}</section>
 </div>
 }
@@ -314,7 +320,7 @@ function ServiceBookingRow({ booking, occasions, staff, configuration, waitingSt
 <td><AllergyBadges booking={booking} /></td>
 <td>
 <select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}>
-<option value="">Unassigned</option>{configuration.tables.filter(option => option.active || option.value === booking.tableNumber).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
+<option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select>
 </td>
 <td>
 <select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}>
@@ -337,7 +343,7 @@ function MobileBookingCard({ booking, occasions, staff, configuration, waitingSt
     <header><div><span className="mobile-card-kicker">{bookingDisplayTime(booking) || 'Time not set'}{bookingServiceKind(booking) === 'celebration' ? ' · Celebration' : ''}</span><button type="button" className="booking-guest-trigger mobile" onClick={onView} aria-label={`Open booking details for ${guestLabel}`}><b>{guestLabel}</b><SvgIcon name="chevron-right" size={18} /></button>{booking.bookingSource === 'walk_in' ? <span className="booking-walk-in-badge">Walk-In</span> : <small>#{booking.bookingNumber || 'No booking number'}</small>}</div><StatusPill className={`booking-status ${bookingStatusClass(booking.bookingStatus)}`} tone={bookingStatusTone(booking.bookingStatus)}>{status?.label || booking.bookingStatus}</StatusPill></header>
     {stage === 'arrived' && <p className="mobile-arrived-state">✓ Guest has arrived</p>}
     <div className="mobile-card-facts"><span><small>Room</small><b>{booking.roomNumber || '—'}</b></span><span><small>Covers</small><b>{booking.covers}</b></span><span><small>Occasion</small><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></span><span><small>Allergies</small><AllergyBadges booking={booking} /></span></div>
-    <div className="mobile-card-fields"><label>Table<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{configuration.tables.filter(option => option.active || option.value === booking.tableNumber).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select></label><label>Waiter<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}>{stage === 'arrived' && <SvgIcon name="check" size={16} />}{stage === 'noShow' && <SvgIcon name="close" size={16} />}<StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
+    <div className="mobile-card-fields"><label>Table<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select></label><label>Waiter<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}>{stage === 'arrived' && <SvgIcon name="check" size={16} />}{stage === 'noShow' && <SvgIcon name="close" size={16} />}<StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
     <div className="mobile-card-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div>
   </article>
 }
@@ -761,7 +767,7 @@ function BookingForm({ booking, date, staff, configuration, onClose, onSave }: {
 <label>Meal period<input value={form.mealPeriod} onChange={event => update('mealPeriod', event.target.value)} />
 </label>
 <label>Table number<select value={form.tableNumber} onChange={event => update('tableNumber', event.target.value)}>
-<option value="">Unassigned</option>{configuration.tables.filter(option => option.active || option.value === form.tableNumber).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
+<option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, form.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select>
 </label>
 <label>Waiter<select value={form.waiterId || ''} onChange={event => update('waiterId', event.target.value || null)}>
 <option value="">Unassigned</option>{availableWaiters.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name} · {person.number}{!eligible ? ' (Ineligible – historical)' : ''}</option> })}</select>
@@ -898,7 +904,7 @@ export function BookingConfigurationManager({ configuration, onSave, onResetWalk
 </article>
 {error && <p className="save-error booking-config-error" role="alert">{error}</p>}
 {editing && <BookingConfigForm group={editing.group} option={editing.option} onClose={() => setEditing(null)} onSave={async option => { await onSave(editing.group, option); setEditing(null) }} />}
-{confirmReset && <div className="modal-backdrop nested-config-confirm"><section className="modal" role="dialog" aria-modal="true" aria-label="Reset Walk-in Guest Form"><IconAction className="close" icon="close" label="Close reset confirmation" onClick={() => setConfirmReset(false)}/><p className="eyebrow">WALK-IN GUEST FORM</p><h2>Reset field settings?</h2><p className="config-confirm-copy">This restores only the approved Required, Optional and Hidden field defaults. Bookings, sources, statuses and tables are not changed.</p><div className="form-actions"><ActionButton onClick={() => setConfirmReset(false)}>Cancel</ActionButton><ActionButton variant="primary" icon="restore" onClick={() => void onResetWalkIn().then(() => setConfirmReset(false)).catch(saveError => { setConfirmReset(false); setError(saveError instanceof Error ? saveError.message : 'Unable to reset the Walk-in form.') })}>Reset Form Settings</ActionButton></div></section></div>}
+{confirmReset && <BookingModal title="Reset Walk-in Guest Form" className="booking-config-modal booking-reset-modal" closeOnBackdrop showClose={false} onClose={() => setConfirmReset(false)}><p className="eyebrow">WALK-IN GUEST FORM</p><p className="config-confirm-copy">This restores only the approved Required, Optional and Hidden field defaults. Bookings, sources, statuses and tables are not changed.</p><div className="form-actions"><ActionButton onClick={() => setConfirmReset(false)}>Cancel</ActionButton><ActionButton variant="primary" icon="restore" onClick={() => void onResetWalkIn().then(() => setConfirmReset(false)).catch(saveError => { setConfirmReset(false); setError(saveError instanceof Error ? saveError.message : 'Unable to reset the Walk-in form.') })}>Reset Form Settings</ActionButton></div></BookingModal>}
 </section>
 }
 
@@ -908,17 +914,19 @@ function BookingConfigForm({ group, option, onClose, onSave }: { group: 'statuse
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const protectedStatus = group === 'statuses' && Boolean(form.metadata?.protected)
+  const dirty = JSON.stringify(form) !== JSON.stringify(option)
+  const requestClose = () => { if (!dirty || window.confirm('Discard unsaved configuration changes?')) onClose() }
   const submit = async (event: FormEvent) => { event.preventDefault(); if (group === 'statuses' && (!form.value.trim() || !form.label.trim())) return setError('Status name and internal code are required.'); setSaving(true); setError(''); try { await onSave(group === 'statuses' ? { ...form, value: form.value.trim().toLowerCase().replaceAll(' ', '_'), label: form.label.trim() } : form) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save configuration.') } finally { setSaving(false) } }
-  return <BookingModal title={group === 'statuses' ? (option.value ? 'Edit Booking Status' : 'Add Booking Status') : (option.value ? 'Edit Table Range' : 'Add Table Range')} onClose={onClose}>
+  return <BookingModal title={group === 'statuses' ? (option.value ? 'Edit Booking Status' : 'Add Booking Status') : (option.value ? 'Edit Table Range' : 'Add Table Range')} className="booking-config-modal" closeOnBackdrop showClose={false} onClose={requestClose}>
 <form className="staff-form booking-config-form" onSubmit={event => void submit(event)}>
-{group === 'statuses' ? <>
+{group === 'statuses' ? <div className="booking-config-form-grid booking-status-form-grid">
 <label>Status Name<input value={form.label} onChange={event => setForm({ ...form, label: event.target.value })} /></label>
 <label>Color<input type="color" disabled={protectedStatus} title={protectedStatus ? 'This operational color is protected.' : undefined} value={form.color || '#1b6288'} onChange={event => setForm({ ...form, color: event.target.value })} />{protectedStatus && <small>Protected operational color</small>}</label>
-<label className="check-label"><input type="checkbox" disabled={protectedStatus} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>
 <label>Internal Code<input readOnly={Boolean(option.value)} value={form.value} onChange={event => setForm({ ...form, value: event.target.value })} /><small>{option.value ? 'Immutable after creation' : 'Created once and retained for history'}</small></label>
+<label className="check-label compact-active-control"><input type="checkbox" disabled={protectedStatus} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label>
 <details open={advanced} onToggle={event => setAdvanced(event.currentTarget.open)} className="booking-status-advanced"><summary>Advanced Operational Behavior</summary><label>Service Stage<select disabled={protectedStatus} value={form.metadata?.serviceStage || 'remaining'} onChange={event => setForm({ ...form, metadata: { ...form.metadata, serviceStage: event.target.value as NonNullable<ConfigOption['metadata']>['serviceStage'] } })}><option value="remaining">Remaining</option><option value="arrived">Arrived</option><option value="completed">Completed</option><option value="noShow">No-Show</option><option value="excluded">Excluded</option></select></label><label>Dashboard Metric<select disabled={protectedStatus} value={form.metadata?.bookingMetric || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, bookingMetric: (event.target.value || undefined) as 'arrived' | 'noShow' | undefined } })}><option value="">None</option><option value="arrived">Arrived</option><option value="noShow">No-Shows</option></select></label><label className="check-label"><input type="checkbox" disabled={protectedStatus} checked={Boolean(form.metadata?.excludesFromExpectedCovers)} onChange={event => setForm({ ...form, metadata: { ...form.metadata, excludesFromExpectedCovers: event.target.checked } })} /> Exclude from expected covers</label>{protectedStatus && <small>Protected operational behavior</small>}</details>
-</> : <div className="table-range-form"><label>First Table<input type="number" min="1" value={form.metadata?.tableRangeStart || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeStart: Number(event.target.value) } })} /></label><label>Last Table<input type="number" min="1" value={form.metadata?.tableRangeEnd || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeEnd: Number(event.target.value) } })} /></label><label className="check-label"><input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label></div>}
-{error && <p className="save-error">{error}</p>}<div className="form-actions"><ActionButton onClick={onClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save'}</ActionButton></div>
+</div> : <div className="table-range-form"><label>First Table<input type="number" min="1" value={form.metadata?.tableRangeStart || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeStart: Number(event.target.value) } })} /></label><label>Last Table<input type="number" min="1" value={form.metadata?.tableRangeEnd || ''} onChange={event => setForm({ ...form, metadata: { ...form.metadata, tableRangeEnd: Number(event.target.value) } })} /></label><label className="check-label compact-active-control"><input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> Active</label></div>}
+{error && <p className="save-error">{error}</p>}<div className="form-actions"><ActionButton onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save'}</ActionButton></div>
 </form>
 </BookingModal>
 }

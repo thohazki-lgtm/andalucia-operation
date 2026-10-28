@@ -1,0 +1,121 @@
+.maintenance-config {
+  box-sizing: border-box;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dec58f;
+  border-radius: 12px;
+  background: #fffaf0;
+  color: #173d56;
+  font-family: 'DM Sans', Arial, sans-serif;
+}
+
+.maintenance-config-hero {
+  display: block;
+  margin: 0 0 12px;
+  padding: 0 1px 11px;
+  border-bottom: 1px solid #dec58f;
+}
+
+.maintenance-config-hero .eyebrow { margin-bottom: 4px; font-size: 8px; }
+.maintenance-config-hero h3 { margin: 0; color: #173d56; font: 600 20px/1.2 'Playfair Display', serif; }
+.maintenance-config-hero > p:last-child { margin: 4px 0 0; color: #6c7e88; font-size: 11px; line-height: 1.45; }
+
+.maintenance-config .maintenance-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.maintenance-config-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 13px;
+  border: 1px solid #dec58f;
+  border-radius: 11px;
+  background: #fffdf8;
+  box-shadow: 0 3px 12px #173d5608;
+}
+
+.maintenance-config .maintenance-config-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 7px;
+  padding: 0 0 9px;
+  border-bottom: 1px solid #ead7ae;
+}
+
+.maintenance-config-heading > div { min-width: 0; }
+.maintenance-config-heading .eyebrow { margin-bottom: 3px; font-size: 8px; }
+.maintenance-config-heading h4 { margin: 0; color: #173d56; font: 600 16px/1.25 'Playfair Display', serif; }
+.maintenance-config-heading .ao-action { flex: 0 0 auto; min-height: 38px; }
+.maintenance-config-list { display: grid; }
+
+.maintenance-config .maintenance-config-row {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #ead7ae;
+}
+
+.maintenance-config .maintenance-config-row:last-child { border-bottom: 0; }
+.maintenance-config .maintenance-config-row b { display: block; min-width: 0; color: #24485d; font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+.maintenance-category-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+.maintenance-category-row > .ao-status-pill { min-width: 62px; }
+.maintenance-config-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+.maintenance-config-actions .ao-action,
+.maintenance-workflow-row > .ao-action { min-height: 34px; padding-inline: 8px; font-size: 10px; }
+.maintenance-workflow-row { grid-template-columns: minmax(0, 1fr) auto; }
+.maintenance-workflow-identity { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.maintenance-workflow-identity .status-dot { display: block; width: 12px; height: 12px; flex: 0 0 12px; border: 1px solid #d2b777; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
+
+.maintenance-protection-note {
+  margin: 7px 0 0;
+  padding: 8px 9px;
+  border: 1px solid #ead7ae;
+  border-radius: 8px;
+  background: #fff8e9;
+  color: #67583d;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.modal.maintenance-config-modal { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+.maintenance-config-modal .modal-title { padding: 14px 16px 12px; }
+.maintenance-config-modal .modal-title h3 { font-size: 20px; }
+.maintenance-config-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; padding: 12px; overflow-y: auto; background: #fffdf8; }
+.maintenance-config-form > label { display: grid; min-width: 0; gap: 4px; margin: 0; color: #506977; font-size: 10px; font-weight: 600; }
+.maintenance-config-form :is(input, select) { box-sizing: border-box; width: 100%; height: 44px; min-height: 44px; margin: 0; border: 1px solid #dec58f; border-radius: 8px; background: #fff; color: #274d62; font: 500 12px 'DM Sans', Arial, sans-serif; }
+.maintenance-config-form input[type='color'] { height: 48px; padding: 5px; }
+.maintenance-config-form .save-error { margin: 0; }
+.maintenance-config-form .form-actions { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 150px)); justify-content: end; gap: 8px; margin: 2px -12px -12px; padding: 10px 12px; border-top: 1px solid #dec58f; background: #fffaf0; box-shadow: none; }
+.maintenance-config-form .form-actions .ao-action { width: 100%; min-height: 42px; }
+
+@media (max-width: 820px) {
+  .maintenance-config .maintenance-config-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .maintenance-config { padding: 10px; }
+  .maintenance-config-hero { margin-bottom: 10px; }
+  .maintenance-config-card { padding: 10px; }
+  .maintenance-config .maintenance-config-grid { gap: 10px; }
+  .maintenance-config .maintenance-config-heading { align-items: flex-start; }
+  .maintenance-config-heading .ao-action { min-height: 44px; }
+  .maintenance-config .maintenance-category-row,
+  .maintenance-config .maintenance-workflow-row { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+  .maintenance-category-row > .ao-status-pill { align-self: start; }
+  .maintenance-config-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .maintenance-config-actions .ao-action,
+  .maintenance-config .maintenance-workflow-row > .ao-action { width: 100%; min-height: 44px; }
+  .maintenance-config .maintenance-workflow-row > .ao-action { grid-column: 1 / -1; }
+  .modal.maintenance-config-modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  .maintenance-config-form { padding: 9px; }
+  .maintenance-config-form .form-actions { grid-template-columns: 1fr 1fr; margin: 1px -9px -9px; padding: 9px; }
+  .maintenance-config-form .form-actions .ao-action { min-height: 44px; }
+}

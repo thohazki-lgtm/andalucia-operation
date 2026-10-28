@@ -55,7 +55,7 @@ export class FinancialPreviewService {
       const eligible = resolvedBillTipEligibility({ value: row.value, label: row.label, metadata: parsed })
       return eligible === null || (eligible === true && workedDayUnits({ value: row.value, metadata: parsed }) === null)
     }).map((row: any) => dutyDisplayIdentity({ value: row.value, label: row.label, metadata: metadata(row.metadata) }).text)
-    if (unresolvedDuties.length) throw new Error(`Bill Tip eligibility or worked-day credit is not configured for: ${unresolvedDuties.join(', ')}`)
+    if (unresolvedDuties.length) throw new Error(`Bill Tip eligibility or worked-day credit is not configured for: ${unresolvedDuties.join(', ')}. Open Duty Roster → Duty Code Settings and choose Bill Tip eligibility plus a 0 or 1 day credit for each code.`)
     const roster = new Map(rosterRows.map((row: any) => [`${row.staff_id}|${row.duty_date}`, row.duty_code_value]))
     const staff = members.map((member: any) => {
       const membershipDates = dates.filter(date => date >= member.effective_from && (!member.effective_to || date <= member.effective_to))

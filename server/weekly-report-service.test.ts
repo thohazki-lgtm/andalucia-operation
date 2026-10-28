@@ -4,16 +4,17 @@ import { WeeklyReportService } from './weekly-report-service.js'
 import { addCalendarDays, calendarDates, weekRange } from '../src/service-date.js'
 
 const outlet = { id: '11111111-1111-4111-8111-111111111111', scopeKey: 'andalucia', displayName: 'Andalucía' }
-const payload = (date: string, value: number) => ({
+const payload = (date: string, value: number, serviceCharge: string | null = '10.50') => ({
   servicePerformance: { totalCovers: value, adults: value - 1, kids: 1, totalBookings: 2, arrivedCovers: value - 2, noShowCovers: 1, noShowRooms: ['101'], walkIns: 1, bookingByTimeSlot: [] },
   symphony: { foodRevenue: '100.10', beverageRevenue: '50.20', wineRevenue: '20.00', liquorRevenue: '10.00', totalSale: '150.30', totalDiscount: '5.00', totalVoid: '1.00', netSale: '144.30', totalRevenue: '150.30', voidDetails: [] },
   serviceVerification: { doubleDinePax: 2, details: [] },
+  ...(serviceCharge === null ? {} : { serviceCharges: { amount: serviceCharge, remarks: '' } }),
   upselling: { chargeables: [], wineSpirits: [], details: [{ item: 'Lobster Paella', quantity: 1, soldBy: 'LAKSHIT SHARMA', amount: '85.00', source: 'Chargeable' }, { item: 'Wine', quantity: 2, soldBy: 'AHMED', amount: '40.00', source: 'Wine / Spirits' }], totalUpsellRevenue: '125.00', itemsSold: 3, topItem: 'Wine', topSeller: 'LAKSHIT SHARMA' },
   guestOccasions: { categories: [{ key: 'birthday', label: 'Birthday', count: 1, covers: 2 }], roomDetails: [] }, manager: { operationSummary: '' },
   revenueVerification: { acknowledged: true, netSale: '144.30', totalRevenue: '150.30', difference: '6.00', verifiedByName: 'Owner', verifiedAt: `${date}T20:00:00.000Z` },
   identity: { outletScopeId: outlet.id, serviceDate: date, revisionNumber: 1, status: 'approved', preparedBy: { userId: 'u', name: 'Owner', at: `${date}T18:00:00Z` }, reviewedBy: { userId: 'u', name: 'Owner', at: `${date}T19:00:00Z` }, approvedBy: { userId: 'u', name: 'Owner', at: `${date}T20:00:00Z` } }
 })
-const snapshot = (date: string, value: number) => ({ dailyReportId: `report-${date}`, serviceDate: date, frozenPayload: payload(date, value) })
+const snapshot = (date: string, value: number, serviceCharge: string | null = '10.50') => ({ dailyReportId: `report-${date}`, serviceDate: date, frozenPayload: payload(date, value, serviceCharge) })
 let snapshots = [...calendarDates('2026-08-17','2026-08-30').map((date,index)=>snapshot(date,10+index))]
 let reportRows: Array<{id:string;service_date:string;status:string}> = []
 let saved: unknown = null
@@ -30,24 +31,28 @@ assert.equal(full.revenue.foodRevenue, '700.70'); assert.equal(full.revenue.tota
 assert.equal(full.upselling.chargeableRevenue, '595.00'); assert.equal(full.upselling.wineSpiritsRevenue, '280.00'); assert.equal(full.occasions.find(item=>item.key==='birthday')?.count, 7)
 assert.equal(full.occasions.length, 9); assert.equal(full.occasions.find(item=>item.key==='presstrip')?.count, 0)
 assert.equal(full.comparison.available, true); assert.equal(full.days.every(day=>day.status==='approved'), true)
+assert.deepEqual(full.serviceCharges,{total:'73.50',approvedDays:7,contributingDays:7,explicitZeroDays:0,approvedMissingValueDays:0,unapprovedOrMissingDays:0,state:'complete',label:'COMPLETE APPROVED WEEK'})
 
-snapshots = [snapshot('2026-09-07',20),snapshot('2026-09-08',21)]
+snapshots = [snapshot('2026-09-07',20,'0.00'),snapshot('2026-09-08',21,null)]
 reportRows = [{id:'draft',service_date:'2026-09-09',status:'draft'},{id:'reviewed',service_date:'2026-09-10',status:'reviewed'}]
 const current = await service.view('2026-09-10', outlet)
 assert.equal(current.authority.state, 'in-progress'); assert.equal(current.authority.approvedDays, 2); assert.equal(current.authority.expectedDays, 4)
 assert.deepEqual(current.days.map(day=>day.status), ['approved','approved','draft','reviewed','not-yet-closed','not-yet-closed','not-yet-closed'])
 assert.equal(current.totals.totalCovers, 41); assert.equal(current.comparison.available, false)
+assert.deepEqual(current.serviceCharges,{total:'0.00',approvedDays:2,contributingDays:1,explicitZeroDays:1,approvedMissingValueDays:1,unapprovedOrMissingDays:5,state:'partial',label:'INCOMPLETE APPROVED VALUES'})
+assert.deepEqual(current.status.find(item=>item.label==='Service Charges'),{label:'Service Charges',state:'partial',detail:'1 / 7 approved values'})
 await service.saveCommentary('2026-09-07','Weekly context',outlet,'THOHA LI [owner-id]')
 assert.deepEqual(saved,{input:{periodType:'week',startDate:'2026-09-07',endDate:'2026-09-13',managerNotes:'Weekly context'},actor:'THOHA LI [owner-id]'})
 await assert.rejects(()=>service.saveCommentary('2026-09-08','No',outlet,'Owner'),/Monday week start/)
 assert.deepEqual(weekRange('2027-01-01'),['2026-12-28','2027-01-03']); assert.equal(addCalendarDays('2028-02-28',1),'2028-02-29')
 
 const ui = await readFile(new URL('../src/reports.tsx', import.meta.url),'utf8'); const css = await readFile(new URL('../src/reports.css', import.meta.url),'utf8')
-for (const required of ['Weekly Performance','Service Performance by Day','Previous Week Comparison','Save Commentary','View Daily','ANDALUCÍA WEEKLY REPORT']) assert.ok(ui.includes(required),`missing UI: ${required}`)
+for (const required of ['Weekly Performance','Service Performance by Day','Previous Week Comparison','Weekly Service Charges','Approved contributing days','Print / Export','View Daily','ANDALUCÍA WEEKLY REPORT']) assert.ok(ui.includes(required),`missing UI: ${required}`)
+for (const removed of ['title="Weekly Commentary"','Save Commentary','className="weekly-commentary"']) assert.ok(!ui.includes(removed),`removed Weekly Commentary UI remains: ${removed}`)
 assert.ok(css.includes('@media(max-width:650px)')); assert.ok(css.includes('@media print')); assert.ok(!ui.includes('approveWeekly'))
 assert.ok(ui.includes('const allOccasions=view?.occasions||[]'), 'Weekly must render zero-value occasion categories.')
-for (const section of ['Weekly Performance','Service Performance by Day','Weekly Revenue','Chargeable Items / Upselling','Incentives & Bill Tips','Guest Experience','Service Attention','Previous Week Comparison','Weekly Commentary','Weekly Report Completeness']) assert.ok(ui.includes(`title="${section}"`),`missing aligned section: ${section}`)
-assert.ok(ui.includes('IconAction icon="chevron-left" label="Previous week"'));assert.ok(ui.includes('IconAction icon="chevron-right" label="Next week"'));assert.ok(ui.includes('DateControl label="Select weekly report date"'));assert.ok(!ui.includes('ANDALUCÍA WEEKLY MANAGEMENT REPORT'));assert.ok(!ui.includes('>← Previous Week</button>'));assert.ok(!ui.includes('>Next Week →</button>'));assert.ok(css.includes('.weekly-header-nav'));assert.ok(css.includes('#weekly-performance'));assert.ok(css.includes('.weekly-commentary'))
+for (const section of ['Weekly Performance','Service Performance by Day','Weekly Revenue','Chargeable Items / Upselling','Incentives & Bill Tips','Guest Experience','Service Attention','Previous Week Comparison','Weekly Service Charges','Weekly Report Completeness']) assert.ok(ui.includes(`title="${section}"`),`missing aligned section: ${section}`)
+assert.ok(ui.includes('IconAction icon="chevron-left" label="Previous week"'));assert.ok(ui.includes('IconAction icon="chevron-right" label="Next week"'));assert.ok(ui.includes('DateControl label="Select weekly report date"'));assert.ok(!ui.includes('ANDALUCÍA WEEKLY MANAGEMENT REPORT'));assert.ok(!ui.includes('>← Previous Week</button>'));assert.ok(!ui.includes('>Next Week →</button>'));assert.ok(css.includes('.weekly-header-nav'));assert.ok(css.includes('#weekly-performance'));assert.ok(css.includes('.weekly-authority-grid'));assert.ok(css.includes('.weekly-service-charges'))
 assert.ok(!ui.includes('elapsed service days'),'weekly header must not expose completeness detail text')
-for(const shared of ['<WeeklyStatus status=','<ActionButton icon="refresh"','className="weekly-view-daily"','icon="print"','icon="save"'])assert.ok(ui.includes(shared),`Weekly Report shared action adoption missing: ${shared}`)
-console.log('Weekly R2 authority aggregation, comparison, numbered design alignment, compact navigation, responsive tables/commentary and print checks: PASS')
+for(const shared of ['<WeeklyStatus status=','<ActionButton icon="refresh"','className="weekly-view-daily"','icon="print"'])assert.ok(ui.includes(shared),`Weekly Report shared action adoption missing: ${shared}`)
+console.log('Weekly approved Service Charges aggregation, comparison eligibility, premium responsive layout, commentary removal and print checks: PASS')

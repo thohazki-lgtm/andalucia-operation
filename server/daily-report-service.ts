@@ -14,11 +14,12 @@ const fixed = (value: number) => value.toFixed(2)
 const parseJson = (value: unknown): any => { if (typeof value !== 'string') return value || {}; try { return JSON.parse(value) } catch { return {} } }
 const cleanText = (value: unknown, maximum = 4000) => String(value ?? '').trim().slice(0, maximum)
 const guestExperienceCount = (rows: Array<Record<string, unknown>>, categories: Array<Record<string, unknown>>) => rows.some(row => Array.isArray(row.categoryKeys) && row.categoryKeys.length) ? new Set(rows.map(row => row.bookingId ? `booking:${String(row.bookingId)}` : `occasion:${String(row.occasionId)}`)).size : categories.reduce((sum, row) => sum + Number(row.count || 0), 0)
-export const isWalkInBookingEvidence = (row: { booking_source?: string | null; source_activity_label?: string | null; raw_import_payload?: unknown }) => { const payload = parseJson(row.raw_import_payload); return row.booking_source === 'walk_in' || payload?.effective?.walkIn === true || payload?.walkIn === true || /walk\s*in/i.test(row.source_activity_label || '') }
+export const isWalkInBookingEvidence = (row: { booking_source?: string | null; source_activity_label?: string | null; raw_import_payload?: unknown }) => row.booking_source === 'walk_in'
 
 export const emptyDailyReportManualPayload = (): DailyReportManualPayload => ({
   symphony: { foodRevenue: '', beverageRevenue: '', wineRevenue: '', liquorRevenue: '', totalSale: '', totalDiscount: '', totalVoid: '', netSale: '', totalRevenue: '', voidDetails: [] },
   serviceVerification: { doubleDinePax: null, details: [] },
+  serviceCharges: { amount: '', remarks: '' },
   manager: { operationSummary: '', operatingSummary: '', operationsIssues: '', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: '' },
   revenueVerification: { acknowledged: false },
 })
@@ -37,11 +38,14 @@ export class DailyReportService {
     const doubleDineRaw = input?.serviceVerification?.doubleDinePax
     const doubleDinePax = doubleDineRaw === '' || doubleDineRaw == null ? null : Number(doubleDineRaw)
     const details = Array.isArray(input?.serviceVerification?.details) ? input.serviceVerification.details.slice(0, 100).map((row: any) => ({ roomNumber: cleanText(row?.roomNumber, 120), pax: Number(row?.pax || 0), sourceOutlet: cleanText(row?.sourceOutlet, 200), note: cleanText(row?.note, 500) })) : []
+    const serviceChargeRaw = cleanText(input?.serviceCharges?.amount, 30)
+    if (serviceChargeRaw && !/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(serviceChargeRaw)) throw new Error('Daily Service Charges must be a non-negative USD amount with no more than two decimal places.')
+    const serviceCharges = { amount: serviceChargeRaw === '' ? '' : Number(serviceChargeRaw).toFixed(2), remarks: cleanText(input?.serviceCharges?.remarks, 1000) }
     const verificationInput = input?.revenueVerification
     const revenueVerification: DailyReportRevenueVerification = { acknowledged: verificationInput?.acknowledged === true }
     for (const key of ['verifiedByUserId', 'verifiedByName', 'verifiedAt', 'netSale', 'totalRevenue', 'difference'] as const) if (verificationInput?.[key]) revenueVerification[key] = cleanText(verificationInput[key], 200)
     if (Array.isArray(verificationInput?.messages)) revenueVerification.messages = verificationInput.messages.slice(0, 10).map((message: unknown) => cleanText(message, 500))
-    return { symphony, serviceVerification: { doubleDinePax, details }, manager: { operationSummary: cleanText(input?.manager?.operationSummary, 10000), operatingSummary: cleanText(input?.manager?.operatingSummary, 10000), operationsIssues: cleanText(input?.manager?.operationsIssues, 10000), keyOperationalIssue: cleanText(input?.manager?.keyOperationalIssue), guestFeedbackServiceRecovery: cleanText(input?.manager?.guestFeedbackServiceRecovery), followUpRequired: cleanText(input?.manager?.followUpRequired) }, revenueVerification }
+    return { symphony, serviceVerification: { doubleDinePax, details }, serviceCharges, manager: { operationSummary: cleanText(input?.manager?.operationSummary, 10000), operatingSummary: cleanText(input?.manager?.operatingSummary, 10000), operationsIssues: cleanText(input?.manager?.operationsIssues, 10000), keyOperationalIssue: cleanText(input?.manager?.keyOperationalIssue), guestFeedbackServiceRecovery: cleanText(input?.manager?.guestFeedbackServiceRecovery), followUpRequired: cleanText(input?.manager?.followUpRequired) }, revenueVerification }
   }
 
   revenueReconciliation(manual: DailyReportManualPayload) {
@@ -80,7 +84,7 @@ export class DailyReportService {
       item('upselling', 'Upselling', 'complete', `${content.upselling.itemsSold || 0} realized item${content.upselling.itemsSold === 1 ? '' : 's'} loaded.`),
       item('occasions', 'Guest Occasions', 'complete', `${guestExperienceCount(content.guestOccasions.roomDetails, content.guestOccasions.categories)} distinct guest record${guestExperienceCount(content.guestOccasions.roomDetails, content.guestOccasions.categories) === 1 ? '' : 's'} loaded.`),
       item('voids', 'Void Evidence', requiredMoney.includes('totalVoid') ? 'missing' : voidMessages.length ? 'warning' : 'complete', requiredMoney.includes('totalVoid') ? 'Enter Total Void, including 0 when none.' : voidMessages.join(' ') || ((values.totalVoid || 0) === 0 ? 'Total Void explicitly entered as 0; no supporting detail required.' : 'Void details match the entered Total Void.'), requiredMoney.includes('totalVoid') || voidMessages.length > 0),
-      item('doubleDine', 'Double Dine Verification', !doubleDineEntered ? 'missing' : doubleMismatch ? 'warning' : 'complete', !doubleDineEntered ? 'Enter Double Dine Pax, including 0 when none.' : doubleMismatch ? `Detail subtotal ${detailPax} differs from the authoritative total ${manual.serviceVerification.doubleDinePax}.` : `Authoritative total entered: ${manual.serviceVerification.doubleDinePax}.`, !doubleDineEntered),
+      item('doubleDine', 'Double Dine Verification', !doubleDineEntered ? 'missing' : doubleMismatch ? 'warning' : 'complete', !doubleDineEntered ? 'Save the detail-derived Double Dine total, including 0 when none.' : doubleMismatch ? `Detail subtotal ${detailPax} differs from the preserved authoritative total ${manual.serviceVerification.doubleDinePax}.` : `Detail-derived total: ${manual.serviceVerification.doubleDinePax}.`, !doubleDineEntered),
       item('manager', 'Operating Summary', manual.manager.operatingSummary || manual.manager.operationSummary ? 'complete' : 'missing', manual.manager.operatingSummary ? (manual.manager.operationsIssues ? 'Operating Summary and Operations Issues entered.' : 'Operating Summary entered. Operations Issues are optional when there are none to report.') : manual.manager.operationSummary ? 'Preserved historical summary remains readable.' : 'Operating Summary is required. Operations Issues are optional.', !(manual.manager.operatingSummary || manual.manager.operationSummary)),
       { ...item('reconciliation', 'Revenue Reconciliation', reconciliation.status === 'incomplete' ? 'missing' : reconciliation.status === 'verification-required' ? 'warning' : 'complete', reconciliation.status === 'incomplete' ? 'Complete Symphony entry before reconciliation.' : reconciliation.status === 'reconciled' ? 'RECONCILED — entered Symphony figures require no variance acknowledgement.' : reconciliation.status === 'verified-with-variance' ? `VERIFIED WITH VARIANCE by ${reconciliation.verifiedByName}. ${reconciliation.messages.join(' ')}` : `${reconciliation.messages.join(' ')} Verify against Symphony before approval.`, false), verificationRequired: reconciliation.status === 'verification-required' },
     ]
@@ -88,10 +92,15 @@ export class DailyReportService {
 
   private async liveContent(serviceDate: string, outletScopeId: string): Promise<DailyReportSnapshotContent> {
     const report = await this.reporting.report('today', serviceDate, serviceDate)
-    const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.booking_source,b.source_activity_label,b.raw_import_payload,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
+    const bookingEvidence = (await this.db.query<any>(`select b.room_number,b.covers,b.booking_source,c.metadata status_metadata from bookings b left join configuration_options c on c.group_key='booking_statuses' and c.value=b.booking_status where b.reservation_date=$1`, [serviceDate])).rows
     const noShowRooms = bookingEvidence.filter(row => { const metadata = parseJson(row.status_metadata); return metadata.serviceStage === 'noShow' || metadata.bookingMetric === 'noShow' }).flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
-    const walkInEvidence = bookingEvidence.filter(isWalkInBookingEvidence)
+    const validCoverEvidence = bookingEvidence.filter(row => parseJson(row.status_metadata).excludesFromExpectedCovers !== true)
+    const walkInEvidence = validCoverEvidence.filter(isWalkInBookingEvidence)
+    const reservationEvidence = validCoverEvidence.filter(row => !isWalkInBookingEvidence(row))
     const walkIns = walkInEvidence.length
+    const walkInCovers = walkInEvidence.reduce((sum, row) => sum + Math.max(0, Number(row.covers) || 0), 0)
+    const reservationCovers = reservationEvidence.reduce((sum, row) => sum + Math.max(0, Number(row.covers) || 0), 0)
+    const totalCovers = reservationCovers + walkInCovers
     const walkInRooms = walkInEvidence.flatMap(row => String(row.room_number || '').split(',').map((value: string) => value.trim()).filter(Boolean))
     const chargeables = report.chargeables.financialProofRecords.map(row => ({ id: row.id, item: row.item, quantity: row.quantity, soldBy: row.waiter, staffNumber: '', roomNumber: row.roomNumber, checkInvoiceNumber: row.checkInvoiceNumber, amount: fixed(row.grossTotal), source: 'Chargeable' as const }))
     const wineRows = (await this.wineSpirits.list({ start: serviceDate, end: serviceDate, outletScopeId })).filter(row => !row.archived && row.status === 'charged')
@@ -104,20 +113,21 @@ export class DailyReportService {
     const roomDetails = report.occasions.records.map(row => ({ occasionId: row.id, bookingId: row.bookingId, category: row.category, categoryKeys: row.categoryKeys, label: row.occasionType, guestName: row.guestName, roomNumber: row.roomNumber, covers: row.covers }))
     const categories = DEFAULT_CATEGORIES.map(([key, label]) => { const rows = roomDetails.filter(row => Array.isArray(row.categoryKeys) ? row.categoryKeys.includes(key) : row.category === key || row.label.toLowerCase() === label.toLowerCase()); return { key, label, count: rows.length, covers: rows.reduce((sum, row) => sum + row.covers, 0) } })
     return {
-      servicePerformance: { totalCovers: report.bookings.totalCovers, adults: report.bookings.totalAdults, kids: report.bookings.totalKids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.totalCovers, adults: row.totalAdults, kids: row.totalKids, noShows: row.noShowCovers, status: row.status })) },
+      servicePerformance: { totalCovers, adults: report.bookings.adults, kids: report.bookings.kids, totalBookings: report.bookings.totalBookings, arrivedCovers: report.bookings.arrivedCovers, noShowCovers: report.bookings.noShowCovers, noShowRooms: [...new Set(noShowRooms)], walkIns, walkInCovers, walkInRooms: [...new Set(walkInRooms)], bookingByTimeSlot: report.bookings.byTime.map(row => ({ time: row.time, bookings: row.bookings, covers: row.expectedCovers, adults: row.adults, kids: row.kids, noShows: row.noShowCovers, status: row.status })) },
       symphony: emptyDailyReportManualPayload().symphony,
-      serviceVerification: { doubleDinePax: 0, details: [] },
+      serviceVerification: { doubleDinePax: 0, details: [] }, serviceCharges: emptyDailyReportManualPayload().serviceCharges,
       upselling: { chargeables, wineSpirits, details, totalUpsellRevenue: fixed(details.reduce((sum, row) => sum + Number(row.amount), 0)), itemsSold: details.reduce((sum, row) => sum + row.quantity, 0), topItem, topSeller },
       guestOccasions: { categories, roomDetails }, manager: emptyDailyReportManualPayload().manager,
     }
   }
 
   private contentWithManual(content: DailyReportSnapshotContent, manual: DailyReportManualPayload): DailyReportSnapshotContent {
-    return { ...content, symphony: manual.symphony, serviceVerification: { doubleDinePax: Number(manual.serviceVerification.doubleDinePax || 0), details: manual.serviceVerification.details }, manager: manual.manager, revenueVerification: manual.revenueVerification }
+    return { ...content, symphony: manual.symphony, serviceVerification: { doubleDinePax: Number(manual.serviceVerification.doubleDinePax || 0), details: manual.serviceVerification.details }, serviceCharges: manual.serviceCharges, manager: manual.manager, revenueVerification: manual.revenueVerification }
   }
 
   async view(serviceDate: string, outlet: { id: string; scopeKey: string; displayName: string }) {
-    const report = await this.snapshots.currentForDate(outlet.id, serviceDate)
+    const persistedReport = await this.snapshots.currentForDate(outlet.id, serviceDate)
+    const report = persistedReport ? { ...persistedReport, manualPayload: this.normalizeManual(persistedReport.manualPayload) } : null
     const snapshot = report ? await this.snapshots.snapshotForReport(report.id) : null
     const manual = report?.manualPayload || emptyDailyReportManualPayload()
     const live = snapshot ? null : await this.liveContent(serviceDate, outlet.id)
@@ -127,6 +137,7 @@ export class DailyReportService {
 
   async saveDraft(serviceDate: string, manualInput: unknown, outlet: { id: string; scopeKey: string; displayName: string }, actor: DailyReportActor) {
     const manual = this.normalizeManual(manualInput)
+    manual.serviceVerification.doubleDinePax = manual.serviceVerification.details.reduce((sum, row) => sum + (Number.isInteger(row.pax) && row.pax > 0 ? row.pax : 0), 0)
     const current = await this.snapshots.currentForDate(outlet.id, serviceDate)
     if (current?.status === 'reviewed') throw new Error('Reviewed Daily Reports are read-only. This schema does not provide a controlled Return to Draft transition.')
     if (current?.status === 'approved' || current?.status === 'superseded') throw new Error('Approved Daily Reports are locked. Create a future correction revision instead.')
@@ -164,7 +175,7 @@ export class DailyReportService {
       return view
     }
     const live = await this.liveContent(serviceDate, outlet.id)
-    await this.snapshots.approve(current.id, this.contentWithManual(live, current.manualPayload), idempotencyKey, actor)
+    await this.snapshots.approve(current.id, this.contentWithManual(live, this.normalizeManual(current.manualPayload)), idempotencyKey, actor)
     return this.view(serviceDate, outlet)
   }
 }

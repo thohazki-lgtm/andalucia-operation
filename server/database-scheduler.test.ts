@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { acquireDatabaseSchedulerLock, schedulerLockPath, startSchedulerShutdownControl } from './database-scheduler.js'
+import { acquireDatabaseSchedulerLock, schedulerLockPath, schedulerShutdownSignalPath, startSchedulerShutdownControl } from './database-scheduler.js'
 import { createDisposableTestRoot } from './test-store-fixture.js'
 
 const root = await createDisposableTestRoot('windows-scheduler')
@@ -42,10 +42,26 @@ try {
   assert.equal(exitCode, 0)
   assert.equal(JSON.parse(await readFile(response, 'utf8')).state, 'completed')
 
+  let signalShutdownCalled = false
+  let signalExitCode: number | null = null
+  const signalBackupRoot = join(root, 'signal-backups')
+  const stopSignalControl = startSchedulerShutdownControl({ backupRoot: signalBackupRoot, gracefulShutdown: async reason => { assert.equal(reason, 'WINDOWS_SHUTDOWN_SIGNAL'); signalShutdownCalled = true }, exit: code => { signalExitCode = code } })
+  const signal = schedulerShutdownSignalPath(signalBackupRoot)
+  await mkdir(resolve(signal, '..'), { recursive: true })
+  await writeFile(signal, 'ANDALUCIA_WINDOWS_SHUTDOWN\n', 'utf8')
+  const signalDeadline = Date.now() + 5_000
+  while ((!signalShutdownCalled || signalExitCode === null) && Date.now() < signalDeadline) await new Promise(resolveWait => setTimeout(resolveWait, 50))
+  stopSignalControl()
+  assert.equal(signalShutdownCalled, true)
+  assert.equal(signalExitCode, 0)
+  assert.equal(existsSync(signal), false)
+
   const projectRoot = resolve('.')
   const jobWrapper = await readFile(join(projectRoot, 'deployment', 'windows', 'Invoke-AndaluciaDatabaseJob.ps1'), 'utf8')
   const installer = await readFile(join(projectRoot, 'deployment', 'windows', 'Install-AndaluciaDatabaseScheduler.ps1'), 'utf8')
+  const shutdownSignalScript = await readFile(join(projectRoot, 'deployment', 'windows', 'Signal-AndaluciaWindowsShutdown.cmd'), 'utf8')
   const guardedStart = await readFile(join(projectRoot, 'deployment', 'windows', 'Start-AndaluciaGuardedApplication.ps1'), 'utf8')
+  const approvedSourceResolver = await readFile(join(projectRoot, 'deployment', 'windows', 'Resolve-AndaluciaApprovedSource.ps1'), 'utf8')
   const serverSource = await readFile(join(projectRoot, 'server', 'index.ts'), 'utf8')
   const remover = await readFile(join(projectRoot, 'deployment', 'windows', 'Remove-AndaluciaDatabaseScheduler.ps1'), 'utf8')
   assert.match(jobWrapper, /ANDALUCIA_CANONICAL_IDENTITY_MISMATCH/)
@@ -67,14 +83,36 @@ try {
   assert.match(installer, /MultipleInstances IgnoreNew/)
   assert.match(installer, /DontStopOnIdleEnd/)
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:StopOnIdleEnd/)
-  assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:DisallowHardTerminate/)
+  assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:AllowHardTerminate/)
+  assert.match(installer, /SHUTDOWN_TASK_SAFETY_DRIFT:AllowHardTerminate/)
+  assert.match(installer, /SHUTDOWN_TASK_SAFETY_DRIFT:Command/)
+  assert.match(installer, /SHUTDOWN_TASK_SAFETY_DRIFT:SignalScript/)
+  assert.match(installer, /SHUTDOWN_TASK_SAFETY_DRIFT:LogonType/)
   assert.match(installer, /Settings\.AllowHardTerminate = \$false/)
+  assert.match(installer, /Principal\.LogonType = 2/)
+  assert.match(installer, /taskLogonS4U = 2/)
+  assert.match(installer, /Signal-AndaluciaWindowsShutdown\.cmd/)
+  assert.match(installer, /System32\\cmd\.exe/)
+  assert.match(shutdownSignalScript, /windows-shutdown\.signal/)
+  assert.match(shutdownSignalScript, /move \/y/)
+  assert.doesNotMatch(shutdownSignalScript, /postmaster\.pid|\.data\\postgres|del |erase /i)
   assert.match(installer, /RegisterTaskDefinition/)
+  assert.match(installer, /Graceful Windows Shutdown/)
+  assert.match(installer, /EventID=1074/)
+  assert.match(installer, /Provider\[@Name='User32'\]/)
+  assert.match(installer, /New-ScheduledTaskTrigger -AtLogOn/)
+  assert.match(installer, /runtimeTrigger\.Delay = 'PT45S'/)
+  assert.match(installer, /Assert-ApprovedCheckout/)
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:ExecutionTimeLimit/)
-  assert.match(installer, /SCHEDULER_INSTALL_REQUIRES_AUTHORITATIVE_GIT_CHECKOUT/)
-  assert.match(guardedStart, /ANDALUCIA_RUNTIME_SOURCE_NOT_AUTHORITATIVE_GIT_CHECKOUT/)
-  assert.match(guardedStart, /ANDALUCIA_RUNTIME_SOURCE_NOT_APPROVED_MAIN/)
+  assert.match(installer, /SCHEDULER_INSTALL_SOURCE_RESOLVER_MISSING/)
+  assert.match(approvedSourceResolver, /ANDALUCIA_RUNTIME_SOURCE_NOT_AUTHORITATIVE_GIT_CHECKOUT/)
+  assert.match(approvedSourceResolver, /ANDALUCIA_RUNTIME_SOURCE_NOT_APPROVED_MAIN/)
+  assert.match(approvedSourceResolver, /ANDALUCIA_LOCAL_UI_APPROVAL_SOURCE_MISMATCH/)
+  assert.match(approvedSourceResolver, /ANDALUCIA_RUNTIME_SOURCE_DIRTY/)
   assert.match(guardedStart, /ANDALUCIA_ACTIVE_SOURCE_SHA/)
+  assert.match(guardedStart, /guarded-startup\.jsonl/)
+  assert.match(guardedStart, /ANDALUCIA_STARTUP_DATABASE_MARKER_PRESENT_REQUIRES_DB3_REVIEW/)
+  assert.match(guardedStart, /Wait-StartupDependencies/)
   assert.match(serverSource, /application: activeSource/)
   assert.match(installer, /Register-ScheduledTask[\s\S]*-Force/)
   assert.match(installer, /02:00/)

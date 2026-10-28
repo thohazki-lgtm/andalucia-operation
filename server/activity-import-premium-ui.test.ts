@@ -17,7 +17,7 @@ let socket: WebSocket | null = null
 let spacingEvidence: Record<string, unknown> = {}
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
-const waitFor = async (url: string) => { for (let attempt = 0; attempt < 120; attempt++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(200) } throw new Error(`Timed out waiting for ${url}`) }
+const waitFor = async (url: string) => { for (let attempt = 0; attempt < 300; attempt++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(200) } throw new Error(`Timed out waiting for ${url}`) }
 
 class Cdp {
   private id = 0
@@ -39,7 +39,13 @@ const clickText = (cdp: Cdp, label: string) => cdp.evaluate<boolean>(`(()=>{cons
 const waitForSelector = async (cdp: Cdp, selector: string) => { for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector(${JSON.stringify(selector)})`)) return; await sleep(100) } throw new Error(`Timed out waiting for ${selector}`) }
 const waitForMissing = async (cdp: Cdp, selector: string) => { for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector(${JSON.stringify(selector)})`)) return; await sleep(100) } throw new Error(`Timed out waiting for ${selector} to close`) }
 const setViewport = (cdp: Cdp, width: number) => cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 768 ? 900 : 1000, deviceScaleFactor: 1, mobile: width <= 768 })
-const layout = (cdp: Cdp) => cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.activity-import-modal');const workflow=document.querySelector('.import-workflow');const controls=Array.from(modal?.querySelectorAll('button,input')||[]).filter(node=>{const r=node.getBoundingClientRect();return getComputedStyle(node).display!=='none'&&r.width>0&&r.height>0&&!(node instanceof HTMLInputElement&&node.type==='checkbox')});const undersized=controls.map(node=>{const r=node.getBoundingClientRect();return{label:node.getAttribute('aria-label')||node.textContent?.trim()||node.tagName,width:r.width,height:r.height}}).filter(item=>item.width<44||item.height<44);return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,modalOverflow:modal?modal.scrollWidth>modal.clientWidth+1:false,workflowOverflow:workflow?workflow.scrollWidth>workflow.clientWidth+1:false,touchTargets:innerWidth>700||undersized.length===0,undersized}})()`)
+const layout = (cdp: Cdp) => cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.activity-import-modal');const workflow=document.querySelector('.import-workflow');const controls=Array.from(modal?.querySelectorAll('button,input')||[]).filter(node=>{const r=node.getBoundingClientRect();return getComputedStyle(node).display!=='none'&&r.width>0&&r.height>0&&!(node instanceof HTMLInputElement&&node.type==='checkbox')});const undersized=controls.map(node=>{const r=node.getBoundingClientRect();return{label:node.getAttribute('aria-label')||node.textContent?.trim()||node.tagName,width:r.width,height:r.height}}).filter(item=>item.width<44||item.height<44);const verticalScrollOwners=Array.from(modal?.querySelectorAll('*')||[]).filter(node=>{const style=getComputedStyle(node);return/(auto|scroll)/.test(style.overflowY)&&node.scrollHeight>node.clientHeight+1}).map(node=>node.className);const table=document.querySelector('.ready-section .import-table-wrap');const cards=document.querySelector('.ready-section .import-record-cards');const modalRect=modal?.getBoundingClientRect();return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,modalOverflow:modal?modal.scrollWidth>modal.clientWidth+1:false,workflowOverflow:workflow?workflow.scrollWidth>workflow.clientWidth+1:false,modalWidth:modalRect?.width||0,modalLeft:modalRect?.left||0,modalRightMargin:modalRect?document.documentElement.clientWidth-modalRect.right:0,touchTargets:innerWidth>700||undersized.length===0,undersized,verticalScrollOwners,tableVisible:table?getComputedStyle(table).display!=='none':false,cardsVisible:cards?getComputedStyle(cards).display!=='none':false}})()`)
+
+const assertCompactModal = (measured: any, width: number) => {
+  assert.ok(measured.modalWidth <= 980, `${width}px modal is too wide: ${measured.modalWidth}`)
+  assert.ok(Math.abs(measured.modalLeft - measured.modalRightMargin) <= 8, `${width}px modal is not centered: ${measured.modalLeft}px / ${measured.modalRightMargin}px`)
+  assert.ok(measured.verticalScrollOwners.length <= 1, `${width}px nested vertical scrollers: ${JSON.stringify(measured.verticalScrollOwners)}`)
+}
 
 try {
   const owner = (await fixture.db.query<any>("select u.id from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
@@ -57,7 +63,7 @@ try {
   await writeFile(pdfPath, pdf)
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', API_PORT: '3016', APP_ORIGIN: 'http://127.0.0.1:5186' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3016', APP_ORIGIN: 'http://127.0.0.1:5186' }, stdio: 'inherit' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5186', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3016' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3016/api/health'), waitFor('http://127.0.0.1:5186/')])
 
@@ -78,11 +84,11 @@ try {
   await waitForSelector(cdp, 'button[aria-label="Bookings"]')
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Bookings"]');if(!button)return false;button.click();return true})()`), true)
   await waitForSelector(cdp, '.upload-action')
-  assert.equal(await clickText(cdp, 'Upload Activity Program'), true)
+  assert.equal(await clickText(cdp, 'Upload Booking'), true)
   await waitForSelector(cdp, '.activity-import-modal')
   await cdp.evaluate(`(()=>{const original=window.fetch.bind(window);window.fetch=async(input,init)=>{const response=await original(input,init);if(!String(input).includes('/api/bookings/import-preview')||!response.ok)return response;const body=await response.clone().json();const duplicate=body.bookings.find(item=>item.readiness==='DUPLICATE');if(duplicate){for(let index=1;index<7;index++)body.bookings.push({...duplicate,bookingNumber:duplicate.bookingNumber+'-'+index,primaryGuest:duplicate.primaryGuest+' '+index,duplicateBookingId:duplicate.duplicateBookingId+'-'+index});body.summary.possibleDuplicates=7}return new Response(JSON.stringify(body),{status:response.status,headers:{'Content-Type':'application/json'}})}})()`)
 
-  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(80); const measured = await layout(cdp); assert.deepEqual({ pageOverflow: measured.pageOverflow, modalOverflow: measured.modalOverflow, workflowOverflow: measured.workflowOverflow, touchTargets: measured.touchTargets }, { pageOverflow: false, modalOverflow: false, workflowOverflow: false, touchTargets: true }, `${width}px ${JSON.stringify(measured.undersized)}`); if (width === 1440 || width === 390) await screenshot(cdp, `upload-${width}.png`) }
+  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(80); const measured = await layout(cdp); assert.deepEqual({ pageOverflow: measured.pageOverflow, modalOverflow: measured.modalOverflow, workflowOverflow: measured.workflowOverflow, touchTargets: measured.touchTargets }, { pageOverflow: false, modalOverflow: false, workflowOverflow: false, touchTargets: true }, `${width}px ${JSON.stringify(measured.undersized)}`); assertCompactModal(measured, width); if (width === 1440 || width === 390) await screenshot(cdp, `upload-${width}.png`) }
 
   await setViewport(cdp, 1440)
   const documentNode = (await cdp.send('DOM.getDocument')).root.nodeId
@@ -93,7 +99,7 @@ try {
   await waitForSelector(cdp, '.ready-section')
   assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.import-summary-grid>article').length`), 5)
   assert.equal(await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('.import-table th')).some(node=>['Intelligence','Warnings'].includes(node.textContent.trim()))`), true)
-  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(80); const measured = await layout(cdp); assert.equal(measured.pageOverflow, false); assert.equal(measured.modalOverflow, false); assert.equal(measured.touchTargets, true, `${width}px ${JSON.stringify(measured.undersized)}`); if (width === 1440 || width === 390) await screenshot(cdp, `review-${width}.png`) }
+  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(80); const measured = await layout(cdp); assert.equal(measured.pageOverflow, false); assert.equal(measured.modalOverflow, false); assert.equal(measured.touchTargets, true, `${width}px ${JSON.stringify(measured.undersized)}`); assertCompactModal(measured, width); if (width <= 768) assert.deepEqual({ tableVisible: measured.tableVisible, cardsVisible: measured.cardsVisible }, { tableVisible: false, cardsVisible: true }, `${width}px should use aligned booking cards`); if (width === 1440 || width === 390) await screenshot(cdp, `review-${width}.png`) }
 
   assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.review-item').length`), 2)
   assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.review-item[open]').length`), 0)
@@ -144,12 +150,12 @@ try {
   assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.duplicate-item').length`), 5)
   assert.equal(await clickText(cdp, 'Review & Import'), true)
   await waitForSelector(cdp, '.confirmation-card')
-  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(60); const measured = await layout(cdp); assert.equal(measured.pageOverflow, false); if (width === 1440 || width === 390) await screenshot(cdp, `confirm-${width}.png`) }
+  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(60); const measured = await layout(cdp); assert.equal(measured.pageOverflow, false); assertCompactModal(measured, width); if (width === 1440 || width === 390) await screenshot(cdp, `confirm-${width}.png`) }
 
   assert.equal(await clickText(cdp, 'Confirm Import'), true)
   await waitForSelector(cdp, '.import-result')
   assert.match(await cdp.evaluate<string>(`document.querySelector('.import-result h3')?.textContent||''`), /completed/i)
-  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(60); const measured = await layout(cdp); assert.deepEqual({ pageOverflow: measured.pageOverflow, modalOverflow: measured.modalOverflow, workflowOverflow: measured.workflowOverflow, touchTargets: measured.touchTargets }, { pageOverflow: false, modalOverflow: false, workflowOverflow: false, touchTargets: true }); if (width === 1440 || width === 390) await screenshot(cdp, `result-${width}.png`) }
+  for (const width of [1440,1280,1024,768,430,390,360]) { await setViewport(cdp, width); await sleep(60); const measured = await layout(cdp); assert.deepEqual({ pageOverflow: measured.pageOverflow, modalOverflow: measured.modalOverflow, workflowOverflow: measured.workflowOverflow, touchTargets: measured.touchTargets }, { pageOverflow: false, modalOverflow: false, workflowOverflow: false, touchTargets: true }); assertCompactModal(measured, width); if (width === 1440 || width === 390) await screenshot(cdp, `result-${width}.png`) }
   assert.deepEqual(cdp.errors, [])
   console.log(JSON.stringify({ stages: ['Upload','Review','Confirm','Result'], widths: [1440,1280,1024,768,430,390,360], screenshots: output, spacingEvidence, browserErrors: cdp.errors }, null, 2))
 } finally {

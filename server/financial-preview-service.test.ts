@@ -65,7 +65,10 @@ try {
   await new FinancialPolicyInitializationService(db).initialize(ANDALUCIA_SCOPE_ID, principal)
   const undecidedDuties = [
     ['DUTY_EL_INTERNAL','Emergency Leave','EL','emergencyLeave'],
+    ['DUTY_PAT_INTERNAL','Paternity Leave','PAT','paternityLeave'],
     ['DUTY_BT_INTERNAL','Business Trip','BT','businessTrip'],
+    ['DUTY_CIR_INTERNAL','Circumcision Leave','CIR','circumcisionLeave'],
+    ['DUTY_HAJ_INTERNAL','Hajj Leave','HAJ','hajjLeave'],
     ['DUTY_RR_INTERNAL','R&R1','RR','restAndRecuperation'],
     ['DUTY_CUSTOM_INTERNAL','Custom Operational Code','CUS','other'],
   ] as const
@@ -80,9 +83,12 @@ try {
   for (const [staffIndex, value] of [[7, 'DUTY_EL_INTERNAL'], [8, 'DUTY_BT_INTERNAL'], [9, 'DUTY_RR_INTERNAL']] as const) await db.query("update duty_roster_entries set duty_code_value=$1 where staff_id=$2 and duty_date='2026-09-01'", [value, staffIds[staffIndex]])
   await assert.rejects(
     () => new FinancialPreviewService(db).preview({ month: '2026-09', outletScopeId: ANDALUCIA_SCOPE_ID, totalPool: '100.00', externalAllocations: [], asOfDate: '2026-09-10' }),
-    error => error instanceof Error && /BT · Business Trip/.test(error.message) && /CUS · Custom Operational Code/.test(error.message) && !/(EL · Emergency Leave|RR · R&R1|DUTY_(BT|CUSTOM)_INTERNAL)/.test(error.message)
+    error => error instanceof Error && /PAT · Paternity Leave/.test(error.message) && /BT · Business Trip/.test(error.message) && /CIR · Circumcision Leave/.test(error.message) && /HAJ · Hajj Leave/.test(error.message) && /CUS · Custom Operational Code/.test(error.message) && /Duty Roster → Duty Code Settings/.test(error.message) && /0 or 1 day credit/.test(error.message) && !/(EL · Emergency Leave|RR · R&R1|DUTY_(PAT|BT|CIR|HAJ|CUSTOM)_INTERNAL)/.test(error.message)
   )
+  await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',true,'billTipWorkedDayUnits',1) where value='DUTY_PAT_INTERNAL'")
   await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',true,'billTipWorkedDayUnits',1) where value='DUTY_BT_INTERNAL'")
+  await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',false,'billTipWorkedDayUnits',0) where value='DUTY_CIR_INTERNAL'")
+  await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',true,'billTipWorkedDayUnits',0) where value='DUTY_HAJ_INTERNAL'")
   await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',true,'billTipWorkedDayUnits',0) where value='DUTY_RR_INTERNAL'")
   await db.query("update configuration_options set metadata=metadata || jsonb_build_object('billTipEligible',true,'billTipWorkedDayUnits',1) where value='DUTY_CUSTOM_INTERNAL'")
   const preview = await new FinancialPreviewService(db).preview({ month: '2026-09', outletScopeId: ANDALUCIA_SCOPE_ID, totalPool: '100.00', externalAllocations: [{ id: randomUUID(), name: 'Support Colleague', fixedAmount: '10.00', departmentOutlet: 'Guest Services' }], asOfDate: '2026-09-10' })
@@ -137,7 +143,7 @@ try {
   const recalculated = await new FinancialPreviewService(db).preview({ month: '2026-09', outletScopeId: ANDALUCIA_SCOPE_ID, totalPool: '100.00', externalAllocations: [], asOfDate: '2026-09-10' })
   assert.equal(recalculated.membership.revisionNumber, 2)
   assert.deepEqual(await transactionCounts(), transactionsBefore)
-  console.log(JSON.stringify({ approvedMembershipScope: true, exactMonthApprovalRequired: true, approvedOctoberPreview: true, revision1Snapshot: true, opaqueSickLeaveResolvedAs: 'SL · Sick Leave', leaveManagerRules: { EL: 'ineligible/0', BT: 'eligible/1', RR: 'eligible/0' }, unresolvedCodesShownWithoutTechnicalIds: ['BT · Business Trip','CUS · Custom Operational Code'], offManagerControlled: true, alExcluded: true, workingAndTrainingEligibleOneDay: true, futureUnclosedSeparated: true, historicalMissingFlagged: true, externalAllocation: true, reconciliation: true, realizedFoodAndWineOnly: true, pendingFoodAndWineExcluded: true, sellerUuid: true, foodExample: '$85.00 -> $66.05 -> $1.65', wineExample: '$396.40 -> $308.00 -> $7.00 per bottle', exactWineProofVisible: true, zeroPackage: true, wineSourceActive: true, earningsDerived: true, ownerAuthorized: true, outletIsolation: true, newestApprovedRevisionUsed: recalculated.membership.revisionNumber, finalizedFinancialTransactionsCreated: false }, null, 2))
+  console.log(JSON.stringify({ approvedMembershipScope: true, exactMonthApprovalRequired: true, approvedOctoberPreview: true, revision1Snapshot: true, opaqueSickLeaveResolvedAs: 'SL · Sick Leave', leaveManagerRules: { EL: 'ineligible/0', PAT: 'eligible/1', BT: 'eligible/1', CIR: 'ineligible/0', HAJ: 'eligible/0', RR: 'eligible/0' }, unresolvedCodesShownWithoutTechnicalIds: ['PAT · Paternity Leave','BT · Business Trip','CIR · Circumcision Leave','HAJ · Hajj Leave','CUS · Custom Operational Code'], managerConfigurationPathShown: true, offManagerControlled: true, alExcluded: true, workingAndTrainingEligibleOneDay: true, futureUnclosedSeparated: true, historicalMissingFlagged: true, externalAllocation: true, reconciliation: true, realizedFoodAndWineOnly: true, pendingFoodAndWineExcluded: true, sellerUuid: true, foodExample: '$85.00 -> $66.05 -> $1.65', wineExample: '$396.40 -> $308.00 -> $7.00 per bottle', exactWineProofVisible: true, zeroPackage: true, wineSourceActive: true, earningsDerived: true, ownerAuthorized: true, outletIsolation: true, newestApprovedRevisionUsed: recalculated.membership.revisionNumber, finalizedFinancialTransactionsCreated: false }, null, 2))
 
   async function transactionCounts() {
     const result: Record<string, number> = {}

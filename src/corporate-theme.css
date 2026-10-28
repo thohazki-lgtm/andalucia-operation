@@ -1,0 +1,491 @@
+/* Official Andalucía corporate palette.
+   Module accents stay on structural surfaces, navigation and headings so that
+   operational status colors and manager-configured colors remain authoritative. */
+:root {
+  --ao-moonlight-black: #000000;
+  --ao-violet-hour: #45176b;
+  --ao-turquoise-coral: #b1e4dc;
+  --ao-lilac-calm: #c0b7f0;
+  --ao-lagoon-teal: #0c675c;
+  --ao-sunset-orange: #ce6233;
+  --ao-linen-grey: #fff6e4;
+  --ao-orange-glow: #fca851;
+  --ao-premium-navy: #173e54;
+  --ao-champagne-gold: #dec58f;
+  --ao-midnight-teal: #123e48;
+  --ao-soft-ivory: #faf7ef;
+  --ao-champagne: #d5bb89;
+  --ao-canvas: #fffbf3;
+  --ao-surface: #fffdf8;
+}
+
+body,
+.app-shell,
+.app-shell > main {
+  background: var(--ao-canvas);
+}
+
+.module-dashboard,
+.module-staff-management {
+  --ao-module-accent: var(--ao-lagoon-teal);
+  --ao-module-accent-ink: var(--ao-lagoon-teal);
+  --ao-module-accent-soft: var(--ao-turquoise-coral);
+  --ao-module-canvas-primary: var(--ao-turquoise-coral);
+  --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+/* Dashboard welcome banner: retain the established proportions and type while
+   giving the identity panel its approved Midnight Teal + Champagne treatment. */
+.module-dashboard .dashboard-hero {
+  background: var(--ao-midnight-teal);
+  color: var(--ao-soft-ivory);
+  border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
+  min-height: 82px;
+  padding: 13px 24px;
+}
+
+main.module-dashboard {
+  background-color: #f2ede4;
+}
+
+.module-dashboard .dashboard-hero h2,
+.module-dashboard .dashboard-manager strong {
+  color: var(--ao-soft-ivory);
+}
+
+.module-dashboard .dashboard-hero .eyebrow,
+.module-dashboard .dashboard-manager span {
+  color: var(--ao-champagne);
+}
+
+.module-dashboard .dashboard-hero::after {
+  border-color: var(--ao-champagne);
+  opacity: 0.28;
+}
+
+.module-duty-roster,
+.module-bookings {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #9b4b29;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: var(--ao-linen-grey);
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
+.module-leave-planner,
+.module-reports {
+  --ao-module-accent: var(--ao-lilac-calm);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-lilac-calm);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+.module-training,
+.module-incentives-and-bill-tips,
+.module-my-timesheet {
+  --ao-module-accent: var(--ao-lagoon-teal);
+  --ao-module-accent-ink: var(--ao-lagoon-teal);
+  --ao-module-accent-soft: var(--ao-turquoise-coral);
+  --ao-module-canvas-primary: var(--ao-turquoise-coral);
+  --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+.module-guest-occasions {
+  --ao-module-accent: var(--ao-lilac-calm);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-lilac-calm);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+.module-maintenance {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #9b4b29;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: var(--ao-orange-glow);
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
+.module-customization-center {
+  --ao-module-accent: var(--ao-violet-hour);
+  --ao-module-accent-ink: var(--ao-violet-hour);
+  --ao-module-accent-soft: var(--ao-lilac-calm);
+  --ao-module-canvas-primary: var(--ao-linen-grey);
+  --ao-module-canvas-secondary: var(--ao-violet-hour);
+}
+
+main[class*='module-'] {
+  --ao-module-line: color-mix(in srgb, var(--ao-module-accent-ink) 46%, var(--ao-surface));
+  --ao-module-divider: color-mix(in srgb, var(--ao-module-accent-ink) 28%, var(--ao-surface));
+  --ao-module-surface: color-mix(in srgb, var(--ao-module-accent-soft) 12%, var(--ao-surface));
+  --ao-module-surface-strong: color-mix(in srgb, var(--ao-module-accent-soft) 21%, var(--ao-surface));
+  --ao-module-card-radius: 10px;
+  --ao-module-control-radius: 8px;
+  --ao-module-control-height: 40px;
+  --financial-gold: var(--ao-module-line);
+  background-color: color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-canvas));
+  background-image: none;
+}
+
+/* Let the persistent navigation share the active module accent without
+   changing its established navy selected state or gold authority marker. */
+.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-duty-roster) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+
+.app-sidebar nav .selected {
+  border-color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
+  background: color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 22%, #173c57);
+  box-shadow: inset 3px 0 var(--ao-shell-highlight, var(--ao-turquoise-coral)), inset 0 -2px var(--ao-shell-accent, var(--ao-lagoon-teal)), 0 0 0 1px rgb(255 255 255 / 9%);
+}
+
+.app-sidebar nav .selected .nav-icon {
+  color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
+}
+
+main[class*='module-'] > .page-header {
+  position: relative;
+  padding: 10px 12px;
+  border: 1px solid var(--ao-module-line);
+  border-radius: 10px;
+  background: var(--ao-module-surface-strong);
+}
+
+main[class*='module-'] > .page-header::before {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 999px;
+  background: var(--ao-module-accent);
+  content: '';
+}
+
+/* Dashboard uses a clean editorial heading above its identity banner. */
+main.module-dashboard > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-dashboard > .page-header::before {
+  display: none;
+  content: none;
+}
+
+main[class*='module-'] > .page-header > div:first-of-type {
+  flex: 1 1 auto;
+}
+
+main[class*='module-'] > .page-header .eyebrow,
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .monthly-dashboard-section > header) > div > .eyebrow {
+  color: var(--ao-module-accent-ink);
+}
+
+/* A quiet wash and inset ribbon make the palette visible in section hierarchy
+   while leaving operational badges, duty codes, configured swatches and
+   financial status colors untouched. */
+main[class*='module-'] :is(
+  .panel-title,
+  .section-heading,
+  .workforce-section-title,
+  .config-heading,
+  .mobile-card-heading,
+  .monthly-dashboard-section > header
+) {
+  border-radius: 7px;
+  background: var(--ao-module-surface-strong);
+  box-shadow: inset 3px 0 var(--ao-module-accent);
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+  padding: 7px 9px;
+}
+
+main[class*='module-'] :is(
+  .dashboard-metric-grid,
+  .staff-summary,
+  .attendance-summary,
+  .training-kpis,
+  .chargeable-summary,
+  .financial-summary,
+  .maintenance-summary
+) > :is(article, div) {
+  box-shadow: inset 0 2px color-mix(in srgb, var(--ao-module-accent) 72%, var(--ao-module-accent-soft));
+}
+
+main[class*='module-'] :is(input, select, textarea):focus-visible {
+  border-color: var(--ao-module-accent-ink);
+  outline: 3px solid color-mix(in srgb, var(--ao-module-accent-soft) 55%, transparent);
+  outline-offset: 1px;
+}
+
+/* Corporate color replaces decorative gold on structural surfaces only.
+   Semantic states, configured swatches, duty codes and financial indicators
+   retain their own authoritative colors. */
+main[class*='module-'] :is(
+  .panel,
+  .customization-category-panel,
+  .booking-config-section,
+  .maintenance-config-card,
+  .workforce-foundation-panel,
+  .financial-subsection,
+  .report-section,
+  .weekly-report-section,
+  .monthly-dashboard-section,
+  .custom-report-section
+):not(.error-state):not(.exception):not(.attention-card) {
+  border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-card-radius);
+  background-color: var(--ao-module-surface);
+}
+
+/* These three legacy containers have equal-or-higher component specificity;
+   name their existing wrappers so the shared corporate frame wins without
+   resorting to priority flags or editing module CSS. */
+main[class*='module-'] .staff-directory-page .staff-tools,
+main[class*='module-'] .booking-panel.service-panel .service-tools,
+main[class*='module-'] .maintenance-panel .maintenance-filters {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+/* Legacy module toolbars used fixed gold borders and uneven spacing.  Keep
+   their layout decisions intact while giving every filter surface the same
+   corporate frame, rhythm and control typography. */
+main[class*='module-'] :is(
+  .staff-tools,
+  .training-tools,
+  .booking-tools,
+  .service-tools,
+  .occasion-filters,
+  .chargeable-filters,
+  .maintenance-filters,
+  .attendance-toolbar,
+  .report-controls
+) {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ao-module-line);
+  border-radius: var(--ao-module-card-radius);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='color']),
+  select,
+  textarea
+) {
+  min-height: var(--ao-module-control-height);
+  border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-control-radius);
+  background-color: var(--ao-surface);
+  color: var(--ao-premium-navy);
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+main[class*='module-'] :is(
+  .ao-action--secondary,
+  .ao-icon-action,
+  .secondary,
+  .view,
+  .field-mode-control,
+  .config-icon-action
+):not(.danger) {
+  border-color: var(--ao-module-line);
+  border-radius: var(--ao-module-control-radius);
+}
+
+main[class*='module-'] :is(.ao-action--primary, .primary):not(.danger) {
+  border-color: var(--ao-module-accent-ink);
+  background-color: var(--ao-module-accent-ink);
+  color: #fff;
+}
+
+main[class*='module-'] :is(.ao-action--primary, .primary):not(.danger):hover:not(:disabled) {
+  border-color: var(--ao-module-accent-ink);
+  background-color: color-mix(in srgb, var(--ao-module-accent-ink) 88%, var(--ao-premium-navy));
+}
+
+main[class*='module-'] .field-mode-control button {
+  border-color: var(--ao-module-divider);
+}
+
+main[class*='module-'] :is(
+  section,
+  article,
+  [class$='-row'],
+  [class*='-row '],
+  [class$='-rows'],
+  [class*='-rows '],
+  [class$='-list'],
+  [class*='-list '],
+  [class$='-cards'],
+  [class*='-cards '],
+  [class$='-fields'],
+  [class*='-fields '],
+  [class$='-grid'],
+  [class*='-grid ']
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .ao-action,
+  .config-icon-action,
+  .compact-edit-action,
+  .date-control,
+  .month-control
+):not(.danger):not(.remove) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) button {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] :is(
+  .staff-section-tabs,
+  .duty-roster-tabs,
+  .leave-planner-module-tabs,
+  .leave-planner-tabs,
+  .booking-service-tabs,
+  .occasion-tabs,
+  .chargeable-tabs,
+  .financial-primary-tabs,
+  .report-mode-tabs,
+  .customization-category-nav
+) button:is(.selected, .active, [aria-pressed='true']) {
+  border-color: var(--ao-module-accent-ink);
+  box-shadow: inset 0 -2px var(--ao-module-accent);
+}
+
+main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
+  border-color: var(--ao-module-line);
+}
+
+main[class*='module-'] table :is(th, td) {
+  border-color: var(--ao-module-divider);
+}
+
+main[class*='module-'] table th {
+  background-color: var(--ao-module-surface-strong);
+}
+
+main[class*='module-'] :is(th, td) {
+  line-height: 1.35;
+}
+
+main[class*='module-'] :is(
+  .dashboard-metric-grid,
+  .staff-summary,
+  .attendance-summary,
+  .training-kpis,
+  .training-r2-kpis,
+  .chargeable-summary,
+  .financial-metrics,
+  .maintenance-summary,
+  .daily-kpis,
+  .weekly-kpis,
+  .monthly-primary-metrics,
+  .custom-report-kpis
+) > :is(article, div) {
+  border-color: var(--ao-module-line);
+  background-color: var(--ao-module-surface);
+}
+
+main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .dashboard-empty, .tonight-zero) {
+  border-color: var(--ao-module-divider);
+  background-color: var(--ao-module-surface-strong);
+}
+
+/* Logo contrast and breathing room only; the image dimensions and asset stay unchanged. */
+.app-sidebar .brand {
+  margin: 0 0 8px;
+  padding-top: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgb(177 228 220 / 22%);
+}
+
+.app-sidebar .brand .sidebar-wordmark {
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 22%));
+}
+
+.mobile-topbar {
+  border-bottom: 1px solid rgb(192 183 240 / 28%);
+}
+
+.mobile-brand .mobile-wordmark {
+  filter: drop-shadow(0 1px 6px rgb(0 0 0 / 24%));
+}
+
+@media (max-width: 700px) {
+  main[class*='module-'] {
+    --ao-module-control-height: 44px;
+  }
+
+  main[class*='module-'] > .page-header {
+    gap: 9px;
+    padding: 9px 10px;
+  }
+
+  main[class*='module-'] > .page-header::before {
+    width: 2px;
+  }
+
+  main.module-dashboard > .page-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .module-dashboard .dashboard-hero {
+    min-height: 74px;
+    padding: 11px 18px;
+  }
+
+  .app-sidebar .brand {
+    margin-bottom: 6px;
+    padding-top: 4px;
+    padding-bottom: 18px;
+  }
+}

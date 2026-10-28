@@ -141,7 +141,7 @@ export interface AnnualLeaveCarryForwardPreview {
   evidenceServiceYearStart: string; evidenceServiceYearEnd: string; entitlementAvailabilityDate: string
   before: AnnualLeaveServiceYearBalance | null; after: AnnualLeaveServiceYearBalance
 }
-export interface StaffEntitlementBalance { staffId: string; year: number; annualLeave: { entitlement: number | null; used: number; remaining: number | null; serviceYear?: AnnualLeaveServiceYearBalance }; publicHoliday: { entitlement: number; used: number; remaining: number }; weeklyOff: { weekStart: string; weekEnd: string; required: number; assigned: number; difference: number; status: 'short' | 'compliant' | 'additional' }; additionalLeave: StaffLeaveEntitlementBalanceLine[] }
+export interface StaffEntitlementBalance { staffId: string; year: number; annualLeave: { entitlement: number | null; used: number; remaining: number | null; serviceYear?: AnnualLeaveServiceYearBalance }; publicHoliday: { entitlement: number; used: number; remaining: number }; weeklyOff: { weekStart: string; weekEnd: string; required: number; assigned: number; difference: number; complete: boolean; status: 'pending' | 'short' | 'compliant' | 'additional' }; additionalLeave: StaffLeaveEntitlementBalanceLine[] }
 export interface StaffYearlyEntitlementBalanceLine extends StaffYearlyEntitlementRecord { accrued: number | null; carriedForward: number | null; used: number; remaining: number | null; bookedFuture: number | null; availableAfterBooked: number | null; serviceYear?: AnnualLeaveServiceYearBalance }
 export interface StaffYearlyEntitlementBalance { staffId: string; year: number; asOf: string; yearlyLeave: StaffYearlyEntitlementBalanceLine[]; weeklyOff: StaffEntitlementBalance['weeklyOff'] }
 export interface StaffYearlyEntitlementPreview { staffId: string; staffName: string; staffNumber: string; year: number; approvalReason: string; before: StaffYearlyEntitlementRecord[]; after: StaffYearlyEntitlementRecord[]; balanceBefore: StaffYearlyEntitlementBalance | null; balanceAfter: StaffYearlyEntitlementBalance }
@@ -365,6 +365,7 @@ export interface DailyReportRevenueVerification { acknowledged: boolean; verifie
 export interface DailyReportManualPayload {
   symphony: { foodRevenue: string; beverageRevenue: string; wineRevenue: string; liquorRevenue: string; totalSale: string; totalDiscount: string; totalVoid: string; netSale: string; totalRevenue: string; voidDetails: DailyReportVoidDetail[] }
   serviceVerification: { doubleDinePax: number | null; details: DailyReportDoubleDineDetail[] }
+  serviceCharges: { amount: string; remarks: string }
   manager: { operationSummary: string; operatingSummary?: string; operationsIssues?: string; keyOperationalIssue?: string; guestFeedbackServiceRecovery?: string; followUpRequired?: string }
   revenueVerification?: DailyReportRevenueVerification
   completion?: Record<string, DailyReportReadinessState>
@@ -377,9 +378,10 @@ export interface DailyReportSnapshot { id: string; dailyReportId: string; outlet
 export interface DailyReportUpsellDetail { id: string; item: string; quantity: number; soldBy: string; staffNumber: string; roomNumber: string; checkInvoiceNumber: string; amount: string; source: 'Chargeable' | 'Wine / Spirits' }
 export interface DailyReportOccasionRoom { occasionId: string; bookingId: string | null; category: string; categoryKeys?: string[]; label: string; guestName: string; roomNumber: string; covers: number }
 export interface DailyReportFrozenPayload {
-  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
+  servicePerformance: { totalCovers: number; adults: number; kids: number; totalBookings: number; arrivedCovers: number; noShowCovers: number; noShowRooms: string[]; walkIns: number; walkInCovers?: number; walkInRooms?: string[]; bookingByTimeSlot: Array<{ time: string; bookings: number; covers: number; adults: number; kids: number; noShows: number; status: string }> }
   symphony: DailyReportManualPayload['symphony']
   serviceVerification: { doubleDinePax: number; details: DailyReportDoubleDineDetail[] }
+  serviceCharges?: DailyReportManualPayload['serviceCharges']
   upselling: { chargeables: DailyReportUpsellDetail[]; wineSpirits: DailyReportUpsellDetail[]; details: DailyReportUpsellDetail[]; totalUpsellRevenue: string; itemsSold: number; topItem: string; topSeller: string }
   guestOccasions: { categories: Array<{ key: string; label: string; count: number; covers: number }>; roomDetails: DailyReportOccasionRoom[] }
   manager: DailyReportManualPayload['manager']
@@ -408,6 +410,7 @@ export interface WeeklyReportView {
   earnings: ReportEarningsSummary
   attention: { noShowCovers: number; noShowRate: number | null; walkIns: number; doubleDinePax: number; highestNoShowDay: string | null; highestCoversDay: string | null; busiestServiceDay: string | null }
   comparison: { available: boolean; reason: string; previousWeekStart: string; previousWeekEnd: string; metrics: Array<{ key: string; label: string; current: number; previous: number; difference: number; changePercent: number | null }> }
+  serviceCharges: { total: string; approvedDays: number; contributingDays: number; explicitZeroDays: number; approvedMissingValueDays: number; unapprovedOrMissingDays: number; state: 'complete' | 'partial' | 'missing'; label: string }
   commentary: ReportManagerSummary | null
   status: Array<{ label: string; state: 'complete' | 'partial' | 'missing' | 'saved'; detail: string }>
 }
@@ -425,9 +428,10 @@ export interface MonthlyReportView {
   staffing:{currentTeamSize:number;averageOnDuty:number;offDays:number;annualLeaveDays:number;publicHolidays:number;sickLeaveDays:number}
   training:{sessions:number;participants:number;attendance:number|null;hours:number|null}
   maintenance:{opened:number;completed:number;stillOpen:number;inProgress:number;unresolved:number;items:Array<{id:string;issue:string;status:string;area:string}>}
+  serviceCharges:{total:string;approvedDays:number;expectedDays:number;contributingDays:number;explicitZeroDays:number;approvedMissingValueDays:number;unapprovedOrMissingDays:number;state:'complete'|'partial'|'missing';label:string}
   earnings:ReportEarningsSummary
   finance:{input:MonthlyReportInput|null;complete:boolean;foodMatched:boolean|null;beverageMatched:boolean|null}
-  comparison:{available:boolean;reason:string;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>;teamDevelopmentMetrics?:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null;available:boolean;reason:string|null}>}
+  comparison:{available:boolean;reason:string;coverage:'complete'|'partial'|'unavailable';currentApprovedDays:number;currentExpectedDays:number;previousApprovedDays:number;previousExpectedDays:number;previousMonthStart:string;previousMonthEnd:string;financeAvailable:boolean;metrics:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null}>;teamDevelopmentMetrics?:Array<{key:string;label:string;current:number;previous:number;difference:number;changePercent:number|null;available:boolean;reason:string|null}>}
   readiness:Array<{label:string;state:'complete'|'warning'|'missing'|'pending';detail:string}>
   overallStatus:'MONTH IN PROGRESS'|'OPERATIONS COMPLETE'|'FINANCE PENDING'|'MONTHLY REPORT READY'
   legacyCommentary:ReportManagerSummary|null

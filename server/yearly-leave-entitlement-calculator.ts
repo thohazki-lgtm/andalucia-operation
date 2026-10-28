@@ -66,6 +66,13 @@ export const calculateAnnualLeaveTimeline = (records: AnnualLeaveYearInput[], as
   })
 }
 
-export const calculateRenewingAnnualBalance = (entitledUnits: number | null, confirmedUsed: number) => entitledUnits === null
+export const calendarYearPeriod = (year: number) => {
+  if (!Number.isInteger(year) || year < 1900 || year > 2200) throw new Error('ENTITLEMENT_YEAR_INVALID')
+  return { start: `${year}-01-01`, end: `${year}-12-31`, endExclusive: `${year + 1}-01-01` }
+}
+
+export const calculateCalendarYearBalance = (entitledUnits: number | null, confirmedUsed: number) => entitledUnits === null
   ? { entitlement: null, used: confirmedUsed, remaining: null }
   : { entitlement: entitledUnits, used: confirmedUsed, remaining: entitledUnits - confirmedUsed }
+
+export const calculateRenewingAnnualBalance = calculateCalendarYearBalance

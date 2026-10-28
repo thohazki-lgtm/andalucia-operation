@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+
+const asset = await readFile(new URL('../public/andalucia-mosaic-wordmark.png', import.meta.url))
+const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8')
+const auth = await readFile(new URL('../src/auth.tsx', import.meta.url), 'utf8')
+const authStyles = await readFile(new URL('../src/auth.css', import.meta.url), 'utf8')
+const brand = await readFile(new URL('../src/brand.tsx', import.meta.url), 'utf8')
+const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
+
+assert.equal(asset.readUInt32BE(0), 0x89504e47, 'official logo must remain a PNG')
+assert.equal(asset.readUInt32BE(16), 2172, 'official logo width changed')
+assert.equal(asset.readUInt32BE(20), 724, 'official logo height changed')
+assert.equal(asset.readUInt8(25), 6, 'official logo must retain RGBA transparency')
+assert.equal(createHash('sha256').update(asset).digest('hex'), 'ee7fde7ba4f1e99a81fea8981b2282e2f6ff9f36e21ce17141a04916082bb41d')
+assert.match(brand, /src="\/andalucia-mosaic-wordmark\.png"/)
+assert.match(brand, /alt="Andalucía"/)
+assert.match(brand, />OPERATION</)
+assert.match(auth, /<BrandWordmark className="login-wordmark"/)
+assert.match(auth, /className="auth-brand-panel"/)
+assert.match(auth, /className="auth-access-panel"/)
+assert.match(app, /<BrandWordmark className="sidebar-wordmark"/)
+assert.match(app, /<BrandWordmark className="mobile-wordmark"/)
+assert.doesNotMatch(app, />Á</)
+assert.match(styles, /\.andalucia-wordmark-image\{[^}]*object-fit:contain/)
+assert.match(authStyles, /grid-template-columns:minmax\(320px,44%\) minmax\(0,56%\)/)
+assert.match(authStyles, /\.auth-page\{width:100%;max-width:none;[^}]*margin:0;padding:0/)
+assert.match(authStyles, /\.auth-brand-panel\{[^}]*background:#123b42/)
+assert.match(authStyles, /\.auth-access-panel\{[^}]*background:#fff6e4/)
+assert.match(authStyles, /\.auth-card\{[^}]*background:#45176b/)
+assert.match(authStyles, /\.auth-card h1\{[^}]*color:#fff6e4/)
+assert.match(authStyles, /\.auth-card label\{[^}]*color:#fff6e4/)
+assert.match(authStyles, /\.auth-card input\{[^}]*background:#fff/)
+assert.match(authStyles, /\.auth-card \.primary\{[^}]*background:#0c675c/)
+assert.match(authStyles, /@media\(max-width:820px\)\{\.auth-page\{grid-template-columns:1fr/)
+
+console.log(JSON.stringify({ officialAssetPreserved: true, transparent: true, login: true, desktopSidebar: true, mobileHeader: true }, null, 2))

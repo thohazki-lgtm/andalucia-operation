@@ -24,6 +24,7 @@ const rollbackStore = join(root, 'rollback', 'postgres')
 const manual = (doubleDinePax = 2): DailyReportManualPayload => ({
   symphony: { foodRevenue: '800.00', beverageRevenue: '300.00', wineRevenue: '120.00', liquorRevenue: '80.00', totalSale: '1100.00', totalDiscount: '25.00', totalVoid: '15.00', netSale: '1060.00', totalRevenue: '1060.00', voidDetails: [{ amount: '15.00', reason: 'Manager authorized correction', checkInvoiceNumber: 'VOID-4101' }] },
   serviceVerification: { doubleDinePax, details: [{ roomNumber: '201', pax: doubleDinePax, sourceOutlet: 'Tempo', note: 'Verified in Symphony' }] },
+  serviceCharges: { amount: '', remarks: '' },
   manager: { operationSummary: 'Stable dinner service.', keyOperationalIssue: '', guestFeedbackServiceRecovery: '', followUpRequired: 'Review tomorrow.' },
   completion: { operationalData: 'complete', symphonyRevenue: 'complete', doubleDineVerification: 'complete', managerSummary: 'complete' }
 })
