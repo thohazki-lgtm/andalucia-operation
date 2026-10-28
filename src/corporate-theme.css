@@ -53,6 +53,20 @@
   --ao-soft-lavender: #c89feb;
   --ao-forest-green: #1e5b53;
   --ao-soft-mint: #c9e7dd;
+  --ao-staff-accent: var(--ao-lagoon-teal);
+  --ao-staff-accent-soft: var(--ao-turquoise-coral);
+  --ao-bookings-accent: var(--ao-sunset-orange);
+  --ao-bookings-accent-ink: #9b4b29;
+  --ao-bookings-accent-soft: var(--ao-orange-glow);
+  --ao-training-accent: var(--ao-lagoon-teal);
+  --ao-training-accent-soft: var(--ao-turquoise-coral);
+  --ao-training-heading-surface: #e7f6f3;
+  --ao-training-detail-surface: #f1faf8;
+  --ao-guest-occasions-accent: var(--ao-violet-hour);
+  --ao-guest-occasions-accent-soft: var(--ao-lilac-calm);
+  --ao-maintenance-accent: var(--ao-sunset-orange);
+  --ao-maintenance-accent-ink: #9b4b29;
+  --ao-maintenance-accent-soft: var(--ao-orange-glow);
   --ao-training-scheduled-text: var(--ao-lagoon-teal);
   --ao-training-scheduled-background: #dff3ef;
   --ao-training-scheduled-border: #75b9b0;
@@ -257,6 +271,110 @@ main[class*='module-'] {
   color: var(--ao-training-scheduled-text);
 }
 
+/* Dashboard cards retain the identity of the module they summarize instead
+   of inheriting the Dashboard purple. Tonight at a Glance is intentionally
+   excluded so its board and count pills remain in the Dashboard theme. */
+main.module-dashboard .dashboard-page .dashboard-order-team {
+  --dashboard-card-accent: var(--ao-staff-accent);
+  --dashboard-card-ink: var(--ao-staff-accent);
+  --dashboard-card-soft: var(--ao-staff-accent-soft);
+}
+
+main.module-dashboard .dashboard-page :is(.dashboard-order-bookings, .dashboard-order-service) {
+  --dashboard-card-accent: var(--ao-bookings-accent);
+  --dashboard-card-ink: var(--ao-bookings-accent-ink);
+  --dashboard-card-soft: var(--ao-bookings-accent-soft);
+}
+
+main.module-dashboard .dashboard-page .dashboard-order-occasions {
+  --dashboard-card-accent: var(--ao-guest-occasions-accent);
+  --dashboard-card-ink: var(--ao-guest-occasions-accent);
+  --dashboard-card-soft: var(--ao-guest-occasions-accent-soft);
+}
+
+main.module-dashboard .dashboard-page .dashboard-order-training {
+  --dashboard-card-accent: var(--ao-training-accent);
+  --dashboard-card-ink: var(--ao-training-accent);
+  --dashboard-card-soft: var(--ao-training-accent-soft);
+  --dashboard-card-heading-surface: var(--ao-training-heading-surface);
+  --dashboard-card-detail-surface: var(--ao-training-detail-surface);
+  --dashboard-card-detail-top-border: var(--ao-training-scheduled-border);
+}
+
+main.module-dashboard .dashboard-page .dashboard-order-attention {
+  --dashboard-card-accent: var(--ao-maintenance-accent);
+  --dashboard-card-ink: var(--ao-maintenance-accent-ink);
+  --dashboard-card-soft: var(--ao-maintenance-accent-soft);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) {
+  --dashboard-card-line: color-mix(in srgb, var(--dashboard-card-ink) 46%, var(--ao-surface));
+  --ao-module-accent: var(--dashboard-card-accent);
+  --ao-module-accent-ink: var(--dashboard-card-ink);
+  --ao-module-accent-soft: var(--dashboard-card-soft);
+  --ao-module-line: var(--dashboard-card-line);
+  border-color: var(--dashboard-card-line);
+  border-top-color: var(--dashboard-card-accent);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) .panel-title {
+  border-bottom-color: var(--dashboard-card-line);
+  background: var(--dashboard-card-heading-surface, color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff));
+  box-shadow: inset 3px 0 var(--dashboard-card-accent);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) .panel-title .eyebrow {
+  color: var(--dashboard-card-ink);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training
+) .dashboard-card-action {
+  border-color: var(--dashboard-card-line);
+  background: color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff);
+  color: var(--dashboard-card-ink);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service
+) .dashboard-metric-grid > div,
+main.module-dashboard .dashboard-page .dashboard-order-training .dashboard-training-details > div {
+  border-color: var(--dashboard-card-line);
+  border-top-color: var(--dashboard-card-detail-top-border, var(--dashboard-card-accent));
+  background: var(--dashboard-card-detail-surface, color-mix(in srgb, var(--dashboard-card-soft) 10%, #ffffff));
+}
+
+main.module-dashboard .dashboard-page .dashboard-order-training :is(.dashboard-training-date, .dashboard-training-details dt) {
+  color: var(--dashboard-card-ink);
+}
+
 .app-sidebar nav .selected {
   border-color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
   background: color-mix(in srgb, var(--ao-shell-accent, var(--ao-lagoon-teal)) 22%, #173c57);
@@ -359,7 +477,7 @@ main[class*='module-'] :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.error-state):not(.exception):not(.attention-card):not(.training-dashboard-card) {
+):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -454,7 +572,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.training-dashboard-card) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card) {
   border-color: var(--ao-module-line);
 }
 
