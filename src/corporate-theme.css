@@ -53,6 +53,9 @@
   --ao-soft-lavender: #c89feb;
   --ao-forest-green: #1e5b53;
   --ao-soft-mint: #c9e7dd;
+  --ao-training-scheduled-text: var(--ao-lagoon-teal);
+  --ao-training-scheduled-background: #dff3ef;
+  --ao-training-scheduled-border: #75b9b0;
   --ao-canvas: #fffbf3;
   --ao-module-canvas-base: var(--ao-canvas);
   --ao-surface: #fffdf8;
@@ -95,6 +98,13 @@ body,
   --ao-module-canvas-primary: var(--ao-soft-lavender);
   --ao-module-canvas-secondary: var(--ao-royal-purple);
   --ao-module-canvas-base: #f2ede4;
+  --ao-dashboard-pax-column-width: 86px;
+  --ao-dashboard-pax-cell-padding: 7px 6px;
+  --ao-dashboard-pax-pill-radius: 999px;
+  --ao-dashboard-pax-pill-padding: 0 9px;
+  --ao-dashboard-pax-pill-background: #f0e5f5;
+  --ao-dashboard-pax-pill-border: #b884c7;
+  --ao-dashboard-pax-pill-color: var(--ao-royal-purple);
 }
 
 .module-staff-management {
@@ -249,12 +259,18 @@ main[class*='module-'] {
 .app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
 
-/* The hostess service board uses an established operational teal treatment;
-   keep it stable while the wider Dashboard identity moves to Royal Purple. */
+/* Hostess counts are Dashboard presentation, not an operational status. */
 .module-dashboard .tonight-count-badge {
-  border-color: var(--ao-lagoon-teal);
-  background: #e2f5f1;
-  color: var(--ao-premium-navy);
+  border-color: var(--ao-dashboard-pax-pill-border);
+  border-radius: var(--ao-dashboard-pax-pill-radius);
+  background: var(--ao-dashboard-pax-pill-background);
+  color: var(--ao-dashboard-pax-pill-color);
+}
+
+.training-status.scheduled {
+  border-color: var(--ao-training-scheduled-border);
+  background: var(--ao-training-scheduled-background);
+  color: var(--ao-training-scheduled-text);
 }
 
 .app-sidebar nav .selected {
