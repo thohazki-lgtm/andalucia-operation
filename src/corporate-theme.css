@@ -61,6 +61,13 @@
   --ao-canvas: #fffbf3;
   --ao-module-canvas-base: var(--ao-canvas);
   --ao-surface: #fffdf8;
+  --ao-page-title-size: 29px;
+  --ao-section-title-size: 18px;
+  --ao-card-title-size: 15px;
+  --ao-label-size: 10px;
+  --ao-table-copy-size: 11.5px;
+  --ao-status-pill-radius: 999px;
+  --ao-status-pill-min-height: 24px;
 }
 
 /* Shared brand typography. The deliberately high structural specificity lets
@@ -206,7 +213,7 @@ main[class*='module-'] {
   --ao-module-divider: color-mix(in srgb, var(--ao-module-accent-ink) 28%, var(--ao-surface));
   --ao-module-surface: color-mix(in srgb, var(--ao-module-accent-soft) 12%, var(--ao-surface));
   --ao-module-surface-strong: color-mix(in srgb, var(--ao-module-accent-soft) 21%, var(--ao-surface));
-  --ao-module-card-radius: 10px;
+  --ao-module-card-radius: 12px;
   --ao-module-control-radius: 8px;
   --ao-module-control-height: 40px;
   --financial-gold: var(--ao-module-line);
@@ -407,10 +414,30 @@ main.module-dashboard .dashboard-page .dashboard-order-training :is(.dashboard-t
 
 main[class*='module-'] > .page-header {
   position: relative;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
   padding: 10px 12px;
   border: 1px solid var(--ao-module-line);
   border-radius: 10px;
   background: var(--ao-module-surface-strong);
+}
+
+main[class*='module-'] > .page-header h1 {
+  margin: 0;
+  color: var(--ao-premium-navy);
+  font-size: var(--ao-page-title-size);
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+main[class*='module-'] > .page-header .eyebrow,
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) .eyebrow {
+  margin-bottom: 5px;
+  font-size: var(--ao-label-size);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: .12em;
 }
 
 main[class*='module-'] > .page-header::before {
@@ -478,7 +505,31 @@ main[class*='module-'] :is(
 }
 
 main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
   padding: 7px 9px;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) > :first-child {
+  min-width: 0;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) :is(h2, h3, h4) {
+  margin: 0;
+  color: var(--ao-premium-navy);
+  line-height: 1.25;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) h2 {
+  font-size: var(--ao-section-title-size);
+  font-weight: 500;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) :is(h3, h4) {
+  font-family: var(--ao-font-ui);
+  font-size: var(--ao-card-title-size);
+  font-weight: 500;
 }
 
 main[class*='module-'] :is(
@@ -564,6 +615,44 @@ main[class*='module-'] :is(
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+main[class*='module-'] :is(
+  .ao-action,
+  .primary,
+  .secondary,
+  .view,
+  .compact-edit-action,
+  .config-icon-action
+):not(.danger):not(.remove) {
+  min-height: var(--ao-module-control-height);
+  padding-block: 0;
+  padding-inline: 12px;
+  font-family: var(--ao-font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+main[class*='module-'] :is(
+  .booking-status,
+  .staff-status,
+  .ao-status-pill,
+  .training-status,
+  .compact-state,
+  .config-protected-state
+) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: var(--ao-status-pill-min-height);
+  padding: 4px 8px;
+  border-radius: var(--ao-status-pill-radius);
+  font-family: var(--ao-font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 main[class*='module-'] :is(
@@ -673,16 +762,25 @@ main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
   border-color: var(--ao-module-line);
 }
 
-main[class*='module-'] table :is(th, td) {
+html body .app-shell main[class*='module-'] table :is(th, td) {
   border-color: var(--ao-module-divider);
+  vertical-align: middle;
 }
 
-main[class*='module-'] table th {
+html body .app-shell main[class*='module-'] table th {
   background-color: var(--ao-module-surface-strong);
+  color: var(--ao-premium-navy);
+  font-size: var(--ao-label-size);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: .045em;
 }
 
-main[class*='module-'] :is(th, td) {
-  line-height: 1.35;
+html body .app-shell main[class*='module-'] table td {
+  color: #315167;
+  font-size: var(--ao-table-copy-size);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 main[class*='module-'] :is(
@@ -731,11 +829,26 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
 @media (max-width: 700px) {
   main[class*='module-'] {
     --ao-module-control-height: 44px;
+    --ao-page-title-size: 26px;
+    --ao-section-title-size: 17px;
+    --ao-card-title-size: 15px;
+    --ao-table-copy-size: 11px;
   }
 
   main[class*='module-'] > .page-header {
     gap: 9px;
+    margin-bottom: 12px;
     padding: 9px 10px;
+  }
+
+  main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) > :is(.ao-action, .primary, .secondary) {
+    flex: 0 0 auto;
   }
 
   main[class*='module-'] > .page-header::before {
