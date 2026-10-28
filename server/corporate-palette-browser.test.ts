@@ -27,8 +27,8 @@ try {
   await fixture.db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), fixture.ownerId])
   await fixture.db.close()
   const node = process.execPath
-  children.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3044', APP_ORIGIN: 'http://127.0.0.1:5214' }, stdio: 'ignore' }))
-  children.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5214', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3044' }, stdio: 'ignore' }))
+  children.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3044', APP_ORIGIN: 'http://127.0.0.1:5214' }, stdio: 'inherit' }))
+  children.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5214', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3044' }, stdio: 'inherit' }))
   await Promise.all([waitFor('http://127.0.0.1:3044/api/health'), waitFor('http://127.0.0.1:5214/')])
   children.push(spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }))
   let port = 0
@@ -54,6 +54,7 @@ try {
       assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('nav button[aria-label=${JSON.stringify(label)}]');button?.click();return !!button})()`), true, `${label} navigation unavailable`)
       for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`document.querySelector('.page-header h1')?.textContent===${JSON.stringify(label)}`)) break; await sleep(75) }
       const result = await cdp.evaluate<any>(`(()=>{const shell=document.querySelector('.app-shell'),shellStyle=getComputedStyle(shell),main=document.querySelector('main'),mainStyle=getComputedStyle(main),header=main.querySelector(':scope > .page-header'),pageTitle=header.querySelector('h1'),headerStyle=getComputedStyle(header),bar=getComputedStyle(header,'::before'),eyebrow=header.querySelector('.eyebrow'),selected=document.querySelector('.app-sidebar nav .selected'),selectedStyle=getComputedStyle(selected),selectedIcon=selected.querySelector('.nav-icon'),sectionHeading=main.querySelector('.panel-title,.section-heading,.workforce-section-title,.config-heading,.monthly-dashboard-section>header'),sectionStyle=sectionHeading?getComputedStyle(sectionHeading):null,panel=main.querySelector('.panel'),panelStyle=panel?getComputedStyle(panel):null,tableCell=main.querySelector('table th,table td'),tableCellStyle=tableCell?getComputedStyle(tableCell):null,control=[...main.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea')].find(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0}),controlStyle=control?getComputedStyle(control):null,primary=[...main.querySelectorAll('.ao-action--primary,.primary')].find(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0}),primaryStyle=primary?getComputedStyle(primary):null,structural=[...main.querySelectorAll('.panel,section,article,.staff-tools,.training-tools,.booking-tools,.service-tools,.occasion-filters,.chargeable-filters,.maintenance-filters,.attendance-toolbar,.report-controls,input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea,.field-mode-control,.ao-icon-action,[class$="-row"],[class*="-row "],[class$="-rows"],[class*="-rows "],[class$="-list"],[class*="-list "],[class$="-cards"],[class*="-cards "],table th,table td')].filter(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return r.width>0&&r.height>0&&s.borderTopStyle!=='none'&&!node.matches('.error-state,.exception,.attention,.attention-card,.urgent,.danger,.open,.progress,.complete,.achieved,.cancelled,.badge,.status-dot,.ao-status-pill,.compact-state,.protected-config,.field-control-state,[style]')});const goldStructural=structural.filter(node=>getComputedStyle(node).borderTopColor==='rgb(222, 197, 143)'),goldStructuralBorders=goldStructural.length,goldStructuralDetails=goldStructural.map(node=>({tag:node.tagName.toLowerCase(),className:node.className})),logo=document.querySelector('.sidebar-wordmark .andalucia-wordmark-image');const box=logo.getBoundingClientRect(),hero=main.querySelector('.dashboard-hero'),countBadge=main.querySelector('.tonight-count-badge');return{page:pageTitle?.textContent,titleFont:getComputedStyle(pageTitle).fontFamily,className:main.classList.contains(${JSON.stringify(className)}),moduleAccent:mainStyle.getPropertyValue('--ao-module-accent').trim(),moduleAccentSoft:mainStyle.getPropertyValue('--ao-module-accent-soft').trim(),barWidth:parseFloat(bar.width),barColor:bar.backgroundColor,headerBackground:headerStyle.backgroundImage,headerBackgroundColor:headerStyle.backgroundColor,headerBorder:headerStyle.borderTopWidth,headerBorderColor:headerStyle.borderTopColor,headerRadius:headerStyle.borderTopLeftRadius,eyebrowColor:getComputedStyle(eyebrow).color,selectedBackground:selectedStyle.backgroundImage,selectedBackgroundColor:selectedStyle.backgroundColor,selectedBorderColor:selectedStyle.borderTopColor,selectedShadow:selectedStyle.boxShadow,selectedIconColor:getComputedStyle(selectedIcon).color,sectionBackground:sectionStyle?.backgroundImage||null,sectionBackgroundColor:sectionStyle?.backgroundColor||null,sectionShadow:sectionStyle?.boxShadow||null,panelBorderColor:panelStyle?.borderTopColor||null,panelBackgroundColor:panelStyle?.backgroundColor||null,tableBorderColor:tableCellStyle?.borderBottomColor||null,controlBorderColor:controlStyle?.borderTopColor||null,controlRadius:controlStyle?.borderTopLeftRadius||null,controlHeight:control?control.getBoundingClientRect().height:null,controlFont:controlStyle?.fontFamily||null,primaryBackground:primaryStyle?.backgroundColor||null,goldStructuralBorders,goldStructuralDetails,overflow:document.documentElement.scrollWidth-innerWidth,logoRatio:box.width/box.height,canvas:mainStyle.backgroundColor,canvasImage:mainStyle.backgroundImage,shellCanvas:shellStyle.backgroundColor,shellCanvasImage:shellStyle.backgroundImage,shellHeight:shell.getBoundingClientRect().height,documentHeight:document.documentElement.scrollHeight,heroBackground:hero?getComputedStyle(hero).backgroundColor:null,countBadgeBorder:countBadge?getComputedStyle(countBadge).borderTopColor:null}})()`)
+      const polish = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main'),visible=node=>{const r=node?.getBoundingClientRect();return !!node&&r.width>0&&r.height>0},style=node=>node?getComputedStyle(node):null,title=main.querySelector(':scope>.page-header h1'),section=[...main.querySelectorAll('.panel-title h2,.panel-title h3,.panel-title h4,.section-heading h2,.section-heading h3,.workforce-section-title h2,.workforce-section-title h3,.config-heading h2,.config-heading h3')].find(visible),action=[...main.querySelectorAll('.ao-action,.primary,.secondary,.view,.compact-edit-action,.config-icon-action')].find(visible),status=[...main.querySelectorAll('.booking-status,.staff-status,.ao-status-pill,.training-status,.compact-state,.config-protected-state')].find(visible),th=[...main.querySelectorAll('table th')].find(visible),td=[...main.querySelectorAll('table td')].find(visible),panel=[...main.querySelectorAll('.panel')].find(visible);return{title:{size:style(title).fontSize,weight:style(title).fontWeight,lineHeight:style(title).lineHeight},section:section?{tag:section.tagName,size:style(section).fontSize,weight:style(section).fontWeight,family:style(section).fontFamily}:null,action:action?{height:action.getBoundingClientRect().height,size:style(action).fontSize,weight:style(action).fontWeight}:null,status:status?{height:status.getBoundingClientRect().height,radius:style(status).borderRadius,size:style(status).fontSize,weight:style(status).fontWeight}:null,th:th?{size:style(th).fontSize,weight:style(th).fontWeight,verticalAlign:style(th).verticalAlign}:null,td:td?{size:style(td).fontSize,weight:style(td).fontWeight,verticalAlign:style(td).verticalAlign}:null,panelRadius:panel?style(panel).borderTopLeftRadius:null}})()`)
       assert.equal(result.page, label)
       assert.match(result.titleFont, /AO Dahlia|Dahlia/, `${label} title does not use Dahlia`)
       assert.equal(result.className, true, `${label} has no module theme class`)
@@ -61,7 +62,7 @@ try {
         assert.equal(result.moduleAccent, '#5b146f', 'Dashboard did not adopt Royal Purple')
         assert.equal(result.moduleAccentSoft, '#c89feb', 'Dashboard did not adopt soft lavender')
         assert.equal(result.heroBackground, 'rgb(18, 62, 72)', 'Dashboard greeting banner lost Midnight Teal')
-        if (result.countBadgeBorder) assert.equal(result.countBadgeBorder, 'rgb(12, 103, 92)', 'Dashboard booking count pills lost their established teal treatment')
+        if (result.countBadgeBorder) assert.equal(result.countBadgeBorder, 'rgb(184, 132, 199)', 'Dashboard booking count pills lost their established purple treatment')
       }
       if (label === 'Customization Center') {
         assert.equal(result.moduleAccent, '#1e5b53', 'Customization Center did not adopt Forest Green')
@@ -108,6 +109,33 @@ try {
       assert.equal(result.shellCanvas, 'rgb(244, 241, 235)', `${label} shell lost its warm-neutral top canvas`)
       assert.match(result.shellCanvasImage, /linear-gradient/, `${label} shell lacks its full-page module gradient`)
       assert.ok(result.shellHeight + 1 >= result.documentHeight, `${label} gradient shell does not cover the scrollable page`)
+      assert.equal(polish.title.size, viewport.width <= 700 ? '26px' : '29px', `${label} page title scale is inconsistent`)
+      assert.equal(polish.title.weight, '500', `${label} page title weight is inconsistent`)
+      if (polish.section) {
+        assert.equal(polish.section.size, polish.section.tag === 'H2' ? (viewport.width <= 700 ? '17px' : '18px') : '15px', `${label} section title scale is inconsistent`)
+        assert.equal(polish.section.weight, '500', `${label} section title weight is inconsistent`)
+      }
+      if (polish.action) {
+        assert.ok(polish.action.height >= (viewport.width <= 700 ? 44 : 40), `${label} action height is inconsistent`)
+        assert.equal(polish.action.size, '11.5px', `${label} action typography is inconsistent`)
+        assert.equal(polish.action.weight, '500', `${label} action weight is inconsistent`)
+      }
+      if (polish.status) {
+        assert.ok(polish.status.height >= 24, `${label} status pill is too small`)
+        assert.equal(polish.status.radius, '999px', `${label} status pill radius is inconsistent`)
+        assert.equal(polish.status.weight, '500', `${label} status pill weight is inconsistent`)
+      }
+      if (polish.th) {
+        assert.equal(polish.th.size, '10px', `${label} table header scale is inconsistent`)
+        assert.equal(polish.th.weight, '500', `${label} table header weight is inconsistent`)
+        assert.equal(polish.th.verticalAlign, 'middle', `${label} table header alignment is inconsistent`)
+      }
+      if (polish.td) {
+        assert.equal(polish.td.size, viewport.width <= 700 ? '11px' : '11.5px', `${label} table row scale is inconsistent`)
+        assert.equal(polish.td.weight, '400', `${label} table row weight is inconsistent`)
+        assert.equal(polish.td.verticalAlign, 'middle', `${label} table row alignment is inconsistent`)
+      }
+      if (polish.panelRadius) assert.equal(polish.panelRadius, '12px', `${label} card radius is inconsistent`)
       if (label === 'Dashboard') {
         assert.match(result.shellCanvasImage, /rgb\(244, 241, 235\).*rgb\(232, 217, 239\).*rgb\(212, 178, 232\)/, 'Dashboard shell gradient does not use the approved ivory and lavender progression')
       }
@@ -116,7 +144,7 @@ try {
       const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true })
       await writeFile(moduleScreenshot, Buffer.from(shot.data, 'base64'))
       screenshotPaths.push(moduleScreenshot.replaceAll('\\', '/'))
-      moduleResults.push({ label, ...result })
+      moduleResults.push({ label, ...result, polish })
     }
     results.push({ viewport: viewport.name, modules: moduleResults })
   }
