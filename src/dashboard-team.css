@@ -26,10 +26,16 @@
 
 .dashboard-page .dashboard-card .panel-title h3 {
   color: #173d56;
+  font-family: var(--ao-font-ui, "Good Sans", sans-serif);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
 .dashboard-page .dashboard-card .panel-title .eyebrow {
   color: var(--ao-module-accent-ink, #0c675c);
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .dashboard-page .dashboard-card-action {
@@ -444,7 +450,14 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 .tonight-card .panel-title {
+  align-items: flex-start;
   margin-bottom: 8px;
+  text-align: left;
+}
+
+.tonight-card .panel-title > div {
+  width: 100%;
+  text-align: left;
 }
 
 .hostess-state-summary {
