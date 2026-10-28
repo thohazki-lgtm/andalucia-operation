@@ -302,7 +302,7 @@ main[class*='module-'] :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.error-state):not(.exception):not(.attention-card) {
+):not(.error-state):not(.exception):not(.attention-card):not(.training-dashboard-card) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -397,7 +397,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.training-dashboard-card) {
   border-color: var(--ao-module-line);
 }
 

@@ -269,14 +269,26 @@
   margin-top: 0;
 }
 
-.dashboard-page .training-dashboard-card {
+main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
+  --dashboard-training-accent: #0c675c;
+  --dashboard-training-line: #75b9b0;
+  --dashboard-training-soft: #e7f6f3;
   height: auto;
   min-height: 0;
   padding-bottom: 12px;
+  border-top-color: var(--dashboard-training-accent);
 }
 
-.training-dashboard-card .panel-title {
+main.module-dashboard .training-dashboard-card .panel-title {
   margin-bottom: 4px;
+  border-bottom-color: var(--dashboard-training-line);
+  background: var(--dashboard-training-soft);
+  box-shadow: inset 3px 0 var(--dashboard-training-accent);
+}
+
+main.module-dashboard .training-dashboard-card .panel-title .eyebrow,
+main.module-dashboard .training-dashboard-card .dashboard-training-date {
+  color: var(--dashboard-training-accent);
 }
 
 .training-dashboard-card .dashboard-training-date {
@@ -294,19 +306,26 @@
   min-height: 44px;
   align-content: center;
   padding: 6px 8px;
-  border: 1px solid rgba(222, 197, 143, 0.68);
+  border: 1px solid var(--dashboard-training-line);
   border-radius: 8px;
-  background: #fffaf0;
+  background: #f1faf8;
 }
 
 .training-dashboard-card .dashboard-training-details dt {
   margin-bottom: 2px;
+  color: var(--dashboard-training-accent);
   font-size: 8px;
 }
 
 .training-dashboard-card .dashboard-training-details dd {
   font-size: 11px;
   line-height: 1.3;
+}
+
+.training-dashboard-card .training-status.scheduled {
+  border: 1px solid var(--dashboard-training-line);
+  background: #dff3ef;
+  color: var(--dashboard-training-accent);
 }
 
 .dashboard-page .dashboard-badges {
@@ -505,9 +524,9 @@
 
 .dashboard-page .tonight-table th:first-child,
 .dashboard-page .tonight-table td:first-child {
-  width: 112px;
-  min-width: 112px;
-  max-width: 112px;
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
 }
 
 .dashboard-page .tonight-table {
@@ -516,11 +535,11 @@
 }
 
 .dashboard-page .tonight-table .tonight-time-column {
-  width: 112px;
+  width: 100px;
 }
 
 .dashboard-page .tonight-table .tonight-party-column {
-  width: 86px;
+  width: auto;
 }
 
 .dashboard-page .tonight-table thead th {
@@ -612,6 +631,14 @@
 }
 
 @media (max-width: 768px) {
+  .dashboard-page .tonight-table {
+    width: max-content;
+  }
+
+  .dashboard-page .tonight-table .tonight-party-column {
+    width: 86px;
+  }
+
   .tonight-scroll {
     padding-bottom: 7px;
     scrollbar-width: thin;
