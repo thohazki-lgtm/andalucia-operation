@@ -253,6 +253,44 @@ main[class*='module-'] {
   color: var(--ao-dashboard-pax-pill-color);
 }
 
+/* The hostess board is a Dashboard surface. Keep semantic meaning on the
+   summary numbers while using purple/lilac for its structure and rows. */
+.module-dashboard .tonight-card .hostess-state-summary > div {
+  border-color: var(--ao-module-line);
+  border-top-color: var(--ao-royal-purple);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 10%, #ffffff);
+}
+
+.module-dashboard .tonight-card :is(.next-arrivals, .next-arrival-groups span, .tonight-scroll, .tonight-zero) {
+  border-color: var(--ao-module-line);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 8%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table thead th {
+  border-color: var(--ao-module-line);
+  border-bottom-color: var(--ao-royal-purple);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
+  color: var(--ao-royal-purple);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr:nth-child(odd) td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 5%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 10%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr.current-service-slot td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 24%, #ffffff);
+  box-shadow: inset 0 1px var(--ao-module-line), inset 0 -1px var(--ao-module-line);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr.current-service-slot td:first-child {
+  box-shadow: inset 3px 0 var(--ao-royal-purple), inset 0 1px var(--ao-module-line), inset 0 -1px var(--ao-module-line);
+  color: var(--ao-royal-purple);
+}
+
 .training-status.scheduled {
   border-color: var(--ao-training-scheduled-border);
   background: var(--ao-training-scheduled-background);
