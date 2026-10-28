@@ -259,50 +259,8 @@ main[class*='module-'] {
   color: var(--ao-training-scheduled-text);
 }
 
-/* Dashboard cards retain the identity of the module they summarize instead
-   of inheriting the Dashboard purple. Tonight at a Glance is intentionally
-   excluded so its board and count pills remain in the Dashboard theme. */
-main.module-dashboard .dashboard-page .dashboard-order-team {
-  --dashboard-card-accent: var(--ao-lagoon-teal);
-  --dashboard-card-ink: var(--ao-lagoon-teal);
-  --dashboard-card-soft: var(--ao-turquoise-coral);
-}
-
-main.module-dashboard .dashboard-page .dashboard-order-bookings {
-  --dashboard-card-accent: var(--ao-sunset-orange);
-  --dashboard-card-ink: #9b4b29;
-  --dashboard-card-soft: var(--ao-orange-glow);
-}
-
-/* Service Progress is a Dashboard operational summary, not a standalone
-   module. Keep it within the approved Dashboard Royal Purple family. */
-main.module-dashboard .dashboard-page .dashboard-order-service {
-  --dashboard-card-accent: var(--ao-royal-purple);
-  --dashboard-card-ink: var(--ao-royal-purple);
-  --dashboard-card-soft: var(--ao-soft-lavender);
-}
-
-main.module-dashboard .dashboard-page .dashboard-order-occasions {
-  --dashboard-card-accent: var(--ao-violet-hour);
-  --dashboard-card-ink: var(--ao-violet-hour);
-  --dashboard-card-soft: var(--ao-lilac-calm);
-}
-
-main.module-dashboard .dashboard-page .dashboard-order-training {
-  --dashboard-card-accent: var(--ao-lagoon-teal);
-  --dashboard-card-ink: var(--ao-lagoon-teal);
-  --dashboard-card-soft: var(--ao-turquoise-coral);
-  --dashboard-card-heading-surface: var(--ao-training-heading-surface);
-  --dashboard-card-detail-surface: var(--ao-training-detail-surface);
-  --dashboard-card-detail-top-border: var(--ao-training-scheduled-border);
-}
-
-main.module-dashboard .dashboard-page .dashboard-order-attention {
-  --dashboard-card-accent: var(--ao-sunset-orange);
-  --dashboard-card-ink: #9b4b29;
-  --dashboard-card-soft: var(--ao-orange-glow);
-}
-
+/* Dashboard cards are one coherent Dashboard surface. Semantic pills inside
+   them keep their own operational colors through their component rules. */
 main.module-dashboard .dashboard-page :is(
   .dashboard-order-team,
   .dashboard-order-bookings,
@@ -311,12 +269,24 @@ main.module-dashboard .dashboard-page :is(
   .dashboard-order-training,
   .dashboard-order-attention
 ) {
+  --dashboard-card-accent: var(--ao-royal-purple);
+  --dashboard-card-ink: var(--ao-royal-purple);
+  --dashboard-card-soft: var(--ao-soft-lavender);
   --dashboard-card-line: color-mix(in srgb, var(--dashboard-card-ink) 46%, var(--ao-surface));
   --ao-module-accent: var(--dashboard-card-accent);
   --ao-module-accent-ink: var(--dashboard-card-ink);
   --ao-module-accent-soft: var(--dashboard-card-soft);
   --ao-module-line: var(--dashboard-card-line);
   border-color: var(--dashboard-card-line);
+  border-top-color: var(--dashboard-card-accent);
+}
+
+/* The Training component carries legacy local variables with higher
+   specificity. Rebind those presentation-only variables inside Dashboard. */
+main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
+  --dashboard-training-accent: var(--ao-royal-purple);
+  --dashboard-training-line: var(--dashboard-card-line);
+  --dashboard-training-soft: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
   border-top-color: var(--dashboard-card-accent);
 }
 
