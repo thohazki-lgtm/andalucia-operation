@@ -198,37 +198,56 @@ main[class*='module-'] {
   --ao-module-control-radius: 8px;
   --ao-module-control-height: 40px;
   --financial-gold: var(--ao-module-line);
-  background-color: var(--ao-module-canvas-base);
+  background-color: transparent;
+  background-image: none;
+}
+
+/* The application shell is the real page canvas: it spans the viewport behind
+   the centered main column and grows with long module pages. Keeping the main
+   transparent prevents seams, doubled gradients and white bands while cards
+   retain their existing module surfaces. */
+.app-shell:has(> main[class*='module-']) {
+  --ao-page-canvas-top: #f4f1eb;
+  --ao-page-canvas-tint: var(--ao-turquoise-coral);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--ao-page-canvas-top);
   background-image: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-module-canvas-base)) 0%,
-    color-mix(in srgb, var(--ao-module-canvas-primary) 6%, var(--ao-module-canvas-base)) 48%,
-    var(--ao-module-canvas-base) 82%
+    to bottom,
+    var(--ao-page-canvas-top) 0%,
+    color-mix(in srgb, var(--ao-page-canvas-tint) 15%, var(--ao-page-canvas-top)) 54%,
+    color-mix(in srgb, var(--ao-page-canvas-tint) 38%, var(--ao-page-canvas-top)) 100%
   );
   background-repeat: no-repeat;
 }
 
-/* Let the persistent navigation share the active module accent without
-   changing its established navy selected state or gold authority marker. */
-.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-royal-purple); --ao-shell-highlight: var(--ao-soft-lavender); }
-.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+/* Let the persistent navigation share the active module accent while the shell
+   carries the matching full-page tint. */
+.app-shell:has(> main.module-dashboard) {
+  --ao-shell-accent: var(--ao-royal-purple);
+  --ao-shell-highlight: var(--ao-soft-lavender);
+  --ao-page-canvas-tint: #d4b2e8;
+  background-image: linear-gradient(to bottom, #f4f1eb 0%, #e8d9ef 56%, #d4b2e8 100%);
+}
+.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-duty-roster) {
   --ao-shell-accent: var(--ao-sunset-orange);
   --ao-shell-highlight: var(--ao-orange-glow);
+  --ao-page-canvas-tint: var(--ao-orange-glow);
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #fff8f2;
   background-image: linear-gradient(to bottom, #fff8f2 0%, #fbe8dd 56%, #f3c6ad 100%);
   background-repeat: no-repeat;
 }
-.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
-.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
-.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); }
+.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
 
 /* The hostess service board uses an established operational teal treatment;
    keep it stable while the wider Dashboard identity moves to Royal Purple. */
