@@ -524,9 +524,9 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 
 .dashboard-page .tonight-table th:first-child,
 .dashboard-page .tonight-table td:first-child {
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
 }
 
 .dashboard-page .tonight-table {
@@ -535,11 +535,11 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 .dashboard-page .tonight-table .tonight-time-column {
-  width: 100px;
+  width: 120px;
 }
 
 .dashboard-page .tonight-table .tonight-party-column {
-  width: auto;
+  width: 86px;
 }
 
 .dashboard-page .tonight-table thead th {
@@ -631,14 +631,6 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 @media (max-width: 768px) {
-  .dashboard-page .tonight-table {
-    width: max-content;
-  }
-
-  .dashboard-page .tonight-table .tonight-party-column {
-    width: 86px;
-  }
-
   .tonight-scroll {
     padding-bottom: 7px;
     scrollbar-width: thin;
@@ -734,17 +726,6 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 
   .maintenance-followup-list button {
     min-height: 44px;
-  }
-
-  .dashboard-page .tonight-table th:first-child,
-  .dashboard-page .tonight-table td:first-child {
-    width: 108px;
-    min-width: 108px;
-    max-width: 108px;
-  }
-
-  .dashboard-page .tonight-table .tonight-time-column {
-    width: 108px;
   }
 
   .tonight-card .next-arrivals .eyebrow,
