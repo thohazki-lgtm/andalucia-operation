@@ -1,7 +1,41 @@
+@font-face {
+  font-family: 'AO Dahlia';
+  src: local('Dahlia Regular'), local('Dahlia');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Dahlia';
+  src: local('Dahlia Medium'), local('Dahlia');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Good Sans';
+  src: local('Good Sans Light'), local('Good Sans');
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Good Sans';
+  src: local('Good Sans Regular'), local('Good Sans');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* Official Andalucía corporate palette.
    Module accents stay on structural surfaces, navigation and headings so that
    operational status colors and manager-configured colors remain authoritative. */
 :root {
+  --ao-font-display: 'AO Dahlia', 'Dahlia', Georgia, serif;
+  --ao-font-ui: 'AO Good Sans', 'Good Sans', Arial, sans-serif;
   --ao-moonlight-black: #000000;
   --ao-violet-hour: #45176b;
   --ao-turquoise-coral: #b1e4dc;
@@ -17,6 +51,30 @@
   --ao-champagne: #d5bb89;
   --ao-canvas: #fffbf3;
   --ao-surface: #fffdf8;
+}
+
+/* Shared brand typography. The deliberately high structural specificity lets
+   this final theme layer replace legacy module-local DM Sans / Playfair rules
+   without rewriting or competing with each completed module stylesheet. */
+html body .app-shell,
+html body .auth-page {
+  font-family: var(--ao-font-ui);
+}
+
+html body .app-shell :is(aside, nav, .mobile-topbar, main[class*='module-']) *,
+html body .auth-page * {
+  font-family: var(--ao-font-ui);
+}
+
+html body .app-shell main[class*='module-'] :is(h1, h2),
+html body .app-shell main.module-reports :is(h1, h2, h3),
+html body .auth-page .auth-card h1 {
+  font-family: var(--ao-font-display);
+  font-synthesis: none;
+}
+
+html body :is(.auth-card > p:not(.eyebrow), main[class*='module-'] .panel-title > p, main[class*='module-'] .section-intro, main[class*='module-'] .helper-text) {
+  font-weight: 300;
 }
 
 body,
@@ -291,7 +349,7 @@ main[class*='module-'] :is(
   border-radius: var(--ao-module-control-radius);
   background-color: var(--ao-surface);
   color: var(--ao-premium-navy);
-  font-family: 'DM Sans', Arial, sans-serif;
+  font-family: var(--ao-font-ui);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
