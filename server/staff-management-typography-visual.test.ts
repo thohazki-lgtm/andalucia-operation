@@ -10,6 +10,7 @@ const fixture = await createDisposableDevelopmentStore('staff-management-typogra
 const profile = join(fixture.root, 'edge-profile')
 const output = resolve('artifacts', 'staff-management-typography')
 const processes: ChildProcess[] = []
+const startupLogs: string[] = []
 let socket: WebSocket | null = null
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
@@ -18,7 +19,12 @@ const waitFor = async (url: string) => {
     try { if ((await fetch(url)).ok) return } catch {}
     await sleep(200)
   }
-  throw new Error(`Timed out waiting for ${url}`)
+  throw new Error(`Timed out waiting for ${url}${startupLogs.length ? `\n${startupLogs.join('').slice(-4000)}` : ''}`)
+}
+const observe = (process: ChildProcess, label: string) => {
+  process.stdout?.on('data', chunk => startupLogs.push(`[${label}] ${String(chunk)}`))
+  process.stderr?.on('data', chunk => startupLogs.push(`[${label}] ${String(chunk)}`))
+  processes.push(process)
 }
 
 class Cdp {
@@ -73,8 +79,8 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: 'ignore' }))
-  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: 'ignore' }))
+  observe(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'api')
+  observe(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'vite')
   await Promise.all([waitFor('http://127.0.0.1:3017/api/health'), waitFor('http://127.0.0.1:5187/')])
 
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--edge-skip-compat-layer-relaunch', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' })
