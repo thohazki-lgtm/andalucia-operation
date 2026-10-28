@@ -1,4 +1,5 @@
-.auth-page{width:100%;max-width:none;min-height:100vh;min-height:100svh;margin:0;padding:0;display:grid;grid-template-columns:minmax(320px,44%) minmax(0,56%);overflow-x:hidden;background:#fff6e4;color:#173d56}
+:root:has(.auth-page){--auth-page-background:#fff6e4;background:var(--auth-page-background)}
+.auth-page{width:100%;max-width:none;min-height:100vh;min-height:100svh;margin:0;padding:0;display:grid;grid-template-columns:minmax(320px,44%) minmax(0,56%);overflow-x:hidden;background:var(--auth-page-background);color:#173d56}
 .auth-brand-panel{position:relative;isolation:isolate;display:grid;min-width:0;place-items:center;overflow:hidden;padding:clamp(36px,6vw,88px);background:#123b42;color:#faf7ef}
 .auth-brand-panel::before,.auth-brand-panel::after{position:absolute;z-index:-1;width:min(42vw,520px);aspect-ratio:1;border:1px solid rgb(213 187 137 / 20%);border-radius:50%;content:''}
 .auth-brand-panel::before{top:-28%;left:-24%}
