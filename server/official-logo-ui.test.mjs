@@ -28,6 +28,10 @@ assert.match(authStyles, /grid-template-columns:minmax\(320px,44%\) minmax\(0,56
 assert.match(authStyles, /\.auth-page\{width:100%;max-width:none;[^}]*margin:0;padding:0/)
 assert.match(authStyles, /\.auth-brand-panel\{[^}]*background:#123b42/)
 assert.match(authStyles, /\.auth-access-panel\{[^}]*background:#fff6e4/)
+assert.match(authStyles, /\.auth-card\{[^}]*background:#45176b/)
+assert.match(authStyles, /\.auth-card h1\{[^}]*color:#fff6e4/)
+assert.match(authStyles, /\.auth-card label\{[^}]*color:#fff6e4/)
+assert.match(authStyles, /\.auth-card input\{[^}]*background:#fff/)
 assert.match(authStyles, /\.auth-card \.primary\{[^}]*background:#0c675c/)
 assert.match(authStyles, /@media\(max-width:820px\)\{\.auth-page\{grid-template-columns:1fr/)
 
