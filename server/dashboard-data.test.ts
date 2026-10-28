@@ -22,7 +22,7 @@ await bookings.initialize(); await chargeables.initialize(); await occasions.ini
 const waiterId = randomUUID()
 await db.query('insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,$2,$3,$4,$5,$6)', [waiterId, 'W-1', 'Waiter One', 'Waiter', 'active', '2026-01-01'])
 
-const booking = (covers: number, status: string, time: string, index: number, assigned = true): BookingRecord => ({ id: randomUUID(), guestName: `Guest ${index}`, roomNumber: String(700 + index), birthDate: null, arrivalDate: date, departureDate: '2026-09-01', mealPeriod: 'Dinner', reservationDate: date, reservationTime: time, bookingNumber: `DASH-${index}`, covers, bookingStatus: status, bookingSource: 'manual', bookedBy: 'Test', guestNotes: '', tableNumber: `T${index}`, waiterId: assigned ? waiterId : null, waiter: null })
+const booking = (covers: number, status: string, time: string, index: number, assigned = true): BookingRecord => ({ id: randomUUID(), guestName: `Guest ${index}`, roomNumber: String(700 + index), birthDate: null, arrivalDate: date, departureDate: '2026-09-01', mealPeriod: 'Dinner', reservationDate: date, reservationTime: time, bookingNumber: `DASH-${index}`, covers, bookingStatus: status, bookingSource: 'manual', bookedBy: 'Test', guestNotes: '', tableNumber: '', waiterId: assigned ? waiterId : null, waiter: null })
 const plan = [
   ...[12, 12, 12, 12, 12, 6].map((covers, index) => ({ covers, status: 'arrived', time: index < 3 ? '18:00' : '18:30', assigned: true })),
   ...[12, 12, 12, 4, 1].map((covers, index) => ({ covers, status: 'confirmed', time: index === 4 ? '18:15' : '19:00', assigned: index !== 0 })),
