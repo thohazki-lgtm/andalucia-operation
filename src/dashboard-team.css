@@ -323,9 +323,9 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 .training-dashboard-card .training-status.scheduled {
-  border: 1px solid var(--dashboard-training-line);
-  background: #dff3ef;
-  color: var(--dashboard-training-accent);
+  border: 1px solid var(--ao-training-scheduled-border, var(--dashboard-training-line));
+  background: var(--ao-training-scheduled-background, #dff3ef);
+  color: var(--ao-training-scheduled-text, var(--dashboard-training-accent));
 }
 
 .dashboard-page .dashboard-badges {
@@ -539,7 +539,7 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 .dashboard-page .tonight-table .tonight-party-column {
-  width: 86px;
+  width: var(--ao-dashboard-pax-column-width, 86px);
 }
 
 .dashboard-page .tonight-table thead th {
@@ -560,7 +560,11 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 
 .tonight-table th:not(:first-child),
 .tonight-table td:not(:first-child) {
+  width: var(--ao-dashboard-pax-column-width, 86px);
+  min-width: var(--ao-dashboard-pax-column-width, 86px);
+  padding: var(--ao-dashboard-pax-cell-padding, 7px 6px);
   text-align: center;
+  vertical-align: middle;
 }
 
 .tonight-table td {
@@ -571,15 +575,16 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 .tonight-count-badge {
-  display: inline-grid;
+  display: inline-flex;
   min-width: 34px;
   height: 24px;
-  place-items: center;
-  padding: 0 8px;
-  border: 1px solid var(--ao-module-accent, #0c675c);
-  border-radius: 7px;
-  background: #e2f5f1;
-  color: #173d56;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ao-dashboard-pax-pill-padding, 0 9px);
+  border: 1px solid var(--ao-dashboard-pax-pill-border, #b884c7);
+  border-radius: var(--ao-dashboard-pax-pill-radius, 999px);
+  background: var(--ao-dashboard-pax-pill-background, #f0e5f5);
+  color: var(--ao-dashboard-pax-pill-color, #5b146f);
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
@@ -664,6 +669,7 @@ main.module-dashboard .training-dashboard-card .dashboard-training-date {
 }
 
 @media (max-width: 700px) {
+  .module-dashboard { --ao-dashboard-pax-cell-padding: 7px 5px; }
   .dashboard-hero {
     display: flex;
     min-height: 100px;
