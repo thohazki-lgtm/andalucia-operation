@@ -156,7 +156,14 @@ body,
   opacity: 0.28;
 }
 
-.module-duty-roster,
+.module-duty-roster {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #8b4529;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: #f7d5c2;
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
 .module-bookings {
   --ao-module-accent: var(--ao-sunset-orange);
   --ao-module-accent-ink: #9b4b29;
@@ -249,7 +256,7 @@ main[class*='module-'] {
   background-image: linear-gradient(to bottom, #f4f1eb 0%, #e8d9ef 56%, #d4b2e8 100%);
 }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-duty-roster) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-duty-roster) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: #f3c6ad; }
 .app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
@@ -870,6 +877,29 @@ main.module-staff-management > .page-header {
 }
 
 main.module-staff-management > .page-header::before {
+  display: none;
+  content: none;
+}
+
+/* Duty Roster keeps the clean editorial shell while using its own restrained
+   burnt-orange and peach identity. Configured duty-code colors stay authoritative. */
+.app-shell:has(> main.module-duty-roster) {
+  --ao-page-canvas-top: #fff8f2;
+  --ao-page-canvas-tint: #f3c6ad;
+  background-color: #fff8f2;
+  background-image: linear-gradient(to bottom, #fff8f2 0%, #fbe8dd 56%, #f3c6ad 100%);
+}
+
+main.module-duty-roster > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-duty-roster > .page-header::before {
   display: none;
   content: none;
 }
