@@ -248,6 +248,8 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-table tbody tr')`)) break; await sleep(100) }
   const accountTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-table tbody td:first-child b', id: '.staff-account-table tbody td:nth-child(2)', heading: '.staff-account-table thead th:first-child', value: '.staff-account-table tbody td:nth-child(3)' }))
+  assert.equal(accountTypography.heading.fontSize, '9px')
+  assert.equal(accountTypography.heading.fontWeight, '600')
   assert.equal(membershipTypography.name.fontSize, '12px')
   assert.equal(membershipTypography.name.fontWeight, '500')
   assert.equal(membershipTypography.id.fontSize, '10.5px')
@@ -300,21 +302,58 @@ try {
   }
   assert.equal(await cdp.evaluate<boolean>(`document.documentElement.scrollWidth>document.documentElement.clientWidth+1`), false)
   await screenshot(cdp, 'account-management-audit-390.png')
-  const accountWidths = [1440, 1024, 430, 390, 360]
+  const accountWidths = [1440, 1024, 768, 430, 390, 360]
   const accountMeasurements: Record<string, unknown> = {}
   for (const width of accountWidths) {
     const mobile = width <= 700
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
     await sleep(100)
-    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,statusFontSize:getComputedStyle(status).fontSize,controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height))}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const title=document.querySelector('.staff-account-header h2');const summary=document.querySelector('.staff-account-summary dd');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];const table=document.querySelector('.staff-account-table');const tableWrap=table?.closest('.staff-table-wrap');const cells=[...document.querySelectorAll('.staff-account-table tbody tr:first-child td')];const headers=[...document.querySelectorAll('.staff-account-table thead th')];const divider=cells[0]?getComputedStyle(cells[0]):null;const actions=[...document.querySelectorAll('.staff-account-cards .staff-account-actions button')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,nameFontWeight:getComputedStyle(name).fontWeight,statusFontSize:getComputedStyle(status).fontSize,statusFontWeight:getComputedStyle(status).fontWeight,statusAlignment:getComputedStyle(status).justifyContent,titleFont:getComputedStyle(title).fontFamily,titleSize:getComputedStyle(title).fontSize,titleWeight:getComputedStyle(title).fontWeight,summarySize:getComputedStyle(summary).fontSize,summaryWeight:getComputedStyle(summary).fontWeight,controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height)),tableVisible:!!tableWrap&&getComputedStyle(tableWrap).display!=='none'&&table.getBoundingClientRect().width>0,headerAlign:headers.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),cellAlign:cells.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),dividerWidth:divider?.borderRightWidth,dividerStyle:divider?.borderRightStyle,smallActions:actions.map(button=>({text:button.textContent?.trim(),width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height})).filter(item=>item.width<44||item.height<44)}})()`)
     assert.equal(result.pageOverflow, false, `Account page overflow at ${width}px.`)
     assert.equal(result.panelOverflow, false, `Account panel overflow at ${width}px.`)
-    assert.equal(result.nameFontSize, mobile ? '15px' : '13px')
-    assert.equal(result.statusFontSize, '9.5px')
+    assert.match(result.titleFont, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.equal(result.titleSize, mobile ? '17px' : '18px')
+    assert.equal(result.titleWeight, '500')
+    assert.equal(result.summarySize, mobile ? '16px' : '18px')
+    assert.equal(result.summaryWeight, '500')
+    assert.equal(result.nameFontSize, mobile ? '13px' : '12px')
+    assert.equal(result.nameFontWeight, '500')
+    assert.equal(result.statusFontSize, '9px')
+    assert.equal(result.statusFontWeight, '600')
+    assert.equal(result.statusAlignment, 'center')
     assert.equal(result.controlsReadable, true)
     assert.ok(result.minimumControlHeight >= (mobile ? 44 : 40))
+    if (mobile) {
+      assert.equal(result.tableVisible, false)
+      assert.deepEqual(result.smallActions, [], `Account Management has undersized mobile actions at ${width}px.`)
+    } else {
+      assert.equal(result.tableVisible, true)
+      assert.deepEqual(result.headerAlign, ['left', 'center', 'center', 'center', 'center'])
+      assert.deepEqual(result.cellAlign, ['left', 'center', 'center', 'center', 'center'])
+      assert.equal(result.dividerWidth, '1px')
+      assert.equal(result.dividerStyle, 'solid')
+    }
     accountMeasurements[String(width)] = result
     await screenshot(cdp, `account-management-after-${width}.png`)
+  }
+  for (const width of [1440, 390]) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.staff-account-actions button')).find(item=>item.textContent?.trim()==='Create Account');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-modal')`)) break; await sleep(50) }
+    const modal = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-account-modal');const title=dialog?.querySelector('h2');const input=dialog?.querySelector('input');const actions=[...dialog?.querySelectorAll('.form-actions button')||[]];if(!dialog||!title||!input)return null;input.focus();return{fits:dialog.getBoundingClientRect().width<=innerWidth&&dialog.getBoundingClientRect().height<=innerHeight,background:getComputedStyle(dialog).backgroundColor,titleFont:getComputedStyle(title).fontFamily,titleSize:getComputedStyle(title).fontSize,titleWeight:getComputedStyle(title).fontWeight,inputBackground:getComputedStyle(input).backgroundColor,actionHeights:actions.map(button=>button.getBoundingClientRect().height),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+    assert.ok(modal)
+    assert.equal(modal.fits, true)
+    assert.equal(modal.background, 'rgb(244, 248, 245)')
+    assert.match(modal.titleFont, /(?:AO Good Sans|Good Sans|DM Sans)/)
+    assert.equal(modal.titleSize, mobile ? '17px' : '18px')
+    assert.equal(modal.titleWeight, '500')
+    assert.equal(modal.inputBackground, 'rgb(255, 255, 255)')
+    assert.ok(modal.actionHeights.every((height: number) => height >= 44))
+    assert.equal(modal.pageOverflow, false)
+    await screenshot(cdp, `account-management-create-dialog-after-${width}.png`)
+    await cdp.evaluate(`document.querySelector('.staff-account-modal .close')?.click()`)
+    for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-modal')`)) break; await sleep(50) }
   }
   console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
