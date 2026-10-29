@@ -16,7 +16,7 @@ export const authApi = {
 export const employeeAccountApi = {
   list: () => request<StaffAccountSummary[]>('/api/staff-accounts'),
   create: (staffId: string, identifier: string) => request<EmployeeTemporaryCredential>(`/api/staff-accounts/${encodeURIComponent(staffId)}`, { method: 'POST', body: JSON.stringify({ identifier }) }),
-  resetPassword: (staffId: string) => request<EmployeeTemporaryCredential>(`/api/staff-accounts/${encodeURIComponent(staffId)}/reset-password`, { method: 'POST', body: JSON.stringify({}) }),
+  resetPassword: (staffId: string, confirmation: string) => request<EmployeeTemporaryCredential>(`/api/staff-accounts/${encodeURIComponent(staffId)}/reset-password`, { method: 'POST', body: JSON.stringify({ confirmation }) }),
   setEnabled: (staffId: string, enabled: boolean) => request<StaffAccountSummary>(`/api/staff-accounts/${encodeURIComponent(staffId)}/${enabled ? 'enable' : 'disable'}`, { method: 'POST', body: JSON.stringify({}) })
 }
 export const timesheetApi = {
