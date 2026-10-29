@@ -6,6 +6,7 @@ import { request as httpRequest } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
+import { AuthService } from './auth-service.js'
 
 const fixture = await createDisposableDevelopmentStore('staff-management-typography-visual')
 const profile = join(fixture.root, 'edge-profile')
@@ -78,12 +79,15 @@ try {
   await fixture.db.query("insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,'staff_positions',$2,'Fixture Designation','{}',true,0) on conflict(group_key,value) do nothing", [randomUUID(), position])
   await fixture.db.query("insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,'employment_statuses','active','Active',$2,true,0) on conflict(group_key,value) do nothing", [randomUUID(), JSON.stringify({ employmentStage: 'active', rosterEligible: true, selectableForNewRecords: true })])
   const staffId = randomUUID()
+  const staffWithoutAccountId = randomUUID()
   const membershipRevisionId = randomUUID()
   const membershipMonth = new Date().toISOString().slice(0, 7)
   const membershipMonthEnd = new Date(Date.UTC(Number(membershipMonth.slice(0, 4)), Number(membershipMonth.slice(5, 7)), 0)).toISOString().slice(0, 10)
   await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'TYPE-001','Typography Staff',$2,'active','2024-01-01')", [staffId, position])
+  await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'TYPE-002','No Account Staff',$2,'active','2024-02-01')", [staffWithoutAccountId, position])
   await fixture.db.query("insert into staff_membership_baseline_reviews(id,outlet_scope_id,baseline_month,status,revision_number,review_type,is_current_revision,is_authoritative,approved_at,approved_by,approved_by_user_id) values($1,$2,$3,'approved',1,'initial',true,true,now(),'Typography Visual Manager',$4)", [membershipRevisionId, ANDALUCIA_SCOPE_ID, membershipMonth, owner.id])
   await fixture.db.query("insert into staff_membership_history(id,staff_id,outlet_scope_id,membership_dimension,effective_from,effective_to,source,review_status,reviewed_at,reviewed_by,baseline_revision_id,is_current_baseline) values($1,$2,$3,'regular_outlet',$4,$5,'baseline_manager_review','approved',now(),'Typography Visual Manager',$6,true)", [randomUUID(), staffId, ANDALUCIA_SCOPE_ID, `${membershipMonth}-01`, membershipMonthEnd, membershipRevisionId])
+  await new AuthService(fixture.db).createEmployeeAccount({ staffId, identifier: 'typography.staff', outletScopeId: ANDALUCIA_SCOPE_ID }, { userId: owner.id, displayName: 'Typography Visual Manager' })
   await fixture.db.query("insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval '1 hour')", [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
   await fixture.db.close()
 
@@ -308,12 +312,15 @@ try {
     const mobile = width <= 700
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
     await sleep(100)
-    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const title=document.querySelector('.staff-account-header h2');const summary=document.querySelector('.staff-account-summary dd');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];const table=document.querySelector('.staff-account-table');const tableWrap=table?.closest('.staff-table-wrap');const cells=[...document.querySelectorAll('.staff-account-table tbody tr:first-child td')];const headers=[...document.querySelectorAll('.staff-account-table thead th')];const divider=cells[0]?getComputedStyle(cells[0]):null;const actions=[...document.querySelectorAll('.staff-account-cards .staff-account-actions button')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,nameFontWeight:getComputedStyle(name).fontWeight,statusFontSize:getComputedStyle(status).fontSize,statusFontWeight:getComputedStyle(status).fontWeight,statusAlignment:getComputedStyle(status).justifyContent,titleFont:getComputedStyle(title).fontFamily,titleSize:getComputedStyle(title).fontSize,titleWeight:getComputedStyle(title).fontWeight,summarySize:getComputedStyle(summary).fontSize,summaryWeight:getComputedStyle(summary).fontWeight,controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height)),tableVisible:!!tableWrap&&getComputedStyle(tableWrap).display!=='none'&&table.getBoundingClientRect().width>0,headerAlign:headers.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),cellAlign:cells.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),dividerWidth:divider?.borderRightWidth,dividerStyle:divider?.borderRightStyle,smallActions:actions.map(button=>({text:button.textContent?.trim(),width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height})).filter(item=>item.width<44||item.height<44)}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const title=document.querySelector('.staff-account-header h2');const label=document.querySelector('.staff-account-header .section-label');const summary=document.querySelector('.staff-account-summary dd');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];const table=document.querySelector('.staff-account-table');const tableWrap=table?.closest('.staff-table-wrap');const cells=[...document.querySelectorAll('.staff-account-table tbody tr:first-child td')];const headers=[...document.querySelectorAll('.staff-account-table thead th')];const divider=cells[0]?getComputedStyle(cells[0]):null;const actions=[...document.querySelectorAll('.staff-account-cards .staff-account-actions button')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,nameFontWeight:getComputedStyle(name).fontWeight,statusFontSize:getComputedStyle(status).fontSize,statusFontWeight:getComputedStyle(status).fontWeight,statusAlignment:getComputedStyle(status).justifyContent,titleFont:getComputedStyle(title).fontFamily,titleSize:getComputedStyle(title).fontSize,titleWeight:getComputedStyle(title).fontWeight,labelSize:getComputedStyle(label).fontSize,labelWeight:getComputedStyle(label).fontWeight,summarySize:getComputedStyle(summary).fontSize,summaryWeight:getComputedStyle(summary).fontWeight,filterCountPresent:[...document.querySelectorAll('.staff-account-tools p')].some(node=>node.textContent?.includes('Showing')),controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height)),tableVisible:!!tableWrap&&getComputedStyle(tableWrap).display!=='none'&&table.getBoundingClientRect().width>0,headerAlign:headers.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),cellAlign:cells.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),dividerWidth:divider?.borderRightWidth,dividerStyle:divider?.borderRightStyle,smallActions:actions.map(button=>({text:button.textContent?.trim(),width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height})).filter(item=>item.width<44||item.height<44)}})()`)
     assert.equal(result.pageOverflow, false, `Account page overflow at ${width}px.`)
     assert.equal(result.panelOverflow, false, `Account panel overflow at ${width}px.`)
     assert.match(result.titleFont, /(?:AO Good Sans|Good Sans|DM Sans)/)
     assert.equal(result.titleSize, mobile ? '17px' : '18px')
     assert.equal(result.titleWeight, '500')
+    assert.equal(result.labelSize, '9px')
+    assert.equal(result.labelWeight, '500')
+    assert.equal(result.filterCountPresent, false)
     assert.equal(result.summarySize, mobile ? '16px' : '18px')
     assert.equal(result.summaryWeight, '500')
     assert.equal(result.nameFontSize, mobile ? '13px' : '12px')
@@ -354,6 +361,24 @@ try {
     await screenshot(cdp, `account-management-create-dialog-after-${width}.png`)
     await cdp.evaluate(`document.querySelector('.staff-account-modal .close')?.click()`)
     for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-modal')`)) break; await sleep(50) }
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.staff-account-actions button')).find(item=>item.textContent?.trim()==='Reset Password');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-reset-modal')`)) break; await sleep(50) }
+    const resetModal = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-account-reset-modal');const input=dialog?.querySelector('input');const confirm=Array.from(dialog?.querySelectorAll('button')||[]).find(button=>button.textContent?.trim()==='Reset Password');const text=dialog?.textContent||'';if(!dialog||!input||!confirm)return null;const before=confirm.disabled;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'RESET');input.dispatchEvent(new Event('input',{bubbles:true}));return{fits:dialog.getBoundingClientRect().width<=innerWidth&&dialog.getBoundingClientRect().height<=innerHeight,background:getComputedStyle(dialog).backgroundColor,employeeVisible:/Employee/.test(text)&&/Staff ID/.test(text),revocationVisible:/sessions will be revoked/i.test(text),confirmationCopy:/Type RESET to confirm/i.test(text),disabledBefore:before,actionHeights:Array.from(dialog.querySelectorAll('.form-actions button')).map(button=>button.getBoundingClientRect().height),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+    await sleep(50)
+    resetModal.enabledAfter = await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('.staff-account-reset-modal button')).find(button=>button.textContent?.trim()==='Reset Password')?.disabled`)
+    assert.ok(resetModal)
+    assert.equal(resetModal.fits, true)
+    assert.equal(resetModal.background, 'rgb(244, 248, 245)')
+    assert.equal(resetModal.employeeVisible, true)
+    assert.equal(resetModal.revocationVisible, true)
+    assert.equal(resetModal.confirmationCopy, true)
+    assert.equal(resetModal.disabledBefore, true)
+    assert.equal(resetModal.enabledAfter, true)
+    assert.ok(resetModal.actionHeights.every((height: number) => height >= 44))
+    assert.equal(resetModal.pageOverflow, false)
+    await screenshot(cdp, `account-management-reset-dialog-after-${width}.png`)
+    await cdp.evaluate(`document.querySelector('.staff-account-reset-modal .close')?.click()`)
+    for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-reset-modal')`)) break; await sleep(50) }
   }
   console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
