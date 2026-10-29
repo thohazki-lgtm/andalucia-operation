@@ -1097,8 +1097,6 @@ main.module-staff-management :is(
 }
 
 main.module-staff-management :is(
-  .staff-account-header h2,
-  .staff-account-modal h2,
   .manager-timesheet-hero h2,
   .manager-timesheet-modal h2
 ) {
@@ -1109,7 +1107,9 @@ main.module-staff-management :is(
 
 html body .app-shell main.module-staff-management :is(
   .membership-command-header h2,
-  .membership-dialog h2
+  .membership-dialog h2,
+  .staff-account-header h2,
+  .staff-account-modal h2
 ) {
   font-family: var(--ao-font-ui);
   font-size: 18px;
@@ -1120,7 +1120,9 @@ html body .app-shell main.module-staff-management :is(
 @media (max-width: 700px) {
   html body .app-shell main.module-staff-management :is(
     .membership-command-header h2,
-    .membership-dialog h2
+    .membership-dialog h2,
+    .staff-account-header h2,
+    .staff-account-modal h2
   ) {
     font-size: 17px;
   }
@@ -1207,6 +1209,12 @@ main.module-staff-management :is(
   border-color: var(--ao-staff-line);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-premium-navy);
+}
+
+html body .app-shell main.module-staff-management .staff-account-panel .staff-account-table th {
+  font-family: var(--ao-font-ui);
+  font-size: 9px;
+  font-weight: 600;
 }
 
 main.module-staff-management :is(
@@ -1329,6 +1337,23 @@ main.module-staff-management :is(
 ) {
   border-color: var(--ao-staff-line-strong);
   background: #fff;
+}
+
+/* The shared corporate form rule carries the warm global surface with higher
+   selector weight. Account Management is an explicitly teal/mint subview, so
+   its editable controls stay clean white rather than inheriting that ivory. */
+html body .app-shell main.module-staff-management .staff-account-panel :is(
+  .staff-account-tools,
+  .staff-account-modal
+) :is(input, select) {
+  background-color: #fff;
+}
+
+html body .app-shell main.module-staff-management .staff-account-modal :is(
+  .close,
+  .form-actions .ao-action
+) {
+  min-height: 44px;
 }
 
 main.module-staff-management :is(
