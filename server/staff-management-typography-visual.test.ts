@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { request as httpRequest } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
@@ -16,14 +15,15 @@ const startupLogs: string[] = []
 let socket: WebSocket | null = null
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
-const loopbackReady = (url: string) => new Promise<boolean>(resolveReady => {
-  const request = httpRequest(url, response => { response.resume(); response.once('end', () => resolveReady((response.statusCode || 500) < 400)) })
-  request.once('error', () => resolveReady(false))
-  request.setTimeout(1_000, () => { request.destroy(); resolveReady(false) })
-  request.end()
-})
+const loopbackReady = async (url: string) => {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(5_000) })
+    await response.body?.cancel()
+    return response.ok
+  } catch { return false }
+}
 const waitFor = async (url: string) => {
-  for (let attempt = 0; attempt < 100; attempt++) {
+  for (let attempt = 0; attempt < 200; attempt++) {
     if (await loopbackReady(url)) return
     await sleep(200)
   }
@@ -361,24 +361,39 @@ try {
     await screenshot(cdp, `account-management-create-dialog-after-${width}.png`)
     await cdp.evaluate(`document.querySelector('.staff-account-modal .close')?.click()`)
     for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-modal')`)) break; await sleep(50) }
-    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.staff-account-actions button')).find(item=>item.textContent?.trim()==='Reset Password');if(!button)return false;button.click();return true})()`), true)
-    for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-reset-modal')`)) break; await sleep(50) }
-    const resetModal = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-account-reset-modal');const input=dialog?.querySelector('input');const confirm=Array.from(dialog?.querySelectorAll('button')||[]).find(button=>button.textContent?.trim()==='Reset Password');const text=dialog?.textContent||'';if(!dialog||!input||!confirm)return null;const before=confirm.disabled;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'RESET');input.dispatchEvent(new Event('input',{bubbles:true}));return{fits:dialog.getBoundingClientRect().width<=innerWidth&&dialog.getBoundingClientRect().height<=innerHeight,background:getComputedStyle(dialog).backgroundColor,employeeVisible:/Employee/.test(text)&&/Staff ID/.test(text),revocationVisible:/sessions will be revoked/i.test(text),confirmationCopy:/Type RESET to confirm/i.test(text),disabledBefore:before,actionHeights:Array.from(dialog.querySelectorAll('.form-actions button')).map(button=>button.getBoundingClientRect().height),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.staff-account-actions button')).find(item=>item.textContent?.trim()==='Manage Account');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-manage-modal')`)) break; await sleep(50) }
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.staff-account-manage-options button')).find(item=>item.querySelector('strong')?.textContent?.trim()==='Reset Password');if(!button)return false;button.click();return true})()`), true)
+    const resetModal = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-account-manage-modal');const input=dialog?.querySelector('input');const confirm=Array.from(dialog?.querySelectorAll('button')||[]).find(button=>button.textContent?.trim()==='Reset Password');const text=dialog?.textContent||'';if(!dialog||!input||!confirm)return null;const before=confirm.disabled;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'RESET');input.dispatchEvent(new Event('input',{bubbles:true}));return{fits:dialog.getBoundingClientRect().width<=innerWidth&&dialog.getBoundingClientRect().height<=innerHeight,background:getComputedStyle(dialog).backgroundColor,employeeVisible:/Employee/.test(text)&&/Staff ID/.test(text),revocationVisible:/sessions will be revoked/i.test(text),confirmationCopy:/Type RESET to confirm/i.test(text),protectedCopy:/security approval/i.test(text),disabledBefore:before,actionHeights:Array.from(dialog.querySelectorAll('.form-actions button')).map(button=>button.getBoundingClientRect().height),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
     await sleep(50)
-    resetModal.enabledAfter = await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('.staff-account-reset-modal button')).find(button=>button.textContent?.trim()==='Reset Password')?.disabled`)
+    resetModal.enabledAfter = await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('.staff-account-manage-modal button')).find(button=>button.textContent?.trim()==='Reset Password')?.disabled`)
     assert.ok(resetModal)
     assert.equal(resetModal.fits, true)
     assert.equal(resetModal.background, 'rgb(244, 248, 245)')
     assert.equal(resetModal.employeeVisible, true)
     assert.equal(resetModal.revocationVisible, true)
     assert.equal(resetModal.confirmationCopy, true)
+    assert.equal(resetModal.protectedCopy, true)
     assert.equal(resetModal.disabledBefore, true)
-    assert.equal(resetModal.enabledAfter, true)
+    assert.equal(resetModal.enabledAfter, false)
     assert.ok(resetModal.actionHeights.every((height: number) => height >= 44))
     assert.equal(resetModal.pageOverflow, false)
     await screenshot(cdp, `account-management-reset-dialog-after-${width}.png`)
-    await cdp.evaluate(`document.querySelector('.staff-account-reset-modal .close')?.click()`)
-    for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-reset-modal')`)) break; await sleep(50) }
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const back=Array.from(document.querySelectorAll('.staff-account-manage-modal button')).find(button=>button.textContent?.trim()==='Back');if(!back)return false;back.click();return true})()`), true)
+    await sleep(50)
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const option=Array.from(document.querySelectorAll('.staff-account-manage-options button')).find(button=>button.querySelector('strong')?.textContent?.trim()==='Deactivate Account');if(!option)return false;option.click();return true})()`), true)
+    await sleep(50)
+    const deactivateModal = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-account-manage-modal');const input=dialog?.querySelector('input');const confirm=Array.from(dialog?.querySelectorAll('button')||[]).find(button=>button.textContent?.trim()==='Deactivate Account');if(!dialog||!input||!confirm)return null;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'DEACTIVATE');input.dispatchEvent(new Event('input',{bubbles:true}));const text=dialog.textContent||'';return{immediateRemoval:/Access will be removed immediately/i.test(text),auditPreserved:/audit history will be preserved/i.test(text),confirmationCopy:/Type DEACTIVATE to confirm/i.test(text),protectedCopy:/security approval/i.test(text),confirmDisabled:confirm.disabled,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+    assert.ok(deactivateModal)
+    assert.equal(deactivateModal.immediateRemoval, true)
+    assert.equal(deactivateModal.auditPreserved, true)
+    assert.equal(deactivateModal.confirmationCopy, true)
+    assert.equal(deactivateModal.protectedCopy, true)
+    assert.equal(deactivateModal.confirmDisabled, true)
+    assert.equal(deactivateModal.pageOverflow, false)
+    await screenshot(cdp, `account-management-deactivate-dialog-after-${width}.png`)
+    await cdp.evaluate(`document.querySelector('.staff-account-manage-modal .close')?.click()`)
+    for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-manage-modal')`)) break; await sleep(50) }
   }
   console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
