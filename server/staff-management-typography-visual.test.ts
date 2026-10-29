@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { request as httpRequest } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
@@ -14,9 +15,15 @@ const startupLogs: string[] = []
 let socket: WebSocket | null = null
 const token = `isolated-${randomUUID()}`
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
+const loopbackReady = (url: string) => new Promise<boolean>(resolveReady => {
+  const request = httpRequest(url, response => { response.resume(); response.once('end', () => resolveReady((response.statusCode || 500) < 400)) })
+  request.once('error', () => resolveReady(false))
+  request.setTimeout(1_000, () => { request.destroy(); resolveReady(false) })
+  request.end()
+})
 const waitFor = async (url: string) => {
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { if ((await fetch(url)).ok) return } catch {}
+    if (await loopbackReady(url)) return
     await sleep(200)
   }
   throw new Error(`Timed out waiting for ${url}${startupLogs.length ? `\n${startupLogs.join('').slice(-4000)}` : ''}`)
@@ -81,9 +88,9 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  observe(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'api')
-  observe(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'vite')
-  await Promise.all([waitFor('http://127.0.0.1:3017/api/health'), waitFor('http://127.0.0.1:5187/')])
+  observe(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3317', APP_ORIGIN: 'http://127.0.0.1:5487' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'api')
+  observe(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5487', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3317' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'vite')
+  await Promise.all([waitFor('http://127.0.0.1:3317/api/health'), waitFor('http://127.0.0.1:5487/')])
 
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--edge-skip-compat-layer-relaunch', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' })
   processes.push(edge)
@@ -105,9 +112,9 @@ try {
   const cdp = new Cdp(socket)
   await cdp.send('Runtime.enable')
   await cdp.send('Page.enable')
-  assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5187/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
+  assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5487/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
-  await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5187/' })
+  await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5487/' })
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Staff Management"]')`)) break; await sleep(100) }
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Staff Management"]');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-directory-page')`)) break; await sleep(100) }
@@ -226,11 +233,14 @@ try {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.membership-approved-banner button')).find(item=>item.textContent?.includes('Correct Membership'));if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.membership-dialog')`)) break; await sleep(50) }
-  const membershipDialogTheme = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.membership-dialog');const textarea=dialog?.querySelector('textarea');if(!dialog||!textarea)return null;const style=getComputedStyle(dialog);const field=getComputedStyle(textarea);return{background:style.backgroundColor,borderTopColor:style.borderTopColor,fieldBackground:field.backgroundColor,fieldBorder:field.borderTopColor,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+  const membershipDialogTheme = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.membership-dialog');const textarea=dialog?.querySelector('textarea');const title=dialog?.querySelector('h2');if(!dialog||!textarea||!title)return null;const style=getComputedStyle(dialog);const field=getComputedStyle(textarea);const titleStyle=getComputedStyle(title);return{background:style.backgroundColor,borderTopColor:style.borderTopColor,fieldBackground:field.backgroundColor,fieldBorder:field.borderTopColor,titleFontFamily:titleStyle.fontFamily,titleFontSize:titleStyle.fontSize,titleFontWeight:titleStyle.fontWeight,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
   assert.ok(membershipDialogTheme)
   assert.equal(membershipDialogTheme.background, 'rgb(244, 248, 245)')
   assert.equal(membershipDialogTheme.borderTopColor, membershipDialogTheme.fieldBorder)
   assert.equal(membershipDialogTheme.fieldBackground, 'rgb(255, 255, 255)')
+  assert.match(membershipDialogTheme.titleFontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
+  assert.equal(membershipDialogTheme.titleFontSize, '18px')
+  assert.equal(membershipDialogTheme.titleFontWeight, '500')
   assert.equal(membershipDialogTheme.pageOverflow, false)
   await screenshot(cdp, 'team-membership-correction-dialog-after-1440.png')
   await cdp.evaluate(`document.querySelector('.membership-dialog .close')?.click()`)
@@ -238,9 +248,14 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-table tbody tr')`)) break; await sleep(100) }
   const accountTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-table tbody td:first-child b', id: '.staff-account-table tbody td:nth-child(2)', heading: '.staff-account-table thead th:first-child', value: '.staff-account-table tbody td:nth-child(3)' }))
-  assert.equal(accountTypography.name.fontSize, membershipTypography.name.fontSize)
-  assert.equal(accountTypography.id.fontSize, membershipTypography.id.fontSize)
-  assert.equal(accountTypography.value.fontSize, membershipTypography.value.fontSize)
+  assert.equal(membershipTypography.name.fontSize, '12px')
+  assert.equal(membershipTypography.name.fontWeight, '500')
+  assert.equal(membershipTypography.id.fontSize, '10.5px')
+  assert.equal(membershipTypography.id.fontWeight, '400')
+  assert.equal(membershipTypography.heading.fontSize, '9px')
+  assert.equal(membershipTypography.heading.fontWeight, '600')
+  assert.equal(membershipTypography.value.fontSize, '11.5px')
+  assert.equal(membershipTypography.value.fontWeight, '400')
   for (const sample of [membershipTypography, accountTypography]) {
     assert.match(sample.name.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
     assert.match(sample.id.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
@@ -272,9 +287,12 @@ try {
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-cards article')`)) break; await sleep(100) }
   const accountMobileTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-cards article header b', id: '.staff-account-cards article header small', value: '.staff-account-cards article dd' }))
-  assert.equal(accountMobileTypography.name.fontSize, membershipMobileTypography.name.fontSize)
-  assert.equal(accountMobileTypography.id.fontSize, membershipMobileTypography.id.fontSize)
-  assert.equal(accountMobileTypography.value.fontSize, membershipMobileTypography.value.fontSize)
+  assert.equal(membershipMobileTypography.name.fontSize, '13px')
+  assert.equal(membershipMobileTypography.name.fontWeight, '500')
+  assert.equal(membershipMobileTypography.id.fontSize, '10.5px')
+  assert.equal(membershipMobileTypography.id.fontWeight, '400')
+  assert.equal(membershipMobileTypography.value.fontSize, '11.5px')
+  assert.equal(membershipMobileTypography.value.fontWeight, '400')
   for (const sample of [membershipMobileTypography, accountMobileTypography]) {
     assert.match(sample.name.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
     assert.match(sample.id.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)

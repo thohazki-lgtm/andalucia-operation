@@ -1097,10 +1097,6 @@ main.module-staff-management :is(
 }
 
 main.module-staff-management :is(
-  .membership-command-header h2,
-  .membership-summary-title b,
-  .membership-review-card h3,
-  .membership-history-disclosure h3,
   .staff-account-header h2,
   .staff-account-modal h2,
   .manager-timesheet-hero h2,
@@ -1109,6 +1105,25 @@ main.module-staff-management :is(
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-display);
   font-weight: 500;
+}
+
+html body .app-shell main.module-staff-management :is(
+  .membership-command-header h2,
+  .membership-dialog h2
+) {
+  font-family: var(--ao-font-ui);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-staff-management :is(
+    .membership-command-header h2,
+    .membership-dialog h2
+  ) {
+    font-size: 17px;
+  }
 }
 
 main.module-staff-management :is(
