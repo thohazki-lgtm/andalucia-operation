@@ -68,6 +68,11 @@
   --ao-table-copy-size: 11.5px;
   --ao-status-pill-radius: 999px;
   --ao-status-pill-min-height: 24px;
+  --ao-staff-line: #b7d6ce;
+  --ao-staff-line-strong: #9fc9bf;
+  --ao-staff-surface: #f4f8f5;
+  --ao-staff-surface-strong: #eaf5f1;
+  --ao-staff-row-alt: #f0f8f5;
 }
 
 /* Shared brand typography. The deliberately high structural specificity lets
@@ -122,6 +127,8 @@ body,
   --ao-module-accent-soft: var(--ao-turquoise-coral);
   --ao-module-canvas-primary: var(--ao-turquoise-coral);
   --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+  --ao-staff-line: color-mix(in srgb, var(--ao-lagoon-teal) 38%, white);
+  --ao-staff-line-strong: color-mix(in srgb, var(--ao-lagoon-teal) 58%, white);
 }
 
 /* Dashboard welcome banner: retain the established proportions and type while
@@ -916,9 +923,19 @@ main.module-staff-management .staff-directory-page .staff-mobile-cards {
   background: #f4f8f5;
 }
 
+main.module-staff-management .staff-directory-page .staff-tools {
+  margin: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #b7d6ce;
+  border-radius: 0;
+  background: transparent;
+}
+
 main.module-staff-management .staff-directory-page .staff-tools :is(input, select),
 main.module-staff-management .staff-profile-drawer :is(input, select) {
   border-color: #a8cec5;
+  background: #fff;
+  color: var(--ao-premium-navy);
 }
 
 main.module-staff-management .staff-directory-page .staff-tools :is(input, select):focus {
@@ -942,7 +959,7 @@ main.module-staff-management .staff-directory-page .staff-table {
 main.module-staff-management .staff-directory-page .staff-table th,
 main.module-staff-management .staff-directory-page .staff-table td {
   box-sizing: border-box;
-  border-right: 1px solid #e3efeb;
+  border-right: 1px solid #c4dfd8;
   vertical-align: middle;
 }
 
@@ -974,7 +991,7 @@ main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
 
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(1) { width: 22%; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(2) { width: 11%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(4) { width: 11%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(5) { width: 11%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; text-align: center; }
@@ -1054,57 +1071,308 @@ main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staf
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-modal {
-  border-color: #9fc9bf;
-  background: #f4f8f5;
+/* Bind every Staff Management subview to one structural palette. Semantic
+   status badges and configured duty-code colors keep their own mappings. */
+main.module-staff-management :is(
+  .membership-approved-page,
+  .staff-account-panel,
+  .manager-timesheet-table,
+  .manager-timesheet-card,
+  .manager-timesheet-modal
+) {
+  border-color: var(--ao-staff-line);
+  border-top-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface);
+  box-shadow: 0 8px 24px rgb(12 103 92 / 8%);
 }
 
-main.module-staff-management .staff-edit-modal > h2,
-main.module-staff-management .staff-edit-intro {
-  border-color: #9fc9bf;
-  background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
+main.module-staff-management :is(
+  .membership-command-header,
+  .staff-account-header,
+  .staff-account-guidance,
+  .manager-timesheet-modal > header
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
 }
 
-main.module-staff-management .staff-edit-modal > h2 {
+main.module-staff-management :is(
+  .membership-command-header h2,
+  .membership-summary-title b,
+  .membership-review-card h3,
+  .membership-history-disclosure h3,
+  .staff-account-header h2,
+  .staff-account-modal h2,
+  .manager-timesheet-hero h2,
+  .manager-timesheet-modal h2
+) {
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-display);
   font-weight: 500;
 }
 
-main.module-staff-management .staff-edit-section {
+main.module-staff-management :is(
+  .membership-command-header,
+  .membership-approved-banner,
+  .membership-review-card,
+  .membership-history,
+  .staff-account-header,
+  .staff-account-tools,
+  .staff-account-guidance
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management .membership-approved-page .membership-approved-banner dl div {
+  border-left-color: var(--ao-lagoon-teal);
+  background: rgb(255 255 255 / 78%);
+}
+
+main.module-staff-management :is(
+  .membership-status-card,
+  .membership-review-card,
+  .membership-approval-card,
+  .membership-approved-banner,
+  .staff-module-info
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .membership-status-card,
+  .membership-approved-banner,
+  .membership-approval-card
+) dl div {
+  border-left-color: var(--ao-lagoon-teal);
+  background: rgb(255 255 255 / 78%);
+}
+
+main.module-staff-management :is(.membership-review-card, .membership-approval-card) > header,
+main.module-staff-management .membership-table :is(th, td) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management .membership-table th {
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management .membership-include input {
+  accent-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .staff-module-info {
+  border-left-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table th,
+  .staff-account-panel .staff-account-table th,
+  .manager-timesheet-table th,
+  .manager-detail-table th
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table td,
+  .staff-account-panel .staff-account-table td,
+  .manager-timesheet-table td,
+  .manager-detail-table td
+) {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 20%, white);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table tbody tr:nth-child(even),
+  .staff-account-table tbody tr:nth-child(even),
+  .manager-timesheet-table tbody tr:nth-child(even)
+) {
+  background: var(--ao-staff-row-alt);
+}
+
+main.module-staff-management :is(
+  .membership-history-disclosure summary::after,
+  .staff-account-tools input,
+  .staff-account-tools select,
+  .staff-account-cards > article,
+  .manager-month-nav input
+) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-staff-management .staff-account-tools {
+  border-bottom-color: var(--ao-staff-line);
+  background: transparent;
+}
+
+main.module-staff-management .staff-account-tools :is(label, p),
+main.module-staff-management .staff-account-guidance p {
+  color: color-mix(in srgb, var(--ao-premium-navy) 72%, white);
+}
+
+main.module-staff-management .staff-account-panel > .staff-table-wrap,
+main.module-staff-management .staff-account-empty {
+  background: #fff;
+}
+
+main.module-staff-management .staff-account-cards {
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .manager-timesheet-hero {
+  border-color: var(--ao-lagoon-teal);
+  background: linear-gradient(120deg, var(--ao-lagoon-teal), #174f4a);
+}
+
+main.module-staff-management .manager-timesheet-hero h2 {
+  color: var(--ao-soft-ivory);
+}
+
+main.module-staff-management .manager-timesheet-hero p {
+  color: color-mix(in srgb, var(--ao-turquoise-coral) 76%, white);
+}
+
+main.module-staff-management .manager-timesheet-kpis article {
+  border-color: var(--ao-staff-line);
+  border-top-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .manager-timesheet-kpis b {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-body);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+main.module-staff-management :is(
+  .staff-profile-grid > div,
+  .staff-profile-drawer .leave-summary-cards article,
+  .staff-training-summary article,
+  .staff-training-table-wrap,
+  .staff-training-mobile-cards article,
+  .staff-training-empty
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .staff-profile-drawer .staff-training-history th,
+  .staff-training-table-wrap thead th
+) {
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .ao-action:not(.danger),
+  .staff-account-panel .ao-action:not(.danger),
+  .manager-timesheets .ao-action:not(.danger)
+) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .ao-action--primary,
+  .staff-account-panel .ao-action--primary,
+  .manager-timesheets .ao-action--primary
+) {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+main.module-staff-management :is(
+  .membership-approved-page input,
+  .membership-approved-page select,
+  .staff-account-panel input,
+  .staff-account-panel select,
+  .manager-timesheets input,
+  .manager-timesheets select,
+  .manager-timesheets textarea
+) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+}
+
+main.module-staff-management :is(
+  .membership-approved-page input,
+  .membership-approved-page select,
+  .staff-account-panel input,
+  .staff-account-panel select,
+  .manager-timesheets input,
+  .manager-timesheets select,
+  .manager-timesheets textarea
+):focus-visible {
+  border-color: var(--ao-lagoon-teal);
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 60%, transparent);
+}
+
+.staff-edit-modal {
+  border-color: #9fc9bf;
+  background: #f4f8f5;
+}
+
+.staff-edit-modal > h2,
+.staff-edit-modal .staff-edit-intro {
+  border-color: #9fc9bf;
+  background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
+}
+
+.staff-edit-modal > h2 {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+.staff-edit-modal .staff-edit-section {
   border-color: #b7d6ce;
   box-shadow: 0 4px 12px rgb(12 103 92 / 7%);
 }
 
-main.module-staff-management .staff-edit-section > .eyebrow,
-main.module-staff-management .staff-edit-grid > label {
+.staff-edit-modal .staff-edit-section > .eyebrow,
+.staff-edit-modal .staff-edit-grid > label {
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-grid :is(input, select),
-main.module-staff-management .staff-edit-grid .ao-date-control {
+.staff-edit-modal .staff-edit-grid :is(input, select),
+.staff-edit-modal .staff-edit-grid .ao-date-control {
   border-color: #a8cec5;
 }
 
-main.module-staff-management .staff-edit-grid :is(input, select):focus {
+.staff-edit-modal .staff-edit-grid :is(input, select):focus {
   border-color: var(--ao-lagoon-teal);
   box-shadow: 0 0 0 3px rgb(177 228 220 / 42%);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions {
+.staff-edit-modal .form-actions {
   border-top-color: #9fc9bf;
+  background: #eaf5f1;
   box-shadow: 0 -7px 18px rgb(12 103 92 / 8%);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions .ao-action:not(.primary) {
+.staff-edit-modal .form-actions .ao-action--secondary {
   border-color: #9fc9bf;
+  background: #fff;
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions .primary,
+.staff-edit-modal .form-actions .ao-action--primary,
 main.module-staff-management .staff-section-add {
   border-color: var(--ao-lagoon-teal);
   background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+.staff-edit-modal .form-actions .ao-action--primary .ao-action__label {
+  display: inline;
+  color: inherit;
+  opacity: 1;
+  text-transform: capitalize;
+  visibility: visible;
 }
 
 main.module-staff-management .staff-training-controls {

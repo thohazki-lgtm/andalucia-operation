@@ -67,7 +67,9 @@ const screenshot = async (cdp: Cdp, name: string) => {
 try {
   const owner = (await fixture.db.query<any>("select u.id from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' limit 1")).rows[0]
   assert.ok(owner)
-  const position = (await fixture.db.query<{ value: string }>("select value from configuration_options where group_key='staff_positions' and active=true order by sort_order limit 1")).rows[0]?.value || 'F&B Attendant'
+  const position = 'fixture_designation'
+  await fixture.db.query("insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,'staff_positions',$2,'Fixture Designation','{}',true,0) on conflict(group_key,value) do nothing", [randomUUID(), position])
+  await fixture.db.query("insert into configuration_options(id,group_key,value,label,metadata,active,sort_order) values($1,'employment_statuses','active','Active',$2,true,0) on conflict(group_key,value) do nothing", [randomUUID(), JSON.stringify({ employmentStage: 'active', rosterEligible: true, selectableForNewRecords: true })])
   const staffId = randomUUID()
   const membershipRevisionId = randomUUID()
   const membershipMonth = new Date().toISOString().slice(0, 7)
@@ -135,6 +137,56 @@ try {
     measurements[String(width)] = result
     await screenshot(cdp, `team-directory-after-${width}.png`)
   }
+  const modalMeasurements: Record<string, unknown> = {}
+  for (const width of [1440, 390]) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('.staff-section-add');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal .form-actions .ao-action--primary')`)) break; await sleep(100) }
+    const result = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.staff-edit-modal');const action=modal?.querySelector('.form-actions .ao-action--primary');const label=action?.querySelector('.ao-action__label');const designation=document.querySelector('.staff-directory-page .staff-table td:nth-child(3)');if(!modal||!action||!label||!designation)return null;const actionStyle=getComputedStyle(action);const labelStyle=getComputedStyle(label);return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,modalFits:modal.getBoundingClientRect().width<=document.documentElement.clientWidth,label:label.textContent?.trim(),actionColor:actionStyle.color,actionBackground:actionStyle.backgroundColor,labelVisibility:labelStyle.visibility,labelOpacity:labelStyle.opacity,labelTransform:labelStyle.textTransform,designationAlignment:getComputedStyle(designation).textAlign}})()`)
+    assert.ok(result)
+    assert.equal(result.pageOverflow, false)
+    assert.equal(result.modalFits, true)
+    assert.equal(result.label, 'Save staff member')
+    assert.equal(result.actionColor, 'rgb(255, 255, 255)')
+    assert.equal(result.actionBackground, 'rgb(12, 103, 92)')
+    assert.equal(result.labelVisibility, 'visible')
+    assert.equal(result.labelOpacity, '1')
+    assert.equal(result.labelTransform, 'capitalize')
+    assert.equal(result.designationAlignment, 'center')
+    modalMeasurements[String(width)] = result
+    await screenshot(cdp, `edit-staff-after-${width}.png`)
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-edit-modal .form-actions button')].find(item=>item.textContent?.trim()==='Cancel');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(50) }
+  }
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="edit"]');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Nationality'));const input=label?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'Visual Test Nationality');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Designation'));const select=label?.querySelector('select');const value=[...select?.options||[]].find(option=>option.value)?.value;if(!select||!value)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(select,value);select.dispatchEvent(new Event('change',{bubbles:true}));return true})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('.staff-edit-modal .form-actions .ao-action--primary');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
+  const saveResult = await cdp.evaluate<any>(`({closed:!document.querySelector('.staff-edit-modal'),error:document.querySelector('.staff-edit-modal .staff-form-error')?.textContent?.trim()||null})`)
+  assert.equal(saveResult.closed, true, saveResult.error || 'Edit Staff modal did not close after saving disposable test data.')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="edit"]');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Nationality'));return label?.querySelector('input')?.value==='Visual Test Nationality'})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-edit-modal .form-actions button')].find(item=>item.textContent?.trim()==='Cancel');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(50) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="view"]');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-profile-drawer')`)) break; await sleep(100) }
+  const profileDesktop = await cdp.evaluate<any>(`(()=>{const drawer=document.querySelector('.staff-profile-drawer');const section=drawer?.querySelector('.staff-profile-scroll>section');if(!drawer||!section)return null;return{fits:drawer.getBoundingClientRect().width<=innerWidth,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,drawerBackground:getComputedStyle(drawer).backgroundColor,sectionBorder:getComputedStyle(section).borderColor}})()`)
+  assert.ok(profileDesktop)
+  assert.equal(profileDesktop.fits, true)
+  assert.equal(profileDesktop.pageOverflow, false)
+  await screenshot(cdp, 'staff-profile-after-1440.png')
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+  const profileMobile = await cdp.evaluate<any>(`(()=>{const drawer=document.querySelector('.staff-profile-drawer');return{fits:drawer.getBoundingClientRect().width<=innerWidth,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+  assert.equal(profileMobile.fits, true)
+  assert.equal(profileMobile.pageOverflow, false)
+  await screenshot(cdp, 'staff-profile-after-390.png')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const overlay=document.querySelector('.staff-profile-overlay');if(!overlay)return false;overlay.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-profile-drawer')`)) break; await sleep(50) }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Team Membership');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.team-membership-page')`)) break; await sleep(100) }
@@ -156,6 +208,22 @@ try {
     assert.match(sample.value.fontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
   }
   await screenshot(cdp, 'account-management-audit-1440.png')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Timesheets');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.manager-timesheets')`)) break; await sleep(100) }
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.manager-timesheet-kpis article,.manager-timesheets .save-error')`)) break; await sleep(100) }
+  const timesheetDesktop = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.manager-timesheets');const hero=document.querySelector('.manager-timesheet-hero');const title=hero?.querySelector('h2');const kpi=document.querySelector('.manager-timesheet-kpis article');if(!root||!hero||!title)return null;return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,heroBackground:getComputedStyle(hero).backgroundImage,heroTitleColor:getComputedStyle(title).color,kpiBackground:kpi?getComputedStyle(kpi).backgroundColor:null,kpiBorder:kpi?getComputedStyle(kpi).borderTopColor:null,error:document.querySelector('.manager-timesheets .save-error')?.textContent?.trim()||null}})()`)
+  assert.ok(timesheetDesktop)
+  assert.equal(timesheetDesktop.pageOverflow, false)
+  assert.match(timesheetDesktop.heroBackground, /linear-gradient/)
+  assert.equal(timesheetDesktop.heroTitleColor, 'rgb(250, 247, 239)')
+  assert.equal(timesheetDesktop.error, null)
+  assert.ok(timesheetDesktop.kpiBackground)
+  await screenshot(cdp, 'timesheets-after-1440.png')
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+  await cdp.evaluate(`(()=>{const close=document.querySelector('button[aria-label="Close navigation menu"]');if(close&&getComputedStyle(close).display!=='none')close.click()})()`)
+  await sleep(100)
+  assert.equal(await cdp.evaluate<boolean>(`document.documentElement.scrollWidth>document.documentElement.clientWidth+1`), false)
+  await screenshot(cdp, 'timesheets-after-390.png')
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Team Membership');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.membership-approved-page .membership-mobile-list article')`)) break; await sleep(100) }
@@ -192,7 +260,7 @@ try {
   }
   console.log(JSON.stringify({ membershipTypography, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ measurements, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ measurements, modalMeasurements, profileDesktop, profileMobile, timesheetDesktop, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', 'artifacts/staff-management-typography/staff-profile-after-1440.png', 'artifacts/staff-management-typography/staff-profile-after-390.png', 'artifacts/staff-management-typography/timesheets-after-1440.png', 'artifacts/staff-management-typography/timesheets-after-390.png', ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
 } finally {
   try { socket?.close() } catch {}
   for (const process of processes.reverse()) { try { process.kill() } catch {} }
