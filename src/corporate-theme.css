@@ -916,9 +916,19 @@ main.module-staff-management .staff-directory-page .staff-mobile-cards {
   background: #f4f8f5;
 }
 
+main.module-staff-management .staff-directory-page .staff-tools {
+  margin: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #b7d6ce;
+  border-radius: 0;
+  background: transparent;
+}
+
 main.module-staff-management .staff-directory-page .staff-tools :is(input, select),
 main.module-staff-management .staff-profile-drawer :is(input, select) {
   border-color: #a8cec5;
+  background: #fff;
+  color: var(--ao-premium-navy);
 }
 
 main.module-staff-management .staff-directory-page .staff-tools :is(input, select):focus {
@@ -942,7 +952,7 @@ main.module-staff-management .staff-directory-page .staff-table {
 main.module-staff-management .staff-directory-page .staff-table th,
 main.module-staff-management .staff-directory-page .staff-table td {
   box-sizing: border-box;
-  border-right: 1px solid #e3efeb;
+  border-right: 1px solid #c4dfd8;
   vertical-align: middle;
 }
 
@@ -974,7 +984,7 @@ main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
 
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(1) { width: 22%; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(2) { width: 11%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(4) { width: 11%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(5) { width: 11%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; text-align: center; }
@@ -1054,57 +1064,68 @@ main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staf
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-modal {
+.staff-edit-modal {
   border-color: #9fc9bf;
   background: #f4f8f5;
 }
 
-main.module-staff-management .staff-edit-modal > h2,
-main.module-staff-management .staff-edit-intro {
+.staff-edit-modal > h2,
+.staff-edit-modal .staff-edit-intro {
   border-color: #9fc9bf;
   background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
 }
 
-main.module-staff-management .staff-edit-modal > h2 {
+.staff-edit-modal > h2 {
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-display);
   font-weight: 500;
 }
 
-main.module-staff-management .staff-edit-section {
+.staff-edit-modal .staff-edit-section {
   border-color: #b7d6ce;
   box-shadow: 0 4px 12px rgb(12 103 92 / 7%);
 }
 
-main.module-staff-management .staff-edit-section > .eyebrow,
-main.module-staff-management .staff-edit-grid > label {
+.staff-edit-modal .staff-edit-section > .eyebrow,
+.staff-edit-modal .staff-edit-grid > label {
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-grid :is(input, select),
-main.module-staff-management .staff-edit-grid .ao-date-control {
+.staff-edit-modal .staff-edit-grid :is(input, select),
+.staff-edit-modal .staff-edit-grid .ao-date-control {
   border-color: #a8cec5;
 }
 
-main.module-staff-management .staff-edit-grid :is(input, select):focus {
+.staff-edit-modal .staff-edit-grid :is(input, select):focus {
   border-color: var(--ao-lagoon-teal);
   box-shadow: 0 0 0 3px rgb(177 228 220 / 42%);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions {
+.staff-edit-modal .form-actions {
   border-top-color: #9fc9bf;
+  background: #eaf5f1;
   box-shadow: 0 -7px 18px rgb(12 103 92 / 8%);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions .ao-action:not(.primary) {
+.staff-edit-modal .form-actions .ao-action--secondary {
   border-color: #9fc9bf;
+  background: #fff;
   color: var(--ao-lagoon-teal);
 }
 
-main.module-staff-management .staff-edit-modal .form-actions .primary,
+.staff-edit-modal .form-actions .ao-action--primary,
 main.module-staff-management .staff-section-add {
   border-color: var(--ao-lagoon-teal);
   background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+.staff-edit-modal .form-actions .ao-action--primary .ao-action__label {
+  display: inline;
+  color: inherit;
+  opacity: 1;
+  text-transform: capitalize;
+  visibility: visible;
 }
 
 main.module-staff-management .staff-training-controls {

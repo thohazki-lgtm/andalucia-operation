@@ -135,6 +135,28 @@ try {
     measurements[String(width)] = result
     await screenshot(cdp, `team-directory-after-${width}.png`)
   }
+  const modalMeasurements: Record<string, unknown> = {}
+  for (const width of [1440, 390]) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('.staff-section-add');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal .form-actions .ao-action--primary')`)) break; await sleep(100) }
+    const result = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.staff-edit-modal');const action=modal?.querySelector('.form-actions .ao-action--primary');const label=action?.querySelector('.ao-action__label');const designation=document.querySelector('.staff-directory-page .staff-table td:nth-child(3)');if(!modal||!action||!label||!designation)return null;const actionStyle=getComputedStyle(action);const labelStyle=getComputedStyle(label);return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,modalFits:modal.getBoundingClientRect().width<=document.documentElement.clientWidth,label:label.textContent?.trim(),actionColor:actionStyle.color,actionBackground:actionStyle.backgroundColor,labelVisibility:labelStyle.visibility,labelOpacity:labelStyle.opacity,labelTransform:labelStyle.textTransform,designationAlignment:getComputedStyle(designation).textAlign}})()`)
+    assert.ok(result)
+    assert.equal(result.pageOverflow, false)
+    assert.equal(result.modalFits, true)
+    assert.equal(result.label, 'Save staff member')
+    assert.equal(result.actionColor, 'rgb(255, 255, 255)')
+    assert.equal(result.actionBackground, 'rgb(12, 103, 92)')
+    assert.equal(result.labelVisibility, 'visible')
+    assert.equal(result.labelOpacity, '1')
+    assert.equal(result.labelTransform, 'capitalize')
+    assert.equal(result.designationAlignment, 'center')
+    modalMeasurements[String(width)] = result
+    await screenshot(cdp, `edit-staff-after-${width}.png`)
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-edit-modal .form-actions button')].find(item=>item.textContent?.trim()==='Cancel');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(50) }
+  }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Team Membership');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.team-membership-page')`)) break; await sleep(100) }
@@ -192,7 +214,7 @@ try {
   }
   console.log(JSON.stringify({ membershipTypography, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ measurements, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ measurements, modalMeasurements, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
 } finally {
   try { socket?.close() } catch {}
   for (const process of processes.reverse()) { try { process.kill() } catch {} }
