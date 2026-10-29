@@ -195,6 +195,46 @@ try {
   const membershipTypography = await cdp.evaluate<any>(typographyExpression({ name: '.membership-table.approved-table tbody td:first-child b', id: '.membership-table.approved-table tbody td:nth-child(2)', heading: '.membership-table.approved-table thead th:first-child', value: '.membership-table.approved-table tbody td:nth-child(3)' }))
   await screenshot(cdp, 'team-membership-reference-1440.png')
   assert.ok(membershipTypography.name && membershipTypography.id && membershipTypography.heading && membershipTypography.value)
+  const membershipMeasurements: Record<string, unknown> = {}
+  for (const width of [1440, 1024, 768, 430, 390, 360]) {
+    const mobile = width <= 430
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    await cdp.evaluate(`window.scrollTo({top:0,left:0,behavior:'instant'})`)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.membership-approved-page');const table=root?.querySelector('.membership-table.approved-table');const mobileList=root?.querySelector('.membership-mobile-list');const headers=Array.from(table?.querySelectorAll('thead th')||[]);const cells=Array.from(table?.querySelectorAll('tbody tr:first-child td')||[]);const divider=cells[0]?getComputedStyle(cells[0]):null;const summary=root?.querySelector('.membership-approved-banner');const history=root?.querySelector('.membership-history-disclosure summary');return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rootOverflow:root?root.scrollWidth>root.clientWidth+1:false,tableVisible:!!table&&getComputedStyle(table).display!=='none'&&table.getBoundingClientRect().width>0,mobileVisible:!!mobileList&&getComputedStyle(mobileList).display!=='none'&&mobileList.getBoundingClientRect().height>0,headerAlign:headers.map(cell=>getComputedStyle(cell).textAlign),cellAlign:cells.map(cell=>getComputedStyle(cell).textAlign),dividerWidth:divider?.borderRightWidth,dividerStyle:divider?.borderRightStyle,summaryHeight:summary?.getBoundingClientRect().height||null,historyHeight:history?.getBoundingClientRect().height||null}})()`)
+    assert.equal(result.pageOverflow, false, `Team Membership caused page overflow at ${width}px.`)
+    assert.equal(result.rootOverflow, false, `Team Membership root overflowed at ${width}px.`)
+    if (width > 700) {
+      assert.equal(result.tableVisible, true)
+      assert.deepEqual(result.headerAlign, ['left', 'center', 'center'])
+      assert.deepEqual(result.cellAlign, ['left', 'center', 'center'])
+      assert.equal(result.dividerWidth, '1px')
+      assert.equal(result.dividerStyle, 'solid')
+    } else {
+      assert.equal(result.tableVisible, false)
+      assert.equal(result.mobileVisible, true)
+    }
+    assert.ok(result.summaryHeight <= (width <= 700 ? 310 : width <= 1100 ? 220 : 130), `Approval Summary is not compact at ${width}px.`)
+    assert.ok(result.historyHeight <= (width <= 700 ? 74 : 60), `Revision History heading is not compact at ${width}px.`)
+    membershipMeasurements[String(width)] = result
+    await screenshot(cdp, `team-membership-after-${width}.png`)
+    if (width === 1440 || width === 390) {
+      await cdp.evaluate(`document.querySelector('.membership-history-disclosure')?.setAttribute('open','')`)
+      await screenshot(cdp, `team-membership-history-after-${width}.png`)
+      await cdp.evaluate(`document.querySelector('.membership-history-disclosure')?.removeAttribute('open')`)
+    }
+  }
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.membership-approved-banner button')).find(item=>item.textContent?.includes('Correct Membership'));if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.membership-dialog')`)) break; await sleep(50) }
+  const membershipDialogTheme = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.membership-dialog');const textarea=dialog?.querySelector('textarea');if(!dialog||!textarea)return null;const style=getComputedStyle(dialog);const field=getComputedStyle(textarea);return{background:style.backgroundColor,borderTopColor:style.borderTopColor,fieldBackground:field.backgroundColor,fieldBorder:field.borderTopColor,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
+  assert.ok(membershipDialogTheme)
+  assert.equal(membershipDialogTheme.background, 'rgb(244, 248, 245)')
+  assert.equal(membershipDialogTheme.borderTopColor, membershipDialogTheme.fieldBorder)
+  assert.equal(membershipDialogTheme.fieldBackground, 'rgb(255, 255, 255)')
+  assert.equal(membershipDialogTheme.pageOverflow, false)
+  await screenshot(cdp, 'team-membership-correction-dialog-after-1440.png')
+  await cdp.evaluate(`document.querySelector('.membership-dialog .close')?.click()`)
+  for (let attempt = 0; attempt < 80; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.membership-dialog')`)) break; await sleep(50) }
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Account Management');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-table tbody tr')`)) break; await sleep(100) }
   const accountTypography = await cdp.evaluate<any>(typographyExpression({ name: '.staff-account-table tbody td:first-child b', id: '.staff-account-table tbody td:nth-child(2)', heading: '.staff-account-table thead th:first-child', value: '.staff-account-table tbody td:nth-child(3)' }))
@@ -258,7 +298,7 @@ try {
     accountMeasurements[String(width)] = result
     await screenshot(cdp, `account-management-after-${width}.png`)
   }
-  console.log(JSON.stringify({ membershipTypography, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
+  console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
   console.log(JSON.stringify({ measurements, modalMeasurements, profileDesktop, profileMobile, timesheetDesktop, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', 'artifacts/staff-management-typography/staff-profile-after-1440.png', 'artifacts/staff-management-typography/staff-profile-after-390.png', 'artifacts/staff-management-typography/timesheets-after-1440.png', 'artifacts/staff-management-typography/timesheets-after-390.png', ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
 } finally {

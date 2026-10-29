@@ -1161,6 +1161,24 @@ main.module-staff-management .membership-include input {
   accent-color: var(--ao-lagoon-teal);
 }
 
+main.module-staff-management .membership-dialog {
+  border: 1px solid var(--ao-staff-line-strong);
+  border-top-width: 3px;
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .membership-dialog :is(input, textarea) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+  color: var(--ao-premium-navy);
+}
+
+.modal.membership-dialog :is(input, textarea) {
+  border-color: var(--ao-staff-line-strong);
+  background-color: #fff !important;
+  color: var(--ao-premium-navy);
+}
+
 main.module-staff-management .staff-module-info {
   border-left-color: var(--ao-lagoon-teal);
 }
@@ -1309,6 +1327,196 @@ main.module-staff-management :is(
 ):focus-visible {
   border-color: var(--ao-lagoon-teal);
   outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 60%, transparent);
+}
+
+/* Timesheets inherit the Staff Management palette from this final theme layer.
+   The feature styles intentionally retain layout and semantic red/green states;
+   this block replaces only the legacy decorative gold/cream treatment. */
+main.module-staff-management :is(
+  .manager-timesheet-table,
+  .manager-detail-table,
+  .manager-timesheet-card,
+  .manager-timesheet-modal,
+  .manager-workflow-history,
+  .manager-correction-context > div,
+  .manager-shift-grid fieldset,
+  .manager-calculated-hours
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-card,
+  .manager-timesheet-modal,
+  .manager-correction-context > div,
+  .manager-shift-grid fieldset,
+  .manager-calculated-hours
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-modal > header,
+  .manager-detail-actions,
+  .manager-correction-form > footer,
+  .manager-reopen-form > footer,
+  .manager-detail-table th
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-modal > header h2,
+  .manager-correction-context small,
+  .manager-shift-grid legend,
+  .manager-calculated-hours span,
+  .manager-workflow-history h3
+) {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .manager-month-status.submitted,
+  .timesheet-state.rostered,
+  .manager-timesheet-modal .ao-status-pill.gold
+) {
+  border-color: var(--ao-staff-line-strong);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .manager-correction-context > div.non-working,
+main.module-staff-management .manager-editing-window {
+  border-color: var(--ao-staff-line-strong);
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .manager-roster-warning {
+  border-left-color: #9b5148;
+  background: #fff0ee;
+  color: #744942;
+}
+
+main.module-staff-management :is(
+  .manager-timesheets,
+  .manager-timesheet-modal
+) :is(.ao-action, .ao-icon-action):not(.danger):not(.ao-action--primary) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .manager-timesheets,
+  .manager-timesheet-modal
+) .ao-action--primary {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+main.module-my-timesheet .timesheet-hero {
+  border-color: var(--ao-staff-line-strong);
+  border-top-color: var(--ao-lagoon-teal);
+  background: linear-gradient(135deg, var(--ao-staff-surface-strong), #fff 82%);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-hero .eyebrow,
+  .timesheet-hero label,
+  .timesheet-shifts legend
+) {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-summary span,
+  .timesheet-day,
+  .timesheet-shifts fieldset,
+  .timesheet-overtime-entry,
+  .timesheet-lock-note
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-summary span,
+  .timesheet-shifts fieldset,
+  .timesheet-overtime-entry,
+  .timesheet-lock-note
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-my-timesheet .timesheet-summary span {
+  box-shadow: inset 0 2px var(--ao-staff-line);
+}
+
+main.module-my-timesheet .timesheet-day.confirmed {
+  border-left-color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-day-toggle:hover,
+  .timesheet-day-toggle[aria-expanded='true'],
+  .timesheet-day-readonly
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-my-timesheet .timesheet-day-toggle[aria-expanded='true'],
+main.module-my-timesheet .timesheet-day-details > footer {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-my-timesheet .timesheet-day-toggle:focus-visible {
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 72%, white);
+}
+
+main.module-my-timesheet .timesheet-duty {
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-my-timesheet .timesheet-day-shifts i {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(.timesheet-correction-note, .timesheet-lock-note) {
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+main.module-my-timesheet :is(.timesheet-state.draft, .timesheet-overtime-status.pending) {
+  border-color: var(--ao-staff-line-strong);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(input[type='time'], input[type='month']) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-my-timesheet :is(input[type='time'], input[type='month']):focus-visible {
+  border-color: var(--ao-lagoon-teal);
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 60%, transparent);
+}
+
+main.module-my-timesheet .ao-action--primary {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  main.module-my-timesheet .timesheet-hero .ao-date-control input[type='month'],
+  main.module-my-timesheet .my-timesheet .timesheet-submit .ao-action {
+    min-height: 44px;
+  }
 }
 
 .staff-edit-modal {
