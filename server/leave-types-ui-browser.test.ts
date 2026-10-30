@@ -12,7 +12,7 @@ const processes: ChildProcess[] = []
 const token = `isolated-${randomUUID()}`
 let socket: WebSocket | null = null
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
-const waitFor = async (url: string) => { for (let attempt = 0; attempt < 600; attempt++) { try { if ((await fetch(url)).ok) return } catch {} await sleep(200) } throw new Error(`Timed out waiting for ${url}`) }
+const waitFor = async (url: string, process?: ChildProcess, processLog?: () => string) => { let lastResponse = ''; for (let attempt = 0; attempt < 600; attempt++) { if (process?.exitCode !== null && process?.exitCode !== undefined) throw new Error(`Process exited before ${url} was ready (exit ${process.exitCode}).\n${processLog?.() || ''}\n${lastResponse}`); try { const response = await fetch(url); if (response.ok) return; if (attempt % 20 === 0) lastResponse = `Last response: ${response.status} ${await response.text()}` } catch (error) { if (attempt % 20 === 0) lastResponse = `Last request error: ${String(error)}` } await sleep(200) } throw new Error(`Timed out waiting for ${url}.\n${processLog?.() || ''}\n${lastResponse}`) }
 
 class Cdp {
   private id = 0
@@ -33,9 +33,13 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: 'ignore' }))
-  processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: 'ignore' }))
-  await Promise.all([waitFor('http://127.0.0.1:3017/api/health'), waitFor('http://127.0.0.1:5187/')])
+  let apiLog = ''; let viteLog = ''
+  const api = spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: ['ignore', 'pipe', 'pipe'] })
+  const vite = spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: ['ignore', 'pipe', 'pipe'] })
+  api.stdout?.on('data', chunk => { apiLog += String(chunk) }); api.stderr?.on('data', chunk => { apiLog += String(chunk) })
+  vite.stdout?.on('data', chunk => { viteLog += String(chunk) }); vite.stderr?.on('data', chunk => { viteLog += String(chunk) })
+  processes.push(api, vite)
+  await Promise.all([waitFor('http://127.0.0.1:3017/api/health', api, () => apiLog), waitFor('http://127.0.0.1:5187/', vite, () => viteLog)])
 
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run', '--edge-skip-compat-layer-relaunch', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' })
   processes.push(edge)
@@ -59,7 +63,7 @@ try {
   await sleep(1200)
   const baselineState = await cdp.evaluate<{ configured: number; activationButtons: number }>(`({configured:document.querySelectorAll('.leave-type-state.active').length,activationButtons:document.querySelectorAll('.activate-duty-code').length})`)
   assert.equal(baselineState.configured + baselineState.activationButtons, 10, 'Every protected Duty Code must retain one configured or activation state.')
-  const leaveTheme = await cdp.evaluate<{ line: string; divider: string; surface: string; surfaceStrong: string }>(`(()=>{const main=document.querySelector('main.module-leave-planner');const probe=document.createElement('i');probe.style.cssText='position:absolute;color:var(--ao-leave-line);border:1px solid var(--ao-leave-divider);background:var(--ao-leave-surface)';main.append(probe);const base=getComputedStyle(probe);const first={line:base.color,divider:base.borderColor,surface:base.backgroundColor};probe.style.background='var(--ao-leave-surface-strong)';const surfaceStrong=getComputedStyle(probe).backgroundColor;probe.remove();return{...first,surfaceStrong}})()`)
+  const leaveTheme = await cdp.evaluate<{ line: string; lineStrong: string; divider: string; surface: string; surfaceStrong: string; violet: string }>(`(()=>{const main=document.querySelector('main.module-leave-planner');const probe=document.createElement('i');probe.style.cssText='position:absolute;color:var(--ao-leave-line);border:1px solid var(--ao-leave-divider);background:var(--ao-leave-surface)';main.append(probe);const base=getComputedStyle(probe);const first={line:base.color,divider:base.borderColor,surface:base.backgroundColor};probe.style.color='var(--ao-leave-line-strong)';probe.style.background='var(--ao-leave-surface-strong)';const lineStrong=getComputedStyle(probe).color;const surfaceStrong=getComputedStyle(probe).backgroundColor;probe.style.color='var(--ao-violet-hour)';const violet=getComputedStyle(probe).color;probe.remove();return{...first,lineStrong,surfaceStrong,violet}})()`)
   assert.notEqual(leaveTheme.line, 'rgb(222, 197, 143)', 'Leave Planner must not retain the legacy decorative gold line.')
 
   const results: Record<string, unknown> = {}
@@ -214,10 +218,14 @@ try {
     }
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Planner')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-planner-panel .leave-planner-grid-wrap')`)) break; await sleep(100) }
-    const plannerResult = await cdp.evaluate<any>(`(()=>{const shell=document.querySelector('.app-shell');const panel=document.querySelector('.leave-planner-panel');const grid=document.querySelector('.leave-planner-grid-wrap');const summaryValue=document.querySelector('.leave-summary-card>b');const controls=Array.from(document.querySelectorAll('.leave-month-navigation :is(input,button),.leave-planner-filters select'));return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,shellBackground:getComputedStyle(shell).backgroundImage,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,gridBorder:getComputedStyle(grid).borderColor,gridContained:grid.scrollWidth>grid.clientWidth,gridWithinPage:grid.getBoundingClientRect().right<=document.documentElement.clientWidth+1,summaryFont:getComputedStyle(summaryValue).fontFamily,summaryWeight:getComputedStyle(summaryValue).fontWeight,summarySize:parseFloat(getComputedStyle(summaryValue).fontSize),controlHeights:controls.map(control=>Math.round(control.getBoundingClientRect().height))}})()`)
+    const plannerResult = await cdp.evaluate<any>(`(()=>{const shell=document.querySelector('.app-shell');const panel=document.querySelector('.leave-planner-panel');const command=document.querySelector('.leave-command-panel');const grid=document.querySelector('.leave-planner-grid-wrap');const summaryValue=document.querySelector('.leave-summary-card>b');const controls=Array.from(document.querySelectorAll('.leave-month-navigation :is(input,button),.leave-planner-filters select'));return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,shellBackground:getComputedStyle(shell).backgroundImage,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,commandBorder:getComputedStyle(command).borderColor,commandBackground:getComputedStyle(command).backgroundColor,gridBorder:getComputedStyle(grid).borderColor,gridContained:grid.scrollWidth>grid.clientWidth,gridWithinPage:grid.getBoundingClientRect().right<=document.documentElement.clientWidth+1,summaryFont:getComputedStyle(summaryValue).fontFamily,summaryWeight:getComputedStyle(summaryValue).fontWeight,summarySize:parseFloat(getComputedStyle(summaryValue).fontSize),controlHeights:controls.map(control=>Math.round(control.getBoundingClientRect().height)),controlBorders:controls.map(control=>getComputedStyle(control).borderColor),controlBackgrounds:controls.map(control=>getComputedStyle(control).backgroundColor)}})()`)
     assert.equal(plannerResult.overflow, false, `Planner page overflow at ${width}px.`)
     assert.equal(plannerResult.panelBorder, leaveTheme.line)
     assert.equal(plannerResult.panelBackground, leaveTheme.surface)
+    assert.equal(plannerResult.commandBorder, leaveTheme.line)
+    assert.equal(plannerResult.commandBackground, leaveTheme.surfaceStrong)
+    assert.ok(plannerResult.controlBorders.every((color:string)=>color === leaveTheme.lineStrong), `Planner controls must use the approved violet border at ${width}px.`)
+    assert.ok(plannerResult.controlBackgrounds.every((color:string)=>color === 'rgb(255, 255, 255)'), `Planner controls must not retain cream surfaces at ${width}px.`)
     assert.equal(plannerResult.gridBorder, leaveTheme.line)
     assert.equal(plannerResult.gridWithinPage, true, `Planner calendar escaped its container at ${width}px.`)
     assert.match(plannerResult.shellBackground, /linear-gradient/)
@@ -242,24 +250,34 @@ try {
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-records-panel')`)) break; await sleep(100) }
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.planned-leave-history,.leave-records-panel>.save-error')`)) break; await sleep(100) }
     assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.leave-records-panel>.save-error')`), false, `Leave History failed to load at ${width}px.`)
-    const historyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-records-panel');const filters=document.querySelector('.leave-record-filters');const planned=document.querySelector('.planned-leave-history');const confirmed=document.querySelector('.confirmed-leave-history');const filterControls=Array.from(filters.querySelectorAll('input,select'));const tableCell=document.querySelector('.leave-records-table th');const employee=document.querySelector('.leave-employee-history');if(employee&&!employee.open)employee.querySelector('summary').click();const category=employee?.querySelector('.leave-employee-history-body>section');const dateRow=employee?.querySelector('.leave-history-dates');const dateButton=dateRow?.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,filterBorder:getComputedStyle(filters).borderColor,filterBackground:getComputedStyle(filters).backgroundColor,filterHeights:filterControls.map(control=>Math.round(control.getBoundingClientRect().height)),plannedBorder:planned?getComputedStyle(planned).borderColor:null,plannedBackground:planned?getComputedStyle(planned).backgroundColor:null,confirmedBorder:confirmed?getComputedStyle(confirmed).borderColor:null,confirmedBackground:confirmed?getComputedStyle(confirmed).backgroundColor:null,tableRightBorder:tableCell?getComputedStyle(tableCell).borderRightWidth:null,tableBottomBorder:tableCell?getComputedStyle(tableCell).borderBottomWidth:null,categoryColumns:category?getComputedStyle(category).gridTemplateColumns.split(' ').length:null,dateGap:dateRow?getComputedStyle(dateRow).gap:null,dateHeight:dateButton?Math.round(dateButton.getBoundingClientRect().height):null}})()`)
+    const historyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-records-panel');const filters=document.querySelector('.leave-record-filters');const planned=document.querySelector('.planned-leave-history');const confirmed=document.querySelector('.confirmed-leave-history');const filterControls=Array.from(filters.querySelectorAll('input,select'));const tableCell=document.querySelector('.leave-records-table th');const plannedRow=document.querySelector('.planned-leave-table tbody tr');const bookedChip=plannedRow?.querySelector('.leave-type-chip.booked');const employee=document.querySelector('.leave-employee-history');if(employee&&!employee.open)employee.querySelector('summary').click();const category=employee?.querySelector('.leave-employee-history-body>section');const categoryHeader=category?.querySelector('header>div');const dateRow=employee?.querySelector('.leave-history-dates');const dateButton=dateRow?.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,filterBorder:getComputedStyle(filters).borderColor,filterBackground:getComputedStyle(filters).backgroundColor,filterHeights:filterControls.map(control=>Math.round(control.getBoundingClientRect().height)),filterBorders:filterControls.map(control=>getComputedStyle(control).borderColor),filterBackgrounds:filterControls.map(control=>getComputedStyle(control).backgroundColor),plannedBorder:planned?getComputedStyle(planned).borderColor:null,plannedBackground:planned?getComputedStyle(planned).backgroundColor:null,plannedAlignments:plannedRow?Array.from(plannedRow.children).map(cell=>getComputedStyle(cell).textAlign):[],bookedChip:bookedChip?{border:getComputedStyle(bookedChip).borderColor,background:getComputedStyle(bookedChip).backgroundColor,color:getComputedStyle(bookedChip).color}:null,confirmedBorder:confirmed?getComputedStyle(confirmed).borderColor:null,confirmedBackground:confirmed?getComputedStyle(confirmed).backgroundColor:null,tableRightBorder:tableCell?getComputedStyle(tableCell).borderRightWidth:null,tableBottomBorder:tableCell?getComputedStyle(tableCell).borderBottomWidth:null,categoryColumns:category?getComputedStyle(category).gridTemplateColumns.split(' ').length:null,categoryDivider:categoryHeader?getComputedStyle(categoryHeader).borderLeftWidth:null,dateDivider:dateRow?getComputedStyle(dateRow).borderLeftWidth:null,dateGap:dateRow?getComputedStyle(dateRow).gap:null,dateHeight:dateButton?Math.round(dateButton.getBoundingClientRect().height):null}})()`)
     assert.equal(historyResult.overflow, false, `Leave History page overflow at ${width}px.`)
     assert.equal(historyResult.panelBorder, leaveTheme.line)
     assert.equal(historyResult.panelBackground, leaveTheme.surface)
     assert.equal(historyResult.filterBorder, leaveTheme.divider)
     assert.equal(historyResult.filterBackground, leaveTheme.surfaceStrong)
+    assert.ok(historyResult.filterBorders.every((color:string)=>[leaveTheme.line, leaveTheme.lineStrong].includes(color)), `Leave History controls must use the approved violet/lilac border at ${width}px: ${historyResult.filterBorders.join(', ')}.`)
+    assert.ok(historyResult.filterBackgrounds.every((color:string)=>color === 'rgb(255, 255, 255)'), `Leave History controls must not retain cream surfaces at ${width}px.`)
     assert.ok(historyResult.filterHeights.every((height:number)=>height >= (width <= 700 ? 44 : 40)), `Leave History controls are misaligned at ${width}px: ${historyResult.filterHeights.join(', ')}.`)
     assert.equal(historyResult.tableRightBorder, '1px')
     assert.equal(historyResult.tableBottomBorder, '1px')
     if (historyResult.plannedBorder) {
       assert.equal(historyResult.plannedBorder, leaveTheme.line)
       assert.equal(historyResult.plannedBackground, leaveTheme.surface)
+      if (historyResult.plannedAlignments.length) assert.deepEqual(historyResult.plannedAlignments, ['left', 'center', 'center', 'center', 'center'])
+      if (historyResult.bookedChip) {
+        assert.equal(historyResult.bookedChip.border, leaveTheme.lineStrong)
+        assert.equal(historyResult.bookedChip.background, leaveTheme.surfaceStrong)
+        assert.equal(historyResult.bookedChip.color, leaveTheme.violet)
+      }
     }
     if (historyResult.confirmedBorder) {
       assert.equal(historyResult.confirmedBorder, leaveTheme.line)
       assert.equal(historyResult.confirmedBackground, leaveTheme.surface)
     }
-    if (historyResult.categoryColumns !== null) assert.equal(historyResult.categoryColumns, width <= 700 ? 1 : 2)
+    if (historyResult.categoryColumns !== null) assert.equal(historyResult.categoryColumns, width <= 700 ? 1 : 3)
+    if (historyResult.categoryDivider !== null) assert.equal(historyResult.categoryDivider, '1px')
+    if (historyResult.dateDivider !== null) assert.equal(historyResult.dateDivider, width <= 700 ? '0px' : '1px')
     if (historyResult.dateGap !== null) assert.equal(historyResult.dateGap, '6px')
     if (historyResult.dateHeight !== null) assert.ok(historyResult.dateHeight >= (width <= 700 ? 44 : 36))
     historyResults[String(width)] = historyResult
