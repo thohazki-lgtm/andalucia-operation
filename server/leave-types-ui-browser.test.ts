@@ -214,25 +214,43 @@ try {
     }
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Planner')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-planner-panel .leave-planner-grid-wrap')`)) break; await sleep(100) }
-    const plannerResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-planner-panel');const grid=document.querySelector('.leave-planner-grid-wrap');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,gridBorder:getComputedStyle(grid).borderColor,gridContained:grid.scrollWidth>grid.clientWidth,gridWithinPage:grid.getBoundingClientRect().right<=document.documentElement.clientWidth+1}})()`)
+    const plannerResult = await cdp.evaluate<any>(`(()=>{const shell=document.querySelector('.app-shell');const panel=document.querySelector('.leave-planner-panel');const grid=document.querySelector('.leave-planner-grid-wrap');const summaryValue=document.querySelector('.leave-summary-card>b');const controls=Array.from(document.querySelectorAll('.leave-month-navigation :is(input,button),.leave-planner-filters select'));return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,shellBackground:getComputedStyle(shell).backgroundImage,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,gridBorder:getComputedStyle(grid).borderColor,gridContained:grid.scrollWidth>grid.clientWidth,gridWithinPage:grid.getBoundingClientRect().right<=document.documentElement.clientWidth+1,summaryFont:getComputedStyle(summaryValue).fontFamily,summaryWeight:getComputedStyle(summaryValue).fontWeight,summarySize:parseFloat(getComputedStyle(summaryValue).fontSize),controlHeights:controls.map(control=>Math.round(control.getBoundingClientRect().height))}})()`)
     assert.equal(plannerResult.overflow, false, `Planner page overflow at ${width}px.`)
     assert.equal(plannerResult.panelBorder, leaveTheme.line)
     assert.equal(plannerResult.panelBackground, leaveTheme.surface)
     assert.equal(plannerResult.gridBorder, leaveTheme.line)
     assert.equal(plannerResult.gridWithinPage, true, `Planner calendar escaped its container at ${width}px.`)
+    assert.match(plannerResult.shellBackground, /linear-gradient/)
+    assert.match(plannerResult.shellBackground, /rgb\(216, 194, 232\)/, 'Leave Planner must use the richer approved lilac canvas depth.')
+    assert.match(plannerResult.summaryFont, /Good Sans/)
+    assert.equal(plannerResult.summaryWeight, '500')
+    assert.ok(plannerResult.summarySize <= 20, `Summary value typography is too large at ${width}px.`)
+    assert.ok(plannerResult.controlHeights.every((height:number)=>height >= (width <= 700 ? 44 : 40)), `Planner controls are misaligned at ${width}px: ${plannerResult.controlHeights.join(', ')}.`)
     if (width <= 430) assert.equal(plannerResult.gridContained, true, `Planner calendar must retain contained horizontal scrolling at ${width}px.`)
+    const detailResult = await cdp.evaluate<any>(`(()=>{const probe=document.createElement('div');probe.className='leave-details-scroll';probe.style.cssText='position:fixed;left:-10000px;top:0;width:480px;display:block';probe.innerHTML='<dl class="staff-profile-grid"><div><dt>Available Leave</dt><dd>30</dd></div><div><dt>Booked / Future</dt><dd>4</dd></div></dl>';document.querySelector('main').append(probe);const cards=Array.from(probe.querySelectorAll('.staff-profile-grid>div'));const first=getComputedStyle(cards[0]);const value=getComputedStyle(cards[0].querySelector('dd'));const result={cards:cards.length,borders:cards.map(card=>getComputedStyle(card).borderTopWidth),padding:[first.paddingTop,first.paddingRight,first.paddingBottom,first.paddingLeft],valueFont:value.fontFamily,valueWeight:value.fontWeight};probe.remove();return result})()`)
+    assert.equal(detailResult.cards, 2)
+    assert.ok(detailResult.borders.every((border:string)=>border === '1px'), `Employee entitlement cards must have thin lilac borders at ${width}px.`)
+    assert.equal(detailResult.padding[0], detailResult.padding[2])
+    assert.equal(detailResult.padding[1], detailResult.padding[3])
+    assert.match(detailResult.valueFont, /Good Sans/)
+    assert.equal(detailResult.valueWeight, '500')
     plannerResults[String(width)] = plannerResult
     const plannerCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `planner-${width}.png`), Buffer.from(plannerCapture.data, 'base64'))
 
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Leave History')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-records-panel')`)) break; await sleep(100) }
-    const historyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-records-panel');const filters=document.querySelector('.leave-record-filters');const planned=document.querySelector('.planned-leave-history');const confirmed=document.querySelector('.confirmed-leave-history');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,filterBorder:getComputedStyle(filters).borderColor,filterBackground:getComputedStyle(filters).backgroundColor,plannedBorder:planned?getComputedStyle(planned).borderColor:null,plannedBackground:planned?getComputedStyle(planned).backgroundColor:null,confirmedBorder:confirmed?getComputedStyle(confirmed).borderColor:null,confirmedBackground:confirmed?getComputedStyle(confirmed).backgroundColor:null}})()`)
+    for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.planned-leave-history,.leave-records-panel>.save-error')`)) break; await sleep(100) }
+    assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.leave-records-panel>.save-error')`), false, `Leave History failed to load at ${width}px.`)
+    const historyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-records-panel');const filters=document.querySelector('.leave-record-filters');const planned=document.querySelector('.planned-leave-history');const confirmed=document.querySelector('.confirmed-leave-history');const filterControls=Array.from(filters.querySelectorAll('input,select'));const tableCell=document.querySelector('.leave-records-table th');const employee=document.querySelector('.leave-employee-history');if(employee&&!employee.open)employee.querySelector('summary').click();const category=employee?.querySelector('.leave-employee-history-body>section');const dateRow=employee?.querySelector('.leave-history-dates');const dateButton=dateRow?.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,filterBorder:getComputedStyle(filters).borderColor,filterBackground:getComputedStyle(filters).backgroundColor,filterHeights:filterControls.map(control=>Math.round(control.getBoundingClientRect().height)),plannedBorder:planned?getComputedStyle(planned).borderColor:null,plannedBackground:planned?getComputedStyle(planned).backgroundColor:null,confirmedBorder:confirmed?getComputedStyle(confirmed).borderColor:null,confirmedBackground:confirmed?getComputedStyle(confirmed).backgroundColor:null,tableRightBorder:tableCell?getComputedStyle(tableCell).borderRightWidth:null,tableBottomBorder:tableCell?getComputedStyle(tableCell).borderBottomWidth:null,categoryColumns:category?getComputedStyle(category).gridTemplateColumns.split(' ').length:null,dateGap:dateRow?getComputedStyle(dateRow).gap:null,dateHeight:dateButton?Math.round(dateButton.getBoundingClientRect().height):null}})()`)
     assert.equal(historyResult.overflow, false, `Leave History page overflow at ${width}px.`)
     assert.equal(historyResult.panelBorder, leaveTheme.line)
     assert.equal(historyResult.panelBackground, leaveTheme.surface)
     assert.equal(historyResult.filterBorder, leaveTheme.divider)
     assert.equal(historyResult.filterBackground, leaveTheme.surfaceStrong)
+    assert.ok(historyResult.filterHeights.every((height:number)=>height >= (width <= 700 ? 44 : 40)), `Leave History controls are misaligned at ${width}px: ${historyResult.filterHeights.join(', ')}.`)
+    assert.equal(historyResult.tableRightBorder, '1px')
+    assert.equal(historyResult.tableBottomBorder, '1px')
     if (historyResult.plannedBorder) {
       assert.equal(historyResult.plannedBorder, leaveTheme.line)
       assert.equal(historyResult.plannedBackground, leaveTheme.surface)
@@ -241,6 +259,9 @@ try {
       assert.equal(historyResult.confirmedBorder, leaveTheme.line)
       assert.equal(historyResult.confirmedBackground, leaveTheme.surface)
     }
+    if (historyResult.categoryColumns !== null) assert.equal(historyResult.categoryColumns, width <= 700 ? 1 : 2)
+    if (historyResult.dateGap !== null) assert.equal(historyResult.dateGap, '6px')
+    if (historyResult.dateHeight !== null) assert.ok(historyResult.dateHeight >= (width <= 700 ? 44 : 36))
     historyResults[String(width)] = historyResult
     const historyCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `leave-history-${width}.png`), Buffer.from(historyCapture.data, 'base64'))
