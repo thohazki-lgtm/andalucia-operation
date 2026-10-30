@@ -186,7 +186,7 @@ try {
   assert.equal(dutyLayout.ruleByCode.EL, 'Eligible · 1 day')
   assert.equal(await cdp.evaluate<number>(`document.querySelectorAll('.duty-code-table .protected-config').length`), 0)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const row=Array.from(document.querySelectorAll('.duty-code-table tbody tr')).find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='OFF');return !!row&&row.querySelectorAll('td:last-child button').length===1&&!!row.querySelector('button[aria-label="Edit OFF"]')&&!row.querySelector('button[aria-label="Remove OFF"]')})()`), true)
-  assert.equal(await cdp.evaluate<boolean>(`(()=>{const rows=Array.from(document.querySelectorAll('.duty-code-table tbody tr'));const off=rows.find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='OFF');const emergency=rows.find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='EL');return off?.querySelector('.duty-availability-fixed')?.textContent?.trim()==='Required'&&emergency?.querySelector('.duty-availability-toggle.active')?.textContent?.trim()==='Active'})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const rows=Array.from(document.querySelectorAll('.duty-code-table tbody tr'));const off=rows.find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='OFF');const emergency=rows.find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='EL');return off?.querySelector('.duty-availability-fixed')?.textContent?.trim()==='Always enabled'&&emergency?.querySelector('.duty-availability-toggle.active')?.textContent?.trim()==='Active'})()`), true)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const row=Array.from(document.querySelectorAll('.duty-code-table tbody tr')).find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='EL');const toggle=row?.querySelector('.duty-availability-toggle');if(!toggle)return false;toggle.click();return true})()`), true)
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`(()=>{const row=Array.from(document.querySelectorAll('.duty-code-table tbody tr')).find(row=>row.querySelector('td:nth-child(2) b')?.textContent?.trim()==='EL');return row?.classList.contains('is-disabled')&&row.querySelector('.duty-availability-toggle')?.textContent?.trim()==='Disabled'})()`)) break; await sleep(100) }
   assert.equal(await cdp.evaluate<boolean>(`fetch('/api/config/staff').then(response=>response.json()).then(configuration=>configuration.dutyCodes.find(option=>option.metadata?.displayCode==='EL')?.active===false)`), true)
@@ -213,15 +213,16 @@ try {
 
   await cdp.evaluate(`document.querySelector('.duty-code-table button[aria-label="Edit OFF"]')?.click()`)
   for (let attempt = 0; attempt < 40; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.duty-code-form')`)) break; await sleep(50) }
-  await cdp.evaluate(`(()=>{const input=document.querySelector('input[aria-label="Color hex value"]');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'#123456');input.dispatchEvent(new Event('input',{bubbles:true}));window.__dutyConfirmCalls=0;window.confirm=()=>{window.__dutyConfirmCalls+=1;return false}})()`)
+  await cdp.evaluate(`(()=>{const input=document.querySelector('input[aria-label="Color hex value"]');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'#123456');input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape' })
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape' })
-  assert.deepEqual(await cdp.evaluate<any>(`({open:!!document.querySelector('.duty-code-form'),confirmCalls:window.__dutyConfirmCalls,bodyOverflow:document.body.style.overflow})`), { open: true, confirmCalls: 1, bodyOverflow: 'hidden' })
+  assert.deepEqual(await cdp.evaluate<any>(`({open:!!document.querySelector('.duty-code-form'),confirmOpen:!!document.querySelector('.duty-discard-confirmation'),actions:Array.from(document.querySelectorAll('.duty-discard-confirmation button')).map(button=>button.textContent?.trim()),bodyOverflow:document.body.style.overflow})`), { open: true, confirmOpen: true, actions: ['Keep Editing','Discard Changes'], bodyOverflow: 'hidden' })
+  await screenshot(cdp, 'duty-code-unsaved-confirmation-desktop.png')
+  await cdp.evaluate(`Array.from(document.querySelectorAll('.duty-discard-confirmation button')).find(button=>button.textContent?.trim()==='Keep Editing')?.click()`)
+  assert.deepEqual(await cdp.evaluate<any>(`({open:!!document.querySelector('.duty-code-form'),confirmOpen:!!document.querySelector('.duty-discard-confirmation')})`), { open: true, confirmOpen: false })
   await cdp.evaluate(`Array.from(document.querySelectorAll('.duty-code-form .form-actions button')).find(button=>button.textContent?.trim()==='Cancel')?.click()`)
-  assert.deepEqual(await cdp.evaluate<any>(`({open:!!document.querySelector('.duty-code-form'),confirmCalls:window.__dutyConfirmCalls})`), { open: true, confirmCalls: 2 })
-  await cdp.evaluate(`window.confirm=()=>true`)
-  await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape' })
-  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape' })
+  assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.duty-discard-confirmation')`), true)
+  await cdp.evaluate(`Array.from(document.querySelectorAll('.duty-discard-confirmation button')).find(button=>button.textContent?.trim()==='Discard Changes')?.click()`)
   for (let attempt = 0; attempt < 20; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.duty-code-form')`)) break; await sleep(50) }
   await sleep(50)
   assert.deepEqual(await cdp.evaluate<any>(`({open:!!document.querySelector('.duty-code-form'),bodyOverflow:document.body.style.overflow,focus:document.activeElement?.getAttribute('aria-label')})`), { open: false, bodyOverflow: '', focus: 'Edit OFF' })

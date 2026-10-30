@@ -75,7 +75,7 @@ try {
   const leavePlanner = await readFile(new URL('../src/leave-planner.tsx', import.meta.url), 'utf8')
   const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
   assert.match(app, /item\.value === entry\?\.dutyCode \|\| item\.active && !isLegacySickLeave\(item\)/)
-  assert.match(app, /Code identity and meaning are protected\. Leave-code availability \(except OFF\), color, display order and manager-required Bill Tip rules remain configurable\./)
+  assert.match(app, /Code identity and classification are protected\. Managers may change roster availability for leave codes other than OFF, plus color, display order and approved financial settings\./)
   assert.match(app, /Use Activate Duty Code in Leave & Entitlements when it is unavailable\./)
   assert.match(leavePlanner, /Duty Roster remains authoritative/)
   assert.match(styles, /\.leave-summary-cards\{display:grid/)

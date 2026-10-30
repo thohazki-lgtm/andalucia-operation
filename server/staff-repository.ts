@@ -190,7 +190,7 @@ export class StaffRepository {
       const existingStandard = coreDutyCode(existingDisplayCode)
       if (existingStandard) {
         const availability = { ...option, metadata: { ...metadata, dutyClassification: existingStandard.classification } }
-        if (displayCode !== existingStandard.code || option.label.trim() !== existingStandard.label || classification !== existingStandard.classification || (!option.active && !canManageDutyCodeAvailability(availability))) throw new Error(`${existingStandard.code} · ${existingStandard.label} is a protected core Duty Code. Its identity is fixed; only leave-code availability, color, display order and approved financial settings can be changed.`)
+        if (displayCode !== existingStandard.code || option.label.trim() !== existingStandard.label || classification !== existingStandard.classification || (!option.active && !canManageDutyCodeAvailability(availability))) throw new Error(`${existingStandard.code} · ${existingStandard.label} is a protected core Duty Code. Its identity and classification are fixed; only roster availability for leave codes other than OFF, color, display order and approved financial settings can be changed.`)
         classification = existingStandard.classification
         metadata = { ...metadata, displayCode: existingStandard.code, dutyClassification: classification, countsAsWorking: false, protected: true, systemControlled: true }
       } else if (existingDisplayCode === 'SK') {
@@ -202,7 +202,7 @@ export class StaffRepository {
       } else if (displayCode === 'SK') throw new Error('SK is reserved for historical Sick Leave compatibility. Use SL for new assignments.')
       if (!displayCode || !option.label.trim() || !(['working', 'other', ...LEAVE_CLASSIFICATIONS] as string[]).includes(String(classification))) throw new Error('Display code, duty name and classification are required.')
       if (!/^#[0-9a-f]{6}$/i.test(option.color || '')) throw new Error('Select a valid duty color.')
-      if (!option.active && existing.rows[0]?.active !== false && !canManageDutyCodeAvailability({ ...option, metadata: { ...metadata, dutyClassification: classification } })) throw new Error('Working duties and OFF must remain available for new roster assignments.')
+      if (!option.active && existing.rows[0]?.active !== false && !canManageDutyCodeAvailability({ ...option, metadata: { ...metadata, dutyClassification: classification } })) throw new Error('Working duties and OFF must remain enabled for new roster assignments.')
       const conflict = await this.database.query<{ id: string }>("select id from configuration_options where group_key=$1 and active and id<>$2 and lower(coalesce(nullif(metadata->>'displayCode',''),value))=lower($3) limit 1", [staffConfigKeys[group], id, displayCode])
       if (conflict.rows[0]) throw new Error('That display code is already in use.')
       const countsAsWorking = classification === 'working' ? true : isLeaveClassification(classification) ? false : Boolean(metadata.countsAsWorking)

@@ -778,6 +778,21 @@
 .duty-code-form .duty-live-preview b { width: 100%; border-radius: 999px; }
 .duty-code-form .form-actions { flex: none; margin: 10px -2px 0; padding: 12px 2px 0; background: #fff; }
 
+.duty-discard-confirmation-backdrop { z-index: 1200; }
+.duty-discard-confirmation {
+  width: min(430px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--roster-line-strong);
+  border-top: 3px solid var(--roster-teal);
+  border-radius: 14px;
+  background: #fffaf6;
+  box-shadow: 0 20px 52px rgb(108 54 28 / 22%);
+}
+.duty-discard-confirmation > .eyebrow { margin: 0 0 5px; color: var(--roster-teal); }
+.duty-discard-confirmation > h2 { margin: 0; color: var(--roster-teal-dark); font-size: 24px; font-weight: 650; }
+.duty-discard-copy { margin: 10px 0 0; color: #536c7b; font-size: 13px; line-height: 1.5; }
+.duty-discard-confirmation .form-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--roster-line); }
+
 @media (max-width: 800px) {
   .duty-roster-page .duty-code-table-wrap { display: none; }
   .duty-roster-page .duty-code-card-list { display: grid; gap: 10px; padding: 12px; background: var(--roster-surface); }
