@@ -9,18 +9,18 @@
 .leave-planner-shell .leave-planner-panel{min-width:0;padding:0 0 14px;overflow:hidden;border:1px solid #dec58f;border-radius:12px;background:#fffaf0;box-shadow:0 8px 24px #173d5608}
 .leave-planner-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-top:4px solid #c9a356;border-bottom:1px solid #dec58f;background:linear-gradient(135deg,#fff8e8 0%,#fffdf8 78%)}
 .leave-planner-header h2{margin:2px 0 0;color:#173d56;font:700 26px/1.15 'Playfair Display',serif}
-.leave-planner-header .eyebrow{margin:0;color:#876b31}
+.leave-planner-header .eyebrow{margin:0;color:var(--ao-violet-hour,#45176b)}
 .leave-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none;flex-wrap:wrap}
 .leave-header-actions .ao-action{min-height:40px;white-space:nowrap}
-.leave-command-panel{margin:0 16px;padding:14px 0 12px;border:0;border-bottom:1px solid #dec58f;border-radius:0;background:transparent}
+.leave-command-panel{margin:0 16px;padding:14px 0 12px;border:0;border-bottom:1px solid var(--ao-leave-divider,#d9cce4);border-radius:0;background:transparent}
 .leave-month-navigation{display:grid;grid-template-columns:40px minmax(190px,260px) 40px auto;align-items:center;justify-content:start;gap:8px;margin:0 0 11px}
-.leave-month-navigation .ao-icon-action{width:40px;height:40px;flex-basis:40px;border-color:#d5bf8d;background:#fff;color:#173d56}
+.leave-month-navigation .ao-icon-action{width:40px;height:40px;flex-basis:40px;border-color:var(--ao-leave-line-strong,#c0b7f0);background:#fff;color:var(--ao-violet-hour,#45176b)}
 .leave-month-navigation .ao-date-control{width:100%}
-.leave-month-navigation .ao-date-control input{height:40px;min-height:40px;border:1px solid #d5bf8d;border-radius:7px;background:#fff;color:#173d56;font-size:13px;font-weight:700}
-.leave-month-navigation .ao-action{height:40px;min-height:40px;border-color:#d5bf8d;background:#fff;color:#173d56}
+.leave-month-navigation .ao-date-control input{height:40px;min-height:40px;border:1px solid var(--ao-leave-line-strong,#c0b7f0);border-radius:7px;background:#fff;color:var(--ao-premium-navy,#173d56);font-size:13px;font-weight:700}
+.leave-month-navigation .ao-action{height:40px;min-height:40px;border-color:var(--ao-leave-line-strong,#c0b7f0);background:#fff;color:var(--ao-violet-hour,#45176b)}
 .leave-planner-filters{display:grid;grid-template-columns:110px 155px minmax(210px,1fr) minmax(205px,1fr);gap:9px;margin:0}
-.leave-planner-filters label{display:grid;gap:4px;min-width:0;color:#657984;font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
-.leave-planner-filters select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:0 10px;border:1px solid #d8c89f;border-radius:7px;background:#fff;color:#294b61;font:12px inherit}
+.leave-planner-filters label{display:grid;gap:4px;min-width:0;color:var(--ao-violet-hour,#45176b);font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
+.leave-planner-filters select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:0 10px;border:1px solid var(--ao-leave-line-strong,#c0b7f0);border-radius:7px;background:#fff;color:var(--ao-premium-navy,#173d56);font:12px inherit}
 .leave-review-warning{margin:0 16px 14px;padding:10px 12px;border:1px solid #e5c990;border-radius:7px;background:#fff8e8;color:#735b2d;font-size:11px}
 .leave-state{padding:34px;text-align:center;color:#718492}
 

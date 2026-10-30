@@ -804,29 +804,31 @@ main{min-width:0}
 }
 
 /* Leave History: employee-grouped confirmed evidence and compact audit modal. */
-.leave-records-panel{border-color:#dec58f;background:#fff}
+.leave-records-panel{border-color:var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface,#fff)}
 .leave-record-filters{
- grid-template-columns:minmax(220px,1.5fr) repeat(4,minmax(125px,1fr));gap:9px;margin:18px 0;padding:11px;border:1px solid #dec58f;border-radius:9px;background:#fffaf0
+ grid-template-columns:minmax(220px,1.5fr) repeat(4,minmax(125px,1fr));gap:9px;margin:18px 0;padding:11px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:9px;background:var(--ao-leave-surface-strong,#f2edfb)
 }
 .leave-record-filters>.leave-period-controls{display:contents}
 .leave-record-filters :is(input,select),.leave-record-filters .ao-date-control{width:100%;min-width:0}
-.planned-leave-history{margin-bottom:18px;padding:14px;border:1px solid #dec58f;border-radius:9px;background:#fffaf0}
+.planned-leave-history{margin-bottom:14px;padding:12px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:9px;background:var(--ao-leave-surface,#fff)}
 .planned-leave-history .leave-records-header{margin-bottom:12px}
 .planned-leave-history .leave-records-header h3,.confirmed-leave-history h3{color:#173d56;font:700 18px/1.25 'Playfair Display',serif}
-.planned-leave-history .leave-table-wrap{border:1px solid #eadbb8;border-radius:8px;background:#fff}
-.planned-leave-history .leave-records-table th{background:#fff8e8;color:#173d56}
+.planned-leave-history .leave-table-wrap{border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:8px;background:#fff}
+.planned-leave-history .leave-records-table th{background:var(--ao-leave-surface-strong,#f2edfb);color:var(--ao-violet-hour,#45176b)}
 .planned-leave-table{min-width:680px;table-layout:fixed}
 .planned-leave-table col.planned-staff{width:34%}.planned-leave-table col.planned-start,.planned-leave-table col.planned-end{width:20%}.planned-leave-table col.planned-off-days{width:12%}.planned-leave-table col.planned-calendar-days{width:14%}
-.planned-leave-table th,.planned-leave-table td{vertical-align:middle}
-.planned-leave-table th:nth-child(n+4),.planned-leave-table td:nth-child(n+4){text-align:center}
+.planned-leave-table th,.planned-leave-table td{padding:10px 12px;vertical-align:middle}
+.planned-leave-table th:nth-child(n+2),.planned-leave-table td:nth-child(n+2){text-align:center}
+.planned-leave-table tbody td:first-child>b,.planned-leave-table tbody td:first-child>small{line-height:1.3}
 .planned-leave-table tbody td:first-child .leave-type-chip{margin-top:6px}
+.leave-type-chip.booked{border-color:var(--ao-leave-line-strong,#c0b7f0);background:var(--ao-leave-surface-strong,#f2edfb);color:var(--ao-violet-hour,#45176b)}
 .planned-leave-cards{display:none}
-.confirmed-leave-history{padding:14px;border:1px solid #dec58f;border-radius:9px;background:#fff}
-.confirmed-leave-history>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #eadbb8}
+.confirmed-leave-history{padding:12px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:9px;background:var(--ao-leave-surface,#fff)}
+.confirmed-leave-history>header{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--ao-leave-divider,#d9cce4)}
 .confirmed-leave-history>header>small{color:#687e8b;font-size:10px;font-weight:700}
 .leave-employee-history-list{display:grid;gap:8px}
-.leave-employee-history{overflow:hidden;border:1px solid #e1d3b3;border-radius:9px;background:#fff;box-shadow:0 4px 12px #173d5608}
-.leave-employee-history>summary{display:grid;grid-template-columns:minmax(190px,1.15fr) minmax(180px,1fr) 28px;align-items:center;gap:14px;min-height:72px;padding:12px 14px;cursor:pointer;list-style:none;background:linear-gradient(105deg,#fffaf0,#fff)}
+.leave-employee-history{overflow:hidden;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:9px;background:#fff;box-shadow:0 4px 12px #173d5608}
+.leave-employee-history>summary{display:grid;grid-template-columns:minmax(190px,1.15fr) minmax(180px,1fr) 28px;align-items:center;gap:14px;min-height:64px;padding:10px 12px;cursor:pointer;list-style:none;background:var(--ao-leave-surface-strong,#f2edfb)}
 .leave-employee-history>summary::-webkit-details-marker{display:none}
 .leave-history-employee b,.leave-history-employee small,.planned-leave-table tbody td:first-child>b{display:block}
 .leave-history-employee b,.planned-leave-table tbody td:first-child>b,.planned-leave-history .planned-leave-cards article header b{color:#173d56;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:800;line-height:1.25}
@@ -836,20 +838,21 @@ main{min-width:0}
 .leave-history-total{display:flex;align-items:center;gap:5px;color:#173d56;font-size:10px;font-weight:800}
 .leave-history-total>b{min-width:20px;text-align:left}
 .leave-history-duty-pill{box-sizing:border-box;width:auto;min-width:48px;max-width:86px;height:32px;min-height:32px;padding:6px 10px;border:1px solid;border-radius:999px;font-size:9px;font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;text-align:center}
-.leave-history-expand{display:grid;place-items:center;width:28px;height:28px;color:#9b7938;font-size:25px;line-height:1;transition:transform .16s ease}
+.leave-history-expand{display:grid;place-items:center;width:28px;height:28px;color:var(--ao-violet-hour,#45176b);font-size:25px;line-height:1;transition:transform .16s ease}
 .leave-employee-history[open] .leave-history-expand{transform:rotate(90deg)}
-.leave-employee-history-body{display:grid;gap:10px;padding:12px 14px 14px;border-top:1px solid #eadbb8;background:#fcfdfd}
-.leave-employee-history-body>section{display:flex;align-items:center;gap:12px;padding:9px 10px;border:1px solid #e8dec6;border-radius:8px;background:#fff}
+.leave-employee-history-body{display:grid;gap:0;padding:0 11px 2px;border-top:1px solid var(--ao-leave-divider,#d9cce4);background:var(--ao-leave-surface,#fff)}
+.leave-employee-history-body>section{display:grid;grid-template-columns:minmax(76px,.42fr) minmax(170px,.85fr) minmax(260px,1.73fr);align-items:center;gap:0;padding:8px 0;border:0;border-bottom:1px solid var(--ao-leave-divider,#d9cce4);border-radius:0;background:transparent}
+.leave-employee-history-body>section:last-child{border-bottom:0}
 .leave-employee-history-body>section>header{display:flex;flex:0 1 auto;align-items:center;gap:9px;min-width:0;margin:0}
 .leave-employee-history-body>section>header b,.leave-employee-history-body>section>header small{display:block}
 .leave-employee-history-body>section>header b{color:#173d56;font-size:13px;font-weight:800;line-height:1.25;white-space:nowrap}
 .leave-employee-history-body>section>header small{margin-top:3px;color:#607786;font-size:10px;font-weight:600;line-height:1.35;white-space:nowrap}
 .leave-history-dates{display:flex;flex:1 1 280px;justify-content:flex-start;gap:7px;flex-wrap:wrap;min-width:0}
-.leave-history-dates button{min-height:38px;padding:7px 10px;border:1px solid #dec58f;border-radius:7px;background:#fffaf0;color:#173d56;text-align:left;cursor:pointer}
+.leave-history-dates button{min-height:38px;padding:7px 10px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:7px;background:#fff;color:#173d56;text-align:left;cursor:pointer}
 .leave-history-dates button span,.leave-history-dates button small{display:block}
 .leave-history-dates button span{font-size:11px;font-weight:800;line-height:1.25}
 .leave-history-dates button small{margin-top:3px;color:#607786;font-size:9px;font-weight:650;line-height:1.25}
-.leave-history-dates button:hover{border-color:#b68d39;background:#fff7e4}
+.leave-history-dates button:hover{border-color:var(--ao-leave-line-strong,#a88ec0);background:var(--ao-leave-surface-strong,#f2edfb)}
 .leave-history-dates button:focus-visible{outline:2px solid #173d56;outline-offset:2px}
 .leave-record-modal-overlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:#0b2233a8;overflow:hidden}
 .leave-record-modal{width:min(620px,calc(100vw - 40px));max-height:min(720px,calc(100dvh - 40px));padding:0;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr);border:1px solid #dec58f;border-radius:12px;background:#f7f9fa;color:#173d56;box-shadow:0 24px 70px #071b2a55}
@@ -880,7 +883,7 @@ main{min-width:0}
  .planned-leave-history,.confirmed-leave-history{padding:10px}
  .planned-leave-history .leave-table-wrap{display:none}
  .planned-leave-cards{display:grid;gap:8px}
- .planned-leave-cards article{padding:10px;border:1px solid #eadbb8;border-radius:8px;background:#fff}
+ .planned-leave-cards article{padding:10px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:8px;background:#fff}
  .planned-leave-cards article>header{display:flex;align-items:start;justify-content:space-between;gap:9px;margin:0 0 8px}
  .planned-leave-cards article header b,.planned-leave-cards article header small{display:block}
  .planned-leave-cards article header b{color:#173d56;font-size:12px}
