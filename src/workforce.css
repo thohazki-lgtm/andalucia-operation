@@ -233,7 +233,7 @@
 .employee-entitlement-details{padding:12px}
 .employee-entitlement-details-header{display:grid;grid-template-columns:minmax(190px,1fr) minmax(310px,1.5fr) auto;align-items:center;gap:12px;padding:0 0 9px;border-bottom:1px solid var(--ao-leave-divider,rgba(192,183,240,.62))}
 .employee-entitlement-details-header .eyebrow{margin:0 0 2px;color:var(--ao-violet-hour,#45176b);font-size:8px}.employee-entitlement-details-header h4{margin:0;color:#173e54;font:500 13px/1.3 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
-.employee-entitlement-details-header dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}.employee-entitlement-details-header dl div{padding-left:9px;border-left:1px solid var(--ao-leave-divider,rgba(192,183,240,.62))}.employee-entitlement-details-header dt{color:#6c7786;font-size:8px;font-weight:500;text-transform:uppercase}.employee-entitlement-details-header dd{margin:2px 0 0;color:#294f63;font-size:9.5px;font-weight:500;white-space:nowrap}
+.employee-entitlement-details-header dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}.employee-entitlement-details-header dl div{padding-left:9px;border-left:1px solid var(--ao-leave-divider,rgba(192,183,240,.62))}.employee-entitlement-details-header dt{color:#6c7786;font-size:8px;font-weight:500;text-transform:uppercase}.employee-entitlement-details-header dd{margin:2px 0 0;color:#294f63;font-size:9.5px;font-weight:500;white-space:nowrap}
 .employee-entitlement-details-header>.secondary{min-height:34px;margin:0;white-space:nowrap}
 .employee-entitlement-details>.balance-controls{margin:9px 0 0}
 
