@@ -25,10 +25,10 @@ try {
   const approver = { ...owner, userId: owner.id, sessionId: 'isolated-session', staffId: null, status: 'active', roleKeys: ['owner'], permissionKeys: ['manage_staff'], globalScope: true, allowedOutletScopeIds: [], isOwner: true } as AuthPrincipal
   const staffId = randomUUID()
   await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date,created_by,updated_by) values($1,'AL-OPEN-01','OPENING BALANCE TEST','Waiter','active','2024-07-19','isolated test','isolated test')", [staffId])
-  const twelveStaff = [{ id: staffId, joinDate: '2024-07-19', expectedAvailable: 30 }]
+  const twelveStaff = [{ id: staffId, joinDate: '2024-07-19', expectedAvailable: 5 }]
   for (const [index, joinDate, expectedAvailable] of [
-    [2, '2024-04-07', 30], [3, '2025-09-21', 30], [4, '2023-01-01', 30], [5, '2024-02-18', 30], [6, '2024-01-31', 30],
-    [7, '2024-02-29', 30], [8, '2023-10-12', 30], [9, '2025-03-30', 30], [10, '2022-12-31', 0], [11, '2026-06-15', 0], [12, '2025-11-01', 0],
+    [2, '2024-04-07', 15], [3, '2025-09-21', 0], [4, '2023-01-01', 22.5], [5, '2024-02-18', 17.5], [6, '2024-01-31', 20],
+    [7, '2024-02-29', 17.5], [8, '2023-10-12', 0], [9, '2025-03-30', 15], [10, '2022-12-31', 22.5], [11, '2026-06-15', 7.5], [12, '2025-11-01', 27.5],
   ] as Array<[number, string, number]>) {
     const id = randomUUID()
     await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date,created_by,updated_by) values($1,$2,$3,'Waiter','active',$4,'isolated test','isolated test')", [id, `AL-SIMPLE-${String(index).padStart(2, '0')}`, `SIMPLIFIED AL ${index}`, joinDate])
@@ -37,17 +37,17 @@ try {
   for (const employee of twelveStaff) {
     const balance = await repository.annualLeaveServiceYearBalance(employee.id, '2026-10-12')
     assert(balance)
-    assert.equal(balance.availableLeave, employee.expectedAvailable, `Automatic availability mismatch for ${employee.joinDate}.`)
+    assert.equal(balance.availableLeave, employee.expectedAvailable, `Current service-year earned availability mismatch for ${employee.joinDate}.`)
     assert.equal(balance.evidenceStatus, 'complete')
     assert(balance.accruingForNextServiceYear >= 0 && balance.accruingForNextServiceYear <= 30)
   }
 
   const draft = { staffId, carryForward: 10.5 }
   const preview = await repository.previewAnnualLeaveCarryForward(draft)
-  assert.equal(preview.before?.availableLeave, 30)
+  assert.equal(preview.before?.availableLeave, 5)
   assert.equal(preview.after.approvedOpeningCarry, 10.5)
-  assert.equal(preview.after.availableLeave, 40.5, 'Manual Carry Forward must supplement, not replace, automatic service-year entitlement.')
-  assert.equal(preview.after.accruingForNextServiceYear, 5, 'Current service-year accrual remains separate and reserved for next availability.')
+  assert.equal(preview.after.availableLeave, 15.5, 'Manual Carry Forward must supplement, not replace, current service-year earned entitlement.')
+  assert.equal(preview.after.accruingForNextServiceYear, 5, 'The compatibility accrual field must report current service-year earned entitlement.')
   assert.equal(Number((await fixture.db.query<{ count: number }>('select count(*)::int count from staff_annual_leave_service_years where staff_id=$1', [staffId])).rows[0].count), 0, 'Preview must be read-only.')
 
   await assert.rejects(repository.previewAnnualLeaveCarryForward({ ...draft, carryForward: -1 }), /Carry Forward must/)
@@ -71,15 +71,15 @@ try {
   assert(balance)
   assert.equal(balance.used, 1, 'Confirmed usage must come from Duty Roster.')
   assert.equal(balance.bookedFuture, 3, 'Booked/Future leave must stay separate from confirmed usage.')
-  assert.equal(balance.remaining, 39.5)
-  assert.equal(balance.availableAfterBooked, 36.5)
+  assert.equal(balance.remaining, 14.5)
+  assert.equal(balance.availableAfterBooked, 11.5)
 
   const ui = await readFile('src/workforce.tsx', 'utf8')
   const api = await readFile('server/index.ts', 'utf8')
   assert(ui.includes('Review before saving') && ui.includes('Confirm Carry Forward'))
   assert(ui.includes('Annual Leave Carry Forward') && !ui.includes('Annual Leave opening balance effective date'))
   assert(api.includes('assertTrustedOrigin(request)') && api.includes('saveAnnualLeaveCarryForward'))
-  console.log(JSON.stringify({ automaticServiceYear: true, zeroCarryBaseline: true, previewReadOnly: true, explicitZeroDistinct: true, uniqueServiceYearUpdate: true, auditLogged: true, dutyRosterAuthority: true, bookedFutureSeparate: true, confirmationRequired: true, trustedOriginProtected: true, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ currentServiceYearAccrual: true, effectiveDatedCarryForward: true, previewReadOnly: true, explicitZeroDistinct: true, uniqueServiceYearUpdate: true, auditLogged: true, dutyRosterAuthority: true, bookedFutureSeparate: true, confirmationRequired: true, trustedOriginProtected: true, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   globalThis.Date = NativeDate
   await fixture.cleanup()

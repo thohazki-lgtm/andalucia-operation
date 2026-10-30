@@ -37,8 +37,8 @@ try {
   const sick = balance.yearlyLeave.find(item => item.classification === 'sickLeave')!
   const emergency = balance.yearlyLeave.find(item => item.classification === 'emergencyLeave')!
   const paternity = balance.yearlyLeave.find(item => item.classification === 'paternityLeave')!
-  assert.equal(annual.entitlement, 30, 'Annual Leave must use the approved automatic service-year entitlement, never a calendar-year override.')
-  assert.equal(annual.remaining, 30)
+  assert.equal(annual.entitlement, 22.5, 'Annual Leave must use current service-year earned entitlement, never a calendar-year override.')
+  assert.equal(annual.remaining, 22.5)
   assert.deepEqual({ entitlement: sick.entitlement, used: sick.used, remaining: sick.remaining }, { entitlement: 8, used: 2, remaining: 6 })
   assert.deepEqual({ entitlement: emergency.entitlement, remaining: emergency.remaining }, { entitlement: 0, remaining: 0 })
   assert.equal(paternity.remaining, 41.7)

@@ -6,7 +6,7 @@ import { CORE_DUTY_CODES, EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, LEAVE_CLASSIF
 import { buildStaffLeaveRecords } from '../src/leave-records.js'
 import { serviceDate, weekRange } from '../src/service-date.js'
 import { calculateCalendarYearBalance, calendarYearPeriod } from './yearly-leave-entitlement-calculator.js'
-import { ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE, calculateServiceYearAnnualLeavePosition, serviceYearPeriodFor, type AnnualLeaveServiceYearEvidence } from './service-year-annual-leave-calculator.js'
+import { calculateServiceYearAnnualLeavePosition, serviceYearPeriodFor, type AnnualLeaveServiceYearEvidence } from './service-year-annual-leave-calculator.js'
 import { approvedDutyFinancialRule } from '../src/duty-financial-policy.js'
 
 type StaffRow = { id: string; staff_number: string; full_name: string; position_key: string; nationality: string; division: string; department: string; outlet: string; identity_document_number: string; employment_status_key: string; assignment_eligible: boolean; service_assignment_eligible: boolean; join_date: string; resignation_date: string | null; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null }
@@ -392,10 +392,10 @@ export class StaffRepository {
 
   private async annualLeaveServiceYearBalanceFromEvidence(staff: Staff, evidence: Array<AnnualLeaveServiceYearEvidence & { openingCarryReason?: string | null }>, asOf: string): Promise<AnnualLeaveServiceYearBalance> {
     const provisional = calculateServiceYearAnnualLeavePosition({ joinDate: staff.joinDate, asOf, serviceYears: evidence, confirmedAnnualLeaveDates: [] })
-    const usage = await this.database.query<{ date: string }>(`select distinct r.duty_date::text as date from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4 and c.metadata->>'dutyClassification'='annualLeave' order by date`, [staff.id, staffConfigKeys['duty-codes'], staff.joinDate, provisional.period.end])
+    const usage = await this.database.query<{ date: string }>(`select distinct r.duty_date::text as date from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4 and c.metadata->>'dutyClassification'='annualLeave' order by date`, [staff.id, staffConfigKeys['duty-codes'], provisional.period.start, asOf])
     const position = calculateServiceYearAnnualLeavePosition({ joinDate: staff.joinDate, asOf, serviceYears: evidence, confirmedAnnualLeaveDates: usage.rows.map(row => row.date) })
     const bookedFuture = await this.bookedFutureAnnualLeaveRange(staff.id, position.period.start, position.period.end)
-    const latestOpening = evidence.filter(row => row.openingCarryEffectiveDate && row.openingCarryEffectiveDate >= ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE && row.openingCarryEffectiveDate <= asOf).at(-1)
+    const currentOpening = evidence.find(row => row.openingCarryEffectiveDate === position.period.start)
     const decimal = (value: number) => Number(value.toFixed(4))
     return {
       serviceYearNumber: position.period.serviceYearNumber, serviceYearStart: position.period.start, serviceYearEnd: position.period.end,
@@ -403,8 +403,8 @@ export class StaffRepository {
       knownAvailableLeave: position.knownAvailableEntitlement, used: position.confirmedUsed, remaining: position.availableBalance,
       accruingForNextServiceYear: position.accruingForNextServiceYear, completedServiceMonths: position.completedServiceMonths,
       bookedFuture, availableAfterBooked: position.availableBalance === null ? null : decimal(position.availableBalance - bookedFuture),
-      evidenceStatus: position.evidenceStatus, approvedOpeningCarry: latestOpening?.approvedOpeningCarryUnits == null ? null : Number(latestOpening.approvedOpeningCarryUnits),
-      openingCarryReason: latestOpening?.openingCarryReason || null, preAvailabilityUsageDates: position.preAvailabilityUsageDates,
+      evidenceStatus: position.evidenceStatus, approvedOpeningCarry: currentOpening?.approvedOpeningCarryUnits == null ? null : Number(currentOpening.approvedOpeningCarryUnits),
+      openingCarryReason: currentOpening?.openingCarryReason || null, preAvailabilityUsageDates: position.preAvailabilityUsageDates,
     }
   }
 
