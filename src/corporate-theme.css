@@ -1236,6 +1236,19 @@ main.module-leave-planner :is(
   background: #fff !important;
 }
 
+main.module-leave-planner .employee-entitlement-table-wrap {
+  border-color: var(--ao-leave-line) !important;
+}
+
+main.module-leave-planner .employee-entitlement-table :is(th, td) {
+  border-color: var(--ao-leave-divider) !important;
+}
+
+main.module-leave-planner .employee-entitlement-details-row > td {
+  border-top-color: var(--ao-leave-line) !important;
+  background: var(--ao-leave-surface) !important;
+}
+
 main.module-leave-planner :is(
   .workforce-section-title,
   .holiday-panel-heading,
