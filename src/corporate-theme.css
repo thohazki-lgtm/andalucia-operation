@@ -301,6 +301,13 @@ main[class*='module-'] {
   border-bottom-color: var(--ao-royal-purple);
   background: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
   color: var(--ao-royal-purple);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.module-dashboard .tonight-card .tonight-table tbody td {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .module-dashboard .tonight-card .tonight-table tbody tr:nth-child(odd) td {
@@ -1032,7 +1039,7 @@ main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-
 main.module-staff-management .staff-table-identity {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -1211,6 +1218,7 @@ main.module-staff-management .membership-include input {
 }
 
 main.module-staff-management .membership-dialog {
+  --ao-surface: #fff;
   border: 1px solid var(--ao-staff-line-strong);
   border-top-width: 3px;
   background: var(--ao-staff-surface);
@@ -1219,12 +1227,6 @@ main.module-staff-management .membership-dialog {
 main.module-staff-management .membership-dialog :is(input, textarea) {
   border-color: var(--ao-staff-line-strong);
   background: #fff;
-  color: var(--ao-premium-navy);
-}
-
-.modal.membership-dialog :is(input, textarea) {
-  border-color: var(--ao-staff-line-strong);
-  background-color: #fff !important;
   color: var(--ao-premium-navy);
 }
 

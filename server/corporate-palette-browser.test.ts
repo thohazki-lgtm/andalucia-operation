@@ -77,7 +77,7 @@ try {
       }
       assert.ok(!['rgba(0, 0, 0, 0)', 'transparent'].includes(result.eyebrowColor), `${label} heading accent is invisible`)
       assert.equal(result.headerBackground, 'none', `${label} page header still uses a decorative gradient`)
-      if (['Dashboard', 'Duty Roster'].includes(label)) {
+      if (['Dashboard', 'Staff Management', 'Duty Roster'].includes(label)) {
         assert.equal(result.headerBackgroundColor, 'rgba(0, 0, 0, 0)', `${label} editorial header should remain transparent`)
         assert.equal(result.headerBorder, '0px', `${label} editorial header should remain borderless`)
         assert.equal(result.headerRadius, '0px', `${label} editorial header should not look like a card`)
@@ -113,7 +113,8 @@ try {
       assert.ok(result.logoRatio > 2.98 && result.logoRatio < 3.02, `${label} logo proportions changed`)
       assert.equal(result.canvas, 'rgba(0, 0, 0, 0)', `${label} inner content obscures the full-page canvas`)
       assert.equal(result.canvasImage, 'none', `${label} inner content duplicates the full-page gradient`)
-      assert.equal(result.shellCanvas, 'rgb(244, 241, 235)', `${label} shell lost its warm-neutral top canvas`)
+      const expectedShellCanvas = label === 'Staff Management' ? 'rgb(244, 248, 245)' : label === 'Duty Roster' ? 'rgb(255, 248, 242)' : 'rgb(244, 241, 235)'
+      assert.equal(result.shellCanvas, expectedShellCanvas, `${label} shell lost its approved top canvas`)
       assert.match(result.shellCanvasImage, /linear-gradient/, `${label} shell lacks its full-page module gradient`)
       assert.ok(result.shellHeight + 1 >= result.documentHeight, `${label} gradient shell does not cover the scrollable page`)
       assert.equal(polish.title.size, viewport.width <= 700 ? '26px' : '29px', `${label} page title scale is inconsistent`)
