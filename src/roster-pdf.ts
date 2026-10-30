@@ -15,12 +15,12 @@ type PageDate = string | null
 
 const NAVY: PdfColor = [.04, .16, .25]
 const TEXT_NAVY: PdfColor = [.09, .2, .28]
-const GOLD: PdfColor = [.82, .66, .36]
-const GOLD_DARK: PdfColor = [.49, .37, .16]
-const BORDER: PdfColor = [.84, .88, .9]
+const ACCENT: PdfColor = [.81, .38, .2]
+const ACCENT_DARK: PdfColor = [.55, .27, .16]
+const BORDER: PdfColor = [.9, .74, .65]
 const MUTED: PdfColor = [.38, .48, .54]
-const HEADER_FILL: PdfColor = [.95, .97, .98]
-const TODAY_FILL: PdfColor = [.99, .97, .91]
+const HEADER_FILL: PdfColor = [1, .97, .94]
+const TODAY_FILL: PdfColor = [.99, .9, .84]
 
 const ascii = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, '?')
 const literal = (value: string) => `(${ascii(value).replace(/([\\()])/g, '\\$1')})`
@@ -91,12 +91,12 @@ function buildPage(input: RosterPdfInput, pageDates: PageDate[], pageIndex: numb
   let stream = ''
 
   stream += rect(0, pageHeight - mastheadHeight, pageWidth, mastheadHeight, NAVY, NAVY)
-  stream += roundedRect(margin, pageHeight - 57, 32, 32, 16, NAVY, GOLD)
-  stream += centeredText('A', margin, pageHeight - 48, 32, 20, true, GOLD)
+  stream += roundedRect(margin, pageHeight - 57, 32, 32, 16, NAVY, ACCENT)
+  stream += centeredText('A', margin, pageHeight - 48, 32, 20, true, ACCENT)
   stream += text('ANDALUCIA OPERATION', margin + 44, pageHeight - 39, 17, true, [1, 1, 1])
-  stream += text(`${input.view.toUpperCase()} DUTY ROSTER`, margin + 44, pageHeight - 57, 8, true, GOLD)
+  stream += text(`${input.view.toUpperCase()} DUTY ROSTER`, margin + 44, pageHeight - 57, 8, true, ACCENT)
   stream += text(`${longDate(input.start)} - ${longDate(input.end)}`, pageWidth - 220, pageHeight - 40, 8.5, true, [1, 1, 1])
-  if (pageCount > 1) stream += text(`WEEK ${pageIndex + 1} OF ${pageCount}  |  ${shortDate(pageStart)} - ${shortDate(pageEnd)}`, pageWidth - 220, pageHeight - 57, 7, true, GOLD)
+  if (pageCount > 1) stream += text(`WEEK ${pageIndex + 1} OF ${pageCount}  |  ${shortDate(pageStart)} - ${shortDate(pageEnd)}`, pageWidth - 220, pageHeight - 57, 7, true, ACCENT)
 
   stream += rect(margin, top, nameWidth, headerHeight, HEADER_FILL)
   stream += text('TEAM MEMBER', margin + 9, top + 17, 7.5, true)
@@ -104,10 +104,10 @@ function buildPage(input: RosterPdfInput, pageDates: PageDate[], pageIndex: numb
     const x = margin + nameWidth + index * cellWidth
     const isToday = date === today
     stream += rect(x, top, cellWidth, headerHeight, isToday ? TODAY_FILL : HEADER_FILL)
-    if (isToday) stream += line(x, top + headerHeight - 2, x + cellWidth, top + headerHeight - 2, GOLD, 2)
+    if (isToday) stream += line(x, top + headerHeight - 2, x + cellWidth, top + headerHeight - 2, ACCENT, 2)
     const dayLabel = date ? weekday(date) : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][index]
-    stream += centeredText(dayLabel, x, top + 25, cellWidth, fitTextSize(dayLabel, cellWidth - 8, 7.6, 6.1), true, isToday ? GOLD_DARK : TEXT_NAVY)
-    if (date) stream += centeredText(`${shortDate(date)}${isToday ? '  TODAY' : ''}`, x, top + 10, cellWidth, fitTextSize(`${shortDate(date)}${isToday ? ' TODAY' : ''}`, cellWidth - 8, 6.5, 5.4), isToday, isToday ? GOLD_DARK : MUTED)
+    stream += centeredText(dayLabel, x, top + 25, cellWidth, fitTextSize(dayLabel, cellWidth - 8, 7.6, 6.1), true, isToday ? ACCENT_DARK : TEXT_NAVY)
+    if (date) stream += centeredText(`${shortDate(date)}${isToday ? '  TODAY' : ''}`, x, top + 10, cellWidth, fitTextSize(`${shortDate(date)}${isToday ? ' TODAY' : ''}`, cellWidth - 8, 6.5, 5.4), isToday, isToday ? ACCENT_DARK : MUTED)
   })
   const totalX = margin + nameWidth + gridWidth
   stream += rect(totalX, top, totalsWidth, headerHeight, HEADER_FILL)

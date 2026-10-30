@@ -63,7 +63,14 @@ main.module-dashboard {
   opacity: 0.28;
 }
 
-.module-duty-roster,
+.module-duty-roster {
+  --ao-module-accent: var(--ao-sunset-orange);
+  --ao-module-accent-ink: #8b4529;
+  --ao-module-accent-soft: var(--ao-orange-glow);
+  --ao-module-canvas-primary: #f7d5c2;
+  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+}
+
 .module-bookings {
   --ao-module-accent: var(--ao-sunset-orange);
   --ao-module-accent-ink: #9b4b29;
@@ -132,7 +139,15 @@ main[class*='module-'] {
    changing its established navy selected state or gold authority marker. */
 .app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-duty-roster) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
+.app-shell:has(> main.module-duty-roster) {
+  --ao-shell-accent: var(--ao-sunset-orange);
+  --ao-shell-highlight: var(--ao-orange-glow);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #fff8f2;
+  background-image: linear-gradient(to bottom, #fff8f2 0%, #fbe8dd 56%, #f3c6ad 100%);
+  background-repeat: no-repeat;
+}
 .app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
@@ -176,6 +191,22 @@ main.module-dashboard > .page-header {
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+/* Duty Roster keeps the clean editorial shell while using its own restrained
+   burnt-orange and peach identity. Configured duty-code colors stay authoritative. */
+main.module-duty-roster > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-duty-roster > .page-header::before {
+  display: none;
+  content: none;
 }
 
 main.module-dashboard > .page-header::before {
