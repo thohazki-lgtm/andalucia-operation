@@ -18,14 +18,13 @@ export function LeaveTypesPanel({ dutyCodes, onActivate }: { dutyCodes: ConfigOp
   })
   const activate = async (code: string) => { try { setActivationError(''); setActivatingCode(code); await onActivate(code) } catch (error) { setActivationError(error instanceof Error ? error.message : 'Unable to activate the Duty Code.') } finally { setActivatingCode(null) } }
   return <article className="panel workforce-foundation-panel leave-types-panel">
-    <div className="panel-title workforce-section-title"><div><p className="eyebrow">AUTHORITATIVE CLASSIFICATIONS</p><h3>Leave Types</h3><p>The ten protected classifications reuse Duty Roster code definitions. Names and identities are not duplicated here.</p></div><span className="leave-type-count">10 protected types</span></div>
+    <div className="panel-title workforce-section-title"><div><p className="eyebrow">AUTHORITATIVE CLASSIFICATIONS</p><h3>Leave Types</h3></div><span className="leave-type-count">10 protected types</span></div>
     <div className="leave-type-grid" aria-label="Protected leave types">{leaveTypes.map(item => <article className="leave-type-card" key={item.code}>
       <span className="leave-type-code" style={{ borderColor: item.color, color: item.color }}>{item.code}</span>
       <div><strong>{item.label}</strong>{LEAVE_CLASSIFICATION_LABELS[item.classification] !== item.label && <small>{LEAVE_CLASSIFICATION_LABELS[item.classification]}</small>}</div>
       {item.configured && item.active ? <span className="leave-type-state active">Configured</span> : <button type="button" className="secondary activate-duty-code" disabled={activatingCode !== null} onClick={() => void activate(item.code)}>{activatingCode === item.code ? 'Activating…' : 'Activate Duty Code'}</button>}
     </article>)}</div>
     {activationError && <p className="save-error" role="alert">{activationError}</p>}
-    <p className="configuration-source-note"><b>Source:</b> Duty Roster → Duty Code Settings. Historical <b>SK</b> assignments remain compatible with the current <b>SL</b> Sick Leave classification and are never rewritten.</p>
   </article>
 }
 
@@ -38,7 +37,7 @@ export function EntitlementPoliciesPanel() {
   useEffect(() => { void load() }, [])
   const saved = async (policy: EntitlementPolicy) => { const result = await staffApi.saveEntitlementPolicy(policy); setItems(current => current.map(item => item.classification === result.classification ? result : item)); setEditing(null) }
   return <article className="panel workforce-foundation-panel entitlement-policies-panel">
-    <div className="panel-title workforce-section-title"><div><p className="eyebrow">DEFAULT ALLOWANCES</p><h3>Entitlement Policies</h3><p>Defaults apply only when an employee-specific override does not exist. Protected leave identities and calculation rules remain unchanged.</p></div></div>
+    <div className="panel-title workforce-section-title"><div><p className="eyebrow">DEFAULT ALLOWANCES</p><h3>Entitlement Policies</h3></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading entitlement policies…</p> : <div className="entitlement-policy-list" aria-label="Entitlement policy defaults">{items.map(item => {
       const definition = CORE_DUTY_CODES.find(candidate => candidate.classification === item.classification)
@@ -54,7 +53,7 @@ export function EntitlementPoliciesPanel() {
         </div>
       </article>
     })}</div>}
-    <p className="configuration-source-note"><b>Separation preserved:</b> recurring OFF and PH allowances are policy values; Public Holiday Calendar remains the source for named calendar dates. Confirmed usage comes only from Duty Roster, while Booked/Future remains a separate planning deduction.</p>
+    <p className="configuration-source-note policy-information-note"><b>Policy defaults:</b> apply only when an employee-specific override does not exist; protected leave identities and calculation rules remain unchanged. Recurring OFF and PH allowances remain policy values, Public Holiday Calendar remains the source for named dates, confirmed usage comes only from Duty Roster, and Booked/Future remains a separate planning deduction.</p>
     {editing && <EntitlementPolicyForm policy={editing} onClose={() => setEditing(null)} onSave={saved} />}
   </article>
 }
@@ -63,7 +62,7 @@ function EntitlementPolicyForm({ policy, onClose, onSave }: { policy: Entitlemen
   const [allowance, setAllowance] = useState(policy.defaultAllowance ?? policy.approvedAllowance)
   const [error, setError] = useState('')
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!Number.isInteger(allowance) || allowance < 0) return setError('Default entitlement allowance must be a whole number of zero or more.'); try { setError(''); await onSave({ ...policy, defaultAllowance: allowance }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save the entitlement policy.') } }
-  return <div className="modal-backdrop" role="presentation"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="policy-title"><button className="close" aria-label="Close" onClick={onClose}>×</button><h2 id="policy-title">Edit {policy.label} Default</h2><p className="configuration-source-note">This changes the default for employees without an individual override. Existing employee-specific allowances and explicit zero values are preserved.</p><form className="staff-form" onSubmit={event => void submit(event)}><label>Default allowance<input required type="number" min="0" step="1" value={allowance} onChange={event => setAllowance(Number(event.target.value))} /></label><p className="policy-form-unit">{policy.cadence === 'weekly' ? 'Days per week' : 'Days per year'}{policy.activationRequired ? ` · HR-approved preparation value ${policy.approvedAllowance}` : ''}</p>{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button type="submit" className="primary">Save Default</button></div></form></section></div>
+  return <div className="modal-backdrop" role="presentation"><section className="modal entitlement-policy-modal" role="dialog" aria-modal="true" aria-labelledby="policy-title"><button className="close" aria-label="Close" onClick={onClose}>×</button><h2 id="policy-title">Edit {policy.label} Default</h2><p className="configuration-source-note">This changes the default for employees without an individual override. Existing employee-specific allowances and explicit zero values are preserved.</p><form className="staff-form" onSubmit={event => void submit(event)}><label>Default allowance<input required type="number" min="0" step="1" value={allowance} onChange={event => setAllowance(Number(event.target.value))} /></label><p className="policy-form-unit">{policy.cadence === 'weekly' ? 'Days per week' : 'Days per year'}{policy.activationRequired ? ` · HR-approved preparation value ${policy.approvedAllowance}` : ''}</p>{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button type="submit" className="primary">Save Default</button></div></form></section></div>
 }
 
 export function StaffEntitlementsManager() {
