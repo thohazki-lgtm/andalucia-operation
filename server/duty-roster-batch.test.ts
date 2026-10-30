@@ -50,6 +50,8 @@ try {
   assert.match(pdfText, /Saturday/)
   assert.match(pdfText, /TL \| A/)
   assert.match(pdfText, /Saved Duty Roster assignments/)
+  assert.match(pdfText, /0\.81 0\.38 0\.2 rg/, 'the PDF must use the Duty Roster burnt-orange accent')
+  assert.doesNotMatch(pdfText, /0\.82 0\.66 0\.36 rg/, 'the PDF must not retain the legacy gold accent')
   assert.match(pdfText, /0 517 842 78 re B/, 'the navy masthead must retain its complete 78pt height')
   assert.match(pdfText, /24 464 150 43 re B/, 'the weekly table must start 10pt below the masthead')
   assert.match(pdfText, /\/Count 1/, 'a fitting weekly roster must remain on one landscape page')
