@@ -24,7 +24,7 @@ assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-ta
 assert.match(styles, /\.employee-entitlement-details-row>td\{[^}]*background:var\(--ao-leave-surface/, 'Inline details must remain connected to the selected employee.')
 
 const inlineDetails = workforce.match(/function EntitlementInlineDetails[\s\S]*?\n\}/)?.[0] || ''
-assert.match(inlineDetails, /Accruing Next Service Year[\s\S]*?serviceYear\?\.accruingForNextServiceYear/, 'Accrual must remain available only in expandable employee details.')
+assert.doesNotMatch(inlineDetails, /Accruing Next Service Year|accruingForNextServiceYear/, 'The misleading next-service-year accrual display must be removed from inline details.')
 const offSummaryPosition = inlineDetails.indexOf('OFF Days Summary')
 const nonAnnualBalancePosition = inlineDetails.indexOf('aria-label="Non-Annual Leave entitlement balances"')
 assert.ok(offSummaryPosition > 0 && offSummaryPosition < nonAnnualBalancePosition, 'OFF Days Summary must remain before the simplified non-AL balances.')
