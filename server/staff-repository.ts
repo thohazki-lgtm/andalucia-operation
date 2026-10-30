@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { CORE_DUTY_CODES, EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, LEAVE_CLASSIFICATIONS, YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS, config, coreDutyCode, isLeaveClassification, leaveClassificationForCode, type AnnualLeaveCarryForwardDraft, type AnnualLeaveCarryForwardPreview, type AnnualLeaveCarryForwardWrite, type AnnualLeaveServiceYearBalance, type AuthPrincipal, type ConfigOption, type EmployeeOverrideLeaveClassification, type EntitlementPolicy, type LeaveClassification, type PublicHoliday, type Staff, type StaffEntitlement, type StaffEntitlementReconciliation, type StaffEntitlementUpdate, type StaffLeaveDay, type StaffLeaveRecord, type StaffYearlyEntitlementBalance, type StaffYearlyEntitlementDraft, type StaffYearlyEntitlementPreview, type StaffYearlyEntitlementRecord, type StaffYearlyEntitlementWrite, type YearlyEntitlementLeaveClassification } from '../src/domain.js'
+import { CORE_DUTY_CODES, EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, LEAVE_CLASSIFICATIONS, YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS, canManageDutyCodeAvailability, config, coreDutyCode, isLeaveClassification, leaveClassificationForCode, type AnnualLeaveCarryForwardDraft, type AnnualLeaveCarryForwardPreview, type AnnualLeaveCarryForwardWrite, type AnnualLeaveServiceYearBalance, type AuthPrincipal, type ConfigOption, type EmployeeOverrideLeaveClassification, type EntitlementPolicy, type LeaveClassification, type PublicHoliday, type Staff, type StaffEntitlement, type StaffEntitlementReconciliation, type StaffEntitlementUpdate, type StaffLeaveDay, type StaffLeaveRecord, type StaffYearlyEntitlementBalance, type StaffYearlyEntitlementDraft, type StaffYearlyEntitlementPreview, type StaffYearlyEntitlementRecord, type StaffYearlyEntitlementWrite, type YearlyEntitlementLeaveClassification } from '../src/domain.js'
 import { buildStaffLeaveRecords } from '../src/leave-records.js'
 import { serviceDate, weekRange } from '../src/service-date.js'
 import { calculateCalendarYearBalance, calendarYearPeriod } from './yearly-leave-entitlement-calculator.js'
@@ -38,7 +38,7 @@ const approvedEntitlementPolicyDefaults: Record<LeaveClassification, { allowance
 const normalizedDutyCode = (option: ConfigOption): ConfigOption => {
   const displayCode = String(option.metadata?.displayCode || option.value).trim().toUpperCase()
   const standard = coreDutyCode(displayCode)
-  if (standard) return { ...option, label: standard.label, active: true, metadata: { ...option.metadata, displayCode: standard.code, dutyClassification: standard.classification, countsAsWorking: false, protected: true, systemControlled: true } }
+  if (standard) return { ...option, label: standard.label, active: standard.classification === 'off' ? true : option.active, metadata: { ...option.metadata, displayCode: standard.code, dutyClassification: standard.classification, countsAsWorking: false, protected: true, systemControlled: true } }
   if (displayCode === 'SK') return { ...option, metadata: { ...option.metadata, displayCode: 'SK', dutyClassification: 'sickLeave', countsAsWorking: false, countsAsSickLeave: true, protected: true, legacyCompatibility: true } }
   return option
 }
@@ -189,7 +189,8 @@ export class StaffRepository {
       const existingDisplayCode = String((typeof existing.rows[0]?.metadata === 'string' ? JSON.parse(existing.rows[0].metadata) : existing.rows[0]?.metadata || {}).displayCode || existing.rows[0]?.value || '').trim().toUpperCase()
       const existingStandard = coreDutyCode(existingDisplayCode)
       if (existingStandard) {
-        if (displayCode !== existingStandard.code || option.label.trim() !== existingStandard.label || classification !== existingStandard.classification || !option.active) throw new Error(`${existingStandard.code} · ${existingStandard.label} is a protected core Duty Code. Only its color and display order can be changed.`)
+        const availability = { ...option, metadata: { ...metadata, dutyClassification: existingStandard.classification } }
+        if (displayCode !== existingStandard.code || option.label.trim() !== existingStandard.label || classification !== existingStandard.classification || (!option.active && !canManageDutyCodeAvailability(availability))) throw new Error(`${existingStandard.code} · ${existingStandard.label} is a protected core Duty Code. Its identity and classification are fixed; only roster availability for leave codes other than OFF, color, display order and approved financial settings can be changed.`)
         classification = existingStandard.classification
         metadata = { ...metadata, displayCode: existingStandard.code, dutyClassification: classification, countsAsWorking: false, protected: true, systemControlled: true }
       } else if (existingDisplayCode === 'SK') {
@@ -201,6 +202,7 @@ export class StaffRepository {
       } else if (displayCode === 'SK') throw new Error('SK is reserved for historical Sick Leave compatibility. Use SL for new assignments.')
       if (!displayCode || !option.label.trim() || !(['working', 'other', ...LEAVE_CLASSIFICATIONS] as string[]).includes(String(classification))) throw new Error('Display code, duty name and classification are required.')
       if (!/^#[0-9a-f]{6}$/i.test(option.color || '')) throw new Error('Select a valid duty color.')
+      if (!option.active && existing.rows[0]?.active !== false && !canManageDutyCodeAvailability({ ...option, metadata: { ...metadata, dutyClassification: classification } })) throw new Error('Working duties and OFF must remain enabled for new roster assignments.')
       const conflict = await this.database.query<{ id: string }>("select id from configuration_options where group_key=$1 and active and id<>$2 and lower(coalesce(nullif(metadata->>'displayCode',''),value))=lower($3) limit 1", [staffConfigKeys[group], id, displayCode])
       if (conflict.rows[0]) throw new Error('That display code is already in use.')
       const countsAsWorking = classification === 'working' ? true : isLeaveClassification(classification) ? false : Boolean(metadata.countsAsWorking)

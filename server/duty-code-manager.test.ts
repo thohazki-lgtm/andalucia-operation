@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import { StaffRepository } from './staff-repository.js'
+import { OperationsRepository } from './operations-repository.js'
 import { moveDutyCode } from '../src/duty-code-order.js'
 
 const dataDirectory = await mkdtemp(join(tmpdir(), 'andalucia-duty-code-manager-'))
@@ -30,6 +31,26 @@ try {
   assert.equal(off.metadata?.countsAsWorking, false)
   assert.equal(leave.metadata?.countsAsWorking, false)
   await assert.rejects(() => createDuty('TST2', 'Duplicate Code', 'other', false), /already in use/)
+
+  const staffId = '00000000-0000-4000-8000-000000000001'
+  const operations = new OperationsRepository(repository.getDatabase())
+  await operations.initialize()
+  await operations.updateRoster(staffId, '2026-08-30', leave.value)
+  const financialRule = { eligible: leave.metadata?.billTipEligible, units: leave.metadata?.billTipWorkedDayUnits }
+  const disabledLeave = await repository.saveConfiguration('duty-codes', { ...leave, active: false })
+  assert.equal(disabledLeave.active, false, 'A manager must be able to disable a leave code for new roster selections.')
+  const persistedDisabledLeave = (await repository.configuration()).dutyCodes.find(option => option.id === leave.id)!
+  assert.equal(persistedDisabledLeave.active, false, 'Disabled availability must persist through configuration reloads.')
+  assert.deepEqual({ eligible: persistedDisabledLeave.metadata?.billTipEligible, units: persistedDisabledLeave.metadata?.billTipWorkedDayUnits }, financialRule, 'Availability changes must not alter Bill Tip rules.')
+  assert.equal((await operations.roster('2026-08-30', '2026-08-30'))[0].dutyCode, leave.value, 'Existing roster assignments must remain visible after a leave code is disabled.')
+  assert.equal((await repository.leaveRecords('2026-08-30', '2026-08-30', staffId)).flatMap(record => record.entries).length, 1, 'Disabled leave codes must continue to contribute to historical leave records.')
+  await assert.rejects(() => operations.updateRoster(staffId, '2026-08-31', leave.value), /Inactive duty codes cannot receive new roster assignments/, 'Disabled leave codes must not be assigned to new roster dates.')
+  await operations.updateRoster(staffId, '2026-08-30', leave.value)
+  await assert.rejects(() => repository.saveConfiguration('duty-codes', { ...off, active: false }), /Working duties and OFF must remain enabled|protected core Duty Code/)
+  await assert.rejects(() => repository.saveConfiguration('duty-codes', { ...working, active: false }), /Working duties and OFF must remain enabled/)
+  const reenabledLeave = await repository.saveConfiguration('duty-codes', { ...disabledLeave, active: true })
+  assert.equal(reenabledLeave.active, true)
+  await operations.updateRoster(staffId, '2026-08-31', leave.value)
 
   const beforeOptions = (await repository.configuration()).dutyCodes.filter(option => option.active)
   const beforeOrder = beforeOptions.map(option => option.id)
@@ -57,7 +78,6 @@ try {
   assert.equal((await repository.configuration()).dutyCodes.some(option => option.id === unused.id), false)
 
   const referenced = await createDuty('HIST', 'Historical Duty', 'other', true)
-  const staffId = '00000000-0000-4000-8000-000000000001'
   await repository.getDatabase().query('insert into duty_roster_entries(id,staff_id,duty_date,duty_code_value) values($1,$2,$3,$4)', [randomUUID(), staffId, '2026-09-01', referenced.value])
   const retirement = await repository.removeDutyCode(referenced.id)
   assert.equal(retirement.mode, 'retired')
@@ -79,7 +99,7 @@ try {
   const expectedActiveOrder = afterOrder.filter(id => id !== unused.id && id !== referenced.id)
   const { stdout } = await execFileAsync(process.execPath, [tsxCli, verifier, snapshotPath, edited.id, referenced.id, attendanceReferenced.id, JSON.stringify(expectedActiveOrder)], { cwd: process.cwd(), maxBuffer: 1024 * 1024 })
   assert.deepEqual(JSON.parse(stdout), { displayCode: 'TST2', color: '#abcdef', rosterReferencedActive: false, attendanceReferencedActive: false, activeOrder: expectedActiveOrder })
-  console.log(JSON.stringify({ internalValueImmutable: true, displayCodePersisted: true, classificationsProtected: true, duplicateDisplayCodeRejected: true, firstToMiddlePersisted: true, middleToFirstPersisted: true, lastToTopPersisted: true, downOnePersisted: true, upOnePersisted: true, databaseReopenPersistence: true, invalidOrderRejected: true, rosterOrderRefreshed: true, unusedDeleted: true, rosterReferencedRetired: true, attendanceReferencedRetired: true, historyPreserved: true, configurationAudit: true }, null, 2))
+  console.log(JSON.stringify({ internalValueImmutable: true, displayCodePersisted: true, classificationsProtected: true, duplicateDisplayCodeRejected: true, leaveAvailabilityPersisted: true, newInactiveAssignmentsRejected: true, existingAssignmentsPreserved: true, leaveHistoryPreserved: true, billTipRulePreserved: true, workingAndOffRemainAvailable: true, leaveReactivationRestoresSelection: true, firstToMiddlePersisted: true, middleToFirstPersisted: true, lastToTopPersisted: true, downOnePersisted: true, upOnePersisted: true, databaseReopenPersistence: true, invalidOrderRejected: true, rosterOrderRefreshed: true, unusedDeleted: true, rosterReferencedRetired: true, attendanceReferencedRetired: true, historyPreserved: true, configurationAudit: true }, null, 2))
 } finally {
   await rm(snapshotPath, { force: true })
   await rm(dataDirectory, { recursive: true, force: true })
