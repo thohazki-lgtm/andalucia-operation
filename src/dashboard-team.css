@@ -9,24 +9,41 @@
 }
 
 .dashboard-page .dashboard-card {
-  border-color: #e3d2aa;
-  border-top: 3px solid #c4a15c;
+  padding: 16px 18px;
+  border-color: var(--ao-module-line, #7dbbb2);
+  border-top: 3px solid var(--ao-module-accent, #0c675c);
   border-radius: 12px;
-  background: linear-gradient(145deg, #fffaf0 0%, #ffffff 58%);
+  background: var(--ao-module-surface, #fffdf8);
   box-shadow: 0 7px 20px rgba(23, 61, 86, 0.07);
 }
 
 .dashboard-page .dashboard-card .panel-title {
-  padding-bottom: 9px;
-  border-bottom: 1px solid rgba(222, 197, 143, 0.55);
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 7px 9px 8px;
+  border-bottom: 1px solid var(--ao-module-line, #7dbbb2);
 }
 
 .dashboard-page .dashboard-card .panel-title h3 {
   color: #173d56;
+  font-family: var(--ao-font-ui, "Good Sans", sans-serif);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
 .dashboard-page .dashboard-card .panel-title .eyebrow {
-  color: #8c6a28;
+  color: var(--ao-module-accent-ink, #0c675c);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.dashboard-page .dashboard-card-action {
+  min-height: 36px;
+  border-color: color-mix(in srgb, var(--ao-module-accent, #0c675c) 38%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ao-module-accent-soft, #b1e4dc) 18%, #ffffff);
+  color: var(--ao-module-accent-ink, #0c675c);
 }
 
 .dashboard-hero-copy,
@@ -70,19 +87,19 @@
 .dashboard-metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
+  gap: 8px;
 }
 
 .dashboard-metric-grid > div {
   display: grid;
   min-width: 0;
-  min-height: 78px;
+  min-height: 64px;
   align-content: center;
-  padding: 12px 13px;
-  border: 1px solid #dec58f;
-  border-top: 3px solid #c4a15c;
+  padding: 9px 11px;
+  border: 1px solid var(--ao-module-line, #7dbbb2);
+  border-top: 2px solid var(--ao-module-accent, #0c675c);
   border-radius: 8px;
-  background: #fffaf0;
+  background: color-mix(in srgb, var(--ao-module-accent-soft, #b1e4dc) 10%, #ffffff);
 }
 
 .dashboard-metric-grid span {
@@ -95,9 +112,12 @@
 }
 
 .dashboard-metric-grid strong {
-  margin-top: 6px;
+  margin-top: 4px;
   color: #173d56;
-  font: 700 24px/1 "Playfair Display", serif;
+  font-family: var(--ao-font-ui, "Good Sans", sans-serif);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.05;
 }
 
 .metric-dashboard-card .panel-title {
@@ -113,13 +133,13 @@
 }
 
 .team-metrics > div {
-  min-height: 62px;
-  padding: 8px 10px;
+  min-height: 56px;
+  padding: 7px 9px;
 }
 
 .team-groups {
-  gap: 6px;
-  margin-top: 4px;
+  gap: 5px;
+  margin-top: 2px;
 }
 
 .team-duty-group {
@@ -138,7 +158,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 6px;
+  gap: 5px;
   margin-top: 0;
 }
 
@@ -146,16 +166,16 @@
   display: inline-flex;
   width: max-content;
   max-width: 100%;
-  min-height: 26px;
+  min-height: 24px;
   align-items: center;
   justify-content: center;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border: 1px solid #dec58f;
   border-radius: 999px;
   background: #fffaf0;
   color: #173d56;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.3;
   text-align: center;
   overflow-wrap: anywhere;
@@ -173,17 +193,17 @@
 .team-secondary-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding-top: 3px;
-  border-top: 1px solid rgba(222, 197, 143, 0.55);
+  gap: 7px;
+  padding-top: 2px;
+  border-top: 1px solid var(--ao-module-line, #7dbbb2);
 }
 
 .team-secondary-panel {
   min-width: 0;
-  padding: 4px 7px;
-  border: 1px solid #dec58f;
+  padding: 5px 7px;
+  border: 1px solid var(--ao-module-line, #7dbbb2);
   border-radius: 9px;
-  background: rgba(255, 250, 240, 0.72);
+  background: color-mix(in srgb, var(--ao-module-accent-soft, #b1e4dc) 8%, #ffffff);
 }
 
 .team-secondary-panel header {
@@ -195,10 +215,10 @@
 
 .team-secondary-panel header > span {
   display: grid;
-  width: 18px;
+  min-width: 22px;
   height: 18px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: 6px;
   background: #e9eff2;
   color: #315167;
   font-size: 9px;
@@ -216,7 +236,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .team-status-list .team-staff-pill--status {
@@ -237,7 +257,7 @@
   min-width: 32px;
   padding: 3px 6px;
   border-radius: 999px;
-  border: 1px solid rgba(196, 161, 92, 0.5);
+  border: 1px solid var(--ao-module-line, #7dbbb2);
   background: #ffffff;
   color: #173d56;
   font-size: 9px;
@@ -255,14 +275,26 @@
   margin-top: 0;
 }
 
-.training-dashboard-card {
+main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
+  --dashboard-training-accent: #0c675c;
+  --dashboard-training-line: #75b9b0;
+  --dashboard-training-soft: #e7f6f3;
   height: auto;
   min-height: 0;
   padding-bottom: 12px;
+  border-top-color: var(--dashboard-training-accent);
 }
 
-.training-dashboard-card .panel-title {
+main.module-dashboard .training-dashboard-card .panel-title {
   margin-bottom: 4px;
+  border-bottom-color: var(--dashboard-training-line);
+  background: var(--dashboard-training-soft);
+  box-shadow: inset 3px 0 var(--dashboard-training-accent);
+}
+
+main.module-dashboard .training-dashboard-card .panel-title .eyebrow,
+main.module-dashboard .training-dashboard-card .dashboard-training-date {
+  color: var(--dashboard-training-accent);
 }
 
 .training-dashboard-card .dashboard-training-date {
@@ -280,19 +312,26 @@
   min-height: 44px;
   align-content: center;
   padding: 6px 8px;
-  border: 1px solid rgba(222, 197, 143, 0.68);
+  border: 1px solid var(--dashboard-training-line);
   border-radius: 8px;
-  background: #fffaf0;
+  background: #f1faf8;
 }
 
 .training-dashboard-card .dashboard-training-details dt {
   margin-bottom: 2px;
+  color: var(--dashboard-training-accent);
   font-size: 8px;
 }
 
 .training-dashboard-card .dashboard-training-details dd {
   font-size: 11px;
   line-height: 1.3;
+}
+
+.training-dashboard-card .training-status.scheduled {
+  border: 1px solid var(--ao-training-scheduled-border, var(--dashboard-training-line));
+  background: var(--ao-training-scheduled-background, #dff3ef);
+  color: var(--ao-training-scheduled-text, var(--dashboard-training-accent));
 }
 
 .dashboard-page .dashboard-badges {
@@ -411,15 +450,22 @@
 }
 
 .tonight-card .panel-title {
-  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.tonight-card .panel-title > div {
+  width: 100%;
+  text-align: left;
 }
 
 .hostess-state-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   justify-content: stretch;
-  gap: 9px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 9px;
 }
 
 .hostess-state-summary > div.arrived {
@@ -452,48 +498,48 @@
 }
 
 .tonight-card .next-arrivals .eyebrow {
-  margin-bottom: 3px;
-  font-size: 13px;
-  font-weight: 650;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 
 .tonight-card .next-arrivals strong {
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.25;
 }
 
 .tonight-card .next-arrival-groups span {
   display: inline-flex;
-  min-height: 32px;
+  min-height: 26px;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px;
-  border-color: #dec58f;
+  padding: 4px 8px;
+  border-color: var(--ao-module-line, #7dbbb2);
   border-radius: 7px;
   background: #fffdf8;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
 .tonight-card .next-arrival-groups {
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tonight-table th {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .dashboard-page .tonight-table th:first-child,
 .dashboard-page .tonight-table td:first-child {
-  width: 15%;
-  min-width: 124px;
-  max-width: 160px;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
 }
 
 .dashboard-page .tonight-table {
@@ -502,55 +548,65 @@
 }
 
 .dashboard-page .tonight-table .tonight-time-column {
-  width: 15%;
+  width: 120px;
+}
+
+.dashboard-page .tonight-table .tonight-party-column {
+  width: var(--ao-dashboard-pax-column-width, 86px);
 }
 
 .dashboard-page .tonight-table thead th {
-  border-bottom: 2px solid #d2ad5c;
-  background: #fffaf0;
+  border-bottom: 2px solid var(--ao-module-accent, #0c675c);
+  background: color-mix(in srgb, var(--ao-module-accent-soft, #b1e4dc) 16%, #ffffff);
   text-align: center;
   vertical-align: middle;
 }
 
 .tonight-table th + th,
 .tonight-table td + td {
-  border-left: 1px solid #eadfca;
+  border-left: 1px solid var(--ao-module-line, #7dbbb2);
 }
 
 .tonight-table tbody tr + tr td {
-  border-top: 1px solid #eadfca;
+  border-top: 1px solid color-mix(in srgb, var(--ao-module-line, #7dbbb2) 65%, #ffffff);
 }
 
 .tonight-table th:not(:first-child),
 .tonight-table td:not(:first-child) {
+  width: var(--ao-dashboard-pax-column-width, 86px);
+  min-width: var(--ao-dashboard-pax-column-width, 86px);
+  padding: var(--ao-dashboard-pax-cell-padding, 7px 6px);
   text-align: center;
+  vertical-align: middle;
 }
 
 .tonight-table td {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.25;
   color: #173d56;
 }
 
 .tonight-count-badge {
-  display: inline-grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 1px solid #c8a45b;
-  border-radius: 50%;
-  background: #fff7e6;
-  color: #173d56;
-  font-size: 15px;
-  font-weight: 800;
+  display: inline-flex;
+  min-width: 34px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ao-dashboard-pax-pill-padding, 0 9px);
+  border: 1px solid var(--ao-dashboard-pax-pill-border, #b884c7);
+  border-radius: var(--ao-dashboard-pax-pill-radius, 999px);
+  background: var(--ao-dashboard-pax-pill-background, #f0e5f5);
+  color: var(--ao-dashboard-pax-pill-color, #5b146f);
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   box-shadow: 0 2px 6px rgba(23, 61, 86, 0.08);
 }
 
 .tonight-table td:first-child {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .tonight-table tbody tr:nth-child(odd) td {
@@ -562,13 +618,13 @@
 }
 
 .tonight-table tbody tr.current-service-slot td {
-  background: #fff8e7;
-  box-shadow: inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b;
+  background: #e2f5f1;
+  box-shadow: inset 0 1px var(--ao-module-line, #7dbbb2), inset 0 -1px var(--ao-module-line, #7dbbb2);
 }
 
 .tonight-table tbody tr.current-service-slot td:first-child {
-  box-shadow: inset 3px 0 #b38b3a, inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b;
-  color: #715822;
+  box-shadow: inset 3px 0 var(--ao-module-accent, #0c675c), inset 0 1px var(--ao-module-line, #7dbbb2), inset 0 -1px var(--ao-module-line, #7dbbb2);
+  color: var(--ao-module-accent-ink, #0c675c);
   font-weight: 700;
 }
 
@@ -580,21 +636,23 @@
 .tonight-scroll {
   width: 100%;
   max-width: 100%;
-  border: 1px solid #e4d5b4;
+  border: 1px solid var(--ao-module-line, #7dbbb2);
   background: #fff;
 }
 
 .tonight-card .next-arrivals {
-  border-color: #e2d0aa;
-  border-left-color: #b99043;
-  background: #fffaf0;
+  margin-bottom: 7px;
+  padding: 8px 10px;
+  border-color: var(--ao-module-line, #7dbbb2);
+  border-left-color: var(--ao-module-accent, #0c675c);
+  background: color-mix(in srgb, var(--ao-module-accent-soft, #b1e4dc) 10%, #ffffff);
 }
 
 @media (max-width: 768px) {
   .tonight-scroll {
     padding-bottom: 7px;
     scrollbar-width: thin;
-    scrollbar-color: #bd9854 #e9f0f3;
+    scrollbar-color: var(--ao-module-accent, #0c675c) #e9f0f3;
   }
 
   .tonight-scroll::-webkit-scrollbar {
@@ -609,21 +667,22 @@
   .tonight-scroll::-webkit-scrollbar-thumb {
     border: 2px solid #e9f0f3;
     border-radius: 999px;
-    background: linear-gradient(90deg, #bd9854, #173d56);
+    background: var(--ao-module-accent, #0c675c);
   }
 
   .tonight-table th:first-child,
   .tonight-table td:first-child {
-    border-right: 1px solid #dcc488;
+    border-right: 1px solid var(--ao-module-line, #7dbbb2);
     box-shadow: 8px 0 13px -10px rgba(23, 61, 86, 0.78);
   }
 
   .tonight-table tbody tr.current-service-slot td:first-child {
-    box-shadow: inset 3px 0 #b38b3a, inset 0 1px #e5cf9b, inset 0 -1px #e5cf9b, 8px 0 13px -10px rgba(23, 61, 86, 0.78);
+    box-shadow: inset 3px 0 var(--ao-module-accent, #0c675c), inset 0 1px var(--ao-module-line, #7dbbb2), inset 0 -1px var(--ao-module-line, #7dbbb2), 8px 0 13px -10px rgba(23, 61, 86, 0.78);
   }
 }
 
 @media (max-width: 700px) {
+  .module-dashboard { --ao-dashboard-pax-cell-padding: 7px 5px; }
   .dashboard-hero {
     display: flex;
     min-height: 100px;
@@ -652,19 +711,19 @@
   }
 
   .dashboard-metric-grid > div {
-    min-height: 70px;
-    padding: 9px 7px;
+    min-height: 60px;
+    padding: 8px 7px;
   }
 
   .dashboard-metric-grid span {
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1.25;
     letter-spacing: normal;
   }
 
   .dashboard-metric-grid strong {
-    margin-top: 5px;
-    font-size: 28px;
+    margin-top: 4px;
+    font-size: 19px;
   }
 
   .team-secondary-panel header > b {
@@ -676,8 +735,8 @@
   }
 
   .team-staff-pill {
-    min-height: 28px;
-    padding: 4px 8px;
+    min-height: 26px;
+    padding: 3px 8px;
   }
 
   .dashboard-page .dashboard-badges span {
@@ -688,27 +747,16 @@
     min-height: 44px;
   }
 
-  .dashboard-page .tonight-table th:first-child,
-  .dashboard-page .tonight-table td:first-child {
-    width: 112px;
-    min-width: 112px;
-    max-width: 112px;
-  }
-
-  .dashboard-page .tonight-table .tonight-time-column {
-    width: 112px;
-  }
-
   .tonight-card .next-arrivals .eyebrow,
   .tonight-table th {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .tonight-card .next-arrivals strong,
   .tonight-card .next-arrival-groups span,
   .tonight-table td,
   .tonight-table td:first-child {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .tonight-card .next-arrival-groups {
@@ -716,14 +764,14 @@
   }
 
   .tonight-card .next-arrival-groups span {
-    min-height: 30px;
-    padding: 5px 8px;
+    min-height: 26px;
+    padding: 4px 7px;
   }
 
   .tonight-count-badge {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
+    min-width: 32px;
+    height: 24px;
+    font-size: 12px;
   }
 }
 

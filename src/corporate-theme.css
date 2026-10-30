@@ -1,7 +1,41 @@
+@font-face {
+  font-family: 'AO Dahlia';
+  src: local('Dahlia Regular'), local('Dahlia');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Dahlia';
+  src: local('Dahlia Medium'), local('Dahlia');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Good Sans';
+  src: local('Good Sans Light'), local('Good Sans');
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AO Good Sans';
+  src: local('Good Sans Regular'), local('Good Sans');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* Official Andalucía corporate palette.
    Module accents stay on structural surfaces, navigation and headings so that
    operational status colors and manager-configured colors remain authoritative. */
 :root {
+  --ao-font-display: 'AO Dahlia', 'Dahlia', Georgia, serif;
+  --ao-font-ui: 'AO Good Sans', 'Good Sans', Arial, sans-serif;
   --ao-moonlight-black: #000000;
   --ao-violet-hour: #45176b;
   --ao-turquoise-coral: #b1e4dc;
@@ -15,8 +49,54 @@
   --ao-midnight-teal: #123e48;
   --ao-soft-ivory: #faf7ef;
   --ao-champagne: #d5bb89;
+  --ao-royal-purple: #5b146f;
+  --ao-soft-lavender: #c89feb;
+  --ao-forest-green: #1e5b53;
+  --ao-soft-mint: #c9e7dd;
+  --ao-training-heading-surface: #e7f6f3;
+  --ao-training-detail-surface: #f1faf8;
+  --ao-training-scheduled-text: var(--ao-lagoon-teal);
+  --ao-training-scheduled-background: #dff3ef;
+  --ao-training-scheduled-border: #75b9b0;
   --ao-canvas: #fffbf3;
+  --ao-module-canvas-base: var(--ao-canvas);
   --ao-surface: #fffdf8;
+  --ao-page-title-size: 29px;
+  --ao-section-title-size: 18px;
+  --ao-card-title-size: 15px;
+  --ao-label-size: 10px;
+  --ao-table-copy-size: 11.5px;
+  --ao-status-pill-radius: 999px;
+  --ao-status-pill-min-height: 24px;
+  --ao-staff-line: #b7d6ce;
+  --ao-staff-line-strong: #9fc9bf;
+  --ao-staff-surface: #f4f8f5;
+  --ao-staff-surface-strong: #eaf5f1;
+  --ao-staff-row-alt: #f0f8f5;
+}
+
+/* Shared brand typography. The deliberately high structural specificity lets
+   this final theme layer replace legacy module-local DM Sans / Playfair rules
+   without rewriting or competing with each completed module stylesheet. */
+html body .app-shell,
+html body .auth-page {
+  font-family: var(--ao-font-ui);
+}
+
+html body .app-shell :is(aside, nav, .mobile-topbar, main[class*='module-']) *,
+html body .auth-page * {
+  font-family: var(--ao-font-ui);
+}
+
+html body .app-shell main[class*='module-'] :is(h1, h2),
+html body .app-shell main.module-reports :is(h1, h2, h3),
+html body .auth-page .auth-card h1 {
+  font-family: var(--ao-font-display);
+  font-synthesis: none;
+}
+
+html body :is(.auth-card > p:not(.eyebrow), main[class*='module-'] .panel-title > p, main[class*='module-'] .section-intro, main[class*='module-'] .helper-text) {
+  font-weight: 300;
 }
 
 body,
@@ -25,13 +105,30 @@ body,
   background: var(--ao-canvas);
 }
 
-.module-dashboard,
+.module-dashboard {
+  --ao-module-accent: var(--ao-royal-purple);
+  --ao-module-accent-ink: var(--ao-royal-purple);
+  --ao-module-accent-soft: var(--ao-soft-lavender);
+  --ao-module-canvas-primary: var(--ao-soft-lavender);
+  --ao-module-canvas-secondary: var(--ao-royal-purple);
+  --ao-module-canvas-base: #f2ede4;
+  --ao-dashboard-pax-column-width: 86px;
+  --ao-dashboard-pax-cell-padding: 7px 6px;
+  --ao-dashboard-pax-pill-radius: 999px;
+  --ao-dashboard-pax-pill-padding: 0 9px;
+  --ao-dashboard-pax-pill-background: #f0e5f5;
+  --ao-dashboard-pax-pill-border: #b884c7;
+  --ao-dashboard-pax-pill-color: var(--ao-royal-purple);
+}
+
 .module-staff-management {
   --ao-module-accent: var(--ao-lagoon-teal);
   --ao-module-accent-ink: var(--ao-lagoon-teal);
   --ao-module-accent-soft: var(--ao-turquoise-coral);
   --ao-module-canvas-primary: var(--ao-turquoise-coral);
   --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+  --ao-staff-line: color-mix(in srgb, var(--ao-lagoon-teal) 38%, white);
+  --ao-staff-line-strong: color-mix(in srgb, var(--ao-lagoon-teal) 58%, white);
 }
 
 /* Dashboard welcome banner: retain the established proportions and type while
@@ -42,10 +139,6 @@ body,
   border-color: color-mix(in srgb, var(--ao-champagne) 48%, transparent);
   min-height: 82px;
   padding: 13px 24px;
-}
-
-main.module-dashboard {
-  background-color: #f2ede4;
 }
 
 .module-dashboard .dashboard-hero h2,
@@ -115,11 +208,11 @@ main.module-dashboard {
 }
 
 .module-customization-center {
-  --ao-module-accent: var(--ao-violet-hour);
-  --ao-module-accent-ink: var(--ao-violet-hour);
-  --ao-module-accent-soft: var(--ao-lilac-calm);
-  --ao-module-canvas-primary: var(--ao-linen-grey);
-  --ao-module-canvas-secondary: var(--ao-violet-hour);
+  --ao-module-accent: var(--ao-forest-green);
+  --ao-module-accent-ink: var(--ao-forest-green);
+  --ao-module-accent-soft: var(--ao-soft-mint);
+  --ao-module-canvas-primary: var(--ao-soft-mint);
+  --ao-module-canvas-secondary: var(--ao-forest-green);
 }
 
 main[class*='module-'] {
@@ -127,35 +220,201 @@ main[class*='module-'] {
   --ao-module-divider: color-mix(in srgb, var(--ao-module-accent-ink) 28%, var(--ao-surface));
   --ao-module-surface: color-mix(in srgb, var(--ao-module-accent-soft) 12%, var(--ao-surface));
   --ao-module-surface-strong: color-mix(in srgb, var(--ao-module-accent-soft) 21%, var(--ao-surface));
-  --ao-module-card-radius: 10px;
+  --ao-module-card-radius: 12px;
   --ao-module-control-radius: 8px;
   --ao-module-control-height: 40px;
   --financial-gold: var(--ao-module-line);
-  background-color: color-mix(in srgb, var(--ao-module-canvas-primary) 16%, var(--ao-canvas));
+  background-color: transparent;
   background-image: none;
 }
 
-/* Let the persistent navigation share the active module accent without
-   changing its established navy selected state or gold authority marker. */
-.app-shell:has(> main.module-dashboard) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
+/* The application shell is the real page canvas: it spans the viewport behind
+   the centered main column and grows with long module pages. Keeping the main
+   transparent prevents seams, doubled gradients and white bands while cards
+   retain their existing module surfaces. */
+.app-shell:has(> main[class*='module-']) {
+  --ao-page-canvas-top: #f4f1eb;
+  --ao-page-canvas-tint: var(--ao-turquoise-coral);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--ao-page-canvas-top);
+  background-image: linear-gradient(
+    to bottom,
+    var(--ao-page-canvas-top) 0%,
+    color-mix(in srgb, var(--ao-page-canvas-tint) 15%, var(--ao-page-canvas-top)) 54%,
+    color-mix(in srgb, var(--ao-page-canvas-tint) 38%, var(--ao-page-canvas-top)) 100%
+  );
+  background-repeat: no-repeat;
+}
+
+/* Let the persistent navigation share the active module accent while the shell
+   carries the matching full-page tint. */
+.app-shell:has(> main.module-dashboard) {
+  --ao-shell-accent: var(--ao-royal-purple);
+  --ao-shell-highlight: var(--ao-soft-lavender);
+  --ao-page-canvas-tint: #d4b2e8;
+  background-image: linear-gradient(to bottom, #f4f1eb 0%, #e8d9ef 56%, #d4b2e8 100%);
+}
+.app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-duty-roster) {
   --ao-shell-accent: var(--ao-sunset-orange);
   --ao-shell-highlight: var(--ao-orange-glow);
+  --ao-page-canvas-tint: var(--ao-orange-glow);
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #fff8f2;
   background-image: linear-gradient(to bottom, #fff8f2 0%, #fbe8dd 56%, #f3c6ad 100%);
   background-repeat: no-repeat;
 }
-.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
-.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); }
-.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
-.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-leave-planner) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
+
+/* Hostess counts are Dashboard presentation, not an operational status. */
+.module-dashboard .tonight-count-badge {
+  border-color: var(--ao-dashboard-pax-pill-border);
+  border-radius: var(--ao-dashboard-pax-pill-radius);
+  background: var(--ao-dashboard-pax-pill-background);
+  color: var(--ao-dashboard-pax-pill-color);
+}
+
+/* The hostess board is a Dashboard surface. Keep semantic meaning on the
+   summary numbers while using purple/lilac for its structure and rows. */
+.module-dashboard .tonight-card .hostess-state-summary > div {
+  border-color: var(--ao-module-line);
+  border-top-color: var(--ao-royal-purple);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 10%, #ffffff);
+}
+
+.module-dashboard .tonight-card :is(.next-arrivals, .next-arrival-groups span, .tonight-scroll, .tonight-zero) {
+  border-color: var(--ao-module-line);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 8%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table thead th {
+  border-color: var(--ao-module-line);
+  border-bottom-color: var(--ao-royal-purple);
+  background: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
+  color: var(--ao-royal-purple);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.module-dashboard .tonight-card .tonight-table tbody td {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr:nth-child(odd) td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 5%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 10%, #ffffff);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr.current-service-slot td {
+  background: color-mix(in srgb, var(--ao-soft-lavender) 24%, #ffffff);
+  box-shadow: inset 0 1px var(--ao-module-line), inset 0 -1px var(--ao-module-line);
+}
+
+.module-dashboard .tonight-card .tonight-table tbody tr.current-service-slot td:first-child {
+  box-shadow: inset 3px 0 var(--ao-royal-purple), inset 0 1px var(--ao-module-line), inset 0 -1px var(--ao-module-line);
+  color: var(--ao-royal-purple);
+}
+
+.training-status.scheduled {
+  border-color: var(--ao-training-scheduled-border);
+  background: var(--ao-training-scheduled-background);
+  color: var(--ao-training-scheduled-text);
+}
+
+/* Dashboard cards are one coherent Dashboard surface. Semantic pills inside
+   them keep their own operational colors through their component rules. */
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) {
+  --dashboard-card-accent: var(--ao-royal-purple);
+  --dashboard-card-ink: var(--ao-royal-purple);
+  --dashboard-card-soft: var(--ao-soft-lavender);
+  --dashboard-card-line: color-mix(in srgb, var(--dashboard-card-ink) 46%, var(--ao-surface));
+  --ao-module-accent: var(--dashboard-card-accent);
+  --ao-module-accent-ink: var(--dashboard-card-ink);
+  --ao-module-accent-soft: var(--dashboard-card-soft);
+  --ao-module-line: var(--dashboard-card-line);
+  border-color: var(--dashboard-card-line);
+  border-top-color: var(--dashboard-card-accent);
+}
+
+/* The Training component carries legacy local variables with higher
+   specificity. Rebind those presentation-only variables inside Dashboard. */
+main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
+  --dashboard-training-accent: var(--ao-royal-purple);
+  --dashboard-training-line: var(--dashboard-card-line);
+  --dashboard-training-soft: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
+  border-top-color: var(--dashboard-card-accent);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) .panel-title {
+  border-bottom-color: var(--dashboard-card-line);
+  background: var(--dashboard-card-heading-surface, color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff));
+  box-shadow: inset 3px 0 var(--dashboard-card-accent);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training,
+  .dashboard-order-attention
+) .panel-title .eyebrow {
+  color: var(--dashboard-card-ink);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service,
+  .dashboard-order-occasions,
+  .dashboard-order-training
+) .dashboard-card-action {
+  border-color: var(--dashboard-card-line);
+  background: color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff);
+  color: var(--dashboard-card-ink);
+}
+
+main.module-dashboard .dashboard-page :is(
+  .dashboard-order-team,
+  .dashboard-order-bookings,
+  .dashboard-order-service
+) .dashboard-metric-grid > div,
+main.module-dashboard .dashboard-page .dashboard-order-training .dashboard-training-details > div {
+  border-color: var(--dashboard-card-line);
+  border-top-color: var(--dashboard-card-detail-top-border, var(--dashboard-card-accent));
+  background: var(--dashboard-card-detail-surface, color-mix(in srgb, var(--dashboard-card-soft) 10%, #ffffff));
+}
+
+main.module-dashboard .dashboard-page .dashboard-order-training :is(.dashboard-training-date, .dashboard-training-details dt) {
+  color: var(--dashboard-card-ink);
+}
 
 .app-sidebar nav .selected {
   border-color: var(--ao-shell-highlight, var(--ao-turquoise-coral));
@@ -169,10 +428,30 @@ main[class*='module-'] {
 
 main[class*='module-'] > .page-header {
   position: relative;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
   padding: 10px 12px;
   border: 1px solid var(--ao-module-line);
   border-radius: 10px;
   background: var(--ao-module-surface-strong);
+}
+
+main[class*='module-'] > .page-header h1 {
+  margin: 0;
+  color: var(--ao-premium-navy);
+  font-size: var(--ao-page-title-size);
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+main[class*='module-'] > .page-header .eyebrow,
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) .eyebrow {
+  margin-bottom: 5px;
+  font-size: var(--ao-label-size);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: .12em;
 }
 
 main[class*='module-'] > .page-header::before {
@@ -240,7 +519,31 @@ main[class*='module-'] :is(
 }
 
 main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
   padding: 7px 9px;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) > :first-child {
+  min-width: 0;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) :is(h2, h3, h4) {
+  margin: 0;
+  color: var(--ao-premium-navy);
+  line-height: 1.25;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) h2 {
+  font-size: var(--ao-section-title-size);
+  font-weight: 500;
+}
+
+main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) :is(h3, h4) {
+  font-family: var(--ao-font-ui);
+  font-size: var(--ao-card-title-size);
+  font-weight: 500;
 }
 
 main[class*='module-'] :is(
@@ -275,7 +578,7 @@ main[class*='module-'] :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.error-state):not(.exception):not(.attention-card) {
+):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -322,10 +625,48 @@ main[class*='module-'] :is(
   border-radius: var(--ao-module-control-radius);
   background-color: var(--ao-surface);
   color: var(--ao-premium-navy);
-  font-family: 'DM Sans', Arial, sans-serif;
+  font-family: var(--ao-font-ui);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+main[class*='module-'] :is(
+  .ao-action,
+  .primary,
+  .secondary,
+  .view,
+  .compact-edit-action,
+  .config-icon-action
+):not(.danger):not(.remove) {
+  min-height: var(--ao-module-control-height);
+  padding-block: 0;
+  padding-inline: 12px;
+  font-family: var(--ao-font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+main[class*='module-'] :is(
+  .booking-status,
+  .staff-status,
+  .ao-status-pill,
+  .training-status,
+  .compact-state,
+  .config-protected-state
+) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: var(--ao-status-pill-min-height);
+  padding: 4px 8px;
+  border-radius: var(--ao-status-pill-radius);
+  font-family: var(--ao-font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 main[class*='module-'] :is(
@@ -370,7 +711,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card) {
   border-color: var(--ao-module-line);
 }
 
@@ -435,16 +776,25 @@ main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
   border-color: var(--ao-module-line);
 }
 
-main[class*='module-'] table :is(th, td) {
+html body .app-shell main[class*='module-'] table :is(th, td) {
   border-color: var(--ao-module-divider);
+  vertical-align: middle;
 }
 
-main[class*='module-'] table th {
+html body .app-shell main[class*='module-'] table th {
   background-color: var(--ao-module-surface-strong);
+  color: var(--ao-premium-navy);
+  font-size: var(--ao-label-size);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: .045em;
 }
 
-main[class*='module-'] :is(th, td) {
-  line-height: 1.35;
+html body .app-shell main[class*='module-'] table td {
+  color: #315167;
+  font-size: var(--ao-table-copy-size);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 main[class*='module-'] :is(
@@ -493,11 +843,26 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
 @media (max-width: 700px) {
   main[class*='module-'] {
     --ao-module-control-height: 44px;
+    --ao-page-title-size: 26px;
+    --ao-section-title-size: 17px;
+    --ao-card-title-size: 15px;
+    --ao-table-copy-size: 11px;
   }
 
   main[class*='module-'] > .page-header {
     gap: 9px;
+    margin-bottom: 12px;
     padding: 9px 10px;
+  }
+
+  main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) {
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .config-heading) > :is(.ao-action, .primary, .secondary) {
+    flex: 0 0 auto;
   }
 
   main[class*='module-'] > .page-header::before {
@@ -518,5 +883,865 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
     margin-bottom: 6px;
     padding-top: 4px;
     padding-bottom: 18px;
+  }
+}
+
+/* Staff Management final polish: use Dashboard's open editorial header while
+   retaining Staff Management's established Lagoon Teal identity. */
+.app-shell:has(> main.module-staff-management) {
+  --ao-page-canvas-top: #f4f8f5;
+  --ao-page-canvas-tint: #b8ddd2;
+  background-color: #f4f8f5;
+  background-image: linear-gradient(to bottom, #f4f8f5 0%, #d8ebe5 56%, #b8ddd2 100%);
+}
+
+main.module-staff-management {
+  margin: 0 auto;
+}
+
+main.module-staff-management > .page-header {
+  min-height: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-staff-management > .page-header::before {
+  display: none;
+  content: none;
+}
+
+main.module-staff-management .staff-section-bar .staff-section-tabs button {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 46%, white);
+}
+
+main.module-staff-management .staff-section-bar .staff-section-tabs button.selected {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  box-shadow: inset 0 3px var(--ao-turquoise-coral), 0 4px 10px rgb(12 103 92 / 16%);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel,
+main.module-staff-management .staff-directory-page .staff-panel,
+main.module-staff-management .staff-directory-page .staff-tools,
+main.module-staff-management .staff-directory-page .staff-mobile-card {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 42%, white);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel {
+  min-height: 68px;
+  padding: 11px 14px;
+  border-top-color: var(--ao-lagoon-teal);
+  background: #f7fbf9;
+  box-shadow: 0 6px 16px rgb(12 103 92 / 7%);
+}
+
+main.module-staff-management .staff-directory-page .staff-summary span {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+main.module-staff-management .staff-directory-page .staff-summary strong {
+  margin-top: 3px;
+  font-family: var(--ao-font-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(2),
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(3),
+main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(4) {
+  border-top-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .staff-directory-page .staff-tools,
+main.module-staff-management .staff-directory-page .staff-mobile-cards {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-directory-page .staff-tools {
+  margin: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #b7d6ce;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-staff-management .staff-directory-page .staff-tools :is(input, select),
+main.module-staff-management .staff-profile-drawer :is(input, select) {
+  border-color: #a8cec5;
+  background: #fff;
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .staff-directory-page .staff-tools :is(input, select):focus {
+  border-color: var(--ao-lagoon-teal);
+  box-shadow: 0 0 0 3px rgb(177 228 220 / 42%);
+}
+
+main.module-staff-management .staff-directory-page .staff-table-wrap {
+  overflow-x: auto;
+  border-top-color: #acd0c7;
+  scrollbar-gutter: stable;
+}
+
+main.module-staff-management .staff-directory-page .staff-table {
+  min-width: 920px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+main.module-staff-management .staff-directory-page .staff-table th,
+main.module-staff-management .staff-directory-page .staff-table td {
+  box-sizing: border-box;
+  border-right: 1px solid #c4dfd8;
+  vertical-align: middle;
+}
+
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):last-child {
+  border-right: 0;
+}
+
+main.module-staff-management .staff-directory-page .staff-table th {
+  border-bottom-color: var(--ao-lagoon-teal);
+  background: #eef7f4;
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .staff-directory-page .staff-table td {
+  border-bottom-color: #d8e9e4;
+}
+
+main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(even) {
+  background: #f0f8f5;
+}
+
+main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
+  background: #f4faf8;
+}
+
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(1) { width: 22%; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(2) { width: 11%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(4) { width: 11%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(5) { width: 11%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(7) { width: 150px; text-align: center; }
+
+main.module-staff-management .staff-table-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+main.module-staff-management .staff-table-identity b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-icon-actions {
+  justify-content: center;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-icon-action:hover {
+  border-color: var(--ao-lagoon-teal);
+  background: #eef7f4;
+}
+
+main.module-staff-management .staff-profile-drawer {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-profile-drawer > .staff-profile-header {
+  border-bottom-color: #9fc9bf;
+  background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
+}
+
+main.module-staff-management .staff-profile-heading .eyebrow,
+main.module-staff-management .staff-profile-scroll > section > .eyebrow,
+main.module-staff-management .staff-profile-drawer .staff-training-history > .eyebrow {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .staff-profile-heading h2,
+main.module-staff-management .staff-profile-drawer .staff-training-history h3 {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+main.module-staff-management .staff-profile-scroll > section,
+main.module-staff-management .staff-profile-drawer .staff-training-history,
+main.module-staff-management .staff-profile-grid > div,
+main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
+main.module-staff-management .staff-training-summary article,
+main.module-staff-management .staff-training-table-wrap {
+  border-color: #b7d6ce;
+}
+
+main.module-staff-management .staff-profile-grid > div,
+main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
+main.module-staff-management .staff-training-summary article {
+  background: #f4f8f5;
+}
+
+main.module-staff-management .staff-profile-drawer .staff-training-history th {
+  background: #eaf5f1;
+}
+
+main.module-staff-management .staff-profile-drawer > footer {
+  border-top-color: #9fc9bf;
+  box-shadow: 0 -8px 20px rgb(12 103 92 / 8%);
+}
+
+main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staff-profile-archive) {
+  border-color: var(--ao-lagoon-teal);
+  color: var(--ao-lagoon-teal);
+}
+
+/* Bind every Staff Management subview to one structural palette. Semantic
+   status badges and configured duty-code colors keep their own mappings. */
+main.module-staff-management :is(
+  .membership-approved-page,
+  .staff-account-panel,
+  .manager-timesheet-table,
+  .manager-timesheet-card,
+  .manager-timesheet-modal
+) {
+  border-color: var(--ao-staff-line);
+  border-top-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface);
+  box-shadow: 0 8px 24px rgb(12 103 92 / 8%);
+}
+
+main.module-staff-management :is(
+  .membership-command-header,
+  .staff-account-header,
+  .staff-account-guidance,
+  .manager-timesheet-modal > header
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-hero h2,
+  .manager-timesheet-modal h2
+) {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+html body .app-shell main.module-staff-management :is(
+  .membership-command-header h2,
+  .membership-dialog h2,
+  .staff-account-header h2,
+  .staff-account-modal h2
+) {
+  font-family: var(--ao-font-ui);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-staff-management :is(
+    .membership-command-header h2,
+    .membership-dialog h2,
+    .staff-account-header h2,
+    .staff-account-modal h2
+  ) {
+    font-size: 17px;
+  }
+}
+
+main.module-staff-management :is(
+  .membership-command-header,
+  .membership-approved-banner,
+  .membership-review-card,
+  .membership-history,
+  .staff-account-header,
+  .staff-account-tools,
+  .staff-account-guidance
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management .membership-approved-page .membership-approved-banner dl div {
+  border-left-color: var(--ao-lagoon-teal);
+  background: rgb(255 255 255 / 78%);
+}
+
+main.module-staff-management :is(
+  .membership-status-card,
+  .membership-review-card,
+  .membership-approval-card,
+  .membership-approved-banner,
+  .staff-module-info
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .membership-status-card,
+  .membership-approved-banner,
+  .membership-approval-card
+) dl div {
+  border-left-color: var(--ao-lagoon-teal);
+  background: rgb(255 255 255 / 78%);
+}
+
+main.module-staff-management :is(.membership-review-card, .membership-approval-card) > header,
+main.module-staff-management .membership-table :is(th, td) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management .membership-table th {
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management .membership-include input {
+  accent-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .membership-dialog {
+  --ao-surface: #fff;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-top-width: 3px;
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .membership-dialog :is(input, textarea) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .staff-module-info {
+  border-left-color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table th,
+  .staff-account-panel .staff-account-table th,
+  .manager-timesheet-table th,
+  .manager-detail-table th
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+html body .app-shell main.module-staff-management .staff-account-panel .staff-account-table th {
+  font-family: var(--ao-font-ui);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table td,
+  .staff-account-panel .staff-account-table td,
+  .manager-timesheet-table td,
+  .manager-detail-table td
+) {
+  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 20%, white);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .membership-table.approved-table tbody tr:nth-child(even),
+  .staff-account-table tbody tr:nth-child(even),
+  .manager-timesheet-table tbody tr:nth-child(even)
+) {
+  background: var(--ao-staff-row-alt);
+}
+
+main.module-staff-management :is(
+  .membership-history-disclosure summary::after,
+  .staff-account-tools input,
+  .staff-account-tools select,
+  .staff-account-cards > article,
+  .manager-month-nav input
+) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-staff-management .staff-account-tools {
+  border-bottom-color: var(--ao-staff-line);
+  background: transparent;
+}
+
+main.module-staff-management .staff-account-tools :is(label, p),
+main.module-staff-management .staff-account-guidance p {
+  color: color-mix(in srgb, var(--ao-premium-navy) 72%, white);
+}
+
+main.module-staff-management .staff-account-panel > .staff-table-wrap,
+main.module-staff-management .staff-account-empty {
+  background: #fff;
+}
+
+main.module-staff-management .staff-account-cards {
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .manager-timesheet-hero {
+  border-color: var(--ao-lagoon-teal);
+  background: linear-gradient(120deg, var(--ao-lagoon-teal), #174f4a);
+}
+
+main.module-staff-management .manager-timesheet-hero h2 {
+  color: var(--ao-soft-ivory);
+}
+
+main.module-staff-management .manager-timesheet-hero p {
+  color: color-mix(in srgb, var(--ao-turquoise-coral) 76%, white);
+}
+
+main.module-staff-management .manager-timesheet-kpis article {
+  border-color: var(--ao-staff-line);
+  border-top-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .manager-timesheet-kpis b {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-body);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+main.module-staff-management :is(
+  .staff-profile-grid > div,
+  .staff-profile-drawer .leave-summary-cards article,
+  .staff-training-summary article,
+  .staff-training-table-wrap,
+  .staff-training-mobile-cards article,
+  .staff-training-empty
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .staff-profile-drawer .staff-training-history th,
+  .staff-training-table-wrap thead th
+) {
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .ao-action:not(.danger),
+  .staff-account-panel .ao-action:not(.danger),
+  .manager-timesheets .ao-action:not(.danger)
+) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-staff-management :is(
+  .membership-approved-page .ao-action--primary,
+  .staff-account-panel .ao-action--primary,
+  .manager-timesheets .ao-action--primary
+) {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+main.module-staff-management :is(
+  .membership-approved-page input,
+  .membership-approved-page select,
+  .staff-account-panel input,
+  .staff-account-panel select,
+  .manager-timesheets input,
+  .manager-timesheets select,
+  .manager-timesheets textarea
+) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+}
+
+/* The shared corporate form rule carries the warm global surface with higher
+   selector weight. Account Management is an explicitly teal/mint subview, so
+   its editable controls stay clean white rather than inheriting that ivory. */
+html body .app-shell main.module-staff-management .staff-account-panel :is(
+  .staff-account-tools,
+  .staff-account-modal
+) :is(input, select) {
+  background-color: #fff;
+}
+
+html body .app-shell main.module-staff-management .staff-account-modal :is(
+  .close,
+  .form-actions .ao-action
+) {
+  min-height: 44px;
+}
+
+main.module-staff-management :is(
+  .membership-approved-page input,
+  .membership-approved-page select,
+  .staff-account-panel input,
+  .staff-account-panel select,
+  .manager-timesheets input,
+  .manager-timesheets select,
+  .manager-timesheets textarea
+):focus-visible {
+  border-color: var(--ao-lagoon-teal);
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 60%, transparent);
+}
+
+/* Timesheets inherit the Staff Management palette from this final theme layer.
+   The feature styles intentionally retain layout and semantic red/green states;
+   this block replaces only the legacy decorative gold/cream treatment. */
+main.module-staff-management :is(
+  .manager-timesheet-table,
+  .manager-detail-table,
+  .manager-timesheet-card,
+  .manager-timesheet-modal,
+  .manager-workflow-history,
+  .manager-correction-context > div,
+  .manager-shift-grid fieldset,
+  .manager-calculated-hours
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-card,
+  .manager-timesheet-modal,
+  .manager-correction-context > div,
+  .manager-shift-grid fieldset,
+  .manager-calculated-hours
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-modal > header,
+  .manager-detail-actions,
+  .manager-correction-form > footer,
+  .manager-reopen-form > footer,
+  .manager-detail-table th
+) {
+  border-color: var(--ao-staff-line);
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-staff-management :is(
+  .manager-timesheet-modal > header h2,
+  .manager-correction-context small,
+  .manager-shift-grid legend,
+  .manager-calculated-hours span,
+  .manager-workflow-history h3
+) {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .manager-month-status.submitted,
+  .timesheet-state.rostered,
+  .manager-timesheet-modal .ao-status-pill.gold
+) {
+  border-color: var(--ao-staff-line-strong);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management .manager-correction-context > div.non-working,
+main.module-staff-management .manager-editing-window {
+  border-color: var(--ao-staff-line-strong);
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+main.module-staff-management .manager-roster-warning {
+  border-left-color: #9b5148;
+  background: #fff0ee;
+  color: #744942;
+}
+
+main.module-staff-management :is(
+  .manager-timesheets,
+  .manager-timesheet-modal
+) :is(.ao-action, .ao-icon-action):not(.danger):not(.ao-action--primary) {
+  border-color: var(--ao-staff-line-strong);
+  background: #fff;
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-staff-management :is(
+  .manager-timesheets,
+  .manager-timesheet-modal
+) .ao-action--primary {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+main.module-my-timesheet .timesheet-hero {
+  border-color: var(--ao-staff-line-strong);
+  border-top-color: var(--ao-lagoon-teal);
+  background: linear-gradient(135deg, var(--ao-staff-surface-strong), #fff 82%);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-hero .eyebrow,
+  .timesheet-hero label,
+  .timesheet-shifts legend
+) {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-summary span,
+  .timesheet-day,
+  .timesheet-shifts fieldset,
+  .timesheet-overtime-entry,
+  .timesheet-lock-note
+) {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-summary span,
+  .timesheet-shifts fieldset,
+  .timesheet-overtime-entry,
+  .timesheet-lock-note
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-my-timesheet .timesheet-summary span {
+  box-shadow: inset 0 2px var(--ao-staff-line);
+}
+
+main.module-my-timesheet .timesheet-day.confirmed {
+  border-left-color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(
+  .timesheet-day-toggle:hover,
+  .timesheet-day-toggle[aria-expanded='true'],
+  .timesheet-day-readonly
+) {
+  background: var(--ao-staff-surface);
+}
+
+main.module-my-timesheet .timesheet-day-toggle[aria-expanded='true'],
+main.module-my-timesheet .timesheet-day-details > footer {
+  border-color: var(--ao-staff-line);
+}
+
+main.module-my-timesheet .timesheet-day-toggle:focus-visible {
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 72%, white);
+}
+
+main.module-my-timesheet .timesheet-duty {
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+}
+
+main.module-my-timesheet .timesheet-day-shifts i {
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(.timesheet-correction-note, .timesheet-lock-note) {
+  border-left-color: var(--ao-lagoon-teal);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-premium-navy);
+}
+
+main.module-my-timesheet :is(.timesheet-state.draft, .timesheet-overtime-status.pending) {
+  border-color: var(--ao-staff-line-strong);
+  background: var(--ao-staff-surface-strong);
+  color: var(--ao-lagoon-teal);
+}
+
+main.module-my-timesheet :is(input[type='time'], input[type='month']) {
+  border-color: var(--ao-staff-line-strong);
+}
+
+main.module-my-timesheet :is(input[type='time'], input[type='month']):focus-visible {
+  border-color: var(--ao-lagoon-teal);
+  outline-color: color-mix(in srgb, var(--ao-turquoise-coral) 60%, transparent);
+}
+
+main.module-my-timesheet .ao-action--primary {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  main.module-my-timesheet .timesheet-hero .ao-date-control input[type='month'],
+  main.module-my-timesheet .my-timesheet .timesheet-submit .ao-action {
+    min-height: 44px;
+  }
+}
+
+.staff-edit-modal {
+  border-color: #9fc9bf;
+  background: #f4f8f5;
+}
+
+.staff-edit-modal > h2,
+.staff-edit-modal .staff-edit-intro {
+  border-color: #9fc9bf;
+  background: linear-gradient(135deg, #eaf5f1 0%, #ffffff 78%);
+}
+
+.staff-edit-modal > h2 {
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+.staff-edit-modal .staff-edit-section {
+  border-color: #b7d6ce;
+  box-shadow: 0 4px 12px rgb(12 103 92 / 7%);
+}
+
+.staff-edit-modal .staff-edit-section > .eyebrow,
+.staff-edit-modal .staff-edit-grid > label {
+  color: var(--ao-lagoon-teal);
+}
+
+.staff-edit-modal .staff-edit-grid :is(input, select),
+.staff-edit-modal .staff-edit-grid .ao-date-control {
+  border-color: #a8cec5;
+}
+
+.staff-edit-modal .staff-edit-grid :is(input, select):focus {
+  border-color: var(--ao-lagoon-teal);
+  box-shadow: 0 0 0 3px rgb(177 228 220 / 42%);
+}
+
+.staff-edit-modal .form-actions {
+  border-top-color: #9fc9bf;
+  background: #eaf5f1;
+  box-shadow: 0 -7px 18px rgb(12 103 92 / 8%);
+}
+
+.staff-edit-modal .form-actions .ao-action--secondary {
+  border-color: #9fc9bf;
+  background: #fff;
+  color: var(--ao-lagoon-teal);
+}
+
+.staff-edit-modal .form-actions .ao-action--primary,
+main.module-staff-management .staff-section-add {
+  border-color: var(--ao-lagoon-teal);
+  background: var(--ao-lagoon-teal);
+  color: #fff;
+}
+
+.staff-edit-modal .form-actions .ao-action--primary .ao-action__label {
+  display: inline;
+  color: inherit;
+  opacity: 1;
+  text-transform: capitalize;
+  visibility: visible;
+}
+
+main.module-staff-management .staff-training-controls {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+main.module-staff-management .staff-training-controls label {
+  display: grid;
+  gap: 4px;
+  color: var(--ao-lagoon-teal);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+main.module-staff-management .staff-training-controls select {
+  min-width: 180px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #a8cec5;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ao-premium-navy);
+  font: 500 12px var(--ao-font-body);
+  text-transform: none;
+}
+
+main.module-staff-management .staff-training-controls .ao-action {
+  min-height: 38px;
+  margin: 0;
+  border-color: #9fc9bf;
+  color: var(--ao-lagoon-teal);
+}
+
+@media (max-width: 700px) {
+  main.module-staff-management > .page-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-table-wrap {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-cards {
+    display: none;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-summary .panel {
+    min-height: 64px;
+    padding: 10px 12px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-summary strong {
+    font-size: 19px;
+  }
+
+  main.module-staff-management .staff-training-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  main.module-staff-management .staff-training-controls label,
+  main.module-staff-management .staff-training-controls select,
+  main.module-staff-management .staff-training-controls .ao-action {
+    width: 100%;
+  }
+
+  main.module-staff-management .staff-training-controls select,
+  main.module-staff-management .staff-training-controls .ao-action {
+    min-height: 44px;
+  }
+
+  main.module-staff-management .staff-training-mobile-cards article {
+    border-color: #b7d6ce;
+    background: #f4f8f5;
+  }
+
+  main.module-staff-management .staff-profile-drawer > footer {
+    position: static;
   }
 }

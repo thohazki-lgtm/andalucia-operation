@@ -108,12 +108,12 @@ try {
   assert.match(uiSource, /Archived or inactive staff cannot receive an employee account/)
   assert.match(styles, /\.staff-account-cards\{display:none\}/)
   assert.match(styles, /@media\(max-width:700px\).*\.staff-account-cards\{display:grid/s)
-  assert.match(styles, /\.staff-account-table\{width:100%;min-width:840px/)
+  assert.match(styles, /\.staff-account-table\{width:100%;min-width:900px/)
   assert.match(styles, /\.staff-account-tools\{display:grid/)
-  assert.match(styles, /\.staff-account-panel \.staff-account-table th\{[^}]*font-size:9px;font-weight:750;line-height:1\.25/)
-  assert.match(styles, /\.staff-account-panel \.staff-account-table td\{[^}]*font-size:10\.5px;font-weight:400;line-height:1\.35/)
-  assert.match(styles, /\.staff-account-panel \.staff-account-table td:first-child b\{[^}]*font-size:10\.5px;font-weight:700;line-height:1\.35/)
-  assert.match(styles, /\.staff-account-cards header b\{[^}]*font-size:13px;font-weight:650;line-height:normal/)
+  assert.match(styles, /\.staff-account-panel \.staff-account-table th\{[^}]*font:600 9px\/1\.25 var\(--ao-font-ui\)/)
+  assert.match(styles, /\.staff-account-panel \.staff-account-table td\{[^}]*font:400 11\.5px\/1\.35 var\(--ao-font-ui\)/)
+  assert.match(styles, /\.staff-account-panel \.staff-account-table td:first-child b\{[^}]*font:500 12px\/1\.35 var\(--ao-font-ui\)/)
+  assert.match(styles, /\.staff-account-cards header b\{[^}]*font:500 13px\/1\.3 var\(--ao-font-ui\)/)
 
   console.log(JSON.stringify({
     managerAccountCreationAuthorized: true,

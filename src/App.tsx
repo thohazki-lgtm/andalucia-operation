@@ -215,20 +215,19 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
 <table className="staff-table">
 <thead>
 <tr>
-<th aria-label="Reorder"></th>
 <th>Staff</th>
 <th>Employee ID</th>
 <th>Designation</th>
 <th>Status</th>
 <th>Today</th>
 <th>Date of Joining</th>
-<th aria-label="Actions">
-</th>
+  <th>Actions</th>
 </tr>
 </thead>
 <tbody>{visibleStaff.map(person => <tr key={person.id} data-staff-row-id={person.id} className={`${draggingStaffId === person.id ? 'is-dragging ' : ''}${staffDropTarget?.id === person.id ? staffDropTarget.after ? 'drop-after' : 'drop-before' : ''}`.trim() || undefined}>
-<td className="staff-reorder-cell">{staffDragHandle(person)}</td>
-<td className="staff-name-cell"><b>{person.name}</b></td>
+  <td className="staff-name-cell">
+    <div className="staff-table-identity">{staffDragHandle(person)}<b>{person.name}</b></div>
+  </td>
 <td>{person.number}</td>
 <td className="staff-designation">{positionLabel(person)}</td>
 <td>

@@ -33,6 +33,6 @@ try {
   assert.match(api, /changePassword:.*request<AuthenticatedUser>/)
   assert.match(server, /completeRequiredPasswordChange/)
   assert.match(server, /sessionCookie\(signedIn\.token\)/)
-  assert.match(css, /@media\(max-width:700px\)/)
+  assert.match(css, /@media\(max-width:820px\)/)
   console.log(JSON.stringify({ firstLoginForm: true, passwordConfirmation: true, passwordPolicy: true, requiredChangeServerGuard: true, oldSessionRevoked: true, freshSessionContract: true, automaticTimesheetUnlock: true, staffLinkPreserved: true, responsiveLayout: true, canonicalDatabaseUsed: false }, null, 2))
 } finally { await fixture.cleanup() }
