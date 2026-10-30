@@ -28,7 +28,11 @@ try {
   assert.ok(owner)
   await fixture.db.query('insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval \'1 hour\')', [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
   const position = (await fixture.db.query<{ value: string }>("select value from configuration_options where group_key='staff_positions' and active=true order by sort_order limit 1")).rows[0]?.value || 'F&B Attendant'
-  await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'ENT-001','Aisha Ibrahim',$2,'active','2024-01-01'),($3,'ENT-002','Mohamed Rasheed',$2,'active','2025-02-01')", [randomUUID(), position, randomUUID()])
+  const firstStaffId = randomUUID()
+  await fixture.db.query("insert into staff(id,staff_number,full_name,position_key,employment_status_key,join_date) values($1,'ENT-001','Aisha Ibrahim',$2,'active','2024-01-01'),($3,'ENT-002','Mohamed Rasheed',$2,'active','2025-02-01')", [firstStaffId, position, randomUUID()])
+  const outletScopeId = (await fixture.db.query<{ id: string }>("select id from outlet_scopes where scope_key='andalucia' limit 1")).rows[0]?.id
+  assert.ok(outletScopeId)
+  await fixture.db.query("insert into staff_membership_history(id,staff_id,outlet_scope_id,membership_dimension,effective_from,effective_to,source,reason,review_status,reviewed_at,reviewed_by,created_by,updated_by) values($1,$2,$3,'regular_outlet','2024-01-01',null,'baseline_manager_review','Leave History staff-cell visual validation','approved',now(),'isolated-ui-test','isolated-ui-test','isolated-ui-test')", [randomUUID(), firstStaffId, outletScopeId])
   await fixture.db.query("insert into public_holidays(id,holiday_name,holiday_date,days,active,created_by,updated_by) values($1,'New Year Holiday','2026-01-01',1,true,'isolated-ui-test','isolated-ui-test'),($2,'National Celebration','2026-07-26',2,true,'isolated-ui-test','isolated-ui-test'),($3,'Archived Holiday','2026-12-01',1,false,'isolated-ui-test','isolated-ui-test')", [randomUUID(), randomUUID(), randomUUID()])
   await fixture.db.close()
 
@@ -56,6 +60,8 @@ try {
   assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5187/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
   await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5187/' })
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Leave Planner"]')`)) break; await sleep(100) }
+  const planned = await cdp.evaluate<any>(`fetch('/api/workforce/planned-leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffId:${JSON.stringify(firstStaffId)},startDate:'2026-11-04',endDate:'2026-11-05',leaveType:'annual_leave',managerNote:'Leave History staff-cell visual validation'})}).then(async response=>({status:response.status,body:await response.text()}))`)
+  assert.equal(planned.status, 201, planned.body)
   await cdp.evaluate(`document.querySelector('button[aria-label="Leave Planner"]')?.click()`)
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-planner-module-tabs')`)) break; await sleep(100) }
   await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Leave Types')?.click()`)
@@ -77,13 +83,15 @@ try {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
     await cdp.evaluate(`window.scrollTo({top:0,left:0,behavior:'instant'})`)
-    const result = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-types-panel');const tabs=document.querySelector('.leave-planner-module-tabs');const cards=Array.from(document.querySelectorAll('.leave-type-card'));const first=cards[0];const code=first.querySelector('.leave-type-code');const status=first.querySelector('.leave-type-state.active');const tab=tabs.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,configured:document.querySelectorAll('.leave-type-state.active').length,activationButtons:document.querySelectorAll('.activate-duty-code').length,columns:getComputedStyle(panel.querySelector('.leave-type-grid')).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('small')).length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeight:Math.round(first.getBoundingClientRect().height),tabColumns:getComputedStyle(tabs).gridTemplateColumns.split(' ').length,tabHeight:Math.round(tab.getBoundingClientRect().height),configuredHeight:status?Math.round(status.getBoundingClientRect().height):null,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-types-panel');const tabs=document.querySelector('.leave-planner-module-tabs');const cards=Array.from(document.querySelectorAll('.leave-type-card'));const first=cards[0];const code=first.querySelector('.leave-type-code');const status=first.querySelector('.leave-type-state.active');const tab=tabs.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,configured:document.querySelectorAll('.leave-type-state.active').length,activationButtons:document.querySelectorAll('.activate-duty-code').length,columns:getComputedStyle(panel.querySelector('.leave-type-grid')).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('small')).length,headerDescriptions:panel.querySelectorAll('.workforce-section-title p:not(.eyebrow)').length,sourceNotes:panel.querySelectorAll('.configuration-source-note').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeight:Math.round(first.getBoundingClientRect().height),tabColumns:getComputedStyle(tabs).gridTemplateColumns.split(' ').length,tabHeight:Math.round(tab.getBoundingClientRect().height),configuredHeight:status?Math.round(status.getBoundingClientRect().height):null,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor}})()`)
     assert.equal(result.overflow, false, `Leave Types overflow at ${width}px.`)
     assert.equal(result.cards, 10)
     assert.deepEqual({ configured: result.configured, activationButtons: result.activationButtons }, baselineState, `Duty Code state changed while validating ${width}px.`)
     assert.equal(result.columns, width <= 700 ? 1 : 2)
     assert.equal(result.tabColumns, width <= 700 ? 2 : width <= 1100 ? 3 : 6)
     assert.equal(result.duplicateSubtitles, 0)
+    assert.equal(result.headerDescriptions, 0, 'Leave Types must not retain the explanatory heading paragraph.')
+    assert.equal(result.sourceNotes, 0, 'Leave Types must not retain the bottom source-information note.')
     assert.equal(result.panelBorder, leaveTheme.line)
     assert.equal(result.panelBackground, leaveTheme.surface)
     assert.equal(result.cardBorder, leaveTheme.line)
@@ -98,23 +106,45 @@ try {
 
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Entitlement Policies')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-row')`)) break; await sleep(100) }
-    const policyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.entitlement-policies-panel');const grid=panel.querySelector('.entitlement-policy-list');const cards=Array.from(panel.querySelectorAll('.entitlement-policy-row'));const first=cards[0];const code=first.querySelector('.policy-code');const allowance=first.querySelector('.policy-allowance b');const edit=first.querySelector('.secondary');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('.policy-identity small')?.textContent.trim()===card.querySelector('.policy-identity strong')?.textContent.trim()).length,statuses:panel.querySelectorAll('.policy-source').length,editActions:Array.from(panel.querySelectorAll('.secondary')).filter(button=>button.textContent.trim()==='Edit').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeight:Math.round(first.getBoundingClientRect().height),buttonHeight:Math.round(edit.getBoundingClientRect().height),allowanceWeight:getComputedStyle(allowance).fontWeight,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor}})()`)
+    const policyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.entitlement-policies-panel');const grid=panel.querySelector('.entitlement-policy-list');const cards=Array.from(panel.querySelectorAll('.entitlement-policy-row'));const first=cards[0];const code=first.querySelector('.policy-code');const allowance=first.querySelector('.policy-allowance b');const edits=Array.from(panel.querySelectorAll('.entitlement-policy-row .secondary'));const badges=Array.from(panel.querySelectorAll('.policy-source'));const note=panel.querySelector('.policy-information-note');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('.policy-identity small')?.textContent.trim()===card.querySelector('.policy-identity strong')?.textContent.trim()).length,topDescriptions:panel.querySelectorAll('.workforce-section-title p:not(.eyebrow)').length,informationNotes:panel.querySelectorAll('.policy-information-note').length,noteText:note?.textContent.trim(),noteAfterGrid:note?.previousElementSibling===grid,statuses:badges.length,editActions:edits.filter(button=>button.textContent.trim()==='Edit').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeights:cards.map(card=>Math.round(card.getBoundingClientRect().height)),buttonHeights:edits.map(edit=>Math.round(edit.getBoundingClientRect().height)),buttonWidths:edits.map(edit=>Math.round(edit.getBoundingClientRect().width)),badgeHeights:badges.map(badge=>Math.round(badge.getBoundingClientRect().height)),badgeWidths:badges.map(badge=>Math.round(badge.getBoundingClientRect().width)),allowanceWeight:getComputedStyle(allowance).fontWeight,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor,noteBorder:note?getComputedStyle(note).borderTopColor:null,noteAccent:note?getComputedStyle(note).borderLeftColor:null,noteBackground:note?getComputedStyle(note).backgroundColor:null}})()`)
     assert.equal(policyResult.overflow, false, `Entitlement Policies overflow at ${width}px.`)
     assert.equal(policyResult.cards, 10)
     assert.equal(policyResult.columns, width <= 700 ? 1 : 2)
     assert.equal(policyResult.duplicateSubtitles, 0)
+    assert.equal(policyResult.topDescriptions, 0, 'Entitlement Policies must keep the heading area clean.')
+    assert.equal(policyResult.informationNotes, 1)
+    assert.equal(policyResult.noteAfterGrid, true, 'The consolidated policy explanation must follow the cards.')
+    assert.match(policyResult.noteText, /employee-specific override/i)
+    assert.match(policyResult.noteText, /Duty Roster/i)
     assert.equal(policyResult.statuses, 10)
     assert.equal(policyResult.editActions, 10)
     assert.equal(policyResult.panelBorder, leaveTheme.line)
     assert.equal(policyResult.panelBackground, leaveTheme.surface)
     assert.equal(policyResult.cardBorder, leaveTheme.line)
-    assert.ok(policyResult.cardHeight >= 104 && policyResult.cardHeight <= 140)
-    assert.ok(policyResult.buttonHeight >= 34)
+    assert.ok(policyResult.cardHeights.every((height:number)=>height >= 104 && height <= 150))
+    assert.ok(Math.max(...policyResult.cardHeights)-Math.min(...policyResult.cardHeights) <= 1, `Entitlement Policy cards must have equal heights at ${width}px.`)
+    assert.ok(policyResult.buttonHeights.every((height:number)=>height >= 34))
+    assert.equal(new Set(policyResult.buttonWidths).size, 1, `Entitlement Policy Edit buttons must have equal widths at ${width}px.`)
+    assert.equal(new Set(policyResult.badgeHeights).size, 1, `Entitlement Policy badges must have equal heights at ${width}px.`)
+    assert.equal(new Set(policyResult.badgeWidths).size, 1, `Entitlement Policy badges must align consistently at ${width}px.`)
     assert.equal(policyResult.allowanceWeight, '500')
     assert.equal(policyResult.codeColor, policyResult.codeBorder, 'Entitlement Policy leave-code colors must remain authoritative.')
+    assert.equal(policyResult.noteBorder, leaveTheme.line)
+    assert.equal(policyResult.noteAccent, leaveTheme.violet)
+    assert.equal(policyResult.noteBackground, leaveTheme.surfaceStrong)
     policyResults[String(width)] = policyResult
     const policyCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `entitlement-policies-${width}.png`), Buffer.from(policyCapture.data, 'base64'))
+    await cdp.evaluate(`document.querySelector('.entitlement-policy-row .secondary')?.click()`)
+    for (let attempt = 0; attempt < 30; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-modal')`)) break; await sleep(50) }
+    const policyModal = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.entitlement-policy-modal');const input=modal.querySelector('input');const actions=Array.from(modal.querySelectorAll('.form-actions button'));return{present:!!modal,overflow:modal.scrollWidth>modal.clientWidth+1,width:Math.round(modal.getBoundingClientRect().width),viewport:document.documentElement.clientWidth,inputHeight:Math.round(input.getBoundingClientRect().height),actionHeights:actions.map(button=>Math.round(button.getBoundingClientRect().height)),titleSize:getComputedStyle(modal.querySelector('h2')).fontSize}})()`)
+    assert.equal(policyModal.present, true)
+    assert.equal(policyModal.overflow, false)
+    assert.ok(policyModal.width <= policyModal.viewport - 20, `Entitlement Policy modal width ${policyModal.width}px exceeds the ${policyModal.viewport}px viewport allowance at ${width}px.`)
+    assert.ok(policyModal.inputHeight >= 44)
+    assert.ok(policyModal.actionHeights.every((height:number)=>height >= 38))
+    assert.ok(Number.parseFloat(policyModal.titleSize) <= 22)
+    await cdp.evaluate(`document.querySelector('.entitlement-policy-modal .close')?.click()`)
 
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Employee Entitlements')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.employee-entitlement-row')`)) break; await sleep(100) }
@@ -251,6 +281,7 @@ try {
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.planned-leave-history,.leave-records-panel>.save-error')`)) break; await sleep(100) }
     assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.leave-records-panel>.save-error')`), false, `Leave History failed to load at ${width}px.`)
     const historyResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-records-panel');const filters=document.querySelector('.leave-record-filters');const planned=document.querySelector('.planned-leave-history');const confirmed=document.querySelector('.confirmed-leave-history');const filterControls=Array.from(filters.querySelectorAll('input,select'));const tableCell=document.querySelector('.leave-records-table th');const plannedRow=document.querySelector('.planned-leave-table tbody tr');const bookedChip=plannedRow?.querySelector('.leave-type-chip.booked');const employee=document.querySelector('.leave-employee-history');if(employee&&!employee.open)employee.querySelector('summary').click();const category=employee?.querySelector('.leave-employee-history-body>section');const categoryHeader=category?.querySelector('header>div');const dateRow=employee?.querySelector('.leave-history-dates');const dateButton=dateRow?.querySelector('button');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,filterBorder:getComputedStyle(filters).borderColor,filterBackground:getComputedStyle(filters).backgroundColor,filterHeights:filterControls.map(control=>Math.round(control.getBoundingClientRect().height)),filterBorders:filterControls.map(control=>getComputedStyle(control).borderColor),filterBackgrounds:filterControls.map(control=>getComputedStyle(control).backgroundColor),plannedBorder:planned?getComputedStyle(planned).borderColor:null,plannedBackground:planned?getComputedStyle(planned).backgroundColor:null,plannedAlignments:plannedRow?Array.from(plannedRow.children).map(cell=>getComputedStyle(cell).textAlign):[],bookedChip:bookedChip?{border:getComputedStyle(bookedChip).borderColor,background:getComputedStyle(bookedChip).backgroundColor,color:getComputedStyle(bookedChip).color}:null,confirmedBorder:confirmed?getComputedStyle(confirmed).borderColor:null,confirmedBackground:confirmed?getComputedStyle(confirmed).backgroundColor:null,tableRightBorder:tableCell?getComputedStyle(tableCell).borderRightWidth:null,tableBottomBorder:tableCell?getComputedStyle(tableCell).borderBottomWidth:null,categoryColumns:category?getComputedStyle(category).gridTemplateColumns.split(' ').length:null,categoryDivider:categoryHeader?getComputedStyle(categoryHeader).borderLeftWidth:null,dateDivider:dateRow?getComputedStyle(dateRow).borderLeftWidth:null,dateGap:dateRow?getComputedStyle(dateRow).gap:null,dateHeight:dateButton?Math.round(dateButton.getBoundingClientRect().height):null}})()`)
+    const plannedStaffResult = await cdp.evaluate<any>(`(()=>{const cell=document.querySelector('.planned-leave-table .planned-staff-cell');const identity=cell?.querySelector('.planned-staff-identity');const badge=cell?.querySelector('.leave-type-chip.booked');return cell?{display:getComputedStyle(cell).display,alignment:getComputedStyle(cell).alignItems,badgeMargin:getComputedStyle(badge).marginTop,identityPresent:!!identity,badgePresent:!!badge}:null})()`)
     assert.equal(historyResult.overflow, false, `Leave History page overflow at ${width}px.`)
     assert.equal(historyResult.panelBorder, leaveTheme.line)
     assert.equal(historyResult.panelBackground, leaveTheme.surface)
@@ -269,6 +300,13 @@ try {
         assert.equal(historyResult.bookedChip.border, leaveTheme.lineStrong)
         assert.equal(historyResult.bookedChip.background, leaveTheme.surfaceStrong)
         assert.equal(historyResult.bookedChip.color, leaveTheme.violet)
+      }
+      if (plannedStaffResult) {
+        assert.equal(plannedStaffResult.display, 'flex')
+        assert.equal(plannedStaffResult.alignment, 'center')
+        assert.equal(plannedStaffResult.badgeMargin, '0px')
+        assert.equal(plannedStaffResult.identityPresent, true)
+        assert.equal(plannedStaffResult.badgePresent, true)
       }
     }
     if (historyResult.confirmedBorder) {

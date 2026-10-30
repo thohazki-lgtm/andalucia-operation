@@ -1362,6 +1362,21 @@ main.module-leave-planner :is(
   background: var(--ao-leave-surface) !important;
 }
 
+main.module-leave-planner article.panel.entitlement-policies-panel .configuration-source-note.policy-information-note {
+  border-color: var(--ao-leave-line) !important;
+  border-left-color: var(--ao-violet-hour) !important;
+  background: var(--ao-leave-surface-strong) !important;
+}
+
+main.module-leave-planner .entitlement-policy-modal {
+  border-color: var(--ao-leave-line) !important;
+  background: var(--ao-leave-surface) !important;
+}
+
+main.module-leave-planner .entitlement-policy-modal :is(input, .form-actions) {
+  border-color: var(--ao-leave-divider) !important;
+}
+
 main.module-leave-planner :is(
   .employee-entitlement-metrics div,
   .staff-entitlements-panel .employee-entitlement-date,
