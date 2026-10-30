@@ -27,8 +27,6 @@ export type ServiceYearAnnualLeavePosition = {
   preAvailabilityUsageDates: string[]
 }
 
-export const ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE = '2026-01-01'
-
 const isoDate = (value: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('SERVICE_YEAR_DATE_INVALID')
   const date = new Date(`${value}T00:00:00Z`)
@@ -107,20 +105,18 @@ export const calculateServiceYearAnnualLeavePosition = (input: {
   const ordered = validateEvidence(input.joinDate, input.serviceYears)
   const cutoff = isoDate(input.asOf)
   const months = completedServiceMonths(input.joinDate, input.asOf)
-  const accruing = decimal(Math.min(30, 2.5 * months))
-  const joined = isoDate(input.joinDate)
-  const agreedBaseline = isoDate(ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE)
-  let baselineAvailability = addYearsClamped(joined, 1)
-  while (baselineAvailability < agreedBaseline) baselineAvailability = addYearsClamped(baselineAvailability, 1)
-  let automaticAvailable = 0
-  for (let anniversary = baselineAvailability; anniversary <= cutoff; anniversary = addYearsClamped(anniversary, 1)) automaticAvailable += 30
-  const availabilityCutoff = formatDate(baselineAvailability)
-  const carry = ordered.filter(item => item.openingCarryEffectiveDate && isoDate(item.openingCarryEffectiveDate) >= baselineAvailability && isoDate(item.openingCarryEffectiveDate) <= cutoff && item.approvedOpeningCarryUnits !== null && item.approvedOpeningCarryUnits !== undefined).at(-1)
-  const knownAvailableEntitlement = decimal(automaticAvailable + (carry?.approvedOpeningCarryUnits || 0))
+  const currentEvidence = ordered.find(item => item.serviceYearStart === period.start)
+  const annualEntitlement = currentEvidence?.entitledUnits ?? 30
+  const monthlyAccrual = currentEvidence?.accrualUnitsPerCompletedMonth ?? 2.5
+  const accruing = decimal(Math.min(annualEntitlement, monthlyAccrual * months))
+  const carry = ordered.find(item => item.openingCarryEffectiveDate === period.start && item.approvedOpeningCarryUnits !== null && item.approvedOpeningCarryUnits !== undefined)
+  const knownAvailableEntitlement = decimal(accruing + (carry?.approvedOpeningCarryUnits || 0))
   const uniqueUsage = [...new Set(input.confirmedAnnualLeaveDates)].sort()
   uniqueUsage.forEach(isoDate)
-  const preAvailabilityUsageDates = uniqueUsage.filter(value => value < availabilityCutoff)
-  const confirmedUsed = uniqueUsage.filter(value => value >= availabilityCutoff).length
+  const applicableUsage = uniqueUsage.filter(value => value >= period.start && value <= period.end && isoDate(value) <= cutoff)
+  const firstMonthlyAvailability = formatDate(addMonthsClamped(isoDate(period.start), 1))
+  const preAvailabilityUsageDates = applicableUsage.filter(value => value < firstMonthlyAvailability)
+  const confirmedUsed = applicableUsage.length
   const knownRemaining = decimal(knownAvailableEntitlement - confirmedUsed)
   return {
     period,

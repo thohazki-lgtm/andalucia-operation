@@ -41,15 +41,15 @@ try {
 
   const carryDraft = { staffId, carryForward: 5.25 }
   const carryPreview = await repository.previewAnnualLeaveCarryForward(carryDraft)
-  assert.equal(carryPreview.before?.availableLeave, 30)
+  assert.equal(carryPreview.before?.availableLeave, 22.5)
   assert.equal(carryPreview.after.approvedOpeningCarry, 5.25)
-  assert.equal(carryPreview.after.availableLeave, 35.25, 'Manager-confirmed Carry Forward supplements the anniversary-based service-year entitlement.')
+  assert.equal(carryPreview.after.availableLeave, 27.75, 'Manager-confirmed Carry Forward supplements current service-year earned entitlement.')
   await assert.rejects(repository.saveAnnualLeaveCarryForward({ ...carryDraft, confirmation: '' as never }, principal), /Explicit manager confirmation/)
   await repository.saveAnnualLeaveCarryForward({ ...carryDraft, confirmation: 'CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD' }, principal)
 
   const annual = await repository.annualLeaveServiceYearBalance(staffId, '2026-10-12')
   assert(annual)
-  assert.deepEqual({ available: annual.availableLeave, carriedForward: annual.approvedOpeningCarry, used: annual.used, remaining: annual.remaining }, { available: 35.25, carriedForward: 5.25, used: 2, remaining: 33.25 })
+  assert.deepEqual({ available: annual.availableLeave, carriedForward: annual.approvedOpeningCarry, used: annual.used, remaining: annual.remaining }, { available: 27.75, carriedForward: 5.25, used: 2, remaining: 25.75 })
   const balance = await repository.yearlyEntitlementBalance(staffId, 2026, '2026-10-05', '2026-10-11')
   const sick = balance.yearlyLeave.find(item => item.classification === 'sickLeave')!
   assert.deepEqual({ entitlement: sick.entitlement, used: sick.used, remaining: sick.remaining }, { entitlement: 8, used: 2, remaining: 6 })
@@ -84,10 +84,10 @@ try {
   assert.equal(persisted.find(item => item.classification === 'annualLeave')?.configured, false)
   const persistedAnnual = await reopened.annualLeaveServiceYearBalance(staffId, '2026-10-12')
   assert.equal(persistedAnnual?.approvedOpeningCarry, 5.25)
-  assert.equal(persistedAnnual?.remaining, 33.25)
+  assert.equal(persistedAnnual?.remaining, 25.75)
   await reopened.close()
 
-  console.log(JSON.stringify({ previewReadOnly: true, explicitManagerConfirmation: true, mandatoryApprovalReason: true, anniversaryServiceYearAnnualLeave: true, separateCarryForwardWorkflow: true, decimalCarryForward: true, noDoubleCounting: true, nonAnnualYearlyEntitlements: true, nonAnnualReset: true, historicalSkSlSingleCount: true, dutyRosterAuthority: true, auditLogging: true, persistence: true, legacyTablesPreserved: true, schemaVersion: '027', canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ previewReadOnly: true, explicitManagerConfirmation: true, mandatoryApprovalReason: true, currentServiceYearAnnualLeave: true, separateCarryForwardWorkflow: true, decimalCarryForward: true, noDoubleCounting: true, nonAnnualYearlyEntitlements: true, nonAnnualReset: true, historicalSkSlSingleCount: true, dutyRosterAuthority: true, auditLogging: true, persistence: true, legacyTablesPreserved: true, schemaVersion: '027', canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await fixture.cleanup()
 }
