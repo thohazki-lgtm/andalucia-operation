@@ -70,34 +70,40 @@ export function StaffEntitlementsManager() {
   const [summaries, setSummaries] = useState<Record<string, LeavePlannerStaffRow['entitlement']>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [viewing, setViewing] = useState<StaffEntitlement | null>(null)
+  const [expandedStaffId, setExpandedStaffId] = useState<string | null>(null)
+  const [detailsDirty, setDetailsDirty] = useState(false)
   const load = async () => { setLoading(true); setError(''); try { const entitlements = await staffApi.entitlements(); setItems(entitlements.map(item => ({ ...item, leaveOverrides: normalizedLeaveOverrides(item.leaveOverrides) }))); try { const planner = await staffApi.leavePlanner(serviceDate().slice(0, 7)); setSummaries(Object.fromEntries(planner.rows.map(row => [row.staffId, row.entitlement]))) } catch { setSummaries({}) } } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load staff entitlements.') } finally { setLoading(false) } }
   useEffect(() => { void load() }, [])
   const visible = items.filter(item => item.employmentStatus === 'active')
+  const showDetails = (staffId: string | null) => {
+    if (detailsDirty && staffId !== expandedStaffId && !window.confirm('Discard the unsaved Carry Forward value?')) return
+    setDetailsDirty(false)
+    setExpandedStaffId(staffId)
+  }
   return <article className="panel workforce-foundation-panel staff-entitlements-panel">
     <div className="panel-title workforce-section-title"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3><p>Individual allowances override policy defaults without changing confirmed Duty Roster evidence.</p></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
-      <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Employee identity and actions stay visible while reviewing balances.</small></div>
-      <div className="employee-entitlement-list" aria-label="Staff entitlement settings">{visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; return <article className="employee-entitlement-row" key={item.staffId}>
-        <header className="employee-entitlement-header">
-          <div className="employee-entitlement-identity"><b>{item.staffName}</b><small>{item.staffNumber}</small></div>
-          <div className="employee-entitlement-date"><span>Service Year</span><b>{serviceYear ? `${displayDate(serviceYear.serviceYearStart)} – ${displayDate(serviceYear.serviceYearEnd)}` : '—'}</b></div>
-          <div className="employee-entitlement-date"><span>Next Availability</span><b>{serviceYear ? displayDate(serviceYear.nextEntitlementAvailabilityDate) : '—'}</b></div>
-          <button type="button" className="entitlement-manage" aria-label={`Manage ${item.staffName} leave balance`} onClick={() => setViewing(item)}>Manage</button>
-        </header>
-        <dl className="employee-entitlement-metrics">
-          <div><dt>Available</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableLeave : summary?.annualLeave.entitlement)}</dd></div>
-          <div><dt>Used</dt><dd>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</dd></div>
-          <div><dt>Remaining</dt><dd>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</dd></div>
-          <div><dt>Accruing Next Year</dt><dd>{serviceYear?.accruingForNextServiceYear ?? '—'}</dd></div>
-          <div><dt>Future Booked</dt><dd>{serviceYear?.bookedFuture ?? summary?.bookedFuture ?? '—'}</dd></div>
-          <div><dt>Available After Booked</dt><dd>{displayEntitlement(serviceYear ? serviceYear.availableAfterBooked : summary?.availableAfterBooked)}</dd></div>
-        </dl>
-      </article>})}</div>
+      <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Annual Leave figures use confirmed Duty Roster usage and separate future bookings.</small></div>
+      <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
+        <table className="employee-entitlement-table">
+          <colgroup><col className="entitlement-employee-column" /><col /><col /><col /><col /><col /></colgroup>
+          <thead><tr><th>Employee</th><th>Accrued</th><th>Used</th><th>Booked</th><th>Available</th><th>Balance</th></tr></thead>
+          {visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const expanded = expandedStaffId === item.staffId; const detailsId = `employee-entitlement-details-${item.staffId}`; return <tbody key={item.staffId}>
+            <tr className={expanded ? 'employee-entitlement-row expanded' : 'employee-entitlement-row'}>
+              <td className="employee-entitlement-identity" data-label="Employee"><div><b>{item.staffName}</b><small>{item.staffNumber}</small></div><button type="button" className="entitlement-details-toggle" aria-expanded={expanded} aria-controls={detailsId} onClick={() => showDetails(expanded ? null : item.staffId)}>{expanded ? 'Close' : 'Details'}</button></td>
+              <td data-label="Accrued"><b>{serviceYear?.accruingForNextServiceYear ?? '—'}</b></td>
+              <td data-label="Used"><b>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</b></td>
+              <td data-label="Booked"><b>{serviceYear?.bookedFuture ?? summary?.bookedFuture ?? '—'}</b></td>
+              <td data-label="Available"><b>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</b></td>
+              <td data-label="Balance"><b>{displayEntitlement(serviceYear ? serviceYear.availableAfterBooked : summary?.availableAfterBooked)}</b></td>
+            </tr>
+            {expanded && <tr className="employee-entitlement-details-row"><td colSpan={6}><EntitlementInlineDetails id={detailsId} item={item} planningSummary={summary} onChanged={load} onDirtyChange={setDetailsDirty} onCollapse={() => showDetails(null)} /></td></tr>}
+          </tbody> })}
+        </table>
+      </div>
       {!visible.length && <p className="workforce-empty">No staff match this view.</p>}
     </>}
-    {viewing && <EntitlementBalanceDialog item={viewing} planningSummary={summaries[viewing.staffId]} onChanged={load} onClose={() => setViewing(null)} />}
   </article>
 }
 
@@ -151,7 +157,7 @@ function AnnualLeaveCarryForwardSection({ item, onSaved, onDirtyChange }: { item
   </section>
 }
 
-function EntitlementBalanceDialog({ item, onChanged, onClose }: { item: StaffEntitlement; planningSummary?: LeavePlannerStaffRow['entitlement']; onChanged: () => Promise<void>; onClose: () => void }) {
+function EntitlementInlineDetails({ id, item, planningSummary, onChanged, onDirtyChange, onCollapse }: { id: string; item: StaffEntitlement; planningSummary?: LeavePlannerStaffRow['entitlement']; onChanged: () => Promise<void>; onDirtyChange: (dirty: boolean) => void; onCollapse: () => void }) {
   const today = serviceDate()
   const [year, setYear] = useState(Number(today.slice(0, 4)))
   const [weekDate, setWeekDate] = useState(today)
@@ -160,15 +166,24 @@ function EntitlementBalanceDialog({ item, onChanged, onClose }: { item: StaffEnt
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [carryForwardDirty, setCarryForwardDirty] = useState(false)
   useEffect(() => { let current = true; setLoading(true); setError(''); void Promise.all([staffApi.yearlyEntitlementBalance(item.staffId, year, weekDate), staffApi.accumulatedOffBalance(item.staffId)]).then(([yearlyBalance, accumulatedBalance]) => { if (current) { setBalance(yearlyBalance); setAccumulatedOff(accumulatedBalance) } }).catch(loadError => { if (current) setError(loadError instanceof Error ? loadError.message : 'Unable to calculate yearly entitlement balances.') }).finally(() => { if (current) setLoading(false) }); return () => { current = false } }, [item.staffId, year, weekDate, refreshKey])
   const carryForwardSaved = async () => { await onChanged(); setRefreshKey(value => value + 1) }
   const stateLabel = balance?.weeklyOff.status === 'pending' ? 'Pending' : balance?.weeklyOff.status === 'short' ? `Short by ${Math.abs(balance.weeklyOff.difference)}` : balance?.weeklyOff.status === 'additional' ? `${balance.weeklyOff.difference} additional OFF` : 'Compliant'
   const accumulatedTotal = accumulatedOff ? accumulatedOff.opening + accumulatedOff.earned : 0
   const nonAnnualLeave = balance?.yearlyLeave.filter(line => line.classification !== 'annualLeave') ?? []
-  const requestClose = () => { if (carryForwardDirty && !window.confirm('Discard the unsaved Carry Forward value?')) return; onClose() }
-  useEffect(() => { const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') requestClose() }; document.addEventListener('keydown', closeOnEscape); return () => document.removeEventListener('keydown', closeOnEscape) }, [carryForwardDirty, onClose])
-  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><section className="modal entitlement-balance-modal" role="dialog" aria-modal="true" aria-labelledby="balance-title" onMouseDown={event => event.stopPropagation()}><button className="close" aria-label="Close" onClick={requestClose}>×</button><h2 id="balance-title">Yearly Entitlement Balance</h2><p className="workforce-modal-person"><b>{item.staffName}</b><span>{item.staffNumber}</span></p><div className="balance-controls"><label>Selected Year<input aria-label="Entitlement balance year" type="number" min="1900" max="2200" step="1" value={year} onChange={event => { const next = Number(event.target.value); if (Number.isInteger(next) && next >= 1900 && next <= 2200) setYear(next) }} /></label><label>Week containing<input aria-label="Entitlement balance week" type="date" value={weekDate} onChange={event => setWeekDate(event.target.value)} /></label></div>{error && <p className="save-error" role="alert">{error}</p>}{loading || !balance || !accumulatedOff ? <p className="workforce-loading">Calculating yearly balances…</p> : <><section className="off-days-summary" aria-labelledby="off-days-summary-title"><header><div><p className="eyebrow">DUTY ROSTER</p><h3 id="off-days-summary-title">OFF Days Summary</h3></div>{accumulatedOff.evaluatedThrough && <small>Evaluated through {displayDate(accumulatedOff.evaluatedThrough)}</small>}</header><dl className="off-days-metrics"><div><dt>OFF Taken</dt><dd>{accumulatedOff.consumed}</dd></div><div><dt>Accumulated OFF</dt><dd>{accumulatedTotal}</dd></div><div><dt>Available Balance</dt><dd>{accumulatedOff.available}</dd></div></dl><article className={`weekly-balance off-days-weekly-review ${balance.weeklyOff.status}`}><div><span>Weekly OFF Review</span><small>{displayDate(balance.weeklyOff.weekStart)} – {displayDate(balance.weeklyOff.weekEnd)}</small></div><dl><div><dt>Required</dt><dd>{balance.weeklyOff.required}</dd></div><div><dt>Assigned</dt><dd>{balance.weeklyOff.assigned}</dd></div><div><dt>Difference</dt><dd>{balance.weeklyOff.complete ? `${balance.weeklyOff.difference > 0 ? '+' : ''}${balance.weeklyOff.difference}` : '—'}</dd></div><div><dt>Status</dt><dd>{stateLabel}</dd></div></dl></article><div className="balance-week-actions"><button className="secondary" onClick={() => setWeekDate(value => addCalendarDays(value, -7))}>← Previous Week</button><button className="secondary" onClick={() => setWeekDate(today)}>Current Week</button><button className="secondary" onClick={() => setWeekDate(value => addCalendarDays(value, 7))}>Next Week →</button></div></section><AnnualLeaveCarryForwardSection item={item} onSaved={carryForwardSaved} onDirtyChange={setCarryForwardDirty} /><p className="configuration-source-note"><b>As of:</b> {displayDate(balance.asOf)}. Confirmed usage comes only from Duty Roster; Booked/Future remains separate.</p><section className="additional-entitlement-balances" aria-label="Non-Annual Leave entitlement balances"><div>{nonAnnualLeave.map(line => <article key={line.classification}><header><b>{line.code}</b><span>{line.label}</span></header><dl><div><dt>Entitled</dt><dd>{displayEntitlement(line.entitlement)}</dd></div><div><dt>Booked</dt><dd>{line.bookedFuture ?? '—'}</dd></div><div><dt>Balance</dt><dd>{displayEntitlement(line.availableAfterBooked ?? line.remaining)}</dd></div></dl></article>)}</div></section></>}</section></div>
+  useEffect(() => { const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onCollapse() }; document.addEventListener('keydown', closeOnEscape); return () => document.removeEventListener('keydown', closeOnEscape) }, [onCollapse])
+  const serviceYear = planningSummary?.annualLeave.serviceYear
+  return <section id={id} className="employee-entitlement-details" aria-label={`${item.staffName} entitlement details`}>
+    <header className="employee-entitlement-details-header"><div><p className="eyebrow">INLINE ENTITLEMENT DETAILS</p><h4>{item.staffName} · {item.staffNumber}</h4></div><dl><div><dt>Service Year</dt><dd>{serviceYear ? `${displayDate(serviceYear.serviceYearStart)} – ${displayDate(serviceYear.serviceYearEnd)}` : '—'}</dd></div><div><dt>Next Anniversary</dt><dd>{serviceYear ? displayDate(serviceYear.nextEntitlementAvailabilityDate) : '—'}</dd></div></dl><button type="button" className="secondary" onClick={onCollapse}>Close Details</button></header>
+    <div className="balance-controls"><label>Selected Year<input aria-label="Entitlement balance year" type="number" min="1900" max="2200" step="1" value={year} onChange={event => { const next = Number(event.target.value); if (Number.isInteger(next) && next >= 1900 && next <= 2200) setYear(next) }} /></label><label>Week containing<input aria-label="Entitlement balance week" type="date" value={weekDate} onChange={event => setWeekDate(event.target.value)} /></label></div>
+    {error && <p className="save-error" role="alert">{error}</p>}
+    {loading || !balance || !accumulatedOff ? <p className="workforce-loading">Calculating entitlement details…</p> : <>
+      <section className="off-days-summary" aria-labelledby={`${id}-off-title`}><header><div><p className="eyebrow">DUTY ROSTER</p><h3 id={`${id}-off-title`}>OFF Days Summary</h3></div>{accumulatedOff.evaluatedThrough && <small>Evaluated through {displayDate(accumulatedOff.evaluatedThrough)}</small>}</header><dl className="off-days-metrics"><div><dt>OFF Taken</dt><dd>{accumulatedOff.consumed}</dd></div><div><dt>Accumulated OFF</dt><dd>{accumulatedTotal}</dd></div><div><dt>Available Balance</dt><dd>{accumulatedOff.available}</dd></div></dl><article className={`weekly-balance off-days-weekly-review ${balance.weeklyOff.status}`}><div><span>Weekly OFF Review</span><small>{displayDate(balance.weeklyOff.weekStart)} – {displayDate(balance.weeklyOff.weekEnd)}</small></div><dl><div><dt>Required</dt><dd>{balance.weeklyOff.required}</dd></div><div><dt>Assigned</dt><dd>{balance.weeklyOff.assigned}</dd></div><div><dt>Difference</dt><dd>{balance.weeklyOff.complete ? `${balance.weeklyOff.difference > 0 ? '+' : ''}${balance.weeklyOff.difference}` : '—'}</dd></div><div><dt>Status</dt><dd>{stateLabel}</dd></div></dl></article><div className="balance-week-actions"><button className="secondary" onClick={() => setWeekDate(value => addCalendarDays(value, -7))}>← Previous Week</button><button className="secondary" onClick={() => setWeekDate(today)}>Current Week</button><button className="secondary" onClick={() => setWeekDate(value => addCalendarDays(value, 7))}>Next Week →</button></div></section>
+      <AnnualLeaveCarryForwardSection item={item} onSaved={carryForwardSaved} onDirtyChange={onDirtyChange} />
+      <p className="configuration-source-note"><b>As of:</b> {displayDate(balance.asOf)}. Confirmed usage comes only from Duty Roster; Booked/Future remains separate.</p>
+      <section className="additional-entitlement-balances" aria-label="Non-Annual Leave entitlement balances"><div>{nonAnnualLeave.map(line => <article key={line.classification}><header><b>{line.code}</b><span>{line.label}</span></header><dl><div><dt>Entitled</dt><dd>{displayEntitlement(line.entitlement)}</dd></div><div><dt>Booked</dt><dd>{line.bookedFuture ?? '—'}</dd></div><div><dt>Balance</dt><dd>{displayEntitlement(line.availableAfterBooked ?? line.remaining)}</dd></div></dl></article>)}</div></section>
+    </>}
+  </section>
 }
 
 export function PublicHolidaySettingsManager() {
