@@ -111,6 +111,7 @@ try {
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Employee Entitlements')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.employee-entitlement-row')`)) break; await sleep(100) }
     const employeeResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.staff-entitlements-panel');const rows=Array.from(panel.querySelectorAll('.employee-entitlement-row'));const first=rows[0];const header=first.querySelector('.employee-entitlement-header');const metrics=Array.from(first.querySelectorAll('.employee-entitlement-metrics>div'));const manage=first.querySelector('.entitlement-manage');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rows:rows.length,headerColumns:getComputedStyle(header).gridTemplateColumns.split(' ').length,rowHeight:Math.round(first.getBoundingClientRect().height),headerLabels:Array.from(header.querySelectorAll('.employee-entitlement-date span')).map(label=>label.textContent.trim()),labels:metrics.map(metric=>metric.querySelector('dt').textContent.trim()),visibleValues:metrics.every(metric=>metric.querySelector('dd').getBoundingClientRect().height>0),metricColumns:getComputedStyle(first.querySelector('.employee-entitlement-metrics')).gridTemplateColumns.split(' ').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,rowBorder:getComputedStyle(first).borderColor,rowBackground:getComputedStyle(first).backgroundColor,manageHeight:Math.round(manage.getBoundingClientRect().height),manageLabel:manage.textContent.trim(),manageButtons:first.querySelectorAll('button.entitlement-manage').length,manageMenus:first.querySelectorAll('.entitlement-manage-menu').length,inactiveControl:Array.from(panel.querySelectorAll('label')).some(label=>label.textContent.includes('Show inactive staff'))}})()`)
+    const employeeTabWidths = await cdp.evaluate<number[]>(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).map(button=>Math.round(button.getBoundingClientRect().width))`)
     assert.equal(employeeResult.overflow, false, `Employee Entitlements overflow at ${width}px.`)
     assert.ok(employeeResult.rows > 0)
     assert.equal(employeeResult.headerColumns, width <= 700 ? 2 : 4)
@@ -128,6 +129,7 @@ try {
     assert.equal(employeeResult.manageButtons, 1)
     assert.equal(employeeResult.manageMenus, 0)
     assert.equal(employeeResult.inactiveControl, false)
+    assert.ok(Math.max(...employeeTabWidths) - Math.min(...employeeTabWidths) <= 1, `Leave Planner tabs are not equal at ${width}px: ${employeeTabWidths.join(', ')}.`)
     employeeResults[String(width)] = employeeResult
     const employeeCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `employee-entitlements-${width}.png`), Buffer.from(employeeCapture.data, 'base64'))
