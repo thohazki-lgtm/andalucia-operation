@@ -23,6 +23,28 @@ function Assert-AndaluciaGitAncestor {
   if ($LASTEXITCODE -ne 0) { throw $Code }
 }
 
+function Test-AndaluciaAuthorizedLocalUiPolicyControl {
+  param([string]$ProjectRoot, [string]$From, [string]$To)
+  $authorizedReviewedCheckpoint = '0c6ec7d7cb705b87118db4ef502996982ae0e131'
+  $authorizedPolicyCommit = '401f878c2360192d16dd689ca2905c8cad287b7b'
+  $authorizedPolicyBlob = 'b8dd65e0333f5f99f1057e8dda0156a246582f03'
+  $resolvedFrom = (& git -C $ProjectRoot rev-parse --verify --quiet $From).Trim()
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $resolvedTo = (& git -C $ProjectRoot rev-parse --verify --quiet $To).Trim()
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $policyParent = (& git -C $ProjectRoot rev-parse --verify --quiet "$authorizedPolicyCommit^").Trim()
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $policyBlob = (& git -C $ProjectRoot rev-parse --verify --quiet "$authorizedPolicyCommit`:AGENTS.md").Trim()
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $targetBlob = (& git -C $ProjectRoot rev-parse --verify --quiet "$resolvedTo`:AGENTS.md").Trim()
+  if ($LASTEXITCODE -ne 0) { return $false }
+  if ($resolvedFrom -ne $authorizedReviewedCheckpoint -or $policyParent -ne $authorizedReviewedCheckpoint -or $policyBlob -ne $authorizedPolicyBlob -or $targetBlob -ne $authorizedPolicyBlob) { return $false }
+  & git -C $ProjectRoot merge-base --is-ancestor $authorizedPolicyCommit $resolvedTo 2>$null
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $laterPolicyChanges = @(& git -C $ProjectRoot diff --name-only "$authorizedPolicyCommit..$resolvedTo" -- AGENTS.md)
+  return $laterPolicyChanges.Count -eq 0
+}
+
 function Assert-AndaluciaChangedPaths {
   param([string]$ProjectRoot, [string]$From, [string]$To, [string]$Mode)
   $paths = @(& git -C $ProjectRoot diff --name-only "$From..$To")
@@ -43,12 +65,14 @@ function Assert-AndaluciaChangedPaths {
     'deployment/windows/Invoke-AndaluciaApprovedBackendCheckpointActivation.ps1',
     'server/local-backend-checkpoint-activation.test.ts'
   )
+  $authorizedPolicyControl = $false
+  if ($Mode -eq 'control' -and $paths -contains 'AGENTS.md') { $authorizedPolicyControl = Test-AndaluciaAuthorizedLocalUiPolicyControl -ProjectRoot $ProjectRoot -From $From -To $To }
   $invalid = @(if ($Mode -eq 'ui') {
     @($paths | Where-Object { $_ -notmatch $uiPattern })
   } elseif ($Mode -eq 'backend_control') {
     @($paths | Where-Object { $_ -notin $backendControlPaths })
   } else {
-    @($paths | Where-Object { $_ -notin $controlPaths })
+    @($paths | Where-Object { $_ -notin $controlPaths -and -not ($_ -eq 'AGENTS.md' -and $authorizedPolicyControl) })
   })
   if ($invalid.Count -gt 0) { throw "ANDALUCIA_LOCAL_UI_PATH_NOT_APPROVED:${Mode}:$($invalid -join ',')" }
   return $paths

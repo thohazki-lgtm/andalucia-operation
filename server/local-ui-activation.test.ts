@@ -182,7 +182,26 @@ try {
     assert.match(disguised.output, /ANDALUCIA_LOCAL_REVIEWED_BACKEND_PATH_NOT_APPROVED/)
   }
 
-  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, reviewedBackendRequiresDistinctAuthorization: true, reviewedBackendTestPathsClassified: true, disguisedProductionPathsRejected: true, uiApprovalRejectsBackend: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
+  const sourceResolver = join(sourceRoot, 'deployment', 'windows', 'Resolve-AndaluciaApprovedSource.ps1').replaceAll("'", "''")
+  const sourceHead = run('git', ['rev-parse', 'HEAD'], sourceRoot).stdout.trim()
+  const authorizedPolicyControl = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command',
+    `. '${sourceResolver}'; Assert-AndaluciaChangedPaths -ProjectRoot '${sourceRoot.replaceAll("'", "''")}' -From '0c6ec7d7cb705b87118db4ef502996982ae0e131' -To '${sourceHead}' -Mode 'control'`,
+  ], sourceRoot)
+  assert.match(authorizedPolicyControl.output, /AGENTS\.md/)
+
+  await writeFile(join(testRoot, 'AGENTS.md'), '# Unapproved policy change\n', 'utf8')
+  run('git', ['add', 'AGENTS.md'])
+  run('git', ['commit', '-m', 'unapproved policy change'])
+  const unapprovedPolicySha = run('git', ['rev-parse', 'HEAD']).stdout.trim()
+  const unapprovedPolicyControl = run('powershell.exe', [
+    '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command',
+    `. '${resolverForClassification}'; Assert-AndaluciaChangedPaths -ProjectRoot '${testRoot.replaceAll("'", "''")}' -From '${backendSha}' -To '${unapprovedPolicySha}' -Mode 'control'`,
+  ], testRoot, false)
+  assert.notEqual(unapprovedPolicyControl.status, 0)
+  assert.match(unapprovedPolicyControl.output, /ANDALUCIA_LOCAL_UI_PATH_NOT_APPROVED:control:AGENTS\.md/)
+
+  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, reviewedBackendRequiresDistinctAuthorization: true, reviewedBackendTestPathsClassified: true, disguisedProductionPathsRejected: true, authorizedPolicyCommitPinned: true, unapprovedPolicyChangesRejected: true, uiApprovalRejectsBackend: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
