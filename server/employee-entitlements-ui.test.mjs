@@ -21,6 +21,8 @@ assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:820px/,
 assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available<\/th><th>Used<\/th><th>Booked<\/th><th>Balance<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
 assert.doesNotMatch(employeeManager, /Close Details/, 'Inline details must not duplicate the row-level Close action.')
 assert.match(styles, /\.employee-entitlement-table th\{[^}]*text-align:center/, 'Metric headings must be centered.')
+assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td>b\{[^}]*font-size:13px[^}]*font-weight:600/, 'Entitlement values must use the refined readable numeric typography.')
+assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-identity b\{font-size:13px;font-weight:600/, 'Employee names must remain readable and aligned.')
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*vertical-align:middle/, 'Table values must stay vertically aligned.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-table \.employee-entitlement-row\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Mobile rows must use a readable two-column layout.')
 assert.match(styles, /\.employee-entitlement-details-row>td\{[^}]*background:var\(--ao-leave-surface/, 'Inline details must remain connected to the selected employee.')

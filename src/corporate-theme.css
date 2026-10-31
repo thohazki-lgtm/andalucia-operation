@@ -1093,9 +1093,10 @@ main.module-leave-planner .leave-month-navigation .ao-date-control input {
   border-radius: 0;
   background: transparent !important;
   color: var(--ao-violet-hour);
-  font-family: var(--ao-font-ui);
-  font-size: 21px !important;
-  font-weight: 700 !important;
+  font-family: var(--ao-font-display);
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  line-height: 1.1;
   text-align: center !important;
   box-shadow: none !important;
 }
@@ -1792,7 +1793,7 @@ main.module-leave-planner .booked-leave-form footer {
   main.module-leave-planner .leave-month-navigation .ao-date-control input {
     height: 46px;
     min-height: 46px;
-    font-size: 19px !important;
+    font-size: 21px !important;
   }
 
   main.module-leave-planner .leave-planner-header {

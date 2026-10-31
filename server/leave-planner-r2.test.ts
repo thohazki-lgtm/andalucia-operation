@@ -20,7 +20,8 @@ try {
   await operations.initialize()
   await memberships.initialize()
 
-  const staff = (await repository.list()).filter(person => person.employmentStatus === 'active').slice(0, 2)
+  const activeStaff = (await repository.list()).filter(person => person.employmentStatus === 'active')
+  const staff = activeStaff.slice(0, 2)
   assert.equal(staff.length, 2)
   const membership = (staffId: string, from: string, to: string | null): StaffMembershipHistory => ({
     id: randomUUID(), staffId, outletScopeId: ANDALUCIA_SCOPE_ID, membershipDimension: 'regular_outlet', effectiveFrom: from,
@@ -46,7 +47,7 @@ try {
 
   const planner = await new LeavePlannerService(repository, memberships).view('2026-09')
   assert.equal(planner.membershipBlocker, null)
-  assert.equal(planner.rows.length, 2)
+  assert.equal(planner.rows.length, activeStaff.length, 'Leave Planner visibility must come from active Staff Management records, not approved Team Membership rows.')
   const first = planner.rows.find(row => row.staffId === staff[0].id)!
   const second = planner.rows.find(row => row.staffId === staff[1].id)!
   assert.deepEqual(first.periods.map(period => `${period.leaveType}:${period.fromDate}:${period.toDate}`), [
@@ -56,19 +57,19 @@ try {
   assert.deepEqual(first.days.map(day => `${day.date}:${day.dutyCode}`), [
     '2026-09-01:AL', '2026-09-02:AL', '2026-09-03:OFF', '2026-09-04:AL', '2026-09-05:PH', '2026-09-06:AL', '2026-09-07:SL'
   ])
-  assert.deepEqual({ start: second.membershipStart, end: second.membershipEnd, days: second.days.length }, { start: '2026-09-15', end: '2026-09-30', days: 1 })
+  assert.deepEqual({ start: second.membershipStart, end: second.membershipEnd, days: second.days.length }, { start: '2026-09-01', end: '2026-09-30', days: 1 })
   assert.deepEqual({ entitlement: first.entitlement.annualLeave.entitlement, used: first.entitlement.annualLeave.used, remaining: first.entitlement.annualLeave.remaining }, { entitlement: 30, used: 4, remaining: 26 })
   assert.deepEqual({ entitlement: first.entitlement.publicHoliday.entitlement, used: first.entitlement.publicHoliday.used, remaining: first.entitlement.publicHoliday.remaining }, { entitlement: 11, used: 1, remaining: 10 })
   assert.equal(first.entitlement.persisted, false)
   assert.equal(first.entitlement.offAssignedInMonth, 1)
   const firstDay = planner.availability.find(day => day.date === '2026-09-01')!
   const overlapDay = planner.availability.find(day => day.date === '2026-09-15')!
-  assert.deepEqual({ members: firstDay.members, working: firstDay.scheduledWorking, unavailable: firstDay.unavailable, unassigned: firstDay.unassigned }, { members: 1, working: 0, unavailable: 1, unassigned: 0 })
-  assert.deepEqual({ members: overlapDay.members, working: overlapDay.scheduledWorking, unavailable: overlapDay.unavailable, unassigned: overlapDay.unassigned }, { members: 2, working: 1, unavailable: 1, unassigned: 0 })
+  assert.deepEqual({ members: firstDay.members, working: firstDay.scheduledWorking, unavailable: firstDay.unavailable, unassigned: firstDay.unassigned }, { members: activeStaff.length, working: 0, unavailable: 1, unassigned: activeStaff.length - 1 })
+  assert.deepEqual({ members: overlapDay.members, working: overlapDay.scheduledWorking, unavailable: overlapDay.unavailable, unassigned: overlapDay.unassigned }, { members: activeStaff.length, working: 1, unavailable: 1, unassigned: activeStaff.length - 2 })
   assert.deepEqual(publicHoliday.metadata, expectMetadata(publicHoliday.metadata))
   await assert.rejects(() => new LeavePlannerService(repository, memberships).view('2026-13'), /valid Leave Planner month/)
 
-  console.log(JSON.stringify({ authoritativeDailyRosterPreserved: true, consecutiveDaysRemainIndividuallyAvailable: true, conservativeGrouping: true, annualLeaveSeparatedByOff: true, annualLeaveSeparatedByPublicHoliday: true, publicHolidayNonWorking: true, publicHolidayEntitlement: true, billTipWorkedDayUnit: true, sickLeavePreserved: true, approvedMembershipScope: true, membershipStartEnd: true, factualDailyAvailability: true, defaultEntitlementsReadOnly: true }, null, 2))
+  console.log(JSON.stringify({ authoritativeDailyRosterPreserved: true, consecutiveDaysRemainIndividuallyAvailable: true, conservativeGrouping: true, annualLeaveSeparatedByOff: true, annualLeaveSeparatedByPublicHoliday: true, publicHolidayNonWorking: true, publicHolidayEntitlement: true, billTipWorkedDayUnit: true, sickLeavePreserved: true, staffManagementVisibility: true, membershipApprovalIndependent: true, employmentStartEnd: true, factualDailyAvailability: true, defaultEntitlementsReadOnly: true }, null, 2))
 } finally {
   await repository.getDatabase().close().catch(() => undefined)
   await rm(dataDirectory, { recursive: true, force: true })

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import type { AuthPrincipal, StaffMembershipHistory } from '../src/domain.js'
+import type { AuthPrincipal } from '../src/domain.js'
 import { LeavePlannerService } from './leave-planner-service.js'
 import { OperationsRepository } from './operations-repository.js'
 import { ANDALUCIA_SCOPE_ID, OutletMembershipRepository } from './outlet-membership-repository.js'
@@ -15,13 +15,13 @@ try {
   const db = staff.getDatabase(); const membership = new OutletMembershipRepository(db); const operations = new OperationsRepository(db)
   await membership.initialize(); await operations.initialize()
   const person = (await staff.list()).find(item => item.employmentStatus === 'active')!
+  const inactivePerson = (await staff.list()).find(item => item.employmentStatus !== 'active')!
   const actorId = fixture.ownerId
   const actorRow = { id: actorId, display_name: 'Planned Leave Owner' }
   const actor: AuthPrincipal = { userId: actorRow.id, displayName: actorRow.display_name, loginIdentifier: 'isolated-owner', sessionId: randomUUID(), staffId: null, isOwner: true, roleKeys: ['owner'], permissionKeys: ['manage_duty_roster'], globalScope: true, allowedOutletScopeIds: [ANDALUCIA_SCOPE_ID] }
-  const history: StaffMembershipHistory = { id: randomUUID(), staffId: person.id, outletScopeId: ANDALUCIA_SCOPE_ID, membershipDimension: 'regular_outlet', effectiveFrom: '2026-09-01', effectiveTo: null, source: 'baseline_manager_review', reason: 'Booked leave isolated validation', reviewStatus: 'approved' }
-  await membership.createMembership(history)
   const planned = new PlannedLeaveRepository(db)
   assert.equal(await planned.ready(), true)
+  await assert.rejects(() => planned.create({ staffId: inactivePerson.id, startDate: '2026-11-10', endDate: '2026-11-12', leaveType: 'annual_leave' }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /active employment dates/)
   const created = await planned.create({ staffId: person.id, startDate: '2026-11-10', endDate: '2026-11-12', leaveType: 'annual_leave', managerNote: 'Family travel' }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor })
   assert.equal(created.bookedDays, 3); assert.equal(created.planningState, 'booked'); assert.equal(created.createdByUserId, actor.userId)
   await assert.rejects(() => planned.create({ staffId: person.id, startDate: '2026-11-12', endDate: '2026-11-14', leaveType: 'annual_leave' }, { outletScopeId: ANDALUCIA_SCOPE_ID, actor }), /overlaps/)
@@ -49,7 +49,7 @@ try {
   assert.equal(active.length, 0)
   const audits = await db.query<{ action: string }>("select action from audit_logs where entity_type='planned_leave_period' and entity_id=$1 order by created_at", [created.id])
   assert.deepEqual(audits.rows.map(item => item.action), ['booked', 'updated', 'cancelled'])
-  console.log(JSON.stringify({ migration019Ready: true, durableBookedLeave: true, overlapRejected: true, rosterCollisionRejected: true, rosterWinsDisplay: true, confirmedUsageNotDoubleCounted: true, bookedProjection: true, updateRevision: true, cancellationTraceability: true, immutableIdentity: true, auditEvidence: true }, null, 2))
+  console.log(JSON.stringify({ migration019Ready: true, durableBookedLeave: true, membershipApprovalIndependent: true, activeStaffRequired: true, overlapRejected: true, rosterCollisionRejected: true, rosterWinsDisplay: true, confirmedUsageNotDoubleCounted: true, bookedProjection: true, updateRevision: true, cancellationTraceability: true, immutableIdentity: true, auditEvidence: true }, null, 2))
 } finally {
   await fixture.cleanup()
 }
