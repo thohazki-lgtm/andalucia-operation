@@ -3410,13 +3410,12 @@ main.module-training .training-r2-table table {
 }
 
 main.module-training .training-r2-table .training-col-date { width: 11%; }
-main.module-training .training-r2-table .training-col-topic { width: 22%; }
-main.module-training .training-r2-table .training-col-time { width: 10%; }
-main.module-training .training-r2-table .training-col-trainer { width: 12%; }
-main.module-training .training-r2-table .training-col-category { width: 12%; }
+main.module-training .training-r2-table .training-col-topic { width: 29%; }
+main.module-training .training-r2-table .training-col-time { width: 11%; }
+main.module-training .training-r2-table .training-col-trainer { width: 14%; }
+main.module-training .training-r2-table .training-col-category { width: 13%; }
 main.module-training .training-r2-table .training-col-status { width: 12%; }
-main.module-training .training-r2-table .training-col-source { width: 10%; }
-main.module-training .training-r2-table .training-col-actions { width: 11%; }
+main.module-training .training-r2-table .training-col-actions { width: 10%; }
 
 main.module-training .training-r2-table :is(th, td) {
   box-sizing: border-box;
@@ -3458,7 +3457,7 @@ main.module-training .training-r2-table td {
   font-size: 12px;
 }
 
-main.module-training .training-r2-table :is(th, td):is(:nth-child(1), :nth-child(3), :nth-child(6), :nth-child(7), :nth-child(8)) {
+main.module-training .training-r2-table :is(th, td):is(:nth-child(1), :nth-child(3), :nth-child(5), :nth-child(6), :nth-child(7)) {
   white-space: nowrap;
 }
 
