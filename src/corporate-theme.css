@@ -113,6 +113,7 @@ body,
   --ao-dashboard-card-soft: #2b153c;
   --ao-dashboard-gold: #c9a65a;
   --ao-dashboard-line: #673284;
+  --ao-dashboard-card-line: #a0756c;
   --ao-dashboard-text: #f8f4fb;
   --ao-dashboard-muted: #c8b8d2;
   --ao-module-accent: var(--ao-dashboard-violet);
@@ -276,12 +277,12 @@ main[class*='module-'] {
   --ao-shell-highlight: var(--ao-dashboard-gold);
   --ao-page-canvas-tint: var(--ao-dashboard-violet);
   background-color: var(--ao-dashboard-night);
-  background-image: linear-gradient(to bottom, #02060e 0%, #160923 32%, #351049 66%, #5b0d72 88%, #73068f 96%, #9303c5 100%);
+  background-image: linear-gradient(to bottom, #02060e 0%, #160923 32%, #351049 68%, #4a1c59 86%, #5b2b67 100%);
 }
 
 html:has(.app-shell > main.module-dashboard),
 body:has(.app-shell > main.module-dashboard) {
-  background: #9303c5;
+  background: #5b2b67;
 }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-duty-roster) {
@@ -374,6 +375,14 @@ main.module-dashboard .dashboard-page {
   color: var(--ao-dashboard-text);
 }
 
+html body main.module-dashboard > .page-header h1 {
+  color: var(--ao-dashboard-text);
+}
+
+html body main.module-dashboard > .page-header .eyebrow {
+  color: #f0d89d;
+}
+
 main.module-dashboard .dashboard-page .dashboard-card {
   --dashboard-card-accent: var(--ao-dashboard-gold);
   --dashboard-card-ink: var(--ao-dashboard-text);
@@ -383,8 +392,10 @@ main.module-dashboard .dashboard-page .dashboard-card {
   --ao-module-accent-ink: var(--dashboard-card-ink);
   --ao-module-accent-soft: var(--dashboard-card-soft);
   --ao-module-line: var(--dashboard-card-line);
-  border: 1px solid var(--dashboard-card-line);
+  padding: 15px 16px;
+  border: 1px solid var(--ao-dashboard-card-line);
   border-top: 2px solid var(--dashboard-card-accent);
+  border-radius: 12px;
   background: linear-gradient(145deg, var(--ao-dashboard-card-raised), var(--ao-dashboard-card));
   box-shadow: 0 12px 26px rgb(2 6 14 / 28%);
 }
@@ -443,7 +454,19 @@ main.module-dashboard .dashboard-page .team-secondary-panel header > b {
 }
 
 main.module-dashboard .dashboard-page .team-secondary-groups {
+  gap: 8px;
+  padding-top: 5px;
   border-top-color: var(--ao-dashboard-line);
+}
+
+main.module-dashboard .dashboard-page .team-name-grid {
+  gap: 6px;
+  margin: 3px 0 4px;
+}
+
+main.module-dashboard .dashboard-page .team-secondary-panel {
+  align-content: start;
+  padding: 7px;
 }
 
 main.module-dashboard .dashboard-page .team-secondary-panel header > span,
@@ -457,6 +480,7 @@ main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-c
   --dashboard-training-accent: var(--ao-dashboard-gold);
   --dashboard-training-line: var(--ao-dashboard-line);
   --dashboard-training-soft: var(--ao-dashboard-card-soft);
+  padding-bottom: 15px;
   border-top-color: var(--ao-dashboard-gold);
 }
 
@@ -484,6 +508,24 @@ main.module-dashboard .dashboard-page .maintenance-followup-list button.normal e
   color: #ead8f2;
 }
 
+main.module-dashboard .dashboard-page .maintenance-followup-list button.urgent {
+  border-color: #70404c;
+  border-left-color: #b45f57;
+  background: #2a1724;
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .maintenance-followup-list button:is(.normal, .urgent):hover,
+main.module-dashboard .dashboard-page .maintenance-followup-list button:is(.normal, .urgent):focus-visible {
+  border-color: var(--ao-dashboard-gold);
+  background: #372047;
+}
+
+main.module-dashboard .dashboard-page .maintenance-followup-list button.urgent em {
+  background: #48222d;
+  color: #ffd8d4;
+}
+
 main.module-dashboard .dashboard-page .tonight-card .hostess-state-summary > div,
 main.module-dashboard .dashboard-page .tonight-card :is(.next-arrivals, .next-arrival-groups span, .tonight-scroll, .tonight-zero) {
   border-color: var(--ao-dashboard-line);
@@ -503,6 +545,15 @@ main.module-dashboard .dashboard-page .hostess-state-summary > div:not(.arrived,
 main.module-dashboard .dashboard-page .tonight-card .next-arrivals strong,
 main.module-dashboard .dashboard-page .tonight-card .next-arrival-groups span {
   color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .tonight-card .next-arrival-groups span {
+  border-color: var(--ao-dashboard-card-line);
+  background: #351946;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .next-arrival-groups span b {
+  color: #f8e7b9;
 }
 
 main.module-dashboard .dashboard-page .hostess-state-summary > div.arrived strong {
@@ -567,7 +618,7 @@ main.module-dashboard .dashboard-page .tonight-scroll {
     min-height: 72px;
     align-content: center;
     padding: 10px 12px;
-    border: 1px solid var(--ao-dashboard-line);
+    border: 1px solid var(--ao-dashboard-card-line);
     border-top: 2px solid var(--ao-dashboard-gold);
     border-radius: 10px;
     background: linear-gradient(145deg, var(--ao-dashboard-card-raised), var(--ao-dashboard-card));
