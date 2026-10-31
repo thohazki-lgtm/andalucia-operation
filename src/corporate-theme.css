@@ -977,7 +977,8 @@ main.module-leave-planner .leave-planner-header {
 
 main.module-leave-planner .leave-planner-header h2,
 main.module-leave-planner .staff-profile-overlay.leave-modal-overlay .staff-profile-drawer > header h2,
-main.module-leave-planner .public-holiday-modal > h2 {
+main.module-leave-planner .public-holiday-modal > h2,
+main.module-leave-planner .public-holidays-panel .holiday-panel-heading h3 {
   color: var(--ao-violet-hour);
   font-family: var(--ao-font-display);
   font-weight: 500;
@@ -994,8 +995,7 @@ main.module-leave-planner :is(
 
 main.module-leave-planner :is(
   .leave-summary-section h3,
-  .workforce-section-title h3,
-  .holiday-panel-heading h3,
+  .workforce-section-title:not(.holiday-panel-heading) h3,
   .leave-records-header h3,
   .confirmed-leave-history h3,
   .balance-carry-forward h3,
@@ -1296,9 +1296,7 @@ main.module-leave-planner :is(
   .entitlement-balance-modal > .workforce-modal-person,
   .leave-record-filters,
   .leave-records-table th,
-  .planned-leave-history .leave-records-table th,
-  .holiday-record-value,
-  .holiday-record-status
+  .planned-leave-history .leave-records-table th
 ) {
   border-color: var(--ao-leave-divider) !important;
   background: var(--ao-leave-surface-strong) !important;
