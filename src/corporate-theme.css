@@ -3104,13 +3104,16 @@ main.module-training :is(.training-form, .training-confirm-modal) .ao-action--pr
 main.module-training .training-r2-period {
   grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   max-width: none;
   width: 100%;
-  margin-inline: auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--ao-training-border) !important;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, white);
+  box-shadow: 0 3px 9px rgb(18 62 72 / .06);
+  overflow: hidden;
 }
 
 main.module-training .training-r2-period > .ao-icon-action {
@@ -3127,11 +3130,11 @@ main.module-training .training-r2-month {
   box-sizing: border-box;
   min-width: 0;
   min-height: 44px;
-  padding: 5px 16px;
-  border: 1px solid var(--ao-training-border) !important;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, white);
-  box-shadow: 0 3px 9px rgb(18 62 72 / .06);
+  padding: 4px 12px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
   place-items: center;
   color: var(--ao-training-ink-strong);
   cursor: pointer;
@@ -3154,20 +3157,27 @@ main.module-training .training-r2-month > input {
 }
 
 main.module-training .training-r2-kpis {
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-kpis > .panel {
   display: grid;
   box-sizing: border-box;
-  height: 78px;
-  min-height: 78px;
-  padding: 8px 12px;
+  height: 76px;
+  min-height: 76px;
+  padding: 8px 10px;
   align-content: center;
   gap: 3px;
   border: 1px solid var(--ao-training-border) !important;
   border-top: 3px solid var(--ao-training-ink) !important;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
+}
+
+main.module-training .training-review-alert {
+  margin: 0;
 }
 
 main.module-training .training-r2-kpis span {
@@ -3696,11 +3706,19 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-kpis {
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
   }
 
   main.module-training .training-r2-list > header {
     align-items: stretch;
+  }
+}
+
+@media (max-width: 700px) {
+  main.module-training .training-r2-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 }
 
@@ -3710,8 +3728,8 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-kpis > .panel {
-    height: 72px;
-    min-height: 72px;
+    height: 74px;
+    min-height: 74px;
     padding: 9px 11px;
   }
 
