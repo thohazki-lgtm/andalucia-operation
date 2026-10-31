@@ -106,12 +106,21 @@ body,
 }
 
 .module-dashboard {
-  --ao-module-accent: var(--ao-royal-purple);
-  --ao-module-accent-ink: var(--ao-royal-purple);
-  --ao-module-accent-soft: var(--ao-soft-lavender);
-  --ao-module-canvas-primary: var(--ao-soft-lavender);
-  --ao-module-canvas-secondary: var(--ao-royal-purple);
-  --ao-module-canvas-base: #f2ede4;
+  --ao-dashboard-night: #02060e;
+  --ao-dashboard-violet: #9303c5;
+  --ao-dashboard-card: #171021;
+  --ao-dashboard-card-raised: #21112f;
+  --ao-dashboard-card-soft: #2b153c;
+  --ao-dashboard-gold: #c9a65a;
+  --ao-dashboard-line: #673284;
+  --ao-dashboard-text: #f8f4fb;
+  --ao-dashboard-muted: #c8b8d2;
+  --ao-module-accent: var(--ao-dashboard-violet);
+  --ao-module-accent-ink: var(--ao-dashboard-text);
+  --ao-module-accent-soft: #6e3489;
+  --ao-module-canvas-primary: #321044;
+  --ao-module-canvas-secondary: var(--ao-dashboard-violet);
+  --ao-module-canvas-base: var(--ao-dashboard-night);
   --ao-dashboard-pax-column-width: 86px;
   --ao-dashboard-pax-cell-padding: 7px 6px;
   --ao-dashboard-pax-pill-radius: 999px;
@@ -263,10 +272,16 @@ main[class*='module-'] {
 /* Let the persistent navigation share the active module accent while the shell
    carries the matching full-page tint. */
 .app-shell:has(> main.module-dashboard) {
-  --ao-shell-accent: var(--ao-royal-purple);
-  --ao-shell-highlight: var(--ao-soft-lavender);
-  --ao-page-canvas-tint: #d4b2e8;
-  background-image: linear-gradient(to bottom, #f4f1eb 0%, #e8d9ef 56%, #d4b2e8 100%);
+  --ao-shell-accent: var(--ao-dashboard-violet);
+  --ao-shell-highlight: var(--ao-dashboard-gold);
+  --ao-page-canvas-tint: var(--ao-dashboard-violet);
+  background-color: var(--ao-dashboard-night);
+  background-image: linear-gradient(to bottom, #02060e 0%, #160923 32%, #351049 66%, #5b0d72 88%, #73068f 96%, #9303c5 100%);
+}
+
+html:has(.app-shell > main.module-dashboard),
+body:has(.app-shell > main.module-dashboard) {
+  background: #9303c5;
 }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-duty-roster) {
@@ -353,86 +368,223 @@ main[class*='module-'] {
   color: var(--ao-training-scheduled-text);
 }
 
-/* Dashboard cards are one coherent Dashboard surface. Semantic pills inside
-   them keep their own operational colors through their component rules. */
-main.module-dashboard .dashboard-page :is(
-  .dashboard-order-team,
-  .dashboard-order-bookings,
-  .dashboard-order-service,
-  .dashboard-order-occasions,
-  .dashboard-order-training,
-  .dashboard-order-attention
-) {
-  --dashboard-card-accent: var(--ao-royal-purple);
-  --dashboard-card-ink: var(--ao-royal-purple);
-  --dashboard-card-soft: var(--ao-soft-lavender);
-  --dashboard-card-line: color-mix(in srgb, var(--dashboard-card-ink) 46%, var(--ao-surface));
+/* Dashboard is a dark editorial surface. Operational and configured colors
+   remain local to their pills; these rules only define the surrounding UI. */
+main.module-dashboard .dashboard-page {
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .dashboard-card {
+  --dashboard-card-accent: var(--ao-dashboard-gold);
+  --dashboard-card-ink: var(--ao-dashboard-text);
+  --dashboard-card-soft: var(--ao-dashboard-card-soft);
+  --dashboard-card-line: var(--ao-dashboard-line);
   --ao-module-accent: var(--dashboard-card-accent);
   --ao-module-accent-ink: var(--dashboard-card-ink);
   --ao-module-accent-soft: var(--dashboard-card-soft);
   --ao-module-line: var(--dashboard-card-line);
-  border-color: var(--dashboard-card-line);
-  border-top-color: var(--dashboard-card-accent);
+  border: 1px solid var(--dashboard-card-line);
+  border-top: 2px solid var(--dashboard-card-accent);
+  background: linear-gradient(145deg, var(--ao-dashboard-card-raised), var(--ao-dashboard-card));
+  box-shadow: 0 12px 26px rgb(2 6 14 / 28%);
 }
 
-/* The Training component carries legacy local variables with higher
-   specificity. Rebind those presentation-only variables inside Dashboard. */
-main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
-  --dashboard-training-accent: var(--ao-royal-purple);
-  --dashboard-training-line: var(--dashboard-card-line);
-  --dashboard-training-soft: color-mix(in srgb, var(--ao-soft-lavender) 18%, #ffffff);
-  border-top-color: var(--dashboard-card-accent);
+main.module-dashboard .dashboard-page .tonight-card {
+  border-color: var(--ao-dashboard-gold);
 }
 
-main.module-dashboard .dashboard-page :is(
-  .dashboard-order-team,
-  .dashboard-order-bookings,
-  .dashboard-order-service,
-  .dashboard-order-occasions,
-  .dashboard-order-training,
-  .dashboard-order-attention
-) .panel-title {
-  border-bottom-color: var(--dashboard-card-line);
-  background: var(--dashboard-card-heading-surface, color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff));
-  box-shadow: inset 3px 0 var(--dashboard-card-accent);
+main.module-dashboard .dashboard-page .dashboard-card .panel-title {
+  border-bottom-color: color-mix(in srgb, var(--ao-dashboard-line) 72%, transparent);
+  background: transparent;
+  box-shadow: none;
 }
 
-main.module-dashboard .dashboard-page :is(
-  .dashboard-order-team,
-  .dashboard-order-bookings,
-  .dashboard-order-service,
-  .dashboard-order-occasions,
-  .dashboard-order-training,
-  .dashboard-order-attention
-) .panel-title .eyebrow {
-  color: var(--dashboard-card-ink);
+main.module-dashboard .dashboard-page .dashboard-card .panel-title h3,
+main.module-dashboard .dashboard-page :is(.dashboard-empty, .dashboard-muted, .team-unassigned p) {
+  color: var(--ao-dashboard-text);
 }
 
-main.module-dashboard .dashboard-page :is(
-  .dashboard-order-team,
-  .dashboard-order-bookings,
-  .dashboard-order-service,
-  .dashboard-order-occasions,
-  .dashboard-order-training
-) .dashboard-card-action {
-  border-color: var(--dashboard-card-line);
-  background: color-mix(in srgb, var(--dashboard-card-soft) 18%, #ffffff);
-  color: var(--dashboard-card-ink);
-}
-
-main.module-dashboard .dashboard-page :is(
-  .dashboard-order-team,
-  .dashboard-order-bookings,
-  .dashboard-order-service
-) .dashboard-metric-grid > div,
-main.module-dashboard .dashboard-page .dashboard-order-training .dashboard-training-details > div {
-  border-color: var(--dashboard-card-line);
-  border-top-color: var(--dashboard-card-detail-top-border, var(--dashboard-card-accent));
-  background: var(--dashboard-card-detail-surface, color-mix(in srgb, var(--dashboard-card-soft) 10%, #ffffff));
-}
-
+main.module-dashboard .dashboard-page .dashboard-card .panel-title .eyebrow,
 main.module-dashboard .dashboard-page .dashboard-order-training :is(.dashboard-training-date, .dashboard-training-details dt) {
-  color: var(--dashboard-card-ink);
+  color: var(--ao-dashboard-gold);
+}
+
+main.module-dashboard .dashboard-page .dashboard-card-action {
+  border-color: color-mix(in srgb, var(--ao-dashboard-gold) 70%, transparent);
+  background: var(--ao-dashboard-card-soft);
+  color: #f4dca7;
+}
+
+main.module-dashboard .dashboard-page .dashboard-card-action:hover:not(:disabled),
+main.module-dashboard .dashboard-page .dashboard-card-action:focus-visible {
+  border-color: var(--ao-dashboard-gold);
+  background: #3b1d4f;
+}
+
+main.module-dashboard .dashboard-page .dashboard-metric-grid > div,
+main.module-dashboard .dashboard-page .dashboard-order-training .dashboard-training-details > div,
+main.module-dashboard .dashboard-page .team-secondary-panel {
+  border-color: var(--ao-dashboard-line);
+  border-top-color: var(--ao-dashboard-gold);
+  background: color-mix(in srgb, var(--ao-dashboard-card-soft) 76%, var(--ao-dashboard-card));
+}
+
+main.module-dashboard .dashboard-page .dashboard-metric-grid span,
+main.module-dashboard .dashboard-page .dashboard-training-details dt,
+main.module-dashboard .dashboard-page .team-name-grid .team-status-empty,
+main.module-dashboard .dashboard-page .team-status-list .team-status-empty {
+  color: var(--ao-dashboard-muted);
+}
+
+main.module-dashboard .dashboard-page .dashboard-metric-grid strong,
+main.module-dashboard .dashboard-page .dashboard-training-details dd,
+main.module-dashboard .dashboard-page .team-secondary-panel header > b {
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .team-secondary-groups {
+  border-top-color: var(--ao-dashboard-line);
+}
+
+main.module-dashboard .dashboard-page .team-secondary-panel header > span,
+main.module-dashboard .dashboard-page .team-status-list em {
+  border-color: var(--ao-dashboard-line);
+  background: #31203e;
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .panel.dashboard-card.training-dashboard-card.dashboard-order-training {
+  --dashboard-training-accent: var(--ao-dashboard-gold);
+  --dashboard-training-line: var(--ao-dashboard-line);
+  --dashboard-training-soft: var(--ao-dashboard-card-soft);
+  border-top-color: var(--ao-dashboard-gold);
+}
+
+main.module-dashboard .dashboard-page .training-dashboard-card .panel-title {
+  border-bottom-color: var(--ao-dashboard-line);
+  background: transparent;
+  box-shadow: none;
+}
+
+main.module-dashboard .dashboard-page .training-dashboard-card .training-status.scheduled {
+  border-color: var(--ao-training-scheduled-border);
+  background: var(--ao-training-scheduled-background);
+  color: var(--ao-training-scheduled-text);
+}
+
+main.module-dashboard .dashboard-page .maintenance-followup-list button.normal {
+  border-color: var(--ao-dashboard-line);
+  border-left-color: var(--ao-dashboard-gold);
+  background: var(--ao-dashboard-card-soft);
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .maintenance-followup-list button.normal em {
+  background: #372448;
+  color: #ead8f2;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .hostess-state-summary > div,
+main.module-dashboard .dashboard-page .tonight-card :is(.next-arrivals, .next-arrival-groups span, .tonight-scroll, .tonight-zero) {
+  border-color: var(--ao-dashboard-line);
+  background: var(--ao-dashboard-card-soft);
+}
+
+main.module-dashboard .dashboard-page .tonight-card .hostess-state-summary > div {
+  border-top-color: var(--ao-dashboard-gold);
+}
+
+main.module-dashboard .dashboard-page .hostess-state-summary span,
+main.module-dashboard .dashboard-page .tonight-card .next-arrivals .eyebrow {
+  color: var(--ao-dashboard-muted);
+}
+
+main.module-dashboard .dashboard-page .hostess-state-summary > div:not(.arrived, .noshow) strong,
+main.module-dashboard .dashboard-page .tonight-card .next-arrivals strong,
+main.module-dashboard .dashboard-page .tonight-card .next-arrival-groups span {
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .hostess-state-summary > div.arrived strong {
+  color: #347257;
+}
+
+main.module-dashboard .dashboard-page .hostess-state-summary > div.noshow strong {
+  color: #9b4b44;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table thead th {
+  border-color: var(--ao-dashboard-line);
+  border-bottom-color: var(--ao-dashboard-gold);
+  background: #311440;
+  color: #f2d899;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table tbody td {
+  border-color: var(--ao-dashboard-line);
+  color: var(--ao-dashboard-text);
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table tbody tr:nth-child(odd) td {
+  background: #171021;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table tbody tr:nth-child(even) td {
+  background: #21112f;
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table tbody tr.current-service-slot td {
+  background: #351547;
+  box-shadow: inset 0 1px var(--ao-dashboard-line), inset 0 -1px var(--ao-dashboard-line);
+}
+
+main.module-dashboard .dashboard-page .tonight-card .tonight-table tbody tr.current-service-slot td:first-child {
+  color: #f2d899;
+  box-shadow: inset 3px 0 var(--ao-dashboard-gold), inset 0 1px var(--ao-dashboard-line), inset 0 -1px var(--ao-dashboard-line);
+}
+
+main.module-dashboard .dashboard-page .tonight-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.dashboard-mobile-priority {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .dashboard-mobile-priority {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+
+  .dashboard-mobile-priority article {
+    display: grid;
+    min-width: 0;
+    min-height: 72px;
+    align-content: center;
+    padding: 10px 12px;
+    border: 1px solid var(--ao-dashboard-line);
+    border-top: 2px solid var(--ao-dashboard-gold);
+    border-radius: 10px;
+    background: linear-gradient(145deg, var(--ao-dashboard-card-raised), var(--ao-dashboard-card));
+  }
+
+  .dashboard-mobile-priority span {
+    color: var(--ao-dashboard-muted);
+    font: 600 11px/1.2 var(--ao-font-ui);
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-mobile-priority strong {
+    margin-top: 4px;
+    color: var(--ao-dashboard-text);
+    font: 600 21px/1 var(--ao-font-ui);
+  }
 }
 
 .app-sidebar nav .selected {
