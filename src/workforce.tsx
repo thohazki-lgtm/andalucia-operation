@@ -82,17 +82,19 @@ export function StaffEntitlementsManager() {
       <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Annual Leave figures use confirmed Duty Roster usage and separate future bookings.</small></div>
       <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
         <table className="employee-entitlement-table">
-          <colgroup><col className="entitlement-employee-column" /><col /><col /><col /><col /></colgroup>
-          <thead><tr><th>Employee</th><th>Available</th><th>Used</th><th>Booked</th><th>Balance</th></tr></thead>
+          <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col /><col /><col /><col /><col className="entitlement-action-column" /></colgroup>
+          <thead><tr><th>Employee</th><th>Employee ID</th><th>Available</th><th>Used</th><th>Booked</th><th>Balance</th><th>Action</th></tr></thead>
           {visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const expanded = expandedStaffId === item.staffId; const detailsId = `employee-entitlement-details-${item.staffId}`; return <tbody key={item.staffId}>
             <tr className={expanded ? 'employee-entitlement-row expanded' : 'employee-entitlement-row'}>
-              <td className="employee-entitlement-identity" data-label="Employee"><div><b>{item.staffName}</b><small>{item.staffNumber}</small></div><button type="button" className="entitlement-details-toggle" aria-expanded={expanded} aria-controls={detailsId} onClick={() => showDetails(expanded ? null : item.staffId)}>{expanded ? 'Close' : 'Details'}</button></td>
+              <td className="employee-entitlement-identity" data-label="Employee"><b>{item.staffName}</b></td>
+              <td className="employee-entitlement-id" data-label="Employee ID"><b>{item.staffNumber}</b></td>
               <td data-label="Available"><b>{displayEntitlement(serviceYear ? serviceYear.remaining : summary?.annualLeave.remaining)}</b></td>
               <td data-label="Used"><b>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</b></td>
               <td data-label="Booked"><b>{serviceYear?.bookedFuture ?? summary?.bookedFuture ?? '—'}</b></td>
               <td data-label="Balance"><b>{displayEntitlement(serviceYear ? serviceYear.availableAfterBooked : summary?.availableAfterBooked)}</b></td>
+              <td className="employee-entitlement-action" data-label="Action"><button type="button" className="entitlement-details-toggle" aria-expanded={expanded} aria-controls={detailsId} onClick={() => showDetails(expanded ? null : item.staffId)}>{expanded ? 'Close' : 'Details'}</button></td>
             </tr>
-            {expanded && <tr className="employee-entitlement-details-row"><td colSpan={5}><EntitlementInlineDetails id={detailsId} item={item} planningSummary={summary} onCollapse={() => showDetails(null)} /></td></tr>}
+            {expanded && <tr className="employee-entitlement-details-row"><td colSpan={7}><EntitlementInlineDetails id={detailsId} item={item} planningSummary={summary} onCollapse={() => showDetails(null)} /></td></tr>}
           </tbody> })}
         </table>
       </div>
@@ -143,7 +145,7 @@ function EntitlementInlineDetails({ id, item, planningSummary, onCollapse }: { i
   useEffect(() => { const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onCollapse() }; document.addEventListener('keydown', closeOnEscape); return () => document.removeEventListener('keydown', closeOnEscape) }, [onCollapse])
   const serviceYear = planningSummary?.annualLeave.serviceYear
   return <section id={id} className="employee-entitlement-details" aria-label={`${item.staffName} entitlement details`}>
-    <header className="employee-entitlement-details-header"><div><p className="eyebrow">INLINE ENTITLEMENT DETAILS</p><h4>{item.staffName} · {item.staffNumber}</h4></div><dl><div><dt>Service Year</dt><dd>{serviceYear ? `${displayDate(serviceYear.serviceYearStart)} – ${displayDate(serviceYear.serviceYearEnd)}` : '—'}</dd></div><div><dt>Next Anniversary</dt><dd>{serviceYear ? displayDate(serviceYear.nextEntitlementAvailabilityDate) : '—'}</dd></div></dl><button type="button" className="secondary" onClick={onCollapse}>Close Details</button></header>
+    <header className="employee-entitlement-details-header"><div><p className="eyebrow">INLINE ENTITLEMENT DETAILS</p><h4>{item.staffName} · {item.staffNumber}</h4></div><dl><div><dt>Service Year</dt><dd>{serviceYear ? `${displayDate(serviceYear.serviceYearStart)} – ${displayDate(serviceYear.serviceYearEnd)}` : '—'}</dd></div><div><dt>Next Anniversary</dt><dd>{serviceYear ? displayDate(serviceYear.nextEntitlementAvailabilityDate) : '—'}</dd></div></dl></header>
     <div className="balance-controls"><label>Selected Year<input aria-label="Entitlement balance year" type="number" min="1900" max="2200" step="1" value={year} onChange={event => { const next = Number(event.target.value); if (Number.isInteger(next) && next >= 1900 && next <= 2200) setYear(next) }} /></label><label>Week containing<input aria-label="Entitlement balance week" type="date" value={weekDate} onChange={event => setWeekDate(event.target.value)} /></label></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading || !balance || !accumulatedOff ? <p className="workforce-loading">Calculating entitlement details…</p> : <>

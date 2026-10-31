@@ -20,7 +20,7 @@ const staffConfigSeeds: Record<StaffConfigGroup, ConfigOption[]> = {
   positions: config.positions
 }
 const entitlementPolicyGroup = 'leave_entitlement_policies'
-const legacyManualCarryForwardReason = 'Manager-confirmed manual carry forward'
+const isHistoricalAnnualLeaveCarryReason = (reason: string | null | undefined) => /\bcarry[\s-]?forward\b|\banniversary carry\b/i.test((reason || '').trim())
 const staffDisplayOrderGroup = 'staff_display_order'
 const staffDisplayOrderValue = 'shared'
 const entitlementFallbacks: Record<'annualLeave' | 'off' | 'publicHoliday', { allowance: number; cadence: 'annual' | 'weekly' }> = { annualLeave: { allowance: 30, cadence: 'annual' }, off: { allowance: 1, cadence: 'weekly' }, publicHoliday: { allowance: 11, cadence: 'annual' } }
@@ -396,7 +396,10 @@ export class StaffRepository {
     const adjustments: AnnualLeaveOpeningAdjustmentEvidence[] = yearly.rows.map(row => ({ effectiveDate: row.effectiveDate, units: Number(row.units), reason: row.reason }))
     for (const row of evidence) {
       if (row.approvedOpeningCarryUnits === null || row.approvedOpeningCarryUnits === undefined || !row.openingCarryEffectiveDate) continue
-      if ((row.openingCarryReason || '').trim().toLowerCase() === legacyManualCarryForwardReason.toLowerCase()) continue
+      // Lifetime accrual already carries unused earned leave across anniversaries.
+      // Keep carry-forward rows as audit evidence while retaining distinct, approved
+      // pre-system opening adjustments stored by the legacy service-year workflow.
+      if (isHistoricalAnnualLeaveCarryReason(row.openingCarryReason)) continue
       adjustments.push({ effectiveDate: row.openingCarryEffectiveDate, units: Number(row.approvedOpeningCarryUnits), reason: row.openingCarryReason || 'Approved opening adjustment' })
     }
     return adjustments

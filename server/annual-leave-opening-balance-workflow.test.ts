@@ -42,9 +42,13 @@ try {
     assert(balance.accruingForNextServiceYear >= 0)
   }
 
-  await fixture.db.query(`insert into staff_annual_leave_service_years(id,staff_id,service_year_start,service_year_end,available_from,entitled_units,accrual_units_per_completed_month,approved_opening_carry_units,opening_carry_effective_date,opening_carry_reason,approved_by_user_id,approved_by_name_snapshot) values($1,$2,'2024-07-19','2025-07-18','2025-07-19',30,2.5,30,'2025-07-19','Manager-confirmed manual carry forward',$3,$4)`, [randomUUID(), staffId, approver.userId, approver.displayName])
+  await fixture.db.query(`insert into staff_annual_leave_service_years(id,staff_id,service_year_start,service_year_end,available_from,entitled_units,accrual_units_per_completed_month,approved_opening_carry_units,opening_carry_effective_date,opening_carry_reason,approved_by_user_id,approved_by_name_snapshot) values($1,$2,'2024-07-19','2025-07-18','2025-07-19',30,2.5,30,'2025-07-19','Legacy anniversary carry evidence',$3,$4)`, [randomUUID(), staffId, approver.userId, approver.displayName])
   const withHistoricalCarry = await repository.annualLeaveServiceYearBalance(staffId, '2026-10-12')
-  assert.equal(withHistoricalCarry?.availableLeave, 65, 'Historical manual carry must remain audit evidence without duplicating lifetime accrual.')
+  assert.equal(withHistoricalCarry?.availableLeave, 65, 'Historical service-year carry must remain audit evidence without duplicating lifetime accrual.')
+
+  await fixture.db.query(`insert into staff_leave_entitlement_years(id,staff_id,entitlement_year,leave_classification,entitled_units,accrual_units_per_completed_month,eligible_from,eligible_through,opening_balance_adjustment_units,opening_balance_reason,approved_by_user_id,approved_by_name_snapshot) values($1,$2,2026,'annualLeave',30,2.5,'2026-01-01','2026-12-31',4.5,'Verified pre-system opening adjustment',$3,$4)`, [randomUUID(), staffId, approver.userId, approver.displayName])
+  const withVerifiedOpening = await repository.annualLeaveServiceYearBalance(staffId, '2026-10-12')
+  assert.equal(withVerifiedOpening?.availableLeave, 69.5, 'A verified opening adjustment must remain distinct from lifetime earnings and historical carry evidence.')
 
   const annualCode = (await repository.configuration()).dutyCodes.find(item => item.metadata?.dutyClassification === 'annualLeave')!.value
   await fixture.db.query('insert into duty_roster_entries(id,staff_id,duty_date,duty_code_value) values($1,$2,$3,$4)', [randomUUID(), staffId, '2026-08-01', annualCode])
@@ -54,14 +58,14 @@ try {
   assert(balance)
   assert.equal(balance.used, 1, 'Confirmed usage must come from Duty Roster.')
   assert.equal(balance.bookedFuture, 3, 'Booked/Future leave must stay separate from confirmed usage.')
-  assert.equal(balance.remaining, 64)
-  assert.equal(balance.availableAfterBooked, 61)
+  assert.equal(balance.remaining, 68.5)
+  assert.equal(balance.availableAfterBooked, 65.5)
 
   const ui = await readFile('src/workforce.tsx', 'utf8')
   const api = await readFile('server/index.ts', 'utf8')
   assert(!ui.includes('AnnualLeaveCarryForwardSection') && !ui.includes('Confirm Carry Forward'))
   assert(!api.includes('annual-leave-carry-forward') && !api.includes('saveAnnualLeaveCarryForward'))
-  console.log(JSON.stringify({ lifetimeAccrual: true, historicalCarryPreservedWithoutDuplication: true, dutyRosterAuthority: true, bookedFutureSeparate: true, manualCarryUiRemoved: true, manualCarryRoutesRetired: true, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ lifetimeAccrual: true, historicalCarryPreservedWithoutDuplication: true, verifiedOpeningAdjustmentPreserved: true, dutyRosterAuthority: true, bookedFutureSeparate: true, manualCarryUiRemoved: true, manualCarryRoutesRetired: true, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   globalThis.Date = NativeDate
   await fixture.cleanup()
