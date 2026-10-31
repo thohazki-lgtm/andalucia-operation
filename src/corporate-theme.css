@@ -1758,9 +1758,14 @@ main.module-leave-planner .booked-leave-form footer {
   main.module-leave-planner .leave-planner-module-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: 48px;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
     align-items: stretch;
+    justify-self: stretch;
     gap: 6px;
     padding: 0;
+    overflow: visible;
   }
 
   main.module-leave-planner .leave-planner-module-tabs button {
