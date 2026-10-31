@@ -40,7 +40,7 @@ try {
   assert.equal(result.bookedFutureSource, 'PLANNED_LEAVE_SEPARATE')
   assert.equal(result.lines.length, 10)
   const annual = result.lines.find(line => line.classification === 'annualLeave')!
-  assert.deepEqual({ rate: annual.accrualPerCompletedMonth, months: annual.completedEligibleMonths, accrued: annual.accrued, carry: annual.carriedForward, opening: annual.openingBalance, used: annual.used, remaining: annual.remaining, booked: annual.bookedFuture, afterBooked: annual.availableAfterBooked }, { rate: 2.5, months: 9, accrued: 22.5, carry: 5.25, opening: 5.25, used: 2, remaining: 25.75, booked: 3, afterBooked: 22.75 })
+  assert.deepEqual({ rate: annual.accrualPerCompletedMonth, months: annual.completedEligibleMonths, accrued: annual.accrued, carry: annual.carriedForward, opening: annual.openingBalance, used: annual.used, remaining: annual.remaining, booked: annual.bookedFuture, afterBooked: annual.availableAfterBooked }, { rate: 2.5, months: 45, accrued: 112.5, carry: null, opening: 5.25, used: 2, remaining: 115.75, booked: 3, afterBooked: 112.75 })
   assert.equal(annual.openingBalanceReason, 'HR approval 2026')
   const sick = result.lines.find(line => line.classification === 'sickLeave')!
   assert.deepEqual({ yearly: sick.yearlyEntitlement, individual: sick.individualEntitlement, used: sick.used, remaining: sick.remaining, status: sick.evidenceStatus }, { yearly: 8, individual: 12, used: 2, remaining: 6, status: 'discrepancy' })
