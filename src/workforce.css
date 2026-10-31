@@ -215,15 +215,15 @@
 .employee-entitlement-table{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#173e54;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
 .employee-entitlement-table .entitlement-employee-column{width:22%}.employee-entitlement-table .entitlement-id-column{width:13%}.employee-entitlement-table .entitlement-action-column{width:12%}
 .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:table-row;padding:0;border:0;border-radius:0}
-.employee-entitlement-table th{height:38px;padding:7px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.62));border-bottom:1px solid var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:9px;font-weight:600;letter-spacing:.06em;text-align:center;text-transform:uppercase;white-space:nowrap}
+.employee-entitlement-table th{height:40px;padding:8px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.62));border-bottom:1px solid var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:9.5px;font-weight:600;letter-spacing:.055em;text-align:center;text-transform:uppercase;white-space:nowrap}
 .employee-entitlement-table th:first-child{text-align:left}.employee-entitlement-table th:last-child{border-right:0}
 .employee-entitlement-table tbody+tbody .employee-entitlement-row td{border-top:1px solid var(--ao-leave-divider,rgba(192,183,240,.55))}
-.employee-entitlement-table .employee-entitlement-row td{height:52px;padding:7px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));background:#fff;text-align:center;font-size:11px;font-variant-numeric:tabular-nums;vertical-align:middle}
+.employee-entitlement-table .employee-entitlement-row td{height:52px;padding:8px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));background:#fff;text-align:center;font-size:11.5px;font-variant-numeric:tabular-nums;vertical-align:middle}
 .employee-entitlement-table .employee-entitlement-row:nth-child(odd) td{background:#fff}
 .employee-entitlement-table .employee-entitlement-row:hover td,.employee-entitlement-table .employee-entitlement-row.expanded td{background:var(--ao-leave-surface,#f8f5ff)}
 .employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0}
-.employee-entitlement-table .employee-entitlement-row td>b{color:#173e54;font-size:12px;font-weight:500}
-.employee-entitlement-table .employee-entitlement-row td.employee-entitlement-identity{text-align:left}.employee-entitlement-table .employee-entitlement-identity b,.employee-entitlement-table .employee-entitlement-id b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.employee-entitlement-table .employee-entitlement-identity b{font-size:11.5px;font-weight:500}.employee-entitlement-table .employee-entitlement-id b{font-size:10.5px;font-weight:500}.employee-entitlement-table .employee-entitlement-action{padding-left:7px;padding-right:7px}
+.employee-entitlement-table .employee-entitlement-row td>b{color:#173e54;font-size:12px;font-weight:500;line-height:1.3}
+.employee-entitlement-table .employee-entitlement-row td.employee-entitlement-identity{text-align:left}.employee-entitlement-table .employee-entitlement-identity b,.employee-entitlement-table .employee-entitlement-id b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.employee-entitlement-table .employee-entitlement-identity b{font-size:12px;font-weight:500}.employee-entitlement-table .employee-entitlement-id b{color:#554863;font-size:11px;font-weight:500}.employee-entitlement-table .employee-entitlement-action{padding-left:7px;padding-right:7px}
 .entitlement-details-toggle{min-width:66px;min-height:32px;padding:6px 9px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:8px;background:#fff;color:var(--ao-violet-hour,#45176b);font:600 9px/1 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);cursor:pointer}
 .entitlement-details-toggle:hover,.entitlement-details-toggle:focus-visible,.entitlement-details-toggle[aria-expanded="true"]{border-color:var(--ao-violet-hour,#45176b);background:var(--ao-violet-hour,#45176b);color:#fff;outline:0}
 .employee-entitlement-details-row>td{padding:0;border-top:1px solid var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface,#f8f5ff)}
@@ -250,10 +250,10 @@
   .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   .employee-entitlement-table .employee-entitlement-row td{display:flex;box-sizing:border-box;height:auto;min-height:48px;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));border-bottom:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));text-align:right}
   .employee-entitlement-table .employee-entitlement-row td:nth-child(even){border-right:0}.employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0;border-bottom:0}
-  .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity)::before{content:attr(data-label);color:#6c7786;font-size:8px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity)::before{content:attr(data-label);color:var(--ao-violet-hour,#45176b);font-size:8.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
   .employee-entitlement-table .employee-entitlement-id{flex-direction:column;align-items:flex-start;justify-content:center;text-align:left}.employee-entitlement-table .employee-entitlement-id b{max-width:100%;font-size:11px}
   .employee-entitlement-table .employee-entitlement-identity{min-width:0}.employee-entitlement-table .employee-entitlement-action{grid-column:1/-1;justify-content:flex-end;min-height:46px}
-  .employee-entitlement-table .employee-entitlement-identity b{font-size:11.5px}.employee-entitlement-table .employee-entitlement-row td>b{font-size:12px}
+  .employee-entitlement-table .employee-entitlement-identity b{font-size:12px}.employee-entitlement-table .employee-entitlement-row td>b{font-size:12px}
   .entitlement-details-toggle{min-height:40px}
   .employee-entitlement-details-row{display:block}.employee-entitlement-details-row>td{display:block;width:100%;padding:0}
   .employee-entitlement-details{padding:10px}

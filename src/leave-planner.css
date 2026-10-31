@@ -16,7 +16,7 @@
 .leave-month-navigation{display:grid;grid-template-columns:40px minmax(190px,260px) 40px auto;align-items:center;justify-content:start;gap:8px;margin:0 0 11px}
 .leave-month-navigation .ao-icon-action{width:40px;height:40px;flex-basis:40px;border-color:var(--ao-leave-line-strong,#c0b7f0);background:#fff;color:var(--ao-violet-hour,#45176b)}
 .leave-month-navigation .ao-date-control{width:100%}
-.leave-month-navigation .ao-date-control input{height:40px;min-height:40px;border:1px solid var(--ao-leave-line-strong,#c0b7f0);border-radius:7px;background:#fff;color:var(--ao-premium-navy,#173d56);font-size:13px;font-weight:700}
+.leave-month-navigation .ao-date-control input{height:40px;min-height:40px;padding-inline:38px;border:1px solid var(--ao-leave-line-strong,#c0b7f0);border-radius:7px;background:#fff;color:var(--ao-violet-hour,#45176b);font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);font-size:14px;font-weight:600;text-align:center}
 .leave-month-navigation .ao-action{height:40px;min-height:40px;border-color:var(--ao-leave-line-strong,#c0b7f0);background:#fff;color:var(--ao-violet-hour,#45176b)}
 .leave-planner-filters{display:grid;grid-template-columns:110px 155px minmax(210px,1fr) minmax(205px,1fr);gap:9px;margin:0}
 .leave-planner-filters label{display:grid;gap:4px;min-width:0;color:var(--ao-violet-hour,#45176b);font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}

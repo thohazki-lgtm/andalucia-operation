@@ -1060,9 +1060,31 @@ main.module-leave-planner .leave-command-panel {
 }
 
 main.module-leave-planner .leave-month-navigation {
-  grid-template-columns: 40px minmax(180px, 240px) 40px auto;
-  gap: 7px;
+  box-sizing: border-box;
+  grid-template-columns: 46px minmax(210px, 280px) 46px auto;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
   margin-bottom: 9px;
+}
+
+main.module-leave-planner .leave-month-navigation .ao-icon-action {
+  width: 46px;
+  height: 44px;
+  flex-basis: 46px;
+}
+
+main.module-leave-planner .leave-month-navigation .ao-date-control input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 38px;
+  color: var(--ao-violet-hour);
+  font-family: var(--ao-font-ui);
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
 }
 
 main.module-leave-planner .leave-planner-filters {
@@ -1153,8 +1175,21 @@ main.module-leave-planner .leave-staff-link {
 }
 
 main.module-leave-planner .leave-planner-grid tbody td.identity {
-  font-size: 10px;
-  font-weight: 400;
+  color: #453a52;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+main.module-leave-planner .leave-planner-grid tbody td.identity.employee {
+  color: var(--ao-violet-hour);
+  font-size: 11.25px;
+  font-weight: 600;
+}
+
+main.module-leave-planner .leave-planner-grid tbody td.identity.designation {
+  color: #554863;
+  font-size: 11px;
 }
 
 main.module-leave-planner .leave-planner-grid tbody tr:nth-child(even) > :is(th, td) {
@@ -1707,15 +1742,51 @@ main.module-leave-planner .booked-leave-form footer {
 
   main.module-leave-planner .leave-planner-module-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 48px;
+    align-items: stretch;
     gap: 6px;
     padding: 4px;
   }
 
   main.module-leave-planner .leave-planner-module-tabs button {
-    min-height: 44px;
-    padding-inline: 5px;
-    font-size: 8.75px;
+    height: 100%;
+    min-height: 48px;
+    padding: 6px 8px;
+    font-size: 9px;
+    line-height: 1.25;
     white-space: normal;
+  }
+
+  main.module-leave-planner .leave-month-navigation {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    justify-content: stretch;
+    gap: 8px;
+  }
+
+  main.module-leave-planner .leave-month-navigation .ao-date-control {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  main.module-leave-planner .leave-month-navigation .ao-icon-action {
+    width: 48px;
+    height: 46px;
+    flex-basis: 48px;
+  }
+
+  main.module-leave-planner .leave-month-navigation .ao-date-control input {
+    height: 46px;
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  main.module-leave-planner .leave-month-navigation .ao-action {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, 220px);
+    min-height: 42px;
   }
 
   main.module-leave-planner .leave-planner-header {
