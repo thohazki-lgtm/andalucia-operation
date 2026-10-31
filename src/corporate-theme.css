@@ -115,7 +115,10 @@ body,
   --ao-dashboard-line: #673284;
   --ao-dashboard-card-line: #a0756c;
   --ao-dashboard-text: #f8f4fb;
+  --ao-dashboard-title-text: #fffaf6;
   --ao-dashboard-muted: #c8b8d2;
+  --ao-dashboard-arrived-text: #7ad9a8;
+  --ao-dashboard-noshow-text: #ff938c;
   --ao-module-accent: var(--ao-dashboard-violet);
   --ao-module-accent-ink: var(--ao-dashboard-text);
   --ao-module-accent-soft: #6e3489;
@@ -376,7 +379,7 @@ main.module-dashboard .dashboard-page {
 }
 
 html body main.module-dashboard > .page-header h1 {
-  color: var(--ao-dashboard-text);
+  color: var(--ao-dashboard-title-text);
 }
 
 html body main.module-dashboard > .page-header .eyebrow {
@@ -557,11 +560,11 @@ main.module-dashboard .dashboard-page .tonight-card .next-arrival-groups span b 
 }
 
 main.module-dashboard .dashboard-page .hostess-state-summary > div.arrived strong {
-  color: #347257;
+  color: var(--ao-dashboard-arrived-text);
 }
 
 main.module-dashboard .dashboard-page .hostess-state-summary > div.noshow strong {
-  color: #9b4b44;
+  color: var(--ao-dashboard-noshow-text);
 }
 
 main.module-dashboard .dashboard-page .tonight-card .tonight-table thead th {
