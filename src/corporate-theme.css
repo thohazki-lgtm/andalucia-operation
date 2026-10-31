@@ -3167,9 +3167,9 @@ html body .app-shell main.module-training .training-r2 .training-r2-kpis > .pane
   box-sizing: border-box;
   height: 76px;
   min-height: 76px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   align-content: center;
-  gap: 3px;
+  gap: 2px;
   border: 1px solid var(--ao-training-border) !important;
   border-top: 3px solid var(--ao-training-ink) !important;
   border-radius: 10px;
@@ -3183,16 +3183,16 @@ main.module-training .training-review-alert {
 main.module-training .training-r2-kpis span {
   min-height: 0;
   color: var(--ao-training-ink);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 650;
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 main.module-training .training-r2-kpis strong {
   color: var(--ao-training-ink-strong);
-  font: 600 clamp(21px, 2.1vw, 27px)/1 var(--ao-font-ui);
+  font: 600 clamp(15px, 1.5vw, 19px)/1.05 var(--ao-font-ui);
 }
 
 main.module-training .training-r2-kpis small,
@@ -3203,7 +3203,7 @@ main.module-training .training-coverage > header span {
 
 main.module-training .training-r2-kpis small {
   font-size: 9px;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 html body .app-shell main.module-training .training-r2 .training-next {
@@ -3753,11 +3753,11 @@ main.module-training .training-import-list > article {
   main.module-training .training-r2-kpis > .panel {
     height: 74px;
     min-height: 74px;
-    padding: 9px 11px;
+    padding: 8px 10px;
   }
 
   main.module-training .training-r2-kpis strong {
-    font-size: 21px;
+    font-size: 15px;
   }
 
   main.module-training .training-r2-view-heading {
