@@ -930,9 +930,10 @@ main.module-leave-planner .leave-planner-workspace {
 main.module-leave-planner .leave-planner-module-tabs {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
-  padding: 4px;
-  border-color: var(--ao-leave-line);
-  background: var(--ao-leave-surface);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 main.module-leave-planner .leave-planner-module-tabs button {
@@ -1061,7 +1062,7 @@ main.module-leave-planner .leave-command-panel {
 
 main.module-leave-planner .leave-month-navigation {
   box-sizing: border-box;
-  grid-template-columns: 46px minmax(210px, 280px) 46px auto;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
   width: 100%;
   min-width: 0;
   gap: 8px;
@@ -1074,17 +1075,29 @@ main.module-leave-planner .leave-month-navigation .ao-icon-action {
   flex-basis: 46px;
 }
 
+main.module-leave-planner .leave-month-navigation .ao-icon-action:first-child {
+  justify-self: start;
+}
+
+main.module-leave-planner .leave-month-navigation .ao-icon-action:last-child {
+  justify-self: end;
+}
+
 main.module-leave-planner .leave-month-navigation .ao-date-control input {
   width: 100%;
   min-width: 0;
   height: 44px;
   min-height: 44px;
-  padding-inline: 38px;
+  padding-inline: 8px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
   color: var(--ao-violet-hour);
   font-family: var(--ao-font-ui);
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
   text-align: center !important;
+  box-shadow: none !important;
 }
 
 main.module-leave-planner .leave-planner-filters {
@@ -1092,7 +1105,7 @@ main.module-leave-planner .leave-planner-filters {
   gap: 8px;
 }
 
-main.module-leave-planner .leave-month-navigation :is(.ao-icon-action, .ao-action, .ao-date-control input),
+main.module-leave-planner .leave-month-navigation .ao-icon-action,
 main.module-leave-planner .leave-planner-filters select,
 main.module-leave-planner .leave-record-filters :is(input, select),
 main.module-leave-planner .leave-period-controls :is(input, select) {
@@ -1745,7 +1758,7 @@ main.module-leave-planner .booked-leave-form footer {
     grid-auto-rows: 48px;
     align-items: stretch;
     gap: 6px;
-    padding: 4px;
+    padding: 0;
   }
 
   main.module-leave-planner .leave-planner-module-tabs button {
@@ -1779,14 +1792,7 @@ main.module-leave-planner .booked-leave-form footer {
   main.module-leave-planner .leave-month-navigation .ao-date-control input {
     height: 46px;
     min-height: 46px;
-    font-size: 14px;
-  }
-
-  main.module-leave-planner .leave-month-navigation .ao-action {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: min(100%, 220px);
-    min-height: 42px;
+    font-size: 19px !important;
   }
 
   main.module-leave-planner .leave-planner-header {
