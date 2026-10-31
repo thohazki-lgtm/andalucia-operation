@@ -3102,16 +3102,23 @@ main.module-training :is(.training-form, .training-confirm-modal) .ao-action--pr
 }
 
 main.module-training .training-r2-period {
-  grid-template-columns: 44px minmax(210px, 360px) 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  max-width: 480px;
+  max-width: none;
   width: 100%;
   margin-inline: auto;
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+main.module-training .training-r2-period > .ao-icon-action {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
 }
 
 main.module-training .training-r2-month {
@@ -3121,7 +3128,7 @@ main.module-training .training-r2-month {
   min-width: 0;
   min-height: 44px;
   padding: 5px 16px;
-  border: 1px solid var(--ao-training-border);
+  border: 1px solid var(--ao-training-border) !important;
   border-radius: 10px;
   background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, white);
   box-shadow: 0 3px 9px rgb(18 62 72 / .06);
@@ -3224,6 +3231,15 @@ html body .app-shell main.module-training .training-r2 .training-r2-view {
   grid-template-rows: repeat(3, max-content);
 }
 
+html body .app-shell main.module-training .training-r2 .training-r2-view--calendar {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ao-training-border) !important;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
+  box-shadow: 0 6px 16px rgb(18 62 72 / .07);
+}
+
 main.module-training .training-r2-view-heading {
   display: flex;
   align-items: end;
@@ -3250,6 +3266,13 @@ main.module-training .training-r2-view-heading .eyebrow {
   color: var(--ao-training-ink);
 }
 
+html body .app-shell main.module-training .training-r2 .training-r2-view--calendar .training-r2-filters {
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+}
+
 main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
   border-color: var(--ao-training-divider);
   background: #fff;
@@ -3262,10 +3285,11 @@ main.module-training :is(.training-r2-filters, .training-form, .training-confirm
   outline: 0;
 }
 
-html body .app-shell main.module-training .training-r2 .panel.training-r2-calendar {
+html body .app-shell main.module-training .training-r2 .training-r2-view--calendar .panel.training-r2-calendar {
   overflow: hidden;
-  border: 1px solid var(--ao-training-border);
-  border-top: 3px solid var(--ao-training-ink) !important;
+  border: 0 !important;
+  border-top: 1px solid var(--ao-training-border) !important;
+  border-radius: 8px;
   background: var(--ao-training-surface);
 }
 
@@ -3648,7 +3672,7 @@ main.module-training .training-import-list > article {
 
   main.module-training .training-r2-period {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
-    max-width: 440px;
+    max-width: none;
   }
 
   main.module-training .training-r2-month > span {
