@@ -253,6 +253,30 @@ try {
     results.push(result)
     if (width === 1440 || width === 390) await screenshot(cdp, `${visualPhase}-${width}.png`)
   }
+  await cdp.evaluate(`Array.from(document.querySelectorAll('.view-switch button')).find(button=>button.textContent?.trim()==='List')?.click()`); await sleep(180)
+  for (const width of [768, 1024, 1440]) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 1024 ? 900 : 1000, deviceScaleFactor: 1, mobile: false }); await sleep(140)
+    const listLayout = await cdp.evaluate<any>(`(()=>{const wrap=document.querySelector('.training-r2-table');const table=wrap?.querySelector('table');const headers=Array.from(table?.querySelectorAll('thead th')||[]);const cells=Array.from(table?.querySelector('tbody tr')?.querySelectorAll('td')||[]);const rect=node=>node.getBoundingClientRect();const style=node=>getComputedStyle(node);const status=cells[5]?.querySelector('.training-status');const actions=Array.from(cells[7]?.querySelectorAll('button')||[]);const actionBounds=actions.map(rect);const actionCenter=actionBounds.length?((Math.min(...actionBounds.map(value=>value.left))+Math.max(...actionBounds.map(value=>value.right)))/2):0;return{visible:!!wrap&&style(wrap).display!=='none',pageOverflow:document.documentElement.scrollWidth>innerWidth+1,columns:headers.length,cellColumns:cells.length,aligned:headers.length===cells.length&&headers.every((header,index)=>Math.abs(rect(header).left-rect(cells[index]).left)<1&&Math.abs(rect(header).width-rect(cells[index]).width)<1),headerDividers:headers.slice(0,-1).every(node=>style(node).borderRightWidth==='1px'&&style(node).borderRightStyle==='solid'),rowDividers:cells.slice(0,-1).every(node=>style(node).borderRightWidth==='1px'&&style(node).borderRightStyle==='solid'),dividerColors:[...headers.slice(0,-1),...cells.slice(0,-1)].map(node=>style(node).borderRightColor),horizontalDividers:[...headers,...cells].every(node=>style(node).borderBottomWidth==='1px'&&style(node).borderBottomStyle==='solid'),topicWrap:style(cells[1]?.querySelector('b')).whiteSpace==='normal'&&style(cells[1]?.querySelector('b')).overflowWrap==='anywhere',statusCenterOffset:status?Math.abs((rect(status).left+rect(status).width/2)-(rect(cells[5]).left+rect(cells[5]).width/2)):99,actionsCenterOffset:actionBounds.length?Math.abs(actionCenter-(rect(cells[7]).left+rect(cells[7]).width/2)):99,rowHeight:cells[0]?Math.round(rect(cells[0]).height):0,contained:rect(wrap).right<=rect(document.querySelector('.training-r2-list')).right+1}})()`)
+    assert.equal(listLayout.visible, true, `Training List table is not visible at ${width}px`)
+    assert.equal(listLayout.pageOverflow, false, `Training List causes page overflow at ${width}px`)
+    assert.equal(listLayout.columns, 8, `Training List does not render all eight headers at ${width}px`)
+    assert.equal(listLayout.cellColumns, 8, `Training List does not render all eight data columns at ${width}px`)
+    assert.equal(listLayout.aligned, true, `Training List headers and cells are misaligned at ${width}px`)
+    assert.equal(listLayout.headerDividers && listLayout.rowDividers && listLayout.horizontalDividers, true, `Training List grid dividers are incomplete at ${width}px`)
+    assert.equal(new Set(listLayout.dividerColors).size, 1, `Training List dividers use inconsistent colors at ${width}px: ${listLayout.dividerColors.join(', ')}`)
+    assert.equal(listLayout.topicWrap, true, `Training List topic is not readable at ${width}px`)
+    assert.ok(listLayout.statusCenterOffset <= 2, `Training List status is not centered at ${width}px: ${listLayout.statusCenterOffset}px`)
+    assert.ok(listLayout.actionsCenterOffset <= 2, `Training List actions are not centered at ${width}px: ${listLayout.actionsCenterOffset}px`)
+    assert.ok(listLayout.rowHeight <= 55, `Training List rows are not compact at ${width}px: ${listLayout.rowHeight}px`)
+    assert.equal(listLayout.contained, true, `Training List scrolling is not contained at ${width}px`)
+    if (width === 1440) await screenshot(cdp, `${visualPhase}-list-${width}.png`)
+  }
+  for (const width of [360, 390, 430]) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: true }); await sleep(120)
+    assert.equal(await cdp.evaluate<boolean>(`getComputedStyle(document.querySelector('.training-r2-table')).display==='none'&&getComputedStyle(document.querySelector('.training-r2-cards')).display!=='none'&&document.documentElement.scrollWidth<=innerWidth+1`), true, `Training List mobile cards overflow at ${width}px`)
+    if (width === 390) await screenshot(cdp, `${visualPhase}-list-${width}.png`)
+  }
+  await cdp.evaluate(`Array.from(document.querySelectorAll('.view-switch button')).find(button=>button.textContent?.trim()==='Calendar')?.click()`); await sleep(160)
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }); await sleep(150)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const event=document.querySelector('.training-r2-calendar .training-event');if(!event)return false;event.click();return true})()`), true, 'Mobile Training agenda session did not open')
   for (let i=0;i<30;i++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.training-r2-drawer')`)) break; await sleep(100) }
