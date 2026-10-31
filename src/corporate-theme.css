@@ -2965,11 +2965,12 @@ main.module-training {
   --ao-training-ink: #1e5b53;
   --ao-training-ink-strong: #123e48;
   --ao-training-mint: #ccffaa;
+  --ao-training-border: #2f6f64;
   --ao-training-line: #8dbdaf;
   --ao-training-divider: #b6d7cd;
-  --ao-training-surface: #fbfefc;
-  --ao-training-surface-soft: #eef8f1;
-  --ao-training-surface-strong: #dff2e4;
+  --ao-training-surface: #f6fbf7;
+  --ao-training-surface-soft: #eaf6ed;
+  --ao-training-surface-strong: #dcefe2;
   --ao-training-row-alt: #f1f9f4;
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-ui);
@@ -3005,7 +3006,7 @@ main.module-training > .page-header .avatar {
 }
 
 main.module-training .training-r2 {
-  gap: 10px;
+  gap: 8px;
   font-family: var(--ao-font-ui);
 }
 
@@ -3021,9 +3022,9 @@ main.module-training :is(
   .training-import-list > article,
   .replacement-summary
 ) {
-  border-color: var(--ao-training-line);
+  border-color: var(--ao-training-border);
   background: var(--ao-training-surface);
-  box-shadow: 0 12px 28px rgb(18 62 72 / .08);
+  box-shadow: 0 6px 16px rgb(18 62 72 / .07);
 }
 
 main.module-training :is(
@@ -3101,8 +3102,11 @@ main.module-training :is(.training-form, .training-confirm-modal) .ao-action--pr
 }
 
 main.module-training .training-r2-period {
-  grid-template-columns: 44px minmax(180px, 1fr) 44px;
-  max-width: 620px;
+  grid-template-columns: 44px minmax(210px, 360px) 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 480px;
   width: 100%;
   margin-inline: auto;
   padding: 0;
@@ -3113,15 +3117,21 @@ main.module-training .training-r2-period {
 main.module-training .training-r2-month {
   position: relative;
   display: grid;
+  box-sizing: border-box;
   min-width: 0;
   min-height: 44px;
+  padding: 5px 16px;
+  border: 1px solid var(--ao-training-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, white);
+  box-shadow: 0 3px 9px rgb(18 62 72 / .06);
   place-items: center;
   color: var(--ao-training-ink-strong);
   cursor: pointer;
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-month > span {
-  font: 500 clamp(24px, 3vw, 34px)/1.1 var(--ao-font-display);
+  font: 500 clamp(22px, 2.5vw, 30px)/1.05 var(--ao-font-display);
   letter-spacing: -.02em;
   text-align: center;
 }
@@ -3140,7 +3150,7 @@ main.module-training .training-r2-kpis {
   gap: 10px;
 }
 
-main.module-training .training-r2-kpis > .panel {
+html body .app-shell main.module-training .training-r2 .training-r2-kpis > .panel {
   display: grid;
   box-sizing: border-box;
   height: 78px;
@@ -3148,7 +3158,9 @@ main.module-training .training-r2-kpis > .panel {
   padding: 8px 12px;
   align-content: center;
   gap: 3px;
-  border-top: 3px solid var(--ao-training-ink);
+  border: 1px solid var(--ao-training-border) !important;
+  border-top: 3px solid var(--ao-training-ink) !important;
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
 }
 
 main.module-training .training-r2-kpis span {
@@ -3177,9 +3189,12 @@ main.module-training .training-r2-kpis small {
   line-height: 1.2;
 }
 
-main.module-training .training-next {
-  padding: 12px 15px;
-  border-left: 4px solid var(--ao-training-ink);
+html body .app-shell main.module-training .training-r2 .training-next {
+  margin: 0;
+  padding: 10px 13px;
+  border: 1px solid var(--ao-training-border) !important;
+  border-left: 4px solid var(--ao-training-ink) !important;
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, white);
 }
 
 main.module-training .training-next .eyebrow,
@@ -3190,18 +3205,23 @@ main.module-training .training-delete-modal .eyebrow {
   color: var(--ao-training-ink);
 }
 
-main.module-training .training-r2-filters {
+html body .app-shell main.module-training .training-r2 .training-r2-filters {
   gap: 8px;
-  padding: 9px;
-  border: 1px solid var(--ao-training-divider);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 94%, transparent);
+  margin: 0;
+  padding: 7px;
+  border: 1px solid var(--ao-training-border) !important;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 70%, white);
 }
 
-main.module-training .training-r2-view {
+html body .app-shell main.module-training .training-r2 .training-r2-view {
   display: grid;
+  height: auto;
   min-width: 0;
-  gap: 10px;
+  align-content: start;
+  gap: 6px;
+  grid-auto-rows: max-content;
+  grid-template-rows: repeat(3, max-content);
 }
 
 main.module-training .training-r2-view-heading {
@@ -3209,7 +3229,8 @@ main.module-training .training-r2-view-heading {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 2px;
+  margin: 0;
+  padding: 0 2px 1px;
 }
 
 main.module-training .training-r2-view-heading h2 {
@@ -3243,7 +3264,7 @@ main.module-training :is(.training-r2-filters, .training-form, .training-confirm
 
 html body .app-shell main.module-training .training-r2 .panel.training-r2-calendar {
   overflow: hidden;
-  border: 1px solid var(--ao-training-line);
+  border: 1px solid var(--ao-training-border);
   border-top: 3px solid var(--ao-training-ink) !important;
   background: var(--ao-training-surface);
 }
@@ -3288,8 +3309,8 @@ main.module-training .training-calendar-grid time {
 
 main.module-training .training-event {
   min-height: 54px;
-  border-color: var(--ao-training-divider);
-  background: #fff;
+  border-color: var(--ao-training-line);
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 68%, white);
   color: var(--ao-premium-navy);
 }
 
@@ -3318,18 +3339,18 @@ main.module-training .training-confirm-header {
 
 html body .app-shell main.module-training .training-r2 .panel.training-r2-list,
 html body .app-shell main.module-training .training-r2 .panel.training-coverage {
-  border: 1px solid var(--ao-training-line);
+  border: 1px solid var(--ao-training-border);
   border-top: 3px solid var(--ao-training-ink) !important;
 }
 
 main.module-training .training-r2-list {
-  padding: 13px;
+  padding: 11px 12px;
 }
 
 main.module-training .training-r2-list > header {
   align-items: end;
   gap: 12px;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 main.module-training .training-r2-list > header > div {
@@ -3341,9 +3362,8 @@ main.module-training .training-r2-list > header h2 {
 }
 
 main.module-training .training-r2-table {
-  margin-top: 9px;
-  border: 1px solid var(--ao-training-divider);
-  border-color: var(--ao-training-divider);
+  margin-top: 7px;
+  border: 1px solid var(--ao-training-border);
   border-radius: 10px;
   overflow-x: auto;
 }
@@ -3399,22 +3419,24 @@ main.module-training .training-r2-table tbody tr:nth-child(even) {
 
 main.module-training .training-r2-cards > article,
 main.module-training .training-coverage-grid > article {
+  border: 1px solid var(--ao-training-border);
   border-left: 3px solid var(--ao-training-ink);
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, white);
 }
 
 main.module-training .training-coverage {
-  margin-top: 2px;
-  padding: 12px 14px;
+  margin-top: 0;
+  padding: 10px 12px;
 }
 
 main.module-training .training-coverage > header {
   gap: 10px;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 main.module-training .training-coverage-grid {
   gap: 8px;
-  margin-top: 9px;
+  margin-top: 7px;
 }
 
 main.module-training .training-coverage-grid > article {
@@ -3470,7 +3492,8 @@ main.module-training .training-confirm-modal > :is(header, div, footer) {
 }
 
 main.module-training .training-r2-drawer {
-  padding: 18px;
+  padding: 16px;
+  border: 1px solid var(--ao-training-border);
   background: var(--ao-training-surface);
 }
 
@@ -3537,9 +3560,9 @@ main.module-training .training-delete-modal > .form-actions {
 main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
   position: sticky;
   z-index: 2;
-  bottom: -18px;
-  margin: 8px -18px -18px;
-  padding: 10px 18px 14px;
+  bottom: -16px;
+  margin: 8px -16px -16px;
+  padding: 10px 16px 14px;
   border-top: 1px solid var(--ao-training-divider);
   background: color-mix(in srgb, var(--ao-training-surface) 96%, white);
   box-shadow: 0 -6px 16px rgb(18 62 72 / .07);
@@ -3547,6 +3570,11 @@ main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail
 
 main.module-training .training-confirm-header {
   background: var(--ao-training-surface-soft);
+}
+
+main.module-training :is(.training-confirm-modal, .training-delete-modal, .training-form) {
+  border: 1px solid var(--ao-training-border);
+  background: var(--ao-training-surface);
 }
 
 main.module-training .training-confirm-summary,
@@ -3620,10 +3648,11 @@ main.module-training .training-import-list > article {
 
   main.module-training .training-r2-period {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
+    max-width: 440px;
   }
 
   main.module-training .training-r2-month > span {
-    font-size: clamp(23px, 7vw, 29px);
+    font-size: clamp(21px, 6.5vw, 27px);
   }
 
   main.module-training .training-calendar-grid {
