@@ -60,12 +60,17 @@ try {
   assert.equal(twelveBoundaries.length, 12)
   assert.deepEqual(twelveBoundaries.find(item => item.name === 'KAPIL'), { name: 'KAPIL', serviceYearNumber: 3, start: '2026-04-07', end: '2027-04-06', availableFrom: '2027-04-07' })
   assert.deepEqual(twelveBoundaries.find(item => item.name === 'RAHUL RAI'), { name: 'RAHUL RAI', serviceYearNumber: 2, start: '2026-09-21', end: '2027-09-20', availableFrom: '2027-09-21' })
-  assert.equal(completedServiceMonths('2024-04-07', '2026-10-11'), 6)
+  assert.equal(completedServiceMonths('2024-04-07', '2026-10-11'), 30)
   assert.equal(completedServiceMonths('2024-01-31', '2024-02-29'), 1)
   assert.equal(completedServiceMonths('2024-02-29', '2025-02-27'), 11)
-  assert.equal(completedServiceMonths('2024-02-29', '2025-02-28'), 0)
-  assert.equal(completedServiceMonths('2024-02-29', '2028-02-28'), 11)
-  assert.equal(completedServiceMonths('2024-02-29', '2028-02-29'), 0)
+  assert.equal(completedServiceMonths('2024-02-29', '2025-02-28'), 12)
+  assert.equal(completedServiceMonths('2024-02-29', '2028-02-28'), 47)
+  assert.equal(completedServiceMonths('2024-02-29', '2028-02-29'), 48)
+  assert.equal(calculateServiceYearAnnualLeavePosition({ joinDate: '2025-08-12', asOf: '2026-08-12', serviceYears: [], confirmedAnnualLeaveDates: [] }).availableBalance, 30)
+  assert.equal(calculateServiceYearAnnualLeavePosition({ joinDate: '2025-08-12', asOf: '2026-10-12', serviceYears: [], confirmedAnnualLeaveDates: [] }).availableBalance, 35)
+  assert.equal(calculateServiceYearAnnualLeavePosition({ joinDate: '2024-08-12', asOf: '2026-10-12', serviceYears: [], confirmedAnnualLeaveDates: [] }).availableBalance, 65)
+  assert.equal(calculateServiceYearAnnualLeavePosition({ joinDate: '2025-08-12', asOf: '2026-10-12', serviceYears: [], confirmedAnnualLeaveDates: [], openingAdjustments: [{ effectiveDate: '2026-01-01', units: 4.5, reason: 'Approved opening correction' }, { effectiveDate: '2026-01-01', units: 4.5, reason: 'Duplicate imported evidence' }] }).availableBalance, 39.5)
+  assert.throws(() => calculateServiceYearAnnualLeavePosition({ joinDate: '2025-08-12', asOf: '2026-10-12', serviceYears: [], confirmedAnnualLeaveDates: [], openingAdjustments: [{ effectiveDate: '2026-01-01', units: 4.5, reason: 'First approval' }, { effectiveDate: '2026-01-01', units: 6, reason: 'Conflicting approval' }] }), /ANNUAL_LEAVE_OPENING_ADJUSTMENT_CONFLICT/)
 
   const fullEvidence: AnnualLeaveServiceYearEvidence[] = [
     { serviceYearStart: '2023-01-01', serviceYearEnd: '2023-12-31', availableFrom: '2024-01-01', entitledUnits: 30, accrualUnitsPerCompletedMonth: 2.5 },
@@ -75,10 +80,10 @@ try {
   ]
   const currentUsage = Array.from({ length: 10 }, (_, index) => `2026-03-${String(index + 1).padStart(2, '0')}`)
   const unlimited = calculateServiceYearAnnualLeavePosition({ joinDate: '2023-01-01', asOf: '2026-10-11', serviceYears: fullEvidence, confirmedAnnualLeaveDates: [...currentUsage, currentUsage[0]] })
-  assert.equal(unlimited.accruingForNextServiceYear, 22.5)
-  assert.equal(unlimited.knownAvailableEntitlement, 22.5)
+  assert.equal(unlimited.accruingForNextServiceYear, 112.5)
+  assert.equal(unlimited.knownAvailableEntitlement, 112.5)
   assert.equal(unlimited.confirmedUsed, 10, 'Duplicate confirmed roster dates must be counted once.')
-  assert.equal(unlimited.availableBalance, 12.5)
+  assert.equal(unlimited.availableBalance, 102.5)
 
   const approvedOpening = calculateServiceYearAnnualLeavePosition({
     joinDate: '2023-01-01',
@@ -91,8 +96,8 @@ try {
     ],
     confirmedAnnualLeaveDates: ['2025-02-01', '2026-02-01'],
   })
-  assert.equal(approvedOpening.knownAvailableEntitlement, 22.5, 'Carry Forward for a different service year must not be reintroduced.')
-  assert.equal(approvedOpening.availableBalance, 21.5)
+  assert.equal(approvedOpening.knownAvailableEntitlement, 112.5, 'Historical service-year carry evidence must not duplicate lifetime earnings.')
+  assert.equal(approvedOpening.availableBalance, 110.5)
 
   const currentOpening = calculateServiceYearAnnualLeavePosition({
     joinDate: '2023-01-01',
@@ -100,9 +105,9 @@ try {
     serviceYears: [fullEvidence[0], fullEvidence[1], { ...fullEvidence[2], approvedOpeningCarryUnits: 5.25, openingCarryEffectiveDate: '2026-01-01' }, fullEvidence[3]],
     confirmedAnnualLeaveDates: ['2025-12-31', '2026-02-01', '2026-02-01', '2026-11-01'],
   })
-  assert.equal(currentOpening.knownAvailableEntitlement, 27.75, 'Only Carry Forward effective for the current service year is available.')
-  assert.equal(currentOpening.confirmedUsed, 1, 'Only distinct confirmed usage in the current service year through the evaluation date is deducted.')
-  assert.equal(currentOpening.availableBalance, 26.75)
+  assert.equal(currentOpening.knownAvailableEntitlement, 112.5, 'Manual carry evidence must not duplicate lifetime earnings.')
+  assert.equal(currentOpening.confirmedUsed, 2, 'Distinct confirmed usage across the employee lifetime through the evaluation date is deducted.')
+  assert.equal(currentOpening.availableBalance, 110.5)
 
   const kapilEvidence: AnnualLeaveServiceYearEvidence[] = [
     { serviceYearStart: '2025-04-07', serviceYearEnd: '2026-04-06', availableFrom: '2026-04-07', entitledUnits: 30, accrualUnitsPerCompletedMonth: 2.5 },
@@ -110,11 +115,11 @@ try {
   ]
   const kapilUsage = Array.from({ length: 32 }, (_, index) => `2026-${String(Math.floor(index / 20) + 5).padStart(2, '0')}-${String(index % 20 + 1).padStart(2, '0')}`)
   const kapil = calculateServiceYearAnnualLeavePosition({ joinDate: '2024-04-07', asOf: '2026-10-11', serviceYears: kapilEvidence, confirmedAnnualLeaveDates: kapilUsage })
-  assert.equal(kapil.accruingForNextServiceYear, 15)
-  assert.equal(kapil.knownAvailableEntitlement, 15)
+  assert.equal(kapil.accruingForNextServiceYear, 75)
+  assert.equal(kapil.knownAvailableEntitlement, 75)
   assert.equal(kapil.confirmedUsed, 32)
-  assert.equal(kapil.knownRemaining, -17)
-  assert.equal(kapil.availableBalance, -17)
+  assert.equal(kapil.knownRemaining, 43)
+  assert.equal(kapil.availableBalance, 43)
   assert.equal(kapil.evidenceStatus, 'complete')
 
   const rahulEvidence: AnnualLeaveServiceYearEvidence[] = [
@@ -122,9 +127,9 @@ try {
     { serviceYearStart: '2026-09-21', serviceYearEnd: '2027-09-20', availableFrom: '2027-09-21', entitledUnits: 30, accrualUnitsPerCompletedMonth: 2.5 },
   ]
   const rahul = calculateServiceYearAnnualLeavePosition({ joinDate: '2025-09-21', asOf: '2026-10-11', serviceYears: rahulEvidence, confirmedAnnualLeaveDates: ['2026-08-31', '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06', '2026-10-01', '2026-10-17', '2026-10-18'] })
-  assert.deepEqual(rahul.preAvailabilityUsageDates, ['2026-10-01'])
-  assert.equal(rahul.confirmedUsed, 1)
-  assert.equal(rahul.availableBalance, -1)
+  assert.deepEqual(rahul.preAvailabilityUsageDates, [])
+  assert.equal(rahul.confirmedUsed, 8)
+  assert.equal(rahul.availableBalance, 22)
 
   assert.deepEqual((await fixture.db.query<Record<string, unknown>>('select * from staff_leave_entitlement_years order by staff_id,entitlement_year,leave_classification')).rows, calendarYearsBefore.rows)
   assert.deepEqual((await fixture.db.query<Record<string, unknown>>('select * from staff_leave_entitlement_overrides order by staff_id,leave_classification')).rows, overridesBefore.rows)
@@ -143,12 +148,12 @@ try {
     decimalEntitlementAndAccrual: true,
     allTwelveAnniversaryBoundaries: true,
     monthlyAccrual: true,
-    currentServiceYearAvailability: true,
-    effectiveDatedCarryForward: true,
+    lifetimeServiceMonthAvailability: true,
+    effectiveDatedOpeningAdjustment: true,
     noDoubleCounting: true,
-    kapilUsage32AgainstCurrentAccrual: true,
-    rahulPreAccrualUsageFlagged: true,
-    currentServiceYearUsageBoundaryApplied: true,
+    kapilLifetimeUsageAppliedOnce: true,
+    rahulLifetimeUsageAppliedOnce: true,
+    joiningDateUsageBoundaryApplied: true,
     schema021EvidencePreserved: true,
     operationalFinancialPreserved: true,
     migrationChecksum: migration.checksum,

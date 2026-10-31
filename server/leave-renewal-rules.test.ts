@@ -59,8 +59,8 @@ try {
   const secondAnniversary = await repository.annualLeaveServiceYearBalance(staffId, '2027-03-15')
   assert.ok(beforeAnniversary && firstAnniversary && secondAnniversary)
   assert.equal(beforeAnniversary.availableLeave, 27.5, 'Eleven completed service months must make 27.5 days available before the first anniversary.')
-  assert.equal(firstAnniversary.availableLeave, 0, 'A new service year starts with no completed service months.')
-  assert.equal(secondAnniversary.availableLeave, 0, 'Prior service-year balance must not roll forward without valid effective-dated Carry Forward.')
+  assert.equal(firstAnniversary.availableLeave, 30, 'Twelve completed service months must remain available at the first anniversary.')
+  assert.equal(secondAnniversary.availableLeave, 60, 'Unused earned Annual Leave must carry automatically across anniversaries without a cap.')
   assert.deepEqual(calendarYearPeriod(2026), { start: '2026-01-01', end: '2026-12-31', endExclusive: '2027-01-01' })
 
   const records = await fixture.db.query<{ year: number; classification: string; entitlement: string }>('select entitlement_year as "year",leave_classification classification,entitled_units::text entitlement from staff_leave_entitlement_years where staff_id=$1 order by entitlement_year,leave_classification', [staffId])
@@ -68,7 +68,7 @@ try {
   assert.equal(records.rows.filter(row => row.year === 2026).length, 8)
   assert.equal(records.rows.filter(row => row.year === 2027).length, 8)
 
-  console.log(JSON.stringify({ annualLeaveAnniversaryRenewal: true, annualLeaveMonthlyCurrentYearAccrual: true, effectiveDatedAnnualLeaveCarry: true, nonAnnualCalendarYear: nonAnnual, januaryRenewal: true, unusedNonAnnualCarryForward: false, explicitZeroPreserved: true, historicalYearRecordsPreserved: true, offExcludedFromAnnualCategories: true, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ annualLeaveLifetimeAccrual: true, annualLeaveMonthlyAccrual: true, automaticIndefiniteAnnualLeaveCarry: true, nonAnnualCalendarYear: nonAnnual, januaryRenewal: true, unusedNonAnnualCarryForward: false, explicitZeroPreserved: true, historicalYearRecordsPreserved: true, offExcludedFromAnnualCategories: true, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await fixture.cleanup()
 }

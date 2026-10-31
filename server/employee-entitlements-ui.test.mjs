@@ -36,9 +36,7 @@ assert.match(inlineDetails, /weeklyOff\.complete \?/, 'Incomplete weeks must not
 assert.match(styles, /\.off-days-summary\{[^}]*border:1px solid #dec58f[^}]*border-radius:12px/, 'OFF summary must use the approved gold card treatment.')
 assert.match(styles, /\.off-days-metrics\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'The three OFF figures must share one horizontal desktop row.')
 assert.match(styles, /\.off-days-weekly-review dl\{display:grid[^}]*gap:6px/, 'Weekly OFF Review must remain compact.')
-assert.match(inlineDetails, /<AnnualLeaveCarryForwardSection item=\{item\}/, 'Carry Forward must be embedded in inline details.')
-assert.ok(inlineDetails.indexOf('AnnualLeaveCarryForwardSection') > inlineDetails.indexOf('OFF Days Summary'), 'Carry Forward must appear directly after the OFF summary.')
-assert.match(workforce, /CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD/, 'Carry Forward confirmation protection must remain intact.')
+assert.doesNotMatch(workforce, /AnnualLeaveCarryForwardSection|CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD|Review Carry Forward/, 'Manual Annual Leave Carry Forward controls must be removed.')
 assert.doesNotMatch(employeeManager, /<EntitlementForm|<YearlyEntitlementForm|AnnualLeaveCarryForwardForm/, 'Legacy entitlement edit workflows must not remain exposed in Employee Entitlements.')
 assert.match(inlineDetails, /yearlyLeave\.filter\(line => line\.classification !== 'annualLeave'\)/, 'The duplicated Annual Leave card must be excluded from inline details.')
 assert.match(inlineDetails, /<dt>Entitled<\/dt>/)
@@ -50,10 +48,8 @@ assert.match(styles, /\.additional-entitlement-balances>div\{grid-template-colum
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.additional-entitlement-balances>div\{grid-template-columns:1fr\}/, 'Non-AL cards must stack on mobile.')
 assert.match(styles, /\.additional-entitlement-balances dl\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Each non-AL card must keep Entitled, Used, and Balance in one row.')
 assert.match(styles, /\.additional-entitlement-balances article\{display:flex;min-height:96px/, 'Non-AL balance cards must use a compact, consistent height.')
-assert.match(styles, /\.balance-carry-forward-form\{grid-template-columns:minmax\(155px,1fr\) auto/, 'Carry Forward input and review action must align in one compact desktop row.')
-assert.doesNotMatch(inlineDetails, /Automatic Annual Leave remains calculated from Date of Joining\. Enter only manager-approved additional days\./, 'The redundant Carry Forward explanation must remain removed.')
 assert.match(inlineDetails, /event\.key === 'Escape'/, 'Escape must collapse inline details.')
-assert.match(employeeManager, /Discard the unsaved Carry Forward value\?/, 'Unsaved Carry Forward values must be protected before changing details.')
+assert.doesNotMatch(employeeManager, /Carry Forward|detailsDirty/, 'The retired manual carry-forward workflow must not leave dirty-state handling behind.')
 
 console.log(JSON.stringify({
   fullWidthEmployeeTable: true,
@@ -62,7 +58,7 @@ console.log(JSON.stringify({
   unconfiguredPreserved: true,
   serviceYearCalculationPreserved: true,
   inlineDetails: true,
-  embeddedCarryForward: true,
+  automaticLifetimeCarryForward: true,
   legacyEditWorkflowsHidden: true,
   reconciliationUiRemoved: true,
   offDaysSummaryFirst: true,
