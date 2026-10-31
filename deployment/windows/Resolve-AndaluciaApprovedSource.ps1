@@ -365,13 +365,24 @@ function Assert-AndaluciaReviewedUiPaths {
   if ($invalid.Count -gt 0) { throw "ANDALUCIA_LOCAL_REVIEWED_UI_PATH_NOT_APPROVED:$($invalid -join ',')" }
 }
 
+function Test-AndaluciaReviewedBackendTestPath {
+  param([string]$Path)
+  return $Path -cmatch '^server/[A-Za-z0-9][A-Za-z0-9_-]*(?:\.[A-Za-z0-9][A-Za-z0-9_-]*)*\.test\.(?:ts|tsx|mjs)$'
+}
+
 function Assert-AndaluciaReviewedBackendPaths {
   param([string[]]$Paths)
-  $allowedPattern = '^(src/|public/|server/[^/]+\.(ts|tsx|mjs)$)'
-  $sensitivePattern = '(^|/)(\.env($|\.)|credentials?($|[._-])|secrets?($|[._-])|postmaster\.pid$|.*\.(db|sqlite|sqlite3|backup|wal)$)|^server/.*(auth|backup|credential|database|migration|postgres|recovery|scheduler|security|store|wal)'
+  $frontendPattern = '^(src/|public/)'
+  $serverProductionPattern = '^server/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:ts|tsx|mjs)$'
+  $commonSensitivePattern = '(^|/)(\.env($|\.)|credentials?($|[._-])|secrets?($|[._-])|postmaster\.pid$|.*\.(db|sqlite|sqlite3|backup|wal)$)'
+  $serverProductionSensitivePattern = '^server/.*(auth|backup|credential|database|migration|postgres|recovery|scheduler|security|store|wal)'
   $invalid = @($Paths | Where-Object {
-    $_ -notmatch $allowedPattern -or
-    $_ -match $sensitivePattern -or
+    $isFrontendPath = $_ -cmatch $frontendPattern
+    $isServerTestPath = Test-AndaluciaReviewedBackendTestPath $_
+    $isServerProductionPath = $_ -cmatch $serverProductionPattern -and -not $isServerTestPath
+    (-not $isFrontendPath -and -not $isServerTestPath -and -not $isServerProductionPath) -or
+    $_ -match $commonSensitivePattern -or
+    ($isServerProductionPath -and $_ -match $serverProductionSensitivePattern) -or
     $_ -match '^(\.data|\.backups|deployment|sources)/' -or
     $_ -match '(^|/)\.\.?(/|$)'
   })

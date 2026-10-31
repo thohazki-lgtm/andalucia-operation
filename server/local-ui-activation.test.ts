@@ -156,7 +156,33 @@ try {
   const reviewedBackendVerified = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', verifyCommand])
   assert.match(reviewedBackendVerified.output, /approved_local_reviewed_backend_checkpoint/)
 
-  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, reviewedBackendRequiresDistinctAuthorization: true, uiApprovalRejectsBackend: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
+  const resolverForClassification = join(testRoot, 'deployment', 'windows', 'Resolve-AndaluciaApprovedSource.ps1').replaceAll("'", "''")
+  const classifyReviewedBackendPaths = (paths: string[]) => `. '${resolverForClassification}'; Assert-AndaluciaReviewedBackendPaths @(${paths.map(path => `'${path.replaceAll("'", "''")}'`).join(',')})`
+  const keywordRegressionTests = [
+    'server/annual-leave-r2-authorization.test.ts',
+    'server/leave-renewal-rules.test.ts',
+    'server/service-year-entitlements-migration.test.ts',
+  ]
+  const classifiedTests = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', classifyReviewedBackendPaths(keywordRegressionTests)])
+  assert.equal(classifiedTests.status, 0)
+
+  const disguisedProductionPaths = [
+    'server/auth-service.ts',
+    'server/database-migration.ts',
+    'server/auth-service-test.ts',
+    'server/auth-service.test.ts.backup',
+    'server/auth-service.test.ts/handler.ts',
+    'server/nested/auth-service.test.ts',
+    'server/../server/auth-service.test.ts',
+    'server/auth-service.test.tsx.js',
+  ]
+  for (const path of disguisedProductionPaths) {
+    const disguised = run('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', classifyReviewedBackendPaths([path])], testRoot, false)
+    assert.notEqual(disguised.status, 0, `Disguised production path was accepted: ${path}`)
+    assert.match(disguised.output, /ANDALUCIA_LOCAL_REVIEWED_BACKEND_PATH_NOT_APPROVED/)
+  }
+
+  console.log(JSON.stringify({ disposableRepository: true, exactCheckpointApproval: true, exactReviewedPaths: true, reviewedContentHashes: true, reusableWithoutResolverEdits: true, reviewedBackendRequiresDistinctAuthorization: true, reviewedBackendTestPathsClassified: true, disguisedProductionPathsRejected: true, uiApprovalRejectsBackend: true, trackedCleanRequired: true, manifestShaPinning: true, mainRollbackPreserved: true }, null, 2))
 } finally {
   await rm(testRoot, { recursive: true, force: true })
 }
