@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises'
 import type { AuthPrincipal, StaffYearlyEntitlementDraft, StaffYearlyEntitlementWrite } from '../src/domain.js'
 import { StaffRepository } from './staff-repository.js'
 import { createDisposableDevelopmentStore } from './test-store-fixture.js'
+import { completedServiceMonths } from './service-year-annual-leave-calculator.js'
+import { calendarDates, serviceDate } from '../src/service-date.js'
 
 const fixture = await createDisposableDevelopmentStore('entitlement-reconciliation')
 try {
@@ -40,7 +42,11 @@ try {
   assert.equal(result.bookedFutureSource, 'PLANNED_LEAVE_SEPARATE')
   assert.equal(result.lines.length, 10)
   const annual = result.lines.find(line => line.classification === 'annualLeave')!
-  assert.deepEqual({ rate: annual.accrualPerCompletedMonth, months: annual.completedEligibleMonths, accrued: annual.accrued, carry: annual.carriedForward, opening: annual.openingBalance, used: annual.used, remaining: annual.remaining, booked: annual.bookedFuture, afterBooked: annual.availableAfterBooked }, { rate: 2.5, months: 45, accrued: 112.5, carry: null, opening: 5.25, used: 2, remaining: 115.75, booked: 3, afterBooked: 112.75 })
+  const expectedMonths = completedServiceMonths('2023-01-01', result.asOf)
+  const expectedAccrued = expectedMonths * 2.5
+  const expectedRemaining = expectedAccrued + 5.25 - 2
+  const expectedBooked = calendarDates('2026-12-01', '2026-12-03').filter(date => date >= serviceDate()).length
+  assert.deepEqual({ rate: annual.accrualPerCompletedMonth, months: annual.completedEligibleMonths, accrued: annual.accrued, carry: annual.carriedForward, opening: annual.openingBalance, used: annual.used, remaining: annual.remaining, booked: annual.bookedFuture, afterBooked: annual.availableAfterBooked }, { rate: 2.5, months: expectedMonths, accrued: expectedAccrued, carry: null, opening: 5.25, used: 2, remaining: expectedRemaining, booked: expectedBooked, afterBooked: expectedRemaining - expectedBooked })
   assert.equal(annual.openingBalanceReason, 'HR approval 2026')
   const sick = result.lines.find(line => line.classification === 'sickLeave')!
   assert.deepEqual({ yearly: sick.yearlyEntitlement, individual: sick.individualEntitlement, used: sick.used, remaining: sick.remaining, status: sick.evidenceStatus }, { yearly: 8, individual: 12, used: 2, remaining: 6, status: 'discrepancy' })

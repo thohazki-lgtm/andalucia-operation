@@ -185,9 +185,9 @@ body,
   --ao-leave-line: color-mix(in srgb, var(--ao-violet-hour) 34%, white);
   --ao-leave-line-strong: color-mix(in srgb, var(--ao-violet-hour) 50%, white);
   --ao-leave-divider: color-mix(in srgb, var(--ao-violet-hour) 22%, white);
-  --ao-leave-surface: color-mix(in srgb, var(--ao-lilac-calm) 9%, white);
-  --ao-leave-surface-strong: color-mix(in srgb, var(--ao-lilac-calm) 18%, white);
-  --ao-leave-row-alt: color-mix(in srgb, var(--ao-lilac-calm) 12%, white);
+  --ao-leave-surface: color-mix(in srgb, var(--ao-lilac-calm) 16%, white);
+  --ao-leave-surface-strong: color-mix(in srgb, var(--ao-lilac-calm) 27%, white);
+  --ao-leave-row-alt: color-mix(in srgb, var(--ao-lilac-calm) 19%, white);
   --ao-leave-scrollbar: color-mix(in srgb, var(--ao-violet-hour) 55%, white);
   --ao-leave-scrollbar-track: color-mix(in srgb, var(--ao-lilac-calm) 14%, white);
   --ao-leave-summary-value-size: 20px;
@@ -283,8 +283,8 @@ main[class*='module-'] {
   --ao-shell-accent: var(--ao-violet-hour);
   --ao-shell-highlight: var(--ao-lilac-calm);
   --ao-page-canvas-tint: var(--ao-lilac-calm);
-  background-color: #f5f1f3;
-  background-image: linear-gradient(to bottom, #f5f1f3 0%, #ece1f2 56%, #d8c2e8 100%);
+  background-color: #5b146f;
+  background-image: linear-gradient(to bottom, #5b146f 0%, #c89feb 46%, #f5eff9 100%);
 }
 .app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
@@ -920,6 +920,20 @@ main.module-leave-planner > .page-header {
 main.module-leave-planner > .page-header::before {
   display: none;
   content: none;
+}
+
+main.module-leave-planner > .page-header h1 {
+  color: #fff;
+}
+
+main.module-leave-planner > .page-header .eyebrow {
+  color: color-mix(in srgb, var(--ao-lilac-calm) 78%, white);
+}
+
+main.module-leave-planner > .page-header .avatar {
+  border-color: color-mix(in srgb, var(--ao-lilac-calm) 64%, white);
+  background: color-mix(in srgb, var(--ao-violet-hour) 74%, transparent);
+  color: #fff;
 }
 
 main.module-leave-planner .leave-planner-workspace {
@@ -1606,6 +1620,176 @@ main.module-leave-planner .leave-records-table tr > :last-child {
 
 main.module-leave-planner .leave-records-table tbody tr:last-child > * {
   border-bottom: 0 !important;
+}
+
+main.module-leave-planner :is(
+  .employee-entitlement-table th,
+  .leave-records-table th,
+  .employee-entitlement-details-header dt,
+  .leave-records-panel dt
+) {
+  font-family: var(--ao-font-ui);
+  font-weight: 500;
+}
+
+main.module-leave-planner :is(
+  .employee-entitlement-table .employee-entitlement-row td,
+  .employee-entitlement-table .employee-entitlement-row td > b,
+  .employee-entitlement-table .employee-entitlement-id b,
+  .planned-staff-identity b,
+  .planned-staff-identity small,
+  .planned-leave-cards article header b,
+  .planned-leave-cards article header small,
+  .leave-history-employee b,
+  .leave-history-employee small,
+  .leave-history-total,
+  .leave-history-dates button span,
+  .leave-history-dates button small
+) {
+  font-family: var(--ao-font-ui);
+  font-weight: 400;
+}
+
+main.module-leave-planner :is(
+  .employee-entitlement-table .employee-entitlement-identity b,
+  .planned-staff-identity b,
+  .planned-leave-cards article header b,
+  .leave-history-employee b
+) {
+  font-weight: 500;
+}
+
+main.module-leave-planner .planned-previous-history-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+main.module-leave-planner .planned-previous-history {
+  overflow: hidden;
+  border: 1px solid var(--ao-leave-line);
+  border-radius: 9px;
+  background: var(--ao-leave-surface);
+}
+
+main.module-leave-planner .planned-previous-history > summary {
+  display: flex;
+  min-height: 42px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  color: var(--ao-violet-hour);
+  font-family: var(--ao-font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+main.module-leave-planner .planned-previous-history > summary small {
+  color: #665b74;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: right;
+  text-transform: none;
+}
+
+main.module-leave-planner .planned-previous-history-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 9px;
+  border-top: 1px solid var(--ao-leave-divider);
+  background: var(--ao-leave-surface-strong);
+}
+
+main.module-leave-planner .planned-previous-history-cards .planned-history-card {
+  padding: 10px;
+  border: 1px solid var(--ao-leave-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+main.module-leave-planner .planned-previous-history-cards article > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+main.module-leave-planner .planned-previous-history-cards article :is(b, small) {
+  display: block;
+  font-family: var(--ao-font-ui);
+}
+
+main.module-leave-planner .planned-previous-history-cards article header b {
+  color: var(--ao-premium-navy);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+main.module-leave-planner .planned-previous-history-cards article header small {
+  margin-top: 3px;
+  color: #665b74;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+main.module-leave-planner .planned-previous-history-cards article dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+main.module-leave-planner .planned-previous-history-cards article dl > div {
+  min-width: 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--ao-leave-divider);
+}
+
+main.module-leave-planner .planned-previous-history-cards article :is(dt, dd) {
+  margin: 0;
+  font-family: var(--ao-font-ui);
+  font-weight: 400;
+}
+
+main.module-leave-planner .planned-previous-history-cards article dt {
+  color: #665b74;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+main.module-leave-planner .planned-previous-history-cards article dd {
+  margin-top: 3px;
+  color: var(--ao-premium-navy);
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  main.module-leave-planner .planned-previous-history > summary {
+    min-height: 44px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  main.module-leave-planner .planned-previous-history > summary small {
+    text-align: left;
+  }
+
+  main.module-leave-planner .planned-previous-history-cards {
+    grid-template-columns: 1fr;
+  }
+
+  main.module-leave-planner .planned-previous-history-cards article dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 main.module-leave-planner .confirmed-leave-history > header {

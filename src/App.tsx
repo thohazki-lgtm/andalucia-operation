@@ -532,10 +532,10 @@ function LeavePlannerWorkspace({ staff, configuration, onActivateDutyCode, initi
  useEffect(() => { if (initialView) setSection(initialView) }, [initialView, initialStaffId])
  const tabs = [
   { id: 'planner' as const, label: 'Planner' },
+  { id: 'employee-entitlements' as const, label: 'Employee Entitlements' },
   { id: 'history' as const, label: 'Leave History' },
   { id: 'leave-types' as const, label: 'Leave Types' },
   { id: 'entitlement-policies' as const, label: 'Entitlement Policies' },
-  { id: 'employee-entitlements' as const, label: 'Employee Entitlements' },
   { id: 'public-holidays' as const, label: 'Public Holiday Calendar' }
  ]
  return <section className="leave-planner-workspace">
