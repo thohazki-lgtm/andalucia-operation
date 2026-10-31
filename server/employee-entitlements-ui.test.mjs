@@ -5,7 +5,7 @@ const workforce = await readFile(new URL('../src/workforce.tsx', import.meta.url
 const styles = await readFile(new URL('../src/workforce.css', import.meta.url), 'utf8')
 
 const employeeManager = workforce.match(/export function StaffEntitlementsManager[\s\S]*?\n\}/)?.[0] || ''
-for (const heading of ['Employee', 'Available', 'Used', 'Booked', 'Balance']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
+for (const heading of ['Employee', 'Employee ID', 'Available', 'Used', 'Booked', 'Balance', 'Action']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
 assert.doesNotMatch(employeeManager, /<th>Accrued<\/th>|data-label="Accrued"/, 'Accrued must not appear in the main Annual Leave table.')
 assert.match(employeeManager, /className="employee-entitlement-table"/, 'Employee Entitlements must use one full-width table.')
 assert.match(employeeManager, /visible\.map\(item =>/, 'The table must render every active employee returned by the existing entitlement source.')
@@ -17,7 +17,9 @@ assert.doesNotMatch(workforce, /Show inactive staff/, 'The Employee Entitlements
 assert.doesNotMatch(workforce, />Reconcile(?: Year)?</, 'The employee reconciliation action must remain removed.')
 
 assert.match(styles, /\.employee-entitlement-table-wrap\{overflow-x:auto/, 'The desktop table must contain horizontal overflow safely.')
-assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:680px/, 'The entitlement table must remain full-width and aligned on desktop.')
+assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:820px/, 'The seven-column entitlement table must remain full-width and aligned on desktop.')
+assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available<\/th><th>Used<\/th><th>Booked<\/th><th>Balance<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
+assert.doesNotMatch(employeeManager, /Close Details/, 'Inline details must not duplicate the row-level Close action.')
 assert.match(styles, /\.employee-entitlement-table th\{[^}]*text-align:center/, 'Metric headings must be centered.')
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*vertical-align:middle/, 'Table values must stay vertically aligned.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-table \.employee-entitlement-row\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Mobile rows must use a readable two-column layout.')
@@ -53,7 +55,7 @@ assert.doesNotMatch(employeeManager, /Carry Forward|detailsDirty/, 'The retired 
 
 console.log(JSON.stringify({
   fullWidthEmployeeTable: true,
-  displayedColumns: ['Employee', 'Available', 'Used', 'Booked', 'Balance'],
+  displayedColumns: ['Employee', 'Employee ID', 'Available', 'Used', 'Booked', 'Balance', 'Action'],
   responsiveEmployeeRows: true,
   unconfiguredPreserved: true,
   serviceYearCalculationPreserved: true,

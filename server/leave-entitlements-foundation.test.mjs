@@ -29,7 +29,8 @@ assert.match(workforce, /Approved · not active/, 'Approved defaults must remain
 assert.match(workforce, /policy\.defaultAllowance \?\? policy\.approvedAllowance/, 'Prepared policy forms must show the approved value without treating it as already active.')
 assert.match(workforce, /Enter 0 only when zero is the explicit approved employee override/, 'Employee editing must preserve explicit zero separately from inherited or Unconfigured values.')
 assert.match(workforce, /confirmed usage comes only from Duty Roster/i)
-for (const metric of ['Entitled', 'Used', 'Remaining', 'Booked / Future', 'Available After Booked']) assert.ok(workforce.includes(metric), `Employee entitlement view must show ${metric}.`)
+for (const metric of ['Employee', 'Employee ID', 'Available', 'Used', 'Booked', 'Balance', 'Action']) assert.ok(workforce.includes(`<th>${metric}</th>`), `Employee entitlement view must show the approved ${metric} column.`)
+for (const metric of ['Entitled', 'Used', 'Balance']) assert.ok(workforce.includes(`<dt>${metric}</dt>`), `Non-Annual Leave details must show ${metric}.`)
 assert.match(workforce, /Public Holiday Calendar remains the source for named dates/, 'PH allowance policy and holiday dates must stay separate.')
 
 assert.match(styles, /\.leave-planner-module-tabs\{display:grid;[^}]*width:100%;[^}]*grid-template-columns:repeat\(6/, 'Leave Planner tabs must fill their available desktop container.')
