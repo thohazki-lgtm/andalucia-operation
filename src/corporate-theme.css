@@ -3051,8 +3051,30 @@ main.module-training .training-r2-toolbar {
 }
 
 main.module-training .training-r2-toolbar .view-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(116px, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--ao-training-line);
+  border-radius: 12px;
   border-color: var(--ao-training-line);
   background: color-mix(in srgb, var(--ao-training-surface-soft) 92%, transparent);
+}
+
+main.module-training .training-r2-toolbar .view-switch .ao-action {
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid var(--ao-training-divider);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+main.module-training .training-r2-toolbar .view-switch .ao-action.selected {
+  border-color: var(--ao-training-ink);
+  background: var(--ao-training-ink);
+  color: #fff;
+  box-shadow: none;
 }
 
 main.module-training .training-r2-toolbar .ao-action,
@@ -3098,7 +3120,7 @@ main.module-training .training-r2-month {
   cursor: pointer;
 }
 
-main.module-training .training-r2-month > span {
+html body .app-shell main.module-training .training-r2 .training-r2-month > span {
   font: 500 clamp(24px, 3vw, 34px)/1.1 var(--ao-font-display);
   letter-spacing: -.02em;
   text-align: center;
@@ -3119,22 +3141,29 @@ main.module-training .training-r2-kpis {
 }
 
 main.module-training .training-r2-kpis > .panel {
-  min-height: 94px;
-  padding: 14px 16px;
+  display: grid;
+  box-sizing: border-box;
+  height: 78px;
+  min-height: 78px;
+  padding: 8px 12px;
+  align-content: center;
+  gap: 3px;
   border-top: 3px solid var(--ao-training-ink);
 }
 
 main.module-training .training-r2-kpis span {
+  min-height: 0;
   color: var(--ao-training-ink);
   font-size: 10px;
   font-weight: 650;
+  line-height: 1.2;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 main.module-training .training-r2-kpis strong {
   color: var(--ao-training-ink-strong);
-  font: 600 clamp(24px, 2.4vw, 31px)/1 var(--ao-font-ui);
+  font: 600 clamp(21px, 2.1vw, 27px)/1 var(--ao-font-ui);
 }
 
 main.module-training .training-r2-kpis small,
@@ -3143,8 +3172,13 @@ main.module-training .training-coverage > header span {
   color: #516968;
 }
 
+main.module-training .training-r2-kpis small {
+  font-size: 9px;
+  line-height: 1.2;
+}
+
 main.module-training .training-next {
-  padding: 14px 16px;
+  padding: 12px 15px;
   border-left: 4px solid var(--ao-training-ink);
 }
 
@@ -3158,9 +3192,41 @@ main.module-training .training-delete-modal .eyebrow {
 
 main.module-training .training-r2-filters {
   gap: 8px;
-  padding: 10px;
+  padding: 9px;
   border: 1px solid var(--ao-training-divider);
   border-radius: 12px;
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 94%, transparent);
+}
+
+main.module-training .training-r2-view {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+main.module-training .training-r2-view-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 2px;
+}
+
+main.module-training .training-r2-view-heading h2 {
+  margin: 2px 0 0;
+  color: var(--ao-training-ink-strong);
+  font: 500 19px/1.2 var(--ao-font-display);
+}
+
+main.module-training .training-r2-view-heading > span,
+main.module-training .training-r2-list > header > div > span {
+  color: #516968;
+  font-size: 10px;
+  font-weight: 550;
+}
+
+main.module-training .training-r2-view-heading .eyebrow {
+  color: var(--ao-training-ink);
 }
 
 main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
@@ -3175,9 +3241,11 @@ main.module-training :is(.training-r2-filters, .training-form, .training-confirm
   outline: 0;
 }
 
-main.module-training .training-calendar {
+html body .app-shell main.module-training .training-r2 .panel.training-r2-calendar {
   overflow: hidden;
-  border-color: var(--ao-training-line);
+  border: 1px solid var(--ao-training-line);
+  border-top: 3px solid var(--ao-training-ink) !important;
+  background: var(--ao-training-surface);
 }
 
 main.module-training .training-weekdays {
@@ -3219,9 +3287,17 @@ main.module-training .training-calendar-grid time {
 }
 
 main.module-training .training-event {
+  min-height: 54px;
   border-color: var(--ao-training-divider);
   background: #fff;
   color: var(--ao-premium-navy);
+}
+
+main.module-training .training-event b {
+  color: var(--ao-training-ink-strong);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 main.module-training .training-event:hover {
@@ -3240,8 +3316,65 @@ main.module-training .training-confirm-header {
   border-color: var(--ao-training-divider);
 }
 
+html body .app-shell main.module-training .training-r2 .panel.training-r2-list,
+html body .app-shell main.module-training .training-r2 .panel.training-coverage {
+  border: 1px solid var(--ao-training-line);
+  border-top: 3px solid var(--ao-training-ink) !important;
+}
+
+main.module-training .training-r2-list {
+  padding: 13px;
+}
+
+main.module-training .training-r2-list > header {
+  align-items: end;
+  gap: 12px;
+  padding-bottom: 10px;
+}
+
+main.module-training .training-r2-list > header > div {
+  min-width: 150px;
+}
+
+main.module-training .training-r2-list > header h2 {
+  margin-bottom: 2px;
+}
+
 main.module-training .training-r2-table {
+  margin-top: 9px;
+  border: 1px solid var(--ao-training-divider);
   border-color: var(--ao-training-divider);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+main.module-training .training-r2-table table {
+  min-width: 920px;
+  table-layout: fixed;
+}
+
+main.module-training .training-r2-table :is(.training-col-date, .training-col-time) { width: 10%; }
+main.module-training .training-r2-table .training-col-topic { width: 22%; }
+main.module-training .training-r2-table .training-col-trainer { width: 13%; }
+main.module-training .training-r2-table .training-col-category { width: 13%; }
+main.module-training .training-r2-table .training-col-status { width: 12%; }
+main.module-training .training-r2-table .training-col-source { width: 11%; }
+main.module-training .training-r2-table .training-col-actions { width: 9%; }
+
+main.module-training .training-r2-table :is(th, td) {
+  padding: 9px 8px;
+  vertical-align: middle;
+}
+
+main.module-training .training-r2-table :is(th, td):not(:nth-child(2), :nth-child(4)) {
+  text-align: center;
+}
+
+main.module-training .training-r2-table td:nth-child(2) b {
+  color: var(--ao-training-ink-strong);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 main.module-training .training-r2-table th {
@@ -3267,6 +3400,35 @@ main.module-training .training-r2-table tbody tr:nth-child(even) {
 main.module-training .training-r2-cards > article,
 main.module-training .training-coverage-grid > article {
   border-left: 3px solid var(--ao-training-ink);
+}
+
+main.module-training .training-coverage {
+  margin-top: 2px;
+  padding: 12px 14px;
+}
+
+main.module-training .training-coverage > header {
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+main.module-training .training-coverage-grid {
+  gap: 8px;
+  margin-top: 9px;
+}
+
+main.module-training .training-coverage-grid > article {
+  padding: 10px 11px;
+}
+
+main.module-training .training-coverage-metrics {
+  gap: 6px;
+  margin-top: 8px;
+}
+
+main.module-training .training-coverage-metrics > div {
+  min-height: 48px;
+  padding: 7px 8px;
 }
 
 main.module-training .training-coverage-grid > article.achieved {
@@ -3307,6 +3469,35 @@ main.module-training .training-confirm-modal > :is(header, div, footer) {
   border-color: var(--ao-training-divider);
 }
 
+main.module-training .training-r2-drawer {
+  padding: 18px;
+  background: var(--ao-training-surface);
+}
+
+main.module-training .training-r2-drawer > .training-detail-header {
+  gap: 12px;
+  margin: 0;
+  padding: 0 44px 12px 0;
+  border-bottom: 1px solid var(--ao-training-divider);
+  background: transparent;
+}
+
+main.module-training .training-r2-drawer > :is(.training-session-section, .training-performance-section, .training-eligibility-section) {
+  margin: 0;
+  padding: 12px 0;
+}
+
+main.module-training .training-detail-grid,
+main.module-training .training-performance-summary {
+  gap: 7px;
+}
+
+main.module-training .training-detail-grid > div,
+main.module-training .training-performance-summary > div {
+  min-height: 52px;
+  padding: 8px 9px;
+}
+
 main.module-training :is(.training-session-section, .training-performance-section, .training-eligibility-section) h3,
 main.module-training .training-section-heading h3 {
   color: var(--ao-training-ink);
@@ -3341,6 +3532,28 @@ main.module-training .training-confirm-modal > .form-actions,
 main.module-training .training-delete-modal > .form-actions {
   border-color: var(--ao-training-divider);
   background: color-mix(in srgb, var(--ao-training-surface) 96%, transparent);
+}
+
+main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
+  position: sticky;
+  z-index: 2;
+  bottom: -18px;
+  margin: 8px -18px -18px;
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--ao-training-divider);
+  background: color-mix(in srgb, var(--ao-training-surface) 96%, white);
+  box-shadow: 0 -6px 16px rgb(18 62 72 / .07);
+}
+
+main.module-training .training-confirm-header {
+  background: var(--ao-training-surface-soft);
+}
+
+main.module-training .training-confirm-summary,
+main.module-training .training-confirm-modal .training-confirm-list,
+main.module-training .training-confirm-modal > .form-actions {
+  border-color: var(--ao-training-divider);
+  background: var(--ao-training-surface);
 }
 
 main.module-training .training-delete-backdrop {
@@ -3397,6 +3610,14 @@ main.module-training .training-import-list > article {
     gap: 8px;
   }
 
+  main.module-training .training-r2-toolbar .view-switch .ao-action {
+    min-height: 44px;
+  }
+
+  main.module-training .training-r2-view-heading {
+    align-items: start;
+  }
+
   main.module-training .training-r2-period {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
@@ -3424,6 +3645,10 @@ main.module-training .training-import-list > article {
   main.module-training .training-r2-kpis {
     gap: 8px;
   }
+
+  main.module-training .training-r2-list > header {
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 430px) {
@@ -3432,12 +3657,32 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-kpis > .panel {
-    min-height: 82px;
-    padding: 11px 12px;
+    height: 72px;
+    min-height: 72px;
+    padding: 9px 11px;
   }
 
   main.module-training .training-r2-kpis strong {
-    font-size: 23px;
+    font-size: 21px;
+  }
+
+  main.module-training .training-r2-view-heading {
+    display: grid;
+    gap: 2px;
+  }
+
+  main.module-training .training-r2-toolbar .view-switch {
+    width: 100%;
+  }
+
+  main.module-training .training-r2-drawer {
+    padding: 14px 12px;
+  }
+
+  main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
+    bottom: -14px;
+    margin: 8px -12px -14px;
+    padding: 10px 12px 12px;
   }
 
   main.module-training .training-delete-modal {
