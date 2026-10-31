@@ -2946,3 +2946,514 @@ main.module-staff-management .staff-training-controls .ao-action {
     position: static;
   }
 }
+
+/* Training final polish: one continuous Lagoon Teal / mint canvas and a
+   single scoped component system. Operational workflow colors remain owned by
+   the configured status metadata rather than this decorative layer. */
+.app-shell:has(> main.module-training) {
+  --ao-shell-accent: #1e5b53;
+  --ao-shell-highlight: #ccffaa;
+  --ao-page-canvas-tint: #ccffaa;
+  background-color: #1e5b53;
+  background-image: linear-gradient(to bottom, #1e5b53 0%, #94cfb7 34%, #d9f2d5 68%, #f2faf4 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: scroll;
+}
+
+main.module-training {
+  --ao-training-ink: #1e5b53;
+  --ao-training-ink-strong: #123e48;
+  --ao-training-mint: #ccffaa;
+  --ao-training-line: #8dbdaf;
+  --ao-training-divider: #b6d7cd;
+  --ao-training-surface: #fbfefc;
+  --ao-training-surface-soft: #eef8f1;
+  --ao-training-surface-strong: #dff2e4;
+  --ao-training-row-alt: #f1f9f4;
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-ui);
+}
+
+main.module-training > .page-header {
+  min-height: 0;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-training > .page-header::before {
+  display: none;
+  content: none;
+}
+
+main.module-training > .page-header h1 {
+  color: #fff;
+  font-family: var(--ao-font-display);
+}
+
+main.module-training > .page-header .eyebrow {
+  color: color-mix(in srgb, var(--ao-training-mint) 82%, white);
+}
+
+main.module-training > .page-header .avatar {
+  border-color: color-mix(in srgb, var(--ao-training-mint) 64%, white);
+  background: color-mix(in srgb, var(--ao-training-ink) 78%, transparent);
+  color: #fff;
+}
+
+main.module-training .training-r2 {
+  gap: 10px;
+  font-family: var(--ao-font-ui);
+}
+
+main.module-training :is(
+  .training-r2 .panel,
+  .training-r2-filters,
+  .training-coverage-grid > article,
+  .training-r2-cards > article,
+  .training-r2-drawer,
+  .training-confirm-modal,
+  .training-delete-modal,
+  .training-form,
+  .training-import-list > article,
+  .replacement-summary
+) {
+  border-color: var(--ao-training-line);
+  background: var(--ao-training-surface);
+  box-shadow: 0 12px 28px rgb(18 62 72 / .08);
+}
+
+main.module-training :is(
+  .training-next h2,
+  .training-r2-list h2,
+  .training-coverage h2,
+  .training-detail-header h2,
+  .training-confirm-modal h2,
+  .training-delete-modal h2,
+  .training-form h2
+) {
+  color: var(--ao-training-ink-strong);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+main.module-training :is(.training-r2 h3, .training-r2 th, .training-r2 label, .training-r2 input, .training-r2 select, .training-r2 button, .training-r2 dt, .training-r2 dd, .training-r2 span, .training-r2 small) {
+  font-family: var(--ao-font-ui);
+}
+
+main.module-training .training-r2-toolbar {
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+main.module-training .training-r2-toolbar .view-switch {
+  border-color: var(--ao-training-line);
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 92%, transparent);
+}
+
+main.module-training .training-r2-toolbar .ao-action,
+main.module-training .training-r2-actions .ao-action,
+main.module-training .training-r2-period .ao-icon-action,
+main.module-training .training-coverage > header .ao-action {
+  border-color: var(--ao-training-line);
+  color: var(--ao-training-ink);
+}
+
+main.module-training .training-r2-toolbar .ao-action:hover,
+main.module-training .training-r2-period .ao-icon-action:hover,
+main.module-training .training-coverage > header .ao-action:hover {
+  border-color: var(--ao-training-ink);
+  background: var(--ao-training-surface-strong);
+}
+
+main.module-training .training-r2-toolbar .ao-action.selected,
+main.module-training .training-r2-actions .ao-action--primary,
+main.module-training :is(.training-form, .training-confirm-modal) .ao-action--primary {
+  border-color: var(--ao-training-ink);
+  background: var(--ao-training-ink);
+  color: #fff;
+}
+
+main.module-training .training-r2-period {
+  grid-template-columns: 44px minmax(180px, 1fr) 44px;
+  max-width: 620px;
+  width: 100%;
+  margin-inline: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+main.module-training .training-r2-month {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  place-items: center;
+  color: var(--ao-training-ink-strong);
+  cursor: pointer;
+}
+
+main.module-training .training-r2-month > span {
+  font: 500 clamp(24px, 3vw, 34px)/1.1 var(--ao-font-display);
+  letter-spacing: -.02em;
+  text-align: center;
+}
+
+main.module-training .training-r2-month > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+main.module-training .training-r2-kpis {
+  gap: 10px;
+}
+
+main.module-training .training-r2-kpis > .panel {
+  min-height: 94px;
+  padding: 14px 16px;
+  border-top: 3px solid var(--ao-training-ink);
+}
+
+main.module-training .training-r2-kpis span {
+  color: var(--ao-training-ink);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+main.module-training .training-r2-kpis strong {
+  color: var(--ao-training-ink-strong);
+  font: 600 clamp(24px, 2.4vw, 31px)/1 var(--ao-font-ui);
+}
+
+main.module-training .training-r2-kpis small,
+main.module-training .training-next span,
+main.module-training .training-coverage > header span {
+  color: #516968;
+}
+
+main.module-training .training-next {
+  padding: 14px 16px;
+  border-left: 4px solid var(--ao-training-ink);
+}
+
+main.module-training .training-next .eyebrow,
+main.module-training .training-r2-list .eyebrow,
+main.module-training .training-coverage .eyebrow,
+main.module-training .training-r2-drawer .eyebrow,
+main.module-training .training-delete-modal .eyebrow {
+  color: var(--ao-training-ink);
+}
+
+main.module-training .training-r2-filters {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ao-training-divider);
+  border-radius: 12px;
+}
+
+main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
+  border-color: var(--ao-training-divider);
+  background: #fff;
+  color: var(--ao-premium-navy);
+}
+
+main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea):focus {
+  border-color: var(--ao-training-ink);
+  box-shadow: 0 0 0 3px rgb(30 91 83 / .13);
+  outline: 0;
+}
+
+main.module-training .training-calendar {
+  overflow: hidden;
+  border-color: var(--ao-training-line);
+}
+
+main.module-training .training-weekdays {
+  border-bottom: 1px solid var(--ao-training-line);
+  background: var(--ao-training-ink);
+}
+
+main.module-training .training-weekdays b {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+main.module-training .training-calendar-grid {
+  background: var(--ao-training-divider);
+  gap: 1px;
+}
+
+main.module-training .training-calendar-grid > article,
+main.module-training .training-calendar-grid > .calendar-blank {
+  border: 0;
+  background: var(--ao-training-surface);
+}
+
+main.module-training .training-calendar-grid > article:nth-child(even) {
+  background: var(--ao-training-row-alt);
+}
+
+main.module-training .training-calendar-grid > article.today {
+  background: color-mix(in srgb, var(--ao-training-mint) 30%, white);
+  box-shadow: inset 0 0 0 2px var(--ao-training-ink);
+}
+
+main.module-training .training-calendar-grid time {
+  color: var(--ao-training-ink-strong);
+  font-weight: 650;
+}
+
+main.module-training .training-event {
+  border-color: var(--ao-training-divider);
+  background: #fff;
+  color: var(--ao-premium-navy);
+}
+
+main.module-training .training-event:hover {
+  border-color: var(--ao-training-ink);
+  background: var(--ao-training-surface-soft);
+}
+
+main.module-training .training-event :is(span, small) {
+  color: #516968;
+}
+
+main.module-training .training-r2-list > header,
+main.module-training .training-coverage > header,
+main.module-training .training-detail-header,
+main.module-training .training-confirm-header {
+  border-color: var(--ao-training-divider);
+}
+
+main.module-training .training-r2-table {
+  border-color: var(--ao-training-divider);
+}
+
+main.module-training .training-r2-table th {
+  border-color: var(--ao-training-divider);
+  background: var(--ao-training-surface-strong);
+  color: var(--ao-training-ink);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+main.module-training .training-r2-table td {
+  border-color: var(--ao-training-divider);
+  color: var(--ao-premium-navy);
+  font-size: 12px;
+}
+
+main.module-training .training-r2-table tbody tr:nth-child(even) {
+  background: var(--ao-training-row-alt);
+}
+
+main.module-training .training-r2-cards > article,
+main.module-training .training-coverage-grid > article {
+  border-left: 3px solid var(--ao-training-ink);
+}
+
+main.module-training .training-coverage-grid > article.achieved {
+  border-color: #4a8a5d;
+}
+
+main.module-training .training-coverage-identity b,
+main.module-training .training-evidence-row b {
+  color: var(--ao-training-ink-strong);
+  font-weight: 600;
+}
+
+main.module-training .training-coverage-metrics > div,
+main.module-training .training-detail-grid > div,
+main.module-training .training-performance-summary > div,
+main.module-training .training-confirm-summary > span {
+  border-color: var(--ao-training-divider);
+  background: var(--ao-training-surface-soft);
+}
+
+main.module-training :is(.training-coverage-metrics, .training-detail-grid, .training-performance-summary, .training-confirm-summary) dt,
+main.module-training .training-confirm-summary small {
+  color: var(--ao-training-ink);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+main.module-training :is(.training-coverage-metrics, .training-detail-grid, .training-performance-summary) dd,
+main.module-training .training-confirm-summary b {
+  color: var(--ao-training-ink-strong);
+  font-weight: 600;
+}
+
+main.module-training .training-r2-drawer > :is(header, section, footer),
+main.module-training .training-confirm-modal > :is(header, div, footer) {
+  border-color: var(--ao-training-divider);
+}
+
+main.module-training :is(.training-session-section, .training-performance-section, .training-eligibility-section) h3,
+main.module-training .training-section-heading h3 {
+  color: var(--ao-training-ink);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+main.module-training .training-evidence-row,
+main.module-training .training-confirm-list > article {
+  border-color: var(--ao-training-divider);
+  background: #fff;
+}
+
+main.module-training .training-evidence-row:nth-child(even),
+main.module-training .training-confirm-list > article:nth-child(even) {
+  background: var(--ao-training-row-alt);
+}
+
+main.module-training .training-evidence-duty,
+main.module-training .training-duration,
+main.module-training .training-confirm-decision,
+main.module-training .training-participation {
+  border-color: var(--ao-training-divider);
+  background: var(--ao-training-surface-soft);
+  color: var(--ao-training-ink-strong);
+}
+
+main.module-training .training-detail-actions,
+main.module-training .training-confirm-modal > .form-actions,
+main.module-training .training-delete-modal > .form-actions {
+  border-color: var(--ao-training-divider);
+  background: color-mix(in srgb, var(--ao-training-surface) 96%, transparent);
+}
+
+main.module-training .training-delete-backdrop {
+  z-index: 130;
+}
+
+main.module-training .training-delete-modal {
+  width: min(460px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--ao-training-line);
+  border-radius: 16px;
+}
+
+main.module-training .training-delete-modal > p:not(.eyebrow) {
+  margin: 10px 0 18px;
+  color: #425e5c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+main.module-training .training-delete-modal strong {
+  color: var(--ao-training-ink-strong);
+}
+
+main.module-training .training-delete-modal > .form-actions {
+  margin: 0 -22px -22px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--ao-training-divider);
+  border-radius: 0 0 16px 16px;
+}
+
+main.module-training .training-form-grid,
+main.module-training .import-edit-grid {
+  gap: 10px;
+}
+
+main.module-training .training-import-summary > span,
+main.module-training .import-existing-meta,
+main.module-training .replacement-summary {
+  border-color: var(--ao-training-divider);
+  background: var(--ao-training-surface-soft);
+}
+
+main.module-training .training-import-list > article {
+  border-left: 3px solid var(--ao-training-ink);
+}
+
+@media (max-width: 768px) {
+  main.module-training > .page-header {
+    margin-bottom: 8px;
+  }
+
+  main.module-training .training-r2-toolbar {
+    gap: 8px;
+  }
+
+  main.module-training .training-r2-period {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  main.module-training .training-r2-month > span {
+    font-size: clamp(23px, 7vw, 29px);
+  }
+
+  main.module-training .training-calendar-grid {
+    background: transparent;
+    gap: 8px;
+  }
+
+  main.module-training .training-calendar-grid > article.has-sessions {
+    border: 1px solid var(--ao-training-divider);
+    border-left: 3px solid var(--ao-training-ink);
+    border-radius: 12px;
+    background: var(--ao-training-surface);
+  }
+
+  main.module-training .training-calendar-grid > article.today {
+    box-shadow: inset 0 0 0 1px var(--ao-training-ink);
+  }
+
+  main.module-training .training-r2-kpis {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 430px) {
+  main.module-training .training-r2 {
+    gap: 8px;
+  }
+
+  main.module-training .training-r2-kpis > .panel {
+    min-height: 82px;
+    padding: 11px 12px;
+  }
+
+  main.module-training .training-r2-kpis strong {
+    font-size: 23px;
+  }
+
+  main.module-training .training-delete-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 18px;
+    overflow-y: auto;
+  }
+
+  main.module-training .training-delete-modal > .form-actions {
+    margin: 0 -18px -18px;
+    padding: 12px 18px;
+  }
+
+  main.module-training .training-delete-modal .ao-action {
+    min-height: 44px;
+    flex: 1;
+  }
+}
