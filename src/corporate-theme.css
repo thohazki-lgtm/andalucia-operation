@@ -1093,7 +1093,7 @@ main.module-leave-planner .leave-month-navigation .ao-date-control input {
   border-radius: 0;
   background: transparent !important;
   color: var(--ao-violet-hour);
-  font-family: var(--ao-font-display);
+  font-family: var(--ao-font-display) !important;
   font-size: 23px !important;
   font-weight: 500 !important;
   line-height: 1.1;
