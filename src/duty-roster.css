@@ -351,7 +351,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster thead th {
   box-sizing: border-box;
   min-width: 0;
-  height: 64px;
+  height: 72px;
   padding: 4px 3px 3px;
   border: 0;
   border-right: 1px solid var(--roster-line);
@@ -435,10 +435,10 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 500;
   line-height: 1.05;
-  letter-spacing: .025em;
+  letter-spacing: .01em;
   font-synthesis: none;
 }
 
@@ -457,7 +457,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster-weekly .roster-compact-day {
   color: inherit;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 500;
   line-height: 1.05;
   font-synthesis: none;
@@ -466,7 +466,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster-weekly .roster-compact-month {
   color: inherit;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: .04em;
   font-synthesis: none;
@@ -483,7 +483,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
   padding: 6px 4px;
   border-top: 1px solid var(--roster-line);
   border-left: 1px solid var(--roster-line);
-  background: rgb(255 248 239 / 62%);
+  background: rgb(255 248 239 / 42%);
   color: #36556a;
   text-align: center;
   vertical-align: middle;
@@ -491,7 +491,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 
 .duty-roster-page .roster tbody td:first-child { border-left: 0; }
 .duty-roster-page .roster tbody tr:first-child td { border-top: 0; }
-.duty-roster-page .roster tbody tr:nth-child(even) td { background: rgb(255 234 215 / 56%); }
+.duty-roster-page .roster tbody tr:nth-child(even) td { background: rgb(255 234 215 / 36%); }
 
 .duty-roster-page .roster .roster-member-cell {
   min-width: 190px;

@@ -8,11 +8,11 @@ const [app, corporateTheme, rosterTheme, sharedStyles] = await Promise.all([
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
 ])
 
-assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #ffbd6f 100%\)/, 'Duty Roster must expose the exact approved orange endpoints across one uninterrupted full-page gradient.')
+assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #ffa963 34%, #ffbd6f 68%, #ffbd6f 100%\)/, 'Duty Roster must use the Staff Management distribution pattern while making the approved orange transition visible within the first desktop viewport.')
 assert.match(corporateTheme, /\.app-shell:has\(> main\.module-duty-roster\) \{[\s\S]*?background-size: 100% 100%;[\s\S]*?background-attachment: scroll;/, 'Duty Roster must retain the Staff Management full-height gradient behavior.')
-assert.match(corporateTheme, /main\.module-duty-roster \{[\s\S]*?--ao-module-surface: rgb\(255 239 223 \/ 58%\);[\s\S]*?--ao-module-surface-strong: rgb\(255 246 233 \/ 68%\);/, 'The higher-specificity shared module frame must expose the page gradient instead of covering it with opaque cream surfaces.')
+assert.match(corporateTheme, /main\.module-duty-roster \{[\s\S]*?--ao-module-surface: rgb\(255 239 223 \/ 36%\);[\s\S]*?--ao-module-surface-strong: rgb\(255 246 233 \/ 48%\);/, 'The higher-specificity shared module frame must visibly expose the page gradient instead of covering it with cream surfaces.')
 assert.match(rosterTheme, /\.roster-panel \{[\s\S]*?background: rgb\(255 239 223 \/ 76%\);/, 'The component fallback must remain compatible while the authoritative module token controls the live translucent panel.')
-assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?background: rgb\(255 248 239 \/ 62%\);/, 'Roster cells must remain readable while visibly carrying the full-page gradient.')
+assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?background: rgb\(255 248 239 \/ 42%\);/, 'Roster cells must remain readable while visibly carrying the full-page gradient.')
 assert.match(corporateTheme, /main\.module-duty-roster > \.page-header :is\(h1, \.eyebrow\) \{ color: #fff8ec; \}/, 'The external Workforce Planning page heading must remain readable in ivory on orange.')
 assert.match(rosterTheme, /--roster-gold: #c9a65a/, 'Duty Roster must expose the approved muted-gold accent token.')
 assert.match(rosterTheme, /\.duty-roster-page > \.duty-roster-tabs \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?gap: 8px;[\s\S]*?border: 0;[\s\S]*?background: transparent;/, 'Roster and Duty Code Settings must remain separate compact equal tabs without a shared frame.')
@@ -27,7 +27,7 @@ assert.match(rosterTheme, /\.roster-member-cell b \{[\s\S]*?font-size: 12\.5px;[
 assert.match(rosterTheme, /\.roster \.roster-member-cell small \{[\s\S]*?font-size: 11\.5px;[\s\S]*?font-weight: 500;/, 'Designation and employee ID must remain readable without increasing row height.')
 assert.match(rosterTheme, /\.mobile-roster-identity b \{[\s\S]*?font-size: 12\.5px;[\s\S]*?font-weight: 500;/, 'Mobile team member names must remain compact and readable.')
 assert.match(rosterTheme, /\.roster-view-switch \.view:not\(\.active\):not\(\.danger\):not\(\.remove\) \{[\s\S]*?background: #f3c49d;[\s\S]*?color: #5b2a1c;/, 'Only inactive view tabs may receive the warm cream treatment so the active state is not overridden.')
-assert.match(rosterTheme, /\.roster thead th \{[\s\S]*?height: 64px;[\s\S]*?padding: 4px 3px 3px;/, 'Weekly table headers must contain the larger Dahlia hierarchy without changing the compact table geometry.')
+assert.match(rosterTheme, /\.roster thead th \{[\s\S]*?height: 72px;[\s\S]*?padding: 4px 3px 3px;/, 'Weekly table headers must contain the visibly larger Dahlia hierarchy without clipping.')
 assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?height: 50px;[\s\S]*?padding: 6px 4px;/, 'Weekly roster rows must remain compact.')
 assert.doesNotMatch(sharedStyles, /\.roster thead th:not\(:first-child\):not\(:last-child\)[\s\S]*?font-size:17\.5px/, 'Legacy global roster typography must not override the scoped compact design.')
 assert.doesNotMatch(sharedStyles, /\.staff-section-tabs,\.duty-roster-tabs|\.roster-controls\{/, 'Legacy shared tab and calendar-frame rules must not compete with the dedicated Duty Roster stylesheet.')
