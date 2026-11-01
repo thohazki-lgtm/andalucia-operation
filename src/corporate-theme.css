@@ -728,8 +728,6 @@ main.module-duty-roster > .page-header::before {
   content: none;
 }
 
-main.module-duty-roster > .page-header :is(h1, .eyebrow) { color: #2f1e24; }
-
 main.module-dashboard > .page-header::before {
   display: none;
   content: none;
@@ -743,6 +741,8 @@ main[class*='module-'] > .page-header .eyebrow,
 main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-title, .monthly-dashboard-section > header) > div > .eyebrow {
   color: var(--ao-module-accent-ink);
 }
+
+main.module-duty-roster > .page-header :is(h1, .eyebrow) { color: #fff8ec; }
 
 /* A quiet wash and inset ribbon make the palette visible in section hierarchy
    while leaving operational badges, duty codes, configured swatches and

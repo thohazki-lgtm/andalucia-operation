@@ -470,7 +470,7 @@ function Roster({ staff, dutyOptions, positions, onToast, onDirtyChange }: { sta
  return <>
 <header className="roster-command-header" aria-label="Duty roster period controls">
 <div className="roster-command-main">
-<div className="roster-command-copy"><h2>Duty Roster</h2></div>
+<div className="roster-command-copy"><h2>Duty Roster</h2><p>Weekly and monthly team planning</p></div>
 <StaffHeaderMonthNavigation ariaLabel="Duty Roster month" className="roster-period-navigation" month={anchor.slice(0,7)} monthLabel={periodLabel} onChange={month => proceed(() => { const next=`${month}-01`; setAnchor(next); setMobileDate(next) })} onPrevious={() => shift(-1)} onNext={() => shift(1)} />
 </div>
 <div className="roster-view-switch roster-view-switch-standalone" role="group" aria-label="Roster view"><button type="button" className={view === 'Weekly' ? 'view active' : 'view'} aria-pressed={view === 'Weekly'} onClick={() => proceed(() => setView('Weekly'))}>Weekly</button><button type="button" className={view === 'Monthly' ? 'view active' : 'view'} aria-pressed={view === 'Monthly'} onClick={() => proceed(() => setView('Monthly'))}>Monthly</button></div>

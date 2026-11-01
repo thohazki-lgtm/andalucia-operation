@@ -85,6 +85,14 @@
   line-height: 1.1;
 }
 
+.duty-roster-page .roster-command-copy p {
+  margin: 4px 0 0;
+  color: #ffe1ce;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
 .duty-roster-page .roster-view-switch {
   display: grid;
   flex: 0 0 auto;
@@ -425,7 +433,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.danger)
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: .025em;
 }
@@ -445,14 +453,14 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.danger)
 .duty-roster-page .roster-weekly .roster-compact-day {
   color: inherit;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .duty-roster-page .roster-weekly .roster-compact-month {
   color: inherit;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 500;
   letter-spacing: .04em;
 }
@@ -486,8 +494,8 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.danger)
 .duty-roster-page .roster-member-cell b {
   display: block;
   color: var(--roster-teal-dark);
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 13.5px;
+  font-weight: 500;
   line-height: 1.15;
 }
 
@@ -673,8 +681,8 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
 .duty-roster-page .mobile-roster-identity b {
   display: block;
   color: var(--roster-teal-dark);
-  font-size: 13.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.25;
 }
 
@@ -936,17 +944,23 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
   }
 
   .duty-roster-page .roster-command-header {
-    gap: 9px;
-    padding: 13px;
+    gap: 7px;
+    padding: 10px 12px;
   }
 
   .duty-roster-page .roster-command-main {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .duty-roster-page .roster-command-copy h2 {
     font-size: 22px;
+  }
+
+  .duty-roster-page .roster-command-copy p {
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.2;
   }
 
   .duty-roster-page .roster-view-switch {
@@ -1052,7 +1066,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
 }
 
 @media (max-width: 390px) {
-  .duty-roster-page .roster-command-header { padding: 12px; }
+  .duty-roster-page .roster-command-header { padding: 10px; }
   .duty-roster-page .roster-period-label.ao-action { font-size: 10px; }
   .duty-roster-page .mobile-roster-card { padding: 12px; }
 }
