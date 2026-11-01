@@ -314,7 +314,7 @@ body:has(.app-shell > main.module-dashboard) {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #ffbd6f;
-  background-image: linear-gradient(to bottom, #fd8451 0%, #ffa963 34%, #ffbd6f 68%, #ffbd6f 100%);
+  background-image: linear-gradient(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-attachment: scroll;

@@ -996,7 +996,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
     line-height: 1.2;
   }
 
-  .duty-roster-page .roster-view-switch {
+  .duty-roster-page .roster-view-switch.roster-view-switch-standalone {
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
@@ -1006,14 +1006,47 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
   }
 
   main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active):not(.danger):not(.remove) {
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
     border-color: var(--roster-line-strong);
-    background: #f3c49d;
+    background: #f8dec4;
+    color: #5b2a1c;
   }
 
   .duty-roster-page .roster-view-switch .view.active {
-    border-color: var(--roster-teal);
-    background: var(--roster-teal);
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border-color: #7c311f;
+    background: #a94428;
+    color: #fff;
+  }
+
+  .duty-roster-page .mobile-roster-card > .mobile-duty-select .duty-code-trigger-copy {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .duty-roster-page .mobile-roster-card > .mobile-duty-select .duty-code-trigger-copy b {
+    padding-right: 8px;
+    border-right: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+    font-size: 10.5px;
+    line-height: 1.15;
+  }
+
+  .duty-roster-page .mobile-roster-card > .mobile-duty-select .duty-code-trigger-copy small {
+    min-width: 0;
+    margin-top: 0;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: clamp(9px, 2.5vw, 10.5px);
+    line-height: 1.15;
+    white-space: nowrap;
+    opacity: .92;
   }
 
   .duty-roster-page .roster-period-navigation {

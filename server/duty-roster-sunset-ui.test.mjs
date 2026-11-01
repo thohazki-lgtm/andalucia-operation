@@ -8,7 +8,7 @@ const [app, corporateTheme, rosterTheme, sharedStyles] = await Promise.all([
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
 ])
 
-assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #ffa963 34%, #ffbd6f 68%, #ffbd6f 100%\)/, 'Duty Roster must use the Staff Management distribution pattern while making the approved orange transition visible within the first desktop viewport.')
+assert.match(corporateTheme, /linear-gradient\(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%\)/, 'Duty Roster must use the Staff Management distribution pattern while making the richer approved orange transition visible through the full module.')
 assert.match(corporateTheme, /\.app-shell:has\(> main\.module-duty-roster\) \{[\s\S]*?background-size: 100% 100%;[\s\S]*?background-attachment: scroll;/, 'Duty Roster must retain the Staff Management full-height gradient behavior.')
 assert.match(corporateTheme, /main\.module-duty-roster \{[\s\S]*?--ao-module-surface: rgb\(255 239 223 \/ 36%\);[\s\S]*?--ao-module-surface-strong: rgb\(255 246 233 \/ 48%\);/, 'The higher-specificity shared module frame must visibly expose the page gradient instead of covering it with cream surfaces.')
 assert.match(rosterTheme, /\.roster-panel \{[\s\S]*?background: rgb\(255 239 223 \/ 76%\);/, 'The component fallback must remain compatible while the authoritative module token controls the live translucent panel.')
@@ -27,6 +27,8 @@ assert.match(rosterTheme, /\.roster-member-cell b \{[\s\S]*?font-size: 12\.5px;[
 assert.match(rosterTheme, /\.roster \.roster-member-cell small \{[\s\S]*?font-size: 11\.5px;[\s\S]*?font-weight: 500;/, 'Designation and employee ID must remain readable without increasing row height.')
 assert.match(rosterTheme, /\.mobile-roster-identity b \{[\s\S]*?font-size: 12\.5px;[\s\S]*?font-weight: 500;/, 'Mobile team member names must remain compact and readable.')
 assert.match(rosterTheme, /\.roster-view-switch \.view:not\(\.active\):not\(\.danger\):not\(\.remove\) \{[\s\S]*?background: #f3c49d;[\s\S]*?color: #5b2a1c;/, 'Only inactive view tabs may receive the warm cream treatment so the active state is not overridden.')
+assert.match(rosterTheme, /@media \(max-width: 700px\) \{[\s\S]*?\.roster-view-switch\.roster-view-switch-standalone \{[\s\S]*?width: 100%;[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/, 'Mobile Weekly and Monthly tabs must override the desktop width cap and fill two equal header columns.')
+assert.match(rosterTheme, /@media \(max-width: 700px\) \{[\s\S]*?\.roster-view-switch \.view\.active \{[\s\S]*?background: #a94428;[\s\S]*?color: #fff;/, 'The active mobile roster view must use the deeper orange state with readable white text.')
 assert.match(rosterTheme, /html body \.app-shell main\.module-duty-roster \.duty-roster-page \.staff-header-month-picker > summary \{[\s\S]*?font-family: var\(--ao-font-display[\s\S]*?font-size: clamp\(20px, 1\.8vw, 23px\);/, 'The top-right period range must beat the shared Good Sans reset and render in the Duty Roster Dahlia face.')
 assert.match(rosterTheme, /\.roster thead th \{[\s\S]*?height: 72px;[\s\S]*?padding: 4px 3px 3px;/, 'Weekly table headers must preserve the approved row geometry while the labels return to a compact scale.')
 assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?height: 50px;[\s\S]*?padding: 6px 4px;/, 'Weekly roster rows must remain compact.')
