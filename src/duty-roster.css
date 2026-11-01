@@ -39,6 +39,7 @@
   font-weight: 650;
   line-height: 1.2;
   text-align: center;
+  text-transform: uppercase;
 }
 
 .duty-roster-page > .duty-roster-tabs button:hover:not(.selected) {
@@ -283,10 +284,14 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
 }
 
 .duty-roster-page .roster-scroll {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   margin: 0;
+  border: 1px solid var(--roster-gold);
+  border-top-width: 2px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-color: var(--roster-teal) var(--roster-mint);
   scrollbar-gutter: auto;
 }
@@ -312,8 +317,7 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border: 1px solid var(--roster-gold);
-  border-top-width: 2px;
+  border: 0;
   color: var(--roster-teal-dark);
 }
 
@@ -771,18 +775,26 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
 
 .duty-roster-page .duty-code-manager > .panel-title h3 {
   color: var(--roster-teal-dark);
+  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
   font-size: 21px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .duty-roster-page .duty-code-manager > .panel-title .eyebrow { color: var(--roster-teal); }
-.duty-roster-page .duty-code-table-wrap { min-width: 0; overflow-x: auto; scrollbar-gutter: auto; }
+.duty-roster-page .duty-code-table-wrap {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid var(--roster-gold);
+  border-top-width: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: auto;
+}
 
 .duty-roster-page .duty-code-table {
   width: 100%;
   min-width: 900px;
-  border: 1px solid var(--roster-gold);
-  border-top-width: 2px;
+  border: 0;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
