@@ -34,9 +34,6 @@ main{min-width:0}
 .roster select{width:94px;min-height:32px}
 .roster th,.roster td{padding-left:4px;padding-right:4px}
 .roster th:first-child{min-width:185px}
-.roster thead th:not(:first-child){font-size:11px;color:#5c7280;letter-spacing:.7px}
-.roster thead th small{font-size:10.5px;color:#718591;line-height:1.35}
-.roster tbody td:first-child small{font-size:11px;color:#687e8b;line-height:1.35}
 .roster th.today{background:#fbf7ed;color:#87672d}
 .roster tbody td.today-column{background:#fdfbf7}
 .roster tfoot td{padding-top:6px;padding-bottom:6px;font-size:10px}
@@ -108,8 +105,6 @@ main{min-width:0}
 @media(max-width:700px){.direct-staff-drag-handle{width:36px;height:36px;font-size:19px}.duty-roster-page>.duty-roster-tabs{margin-bottom:10px}.roster-controls{display:grid;gap:9px;padding:10px}.roster-controls>.roster-period-tools{display:grid;grid-template-columns:1fr;gap:8px}.roster-period-tools>div:first-child{display:grid;grid-template-columns:1fr 1fr}.roster-period-navigation{display:grid;grid-template-columns:42px minmax(0,1fr) 42px}.roster-period-label{min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.roster-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;overflow:visible}.roster-actions .unsaved-count{grid-column:1/-1;text-align:center}.roster-actions button{width:100%;min-height:42px;padding:9px;font-size:11px;white-space:nowrap}.roster-panel{padding-top:12px}.mobile-roster-card>.duty-pill-select{border-radius:999px}.mobile-day-navigation span{font-weight:750;color:#173d56}.mobile-day-navigation strong{color:#9a722b}}
 
 /* Duty Roster final responsive hierarchy */
-@media(min-width:701px){.roster thead th:not(:first-child):not(:last-child){padding-top:8px;padding-bottom:8px;color:#173d56;font-size:17.5px;font-weight:800;line-height:1.05;letter-spacing:.01em;text-transform:none}.roster thead th:not(:first-child):not(:last-child) small{margin-top:4px;color:#657b88;font-size:14.5px;font-weight:650;line-height:1.1}.roster thead th.today{color:#173d56;background:#fbf7ed;box-shadow:inset 0 3px #bd9854}.roster thead th.today small{color:#8a6728}}
-@media(max-width:700px){.roster-controls{grid-template-columns:minmax(0,1fr);align-items:stretch;justify-content:stretch;justify-items:stretch;gap:5px;padding:7px}.roster-controls>.roster-period-tools{width:100%;gap:5px}.roster-period-tools>div:first-child{width:100%;gap:0}.roster-period-tools .view{min-height:36px;padding-block:6px}.roster-period-navigation{width:100%;grid-template-columns:36px minmax(0,1fr) 36px;gap:5px}.roster-period-navigation .secondary{min-height:36px;padding:6px}.roster-controls>.roster-actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:0;overflow:visible;white-space:normal}.roster-actions .unsaved-count{display:flex;grid-column:1/-1;align-items:center;justify-content:center;min-height:14px;font-size:9.5px}.roster-actions button{width:100%;min-height:36px;padding:7px}.mobile-day-navigation{grid-template-columns:40px 1fr 40px;gap:6px;margin-bottom:8px;padding:7px}.mobile-day-navigation .secondary{min-width:38px;min-height:36px}.mobile-day-navigation span{font-size:13px}.mobile-day-navigation strong{margin-top:1px;font-size:10.5px}}
 .roster-actions .roster-save:disabled{border:1px solid #d4bf91;background:#e8dcc0;color:#6d624d;opacity:1;box-shadow:none}
 
 /* Stage 3 shared action-system integration: intentionally scoped to Dashboard, Staff, and Duty Roster. */
