@@ -211,15 +211,15 @@
 }
 
 /* Employee Entitlements: compact table with inline detail expansion. */
-.employee-entitlement-table-wrap{overflow-x:auto;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:12px;background:#fff;box-shadow:0 7px 18px rgba(69,23,107,.06)}
+.employee-entitlement-table-wrap{overflow-x:auto;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:12px;background:#fff;box-shadow:0 7px 18px rgba(69,23,107,.06)}
 .employee-entitlement-table{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#173e54;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
-.employee-entitlement-table .entitlement-employee-column{width:22%}.employee-entitlement-table .entitlement-id-column{width:13%}.employee-entitlement-table .entitlement-action-column{width:12%}
+.employee-entitlement-table .entitlement-employee-column{width:20%}.employee-entitlement-table .entitlement-id-column{width:14%}.employee-entitlement-table .entitlement-metric-column{width:13.75%}.employee-entitlement-table .entitlement-action-column{width:11%}
 .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:table-row;padding:0;border:0;border-radius:0}
-.employee-entitlement-table th{height:42px;padding:8px 11px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.62));border-bottom:1px solid var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:10px;font-weight:500;letter-spacing:.05em;line-height:1.2;text-align:center;text-transform:uppercase;white-space:nowrap}
+.employee-entitlement-table th{height:42px;padding:8px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:10px;font-weight:500;letter-spacing:.05em;line-height:1.2;text-align:center;text-transform:uppercase;white-space:nowrap}
 .employee-entitlement-table th:first-child{text-align:left}.employee-entitlement-table th:last-child{border-right:0}
-.employee-entitlement-table tbody+tbody .employee-entitlement-row td{border-top:1px solid var(--ao-leave-divider,rgba(192,183,240,.55))}
-.employee-entitlement-table .employee-entitlement-row td{height:54px;padding:9px 11px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));background:#fff;text-align:center;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);font-size:12px;font-variant-numeric:proportional-nums;line-height:1.3;vertical-align:middle}
-.employee-entitlement-table .employee-entitlement-row:nth-child(odd) td{background:#fff}
+.employee-entitlement-table tbody+tbody .employee-entitlement-row td{border-top:1px solid var(--ao-leave-grid-gold,#d5bd88)}
+.employee-entitlement-table .employee-entitlement-row td{height:54px;padding:9px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);background:#fffdf9;text-align:center;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);font-size:12px;font-variant-numeric:proportional-nums;line-height:1.3;vertical-align:middle}
+.employee-entitlement-table tbody:nth-of-type(odd)>.employee-entitlement-row td{background:#fffdf9}.employee-entitlement-table tbody:nth-of-type(even)>.employee-entitlement-row td{background:var(--ao-leave-row-alt,#f5f1fb)}
 .employee-entitlement-table .employee-entitlement-row:hover td,.employee-entitlement-table .employee-entitlement-row.expanded td{background:var(--ao-leave-surface,#f8f5ff)}
 .employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0}
 .employee-entitlement-table .employee-entitlement-row td>b{color:#173e54;font-size:13px;font-weight:500;line-height:1.25}
@@ -232,6 +232,7 @@
 .employee-entitlement-details-header .eyebrow{margin:0 0 2px;color:var(--ao-violet-hour,#45176b);font-size:8px}.employee-entitlement-details-header h4{margin:0;color:#173e54;font:500 13px/1.3 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
 .employee-entitlement-details-header dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}.employee-entitlement-details-header dl div{padding-left:9px;border-left:1px solid var(--ao-leave-divider,rgba(192,183,240,.62))}.employee-entitlement-details-header dt{color:#6c7786;font-size:8px;font-weight:500;text-transform:uppercase}.employee-entitlement-details-header dd{margin:2px 0 0;color:#294f63;font-size:9.5px;font-weight:500;white-space:nowrap}
 .employee-entitlement-details>.balance-controls{margin:9px 0 0}
+.entitlement-information-footer{display:flex;align-items:flex-start;gap:8px;margin-top:9px;padding:8px 10px;border:1px solid var(--ao-leave-gold,#c5a35a);border-radius:9px;background:var(--ao-leave-surface-strong,#f0ebfb);color:#554863}.entitlement-information-footer .entitlement-information-icon{display:grid;width:18px;height:18px;flex:0 0 18px;place-items:center;border:1px solid var(--ao-leave-gold,#c5a35a);border-radius:50%;color:var(--ao-violet-hour,#45176b);font:600 11px/1 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}.entitlement-information-footer div{display:grid;gap:2px;min-width:0}.entitlement-information-footer p{margin:0;font:400 9.5px/1.4 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
 
 @media(max-width:900px){
   .employee-entitlement-details-header{grid-template-columns:1fr}.employee-entitlement-details-header dl{grid-column:1;grid-row:2}.employee-entitlement-details-header dl div:first-child{padding-left:0;border-left:0}
@@ -246,9 +247,9 @@
 @media(max-width:700px){
   .entitlement-view-summary{align-items:flex-start;flex-direction:column;gap:4px}.entitlement-view-summary small{text-align:left}
   .employee-entitlement-table-wrap{overflow:visible;border:0;background:transparent;box-shadow:none}
-  .employee-entitlement-table{display:block;min-width:0}.employee-entitlement-table colgroup,.employee-entitlement-table thead{display:none}.employee-entitlement-table tbody{display:block;margin-bottom:8px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:11px;background:#fff;overflow:hidden}
+  .employee-entitlement-table{display:block;min-width:0}.employee-entitlement-table colgroup,.employee-entitlement-table thead{display:none}.employee-entitlement-table tbody{display:block;margin-bottom:8px;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:11px;background:#fff;overflow:hidden}
   .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .employee-entitlement-table .employee-entitlement-row td{display:flex;box-sizing:border-box;height:auto;min-height:48px;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-right:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));border-bottom:1px solid var(--ao-leave-divider,rgba(192,183,240,.55));text-align:right}
+  .employee-entitlement-table .employee-entitlement-row td{display:flex;box-sizing:border-box;height:auto;min-height:48px;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);text-align:right}
   .employee-entitlement-table .employee-entitlement-row td:nth-child(even){border-right:0}.employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0;border-bottom:0}
   .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity)::before{content:attr(data-label);color:var(--ao-violet-hour,#45176b);font-size:8.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
   .employee-entitlement-table .employee-entitlement-id{flex-direction:column;align-items:flex-start;justify-content:center;text-align:left}.employee-entitlement-table .employee-entitlement-id b{max-width:100%;font-size:11px}
