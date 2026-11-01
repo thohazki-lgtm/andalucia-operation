@@ -76,13 +76,13 @@ export function StaffEntitlementsManager() {
   const visible = items.filter(item => item.employmentStatus === 'active')
   const showDetails = (staffId: string | null) => setExpandedStaffId(staffId)
   return <article className="panel workforce-foundation-panel staff-entitlements-panel">
-    <div className="panel-title workforce-section-title"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3><p>Individual allowances override policy defaults without changing confirmed Duty Roster evidence.</p></div></div>
+    <div className="panel-title workforce-section-title"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
-      <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span><small>Annual Leave figures use confirmed Duty Roster usage and separate future bookings.</small></div>
+      <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span></div>
       <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
         <table className="employee-entitlement-table">
-          <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col /><col /><col /><col /><col className="entitlement-action-column" /></colgroup>
+          <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-action-column" /></colgroup>
           <thead><tr><th>Employee</th><th>Employee ID</th><th>Available</th><th>Used</th><th>Booked</th><th>Balance</th><th>Action</th></tr></thead>
           {visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const expanded = expandedStaffId === item.staffId; const detailsId = `employee-entitlement-details-${item.staffId}`; return <tbody key={item.staffId}>
             <tr className={expanded ? 'employee-entitlement-row expanded' : 'employee-entitlement-row'}>
@@ -99,6 +99,7 @@ export function StaffEntitlementsManager() {
         </table>
       </div>
       {!visible.length && <p className="workforce-empty">No staff match this view.</p>}
+      <footer className="entitlement-information-footer" aria-label="Employee entitlement information"><span className="entitlement-information-icon" aria-hidden="true">i</span><div><p>Individual allowances override policy defaults without changing confirmed Duty Roster evidence.</p><p>Annual Leave figures use confirmed Duty Roster usage and separate future bookings.</p></div></footer>
     </>}
   </article>
 }

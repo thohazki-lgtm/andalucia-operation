@@ -1540,11 +1540,27 @@ main.module-leave-planner :is(
 }
 
 main.module-leave-planner .employee-entitlement-table-wrap {
-  border-color: var(--ao-leave-line) !important;
+  border-color: var(--ao-leave-gold) !important;
+  border-top-width: 2px !important;
 }
 
 main.module-leave-planner .employee-entitlement-table :is(th, td) {
-  border-color: var(--ao-leave-divider) !important;
+  border-color: var(--ao-leave-grid-gold) !important;
+}
+
+main.module-leave-planner .staff-entitlements-panel .workforce-section-title h3 {
+  color: var(--ao-violet-hour);
+  font-family: var(--ao-font-display);
+  font-size: clamp(22px, 2vw, 26px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+main.module-leave-planner .staff-entitlements-panel .entitlement-information-footer {
+  border-color: var(--ao-leave-gold);
+  background: var(--ao-leave-surface-strong);
 }
 
 main.module-leave-planner .employee-entitlement-details-row > td {
