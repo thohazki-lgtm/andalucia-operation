@@ -2353,9 +2353,11 @@ main.module-staff-management > .page-header .avatar {
 
 main.module-staff-management .staff-section-bar .staff-section-tabs button {
   width: 100%;
+  min-width: 0;
   max-width: none;
   min-height: 50px;
-  border-color: color-mix(in srgb, var(--ao-staff-emerald) 58%, white);
+  border: 1px solid var(--ao-staff-gold);
+  border-radius: 11px;
   background: color-mix(in srgb, var(--ao-staff-surface) 90%, transparent);
   color: var(--ao-staff-emerald-deep);
   white-space: normal;
@@ -2374,18 +2376,19 @@ main.module-staff-management .staff-section-bar .staff-section-tabs button.selec
   box-shadow: inset 0 3px var(--ao-staff-gold), 0 4px 10px rgb(16 62 56 / 22%);
 }
 
-main.module-staff-management .staff-directory-page .staff-summary .panel,
-main.module-staff-management .staff-directory-page .staff-panel,
 main.module-staff-management .staff-directory-page .staff-tools,
 main.module-staff-management .staff-directory-page .staff-mobile-card {
   border-color: color-mix(in srgb, var(--ao-lagoon-teal) 42%, white);
 }
 
-main.module-staff-management .staff-directory-page .staff-summary .panel {
+/* Staff Management's approved gold perimeter is authoritative over the shared
+   module frame while internal dividers retain the emerald line tokens. */
+main[class*='module-'].module-staff-management .staff-directory-page .staff-summary > .panel:not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
   min-height: 66px;
   padding: 10px 13px;
-  border-color: var(--ao-staff-line);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
+  border-radius: 10px;
   background: var(--ao-staff-surface);
   box-shadow: 0 6px 16px rgb(16 62 56 / 9%);
 }
@@ -2663,7 +2666,7 @@ main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staf
 
 /* Bind every Staff Management subview to one structural palette. Semantic
    status badges and configured duty-code colors keep their own mappings. */
-main.module-staff-management :is(
+html body .app-shell main.module-staff-management :is(
   .membership-approved-page,
   .staff-account-panel,
   .manager-timesheet-table,
@@ -2720,13 +2723,15 @@ html body .app-shell main.module-staff-management :is(
   line-height: 1.2;
 }
 
-main.module-staff-management :is(
+main[class*='module-'].module-staff-management :is(
   .staff-directory-page .staff-panel,
   .membership-approved-page,
   .staff-account-panel,
-  .manager-timesheet-hero
-) {
-  border-color: var(--ao-staff-gold);
+  .manager-timesheet-hero,
+  .manager-timesheet-table
+):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
 }
 
 main.module-staff-management .manager-timesheet-modal__body {
@@ -2895,9 +2900,9 @@ main.module-staff-management .manager-timesheet-hero p {
   color: color-mix(in srgb, var(--ao-staff-mint) 78%, white);
 }
 
-main.module-staff-management .manager-timesheet-kpis article {
-  border-color: var(--ao-staff-line);
-  border-top: 3px solid var(--ao-staff-gold);
+html body main.module-staff-management .manager-timesheet-kpis article {
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
   background: var(--ao-staff-surface);
 }
 

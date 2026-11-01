@@ -616,7 +616,6 @@ main{min-width:0}
 .staff-directory-page .staff-summary .panel{
  min-height:84px;padding:13px 16px;border:1px solid var(--ao-staff-line);border-top:3px solid var(--ao-lagoon-teal);border-radius:10px;background:var(--ao-staff-surface);box-shadow:0 6px 16px #0c675c12
 }
-.staff-directory-page .staff-summary .panel:nth-child(2),.staff-directory-page .staff-summary .panel:nth-child(3),.staff-directory-page .staff-summary .panel:nth-child(4){border-top-color:var(--ao-lagoon-teal)}
 .staff-directory-page .staff-summary span{color:#607786;font-size:11px;font-weight:700;letter-spacing:.045em;text-transform:uppercase}
 .staff-directory-page .staff-summary strong{margin-top:5px;color:#173d56;font-size:28px;line-height:1}
 .staff-directory-page .staff-panel{border-color:var(--ao-staff-line);border-radius:11px;background:#fff;box-shadow:0 8px 22px #0c675c12}
