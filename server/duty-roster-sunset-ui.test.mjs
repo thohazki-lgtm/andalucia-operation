@@ -8,10 +8,11 @@ const [app, corporateTheme, rosterTheme, sharedStyles] = await Promise.all([
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
 ])
 
-assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #ffbd6f 100%\)/, 'Duty Roster must use one continuous approved orange-to-soft-gold page gradient without visually flat intermediate bands.')
+assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #f58f42 34%, #f7a454 68%, #ffbd6f 100%\)/, 'Duty Roster must use the same perceptible four-stop full-page gradient behavior as Staff Management.')
 assert.match(corporateTheme, /\.app-shell:has\(> main\.module-duty-roster\) \{[\s\S]*?background-size: 100% 100%;[\s\S]*?background-attachment: scroll;/, 'Duty Roster must retain the Staff Management full-height gradient behavior.')
-assert.match(rosterTheme, /\.roster-panel \{[\s\S]*?background: rgb\(255 239 223 \/ 90%\);/, 'The roster panel must retain its warm tint without hiding the continuous module gradient.')
-assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?background: rgb\(255 248 239 \/ 90%\);/, 'Roster cells must remain readable while allowing the full-page gradient to remain visible.')
+assert.match(corporateTheme, /main\.module-duty-roster \{[\s\S]*?--ao-module-surface: rgb\(255 239 223 \/ 76%\);/, 'The higher-specificity shared module frame must expose a translucent Duty Roster surface token.')
+assert.match(rosterTheme, /\.roster-panel \{[\s\S]*?background: rgb\(255 239 223 \/ 76%\);/, 'The roster panel must retain its warm tint without hiding the continuous module gradient.')
+assert.match(rosterTheme, /\.roster tbody td \{[\s\S]*?background: rgb\(255 248 239 \/ 78%\);/, 'Roster cells must remain readable while allowing the full-page gradient to remain visible.')
 assert.match(corporateTheme, /main\.module-duty-roster > \.page-header :is\(h1, \.eyebrow\) \{ color: #fff8ec; \}/, 'The external Workforce Planning page heading must remain readable in ivory on orange.')
 assert.match(rosterTheme, /--roster-gold: #c9a65a/, 'Duty Roster must expose the approved muted-gold accent token.')
 assert.match(rosterTheme, /\.duty-roster-page > \.duty-roster-tabs \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?gap: 8px;[\s\S]*?border: 0;[\s\S]*?background: transparent;/, 'Roster and Duty Code Settings must remain separate compact equal tabs without a shared frame.')

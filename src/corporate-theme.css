@@ -265,6 +265,14 @@ main[class*='module-'] {
   background-image: none;
 }
 
+/* The shared module frame above wins over component backgrounds by
+   specificity. Scope the authoritative Duty Roster surface at the same
+   specificity so its warm tint remains translucent over the page gradient. */
+main.module-duty-roster {
+  --ao-module-surface: rgb(255 239 223 / 76%);
+  --ao-module-surface-strong: rgb(255 246 233 / 84%);
+}
+
 /* The application shell is the real page canvas: it spans the viewport behind
    the centered main column and grows with long module pages. Keeping the main
    transparent prevents seams, doubled gradients and white bands while cards
@@ -306,7 +314,7 @@ body:has(.app-shell > main.module-dashboard) {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #ffbd6f;
-  background-image: linear-gradient(to bottom, #fd8451 0%, #ffbd6f 100%);
+  background-image: linear-gradient(to bottom, #fd8451 0%, #f58f42 34%, #f7a454 68%, #ffbd6f 100%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-attachment: scroll;

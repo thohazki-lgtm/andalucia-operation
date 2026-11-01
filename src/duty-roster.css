@@ -272,7 +272,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
   border-color: var(--roster-line);
   border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
-  background: rgb(255 239 223 / 90%);
+  background: rgb(255 239 223 / 76%);
   box-shadow: 0 7px 22px rgb(206 98 51 / 7%);
 }
 
@@ -434,8 +434,11 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 22px;
+  /* Chromium does not resolve the AO Dahlia local alias on this workstation.
+     Put the installed Dahlia family first so the calendar uses the same face
+     that the Duty Roster heading visibly renders. */
+  font-family: "Dahlia", "AO Dahlia", Georgia, serif;
+  font-size: 24px;
   font-weight: 500;
   line-height: 1.05;
   letter-spacing: .025em;
@@ -455,15 +458,15 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 
 .duty-roster-page .roster-weekly .roster-compact-day {
   color: inherit;
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 16px;
+  font-family: "Dahlia", "AO Dahlia", Georgia, serif;
+  font-size: 18px;
   font-weight: 500;
   line-height: 1.05;
 }
 
 .duty-roster-page .roster-weekly .roster-compact-month {
   color: inherit;
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
+  font-family: "Dahlia", "AO Dahlia", Georgia, serif;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: .04em;
@@ -480,7 +483,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
   padding: 6px 4px;
   border-top: 1px solid var(--roster-line);
   border-left: 1px solid var(--roster-line);
-  background: rgb(255 248 239 / 90%);
+  background: rgb(255 248 239 / 78%);
   color: #36556a;
   text-align: center;
   vertical-align: middle;
@@ -488,7 +491,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 
 .duty-roster-page .roster tbody td:first-child { border-left: 0; }
 .duty-roster-page .roster tbody tr:first-child td { border-top: 0; }
-.duty-roster-page .roster tbody tr:nth-child(even) td { background: rgb(255 234 215 / 88%); }
+.duty-roster-page .roster tbody tr:nth-child(even) td { background: rgb(255 234 215 / 72%); }
 
 .duty-roster-page .roster .roster-member-cell {
   min-width: 190px;
