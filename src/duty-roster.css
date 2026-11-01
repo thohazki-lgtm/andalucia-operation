@@ -169,7 +169,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
   min-width: 0;
 }
 
-.duty-roster-page .staff-header-month-picker > summary {
+html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-month-picker > summary {
   display: flex;
   width: 100%;
   min-height: 40px;
@@ -182,7 +182,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
   color: #fff8ec;
   cursor: pointer;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: clamp(20px, 2vw, 25px);
+  font-size: clamp(20px, 1.8vw, 23px);
   font-weight: 500;
   font-synthesis: none;
   line-height: 1.1;
@@ -435,7 +435,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.05;
   letter-spacing: .01em;
@@ -457,7 +457,7 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.active)
 .duty-roster-page .roster-weekly .roster-compact-day {
   color: inherit;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 23px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.05;
   font-synthesis: none;
