@@ -1153,8 +1153,8 @@ main.module-leave-planner .leave-summary-grid {
 }
 
 main.module-leave-planner .leave-summary-card {
-  height: 100%;
-  min-height: 76px;
+  height: 84px;
+  min-height: 84px;
   padding: 9px 11px;
   border-color: var(--ao-leave-gold);
   background: #fffdf9;
@@ -1170,7 +1170,7 @@ main.module-leave-planner .leave-summary-card > b {
 }
 
 main.module-leave-planner .leave-summary-card:not(.off):not(.holiday):not(.sick) {
-  border-top-color: var(--ao-violet-hour);
+  border-top-color: var(--ao-leave-gold);
 }
 
 main.module-leave-planner .leave-planner-grid-wrap {
