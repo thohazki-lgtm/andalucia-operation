@@ -6,6 +6,8 @@
   --roster-line-strong: #a84f2d;
   --roster-mint: #f6d2b8;
   --roster-surface: #ffead7;
+  --roster-table-row: #fff9f4;
+  --roster-table-row-alt: #ffefe4;
   --roster-gold: #c9a65a;
   --roster-muted: #6f8390;
   min-width: 0;
@@ -310,7 +312,8 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border-top: 2px solid var(--roster-gold);
+  border: 1px solid var(--roster-gold);
+  border-top-width: 2px;
   color: var(--roster-teal-dark);
 }
 
@@ -486,15 +489,15 @@ main.module-duty-roster .duty-roster-page .roster tbody td {
   padding: 6px 4px;
   border-top: 1px solid var(--roster-gold);
   border-left: 1px solid var(--roster-gold);
-  background: rgb(255 248 239 / 42%);
+  background: var(--roster-table-row);
   color: #36556a;
   text-align: center;
   vertical-align: middle;
 }
 
-.duty-roster-page .roster tbody td:first-child { border-left: 0; }
-.duty-roster-page .roster tbody tr:first-child td { border-top: 0; }
-.duty-roster-page .roster tbody tr:nth-child(even) td { background: rgb(255 234 215 / 36%); }
+main.module-duty-roster .duty-roster-page .roster tbody td:first-child { border-left: 0; }
+main.module-duty-roster .duty-roster-page .roster tbody tr:first-child td { border-top: 0; }
+.duty-roster-page .roster tbody tr:nth-child(even) td { background: var(--roster-table-row-alt); }
 
 .duty-roster-page .roster .roster-member-cell {
   min-width: 190px;
@@ -778,14 +781,18 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
 .duty-roster-page .duty-code-table {
   width: 100%;
   min-width: 900px;
+  border: 1px solid var(--roster-gold);
+  border-top-width: 2px;
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
 }
 
-.duty-roster-page .duty-code-table th {
+main.module-duty-roster .duty-roster-page .duty-code-table th {
   height: 44px;
   padding: 8px 7px;
-  border-bottom: 1px solid var(--roster-line-strong);
-  border-right: 1px solid var(--roster-line);
+  border-bottom: 1px solid var(--roster-gold);
+  border-right: 1px solid var(--roster-gold);
   background: var(--roster-mint);
   color: #5d7482;
   font-family: var(--ao-font-ui);
@@ -796,19 +803,21 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   vertical-align: middle;
 }
 
-.duty-roster-page .duty-code-table td {
+main.module-duty-roster .duty-roster-page .duty-code-table td {
   height: 58px;
   padding: 8px 7px;
-  border-top-color: var(--roster-line);
-  border-right: 1px solid var(--roster-line);
+  border-top: 1px solid var(--roster-gold);
+  border-right: 1px solid var(--roster-gold);
+  background: var(--roster-table-row);
   color: #36556a;
   font-size: 11px;
   vertical-align: middle;
 }
 
-.duty-roster-page .duty-code-table th:last-child,
-.duty-roster-page .duty-code-table td:last-child { border-right: 0; }
-.duty-roster-page .duty-code-table tbody tr:nth-child(even) td { background: var(--roster-surface); }
+main.module-duty-roster .duty-roster-page .duty-code-table th:last-child,
+main.module-duty-roster .duty-roster-page .duty-code-table td:last-child { border-right: 0; }
+main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:first-child td { border-top: 0; }
+.duty-roster-page .duty-code-table tbody tr:nth-child(even) td { background: var(--roster-table-row-alt); }
 .duty-roster-page .duty-code-table tbody tr.is-disabled td { background: rgb(206 98 51 / 7%); }
 .duty-roster-page .duty-code-table th:first-child,
 .duty-roster-page .duty-code-table td:first-child { width: 5%; min-width: 48px; padding-inline: 4px; text-align: center; }
