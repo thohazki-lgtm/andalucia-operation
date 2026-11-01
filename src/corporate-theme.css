@@ -969,7 +969,6 @@ main[class*='module-'] :is(
 
 main[class*='module-'] :is(
   .staff-section-tabs,
-  .duty-roster-tabs,
   .leave-planner-module-tabs,
   .leave-planner-tabs,
   .booking-service-tabs,
@@ -985,7 +984,6 @@ main[class*='module-'] :is(
 
 main[class*='module-'] :is(
   .staff-section-tabs,
-  .duty-roster-tabs,
   .leave-planner-module-tabs,
   .leave-planner-tabs,
   .booking-service-tabs,
@@ -1000,7 +998,6 @@ main[class*='module-'] :is(
 
 main[class*='module-'] :is(
   .staff-section-tabs,
-  .duty-roster-tabs,
   .leave-planner-module-tabs,
   .leave-planner-tabs,
   .booking-service-tabs,

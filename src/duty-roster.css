@@ -11,23 +11,12 @@
   min-width: 0;
 }
 
-html body .app-shell main.module-duty-roster > .page-header {
-  min-height: 0;
-  margin-bottom: 8px;
-}
-
-html body .app-shell main.module-duty-roster > .page-header h1 {
-  margin-top: 2px;
-  font-size: 25px;
-  line-height: 1.08;
-}
-
 .duty-roster-page > .duty-roster-tabs {
   display: grid;
-  width: min(420px, 100%);
+  width: min(460px, 100%);
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0 0 8px;
+  gap: 8px;
+  margin: 0 0 10px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -68,38 +57,42 @@ html body .app-shell main.module-duty-roster > .page-header h1 {
   outline-offset: 2px;
 }
 
-.duty-roster-page .roster-controls {
-  display: block;
+.duty-roster-page .roster-command-header {
+  display: grid;
+  grid-template-columns: minmax(180px, .7fr) minmax(360px, 1.3fr);
   align-items: center;
-  gap: 12px 18px;
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--roster-line-strong);
-  border-top: 4px solid var(--roster-gold);
-  border-radius: 12px;
-  background: var(--roster-surface);
-  box-shadow: 0 5px 18px rgb(206 98 51 / 8%);
-}
-
-.duty-roster-page .roster-controls.roster-calendar-header {
-  margin-bottom: 6px;
-  padding: 4px 8px;
+  gap: 20px;
+  margin: 0 0 8px;
+  padding: 16px 20px;
   border: 1px solid var(--roster-line-strong);
   border-top: 3px solid var(--roster-gold);
+  border-radius: 12px;
   background: linear-gradient(120deg, #8b3f25, #c85c31);
   box-shadow: 0 7px 20px rgb(91 42 28 / 14%);
 }
 
-.duty-roster-page .roster-period-tools,
-.duty-roster-page .roster-period-navigation {
-  min-width: 0;
+.duty-roster-page .roster-command-copy :is(.eyebrow, h2, p) {
+  color: #fff8ec;
 }
 
-.duty-roster-page .roster-period-tools {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+.duty-roster-page .roster-command-copy .eyebrow {
+  margin: 0;
+  color: #ffd9bd;
+}
+
+.duty-roster-page .roster-command-copy h2 {
+  margin: 3px 0;
+  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.duty-roster-page .roster-command-copy > p:last-child {
+  margin: 5px 0 0;
+  color: #ffe1ce;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .duty-roster-page .roster-view-switch {
@@ -143,19 +136,22 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.danger)
 .duty-roster-page .roster-period-navigation {
   display: grid;
   position: relative;
-  width: min(440px, 100%);
-  grid-template-columns: 34px minmax(210px, 1fr) 34px;
+  width: min(420px, 100%);
+  min-width: 0;
+  grid-template-columns: 40px minmax(240px, 340px) 40px;
   align-items: center;
+  justify-content: end;
+  justify-self: end;
   gap: 6px;
-  margin-inline: auto;
+  margin: 0;
 }
 
 .duty-roster-page .roster-period-navigation > .ao-icon-action {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
-  flex-basis: 34px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  flex-basis: 40px;
   border-color: var(--roster-gold);
   background: transparent;
   color: #fff8ec;
@@ -176,22 +172,23 @@ main.module-duty-roster .duty-roster-page .roster-view-switch .view:not(.danger)
 .duty-roster-page .staff-header-month-picker > summary {
   display: flex;
   width: 100%;
-  min-height: 34px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
-  padding: 2px 12px;
+  padding: 6px 10px;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: #fff8ec;
   cursor: pointer;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 18px;
+  font-size: clamp(20px, 2vw, 25px);
   font-weight: 500;
   font-synthesis: none;
   line-height: 1.1;
   list-style: none;
   text-align: center;
+  white-space: nowrap;
 }
 
 .duty-roster-page .staff-header-month-picker > summary::-webkit-details-marker { display: none; }
@@ -927,7 +924,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
 }
 
 @media (max-width: 1180px) and (min-width: 701px) {
-  .duty-roster-page .roster-controls { grid-template-columns: 1fr; }
+  .duty-roster-page .roster-command-header { grid-template-columns: minmax(180px, .7fr) minmax(360px, 1.3fr); }
 }
 
 @media (max-width: 900px) and (min-width: 701px) {
@@ -948,17 +945,14 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
     font-size: 11px;
   }
 
-  .duty-roster-page .roster-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2px;
-    padding: 4px;
+  .duty-roster-page .roster-command-header {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 13px;
   }
 
-  .duty-roster-page .roster-period-tools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 5px;
+  .duty-roster-page .roster-command-copy h2 {
+    font-size: 22px;
   }
 
   .duty-roster-page .roster-view-switch {
@@ -984,6 +978,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
   .duty-roster-page .roster-period-navigation {
     width: 100%;
     grid-template-columns: 44px minmax(0, 1fr) 44px;
+    justify-self: stretch;
     gap: 5px;
   }
 
@@ -998,7 +993,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
   .duty-roster-page .staff-header-month-picker > summary {
     min-height: 44px;
     padding-inline: 6px;
-    font-size: 16px;
+    font-size: clamp(17px, 5vw, 22px);
   }
 
   .duty-roster-page .roster-period-label.ao-action {
@@ -1063,7 +1058,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
 }
 
 @media (max-width: 390px) {
-  .duty-roster-page .roster-controls { padding: 5px; }
+  .duty-roster-page .roster-command-header { padding: 12px; }
   .duty-roster-page .roster-period-label.ao-action { font-size: 10px; }
   .duty-roster-page .mobile-roster-card { padding: 12px; }
 }
