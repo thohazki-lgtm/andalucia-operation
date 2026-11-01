@@ -31,7 +31,7 @@ assert.doesNotMatch(app, /<option value="">Unassigned<\/option>/, 'Unassigned mu
 assert.match(app, /<DutyCodeSelect value=\{code\} options=\{available\}[^>]*mobile/, 'Mobile and desktop roster views must share the configured duty-code dropdown.')
 assert.match(dutyRosterStyles, /\.mobile-roster-card > \.mobile-duty-select \{[\s\S]*?width: 100%;[\s\S]*?max-width: 100%;/, 'Long configured names must remain contained on mobile.')
 assert.match(dutyRosterStyles, /\.duty-code-menu \{[\s\S]*?position: fixed;[\s\S]*?overflow-y: auto;/, 'The accessible duty list must be scrollable and escape roster-table clipping.')
-assert.match(dutyRosterStyles, /\.roster-compact-weekday \{[\s\S]*?font-family: var\(--ao-font-ui\);[\s\S]*?font-size: 21px;[\s\S]*?font-weight: 600;/, 'Weekly headings must use the lighter Good Sans hierarchy.')
+assert.match(dutyRosterStyles, /\.roster-compact-weekday \{[\s\S]*?font-family: var\(--ao-font-ui\);[\s\S]*?font-size: 19px;[\s\S]*?font-weight: 650;/, 'Weekly headings must use the readable Good Sans hierarchy.')
 assert.match(dutyRosterStyles, /\.roster-compact-day \{[\s\S]*?font-family: var\(--ao-font-ui\);[\s\S]*?font-size: 13px;/, 'Weekly dates must remain compact and readable.')
 assert.match(dutyRosterStyles, /--roster-teal: var\(--ao-sunset-orange\)/, 'Duty Roster must use its own approved burnt-orange token.')
 assert.match(dutyRosterStyles, /--roster-mint: #fff0df/, 'Duty Roster must use a soft-peach supporting surface.')

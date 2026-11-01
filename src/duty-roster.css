@@ -13,7 +13,7 @@
 
 .duty-roster-page > .duty-roster-tabs {
   display: grid;
-  width: min(440px, 100%);
+  width: min(520px, 100%);
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 11px;
   margin: 0 0 14px;
@@ -28,9 +28,9 @@
   min-width: 0;
   min-height: 48px;
   padding: 10px 18px;
-  border: 1px solid #d9e2e6;
+  border: 2px solid var(--roster-gold);
   border-radius: 11px;
-  background: #fff;
+  background: rgb(255 246 233 / 90%);
   color: var(--roster-teal-dark);
   box-shadow: 0 3px 11px rgba(23, 61, 86, .05);
   font-size: 12px;
@@ -45,10 +45,10 @@
 }
 
 .duty-roster-page > .duty-roster-tabs button.selected {
-  border-color: var(--roster-teal);
-  background: var(--roster-teal);
+  border: 2px solid var(--roster-gold);
+  background: linear-gradient(120deg, #8b3f25, #c85c31);
   color: #fff;
-  box-shadow: inset 0 3px var(--ao-orange-glow), 0 5px 14px rgb(206 98 51 / 16%);
+  box-shadow: 0 5px 14px rgb(91 42 28 / 18%);
 }
 
 .duty-roster-page > .duty-roster-tabs button:focus-visible,
@@ -68,6 +68,15 @@
   border-radius: 12px;
   background: var(--roster-surface);
   box-shadow: 0 5px 18px rgb(206 98 51 / 8%);
+}
+
+.duty-roster-page .roster-controls.roster-calendar-header {
+  margin-bottom: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--roster-line-strong);
+  border-top: 4px solid var(--roster-gold);
+  background: linear-gradient(120deg, #8b3f25, #c85c31);
+  box-shadow: 0 7px 20px rgb(91 42 28 / 14%);
 }
 
 .duty-roster-page .roster-period-tools,
@@ -92,6 +101,13 @@
   border: 1px solid var(--roster-line);
   border-radius: 10px;
   background: rgba(255, 255, 255, .72);
+}
+
+.duty-roster-page .roster-view-switch.roster-view-switch-standalone {
+  width: min(360px, 100%);
+  margin: 0 0 10px;
+  border-color: var(--roster-line-strong);
+  background: rgb(255 246 233 / 84%);
 }
 
 .duty-roster-page .roster-view-switch .view {
@@ -125,9 +141,16 @@
   width: 40px;
   height: 40px;
   flex-basis: 40px;
-  border-color: var(--roster-line-strong);
-  background: #fff8ec;
-  color: var(--roster-teal-dark);
+  border-color: var(--roster-gold);
+  background: transparent;
+  color: #fff8ec;
+}
+
+.duty-roster-page .roster-period-navigation > .ao-icon-action:hover:not(:disabled),
+.duty-roster-page .roster-period-navigation > .ao-icon-action:focus-visible {
+  border-color: #f1d590;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
 }
 
 .duty-roster-page .staff-header-month-picker {
@@ -142,13 +165,13 @@
   align-items: center;
   justify-content: center;
   padding: 7px 38px;
-  border: 1px solid var(--roster-gold);
-  border-radius: 9px;
-  background: #fff3df;
-  color: #5b2a1c;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff8ec;
   cursor: pointer;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 19px;
+  font-size: 24px;
   font-weight: 500;
   font-synthesis: none;
   line-height: 1.15;
@@ -354,9 +377,10 @@
 
 .duty-roster-page .roster thead .roster-member-header {
   min-width: 190px;
-  color: #5d7482;
-  font-size: 10px;
-  letter-spacing: .09em;
+  color: var(--roster-teal-dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
   text-align: left;
   text-transform: uppercase;
 }
@@ -415,8 +439,8 @@
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
   font-family: var(--ao-font-ui);
-  font-size: 21px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 650;
   letter-spacing: .025em;
 }
 
@@ -476,8 +500,8 @@
 .duty-roster-page .roster-member-cell b {
   display: block;
   color: var(--roster-teal-dark);
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 14.5px;
+  font-weight: 800;
   line-height: 1.25;
 }
 
@@ -485,8 +509,8 @@
   display: block;
   margin-top: 4px;
   color: #758894;
-  font-size: 9.5px;
-  font-weight: 500;
+  font-size: 10.5px;
+  font-weight: 550;
   line-height: 1.25;
 }
 

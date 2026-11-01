@@ -467,13 +467,11 @@ function Roster({ staff, dutyOptions, positions, onToast, onDirtyChange }: { sta
  const shiftMobileDay = (direction: -1 | 1) => proceed(() => { const next = addCalendarDays(mobileDate, direction); setMobileDate(next); if (next < start || next > end) setAnchor(next) })
  const exportPdf = async () => { if (draftCount) { setSaveError('Save or discard your unsaved changes before exporting. PDF export always uses the confirmed saved roster.'); return } try { const result = await shareOrDownloadRosterPdf({ view, start, end, dates, staff: visibleStaff, roster, dutyOptions }); if (result !== 'cancelled') onToast(result === 'shared' ? 'Saved Duty Roster shared.' : 'Saved Duty Roster PDF downloaded.') } catch (cause) { setSaveError(cause instanceof Error ? cause.message : 'Duty Roster PDF could not be prepared.') } }
  return <>
-<section className="toolbar roster-controls" aria-label="Duty roster period controls">
-<div className="roster-period-tools">
-<div className="roster-view-switch" role="group" aria-label="Roster view"><button type="button" className={view === 'Weekly' ? 'view active' : 'view'} aria-pressed={view === 'Weekly'} onClick={() => proceed(() => setView('Weekly'))}>Weekly</button>
-<button type="button" className={view === 'Monthly' ? 'view active' : 'view'} aria-pressed={view === 'Monthly'} onClick={() => proceed(() => setView('Monthly'))}>Monthly</button></div>
+<section className="toolbar roster-controls roster-calendar-header" aria-label="Duty roster period controls">
 <StaffHeaderMonthNavigation ariaLabel="Duty Roster month" className="roster-period-navigation" month={anchor.slice(0,7)} monthLabel={periodLabel} onChange={month => proceed(() => { const next=`${month}-01`; setAnchor(next); setMobileDate(next) })} onPrevious={() => shift(-1)} onNext={() => shift(1)} />
-</div>
-</section>{saveError && <div className="roster-save-feedback error-state" role="alert">{saveError}</div>}{loading && <section className="panel inline-state">
+</section>
+<div className="roster-view-switch roster-view-switch-standalone" role="group" aria-label="Roster view"><button type="button" className={view === 'Weekly' ? 'view active' : 'view'} aria-pressed={view === 'Weekly'} onClick={() => proceed(() => setView('Weekly'))}>Weekly</button><button type="button" className={view === 'Monthly' ? 'view active' : 'view'} aria-pressed={view === 'Monthly'} onClick={() => proceed(() => setView('Monthly'))}>Monthly</button></div>
+{saveError && <div className="roster-save-feedback error-state" role="alert">{saveError}</div>}{loading && <section className="panel inline-state">
 <p>Loading duty roster…</p>
 </section>}{error && <section className="panel inline-state error-state">
 <p>{error}</p>
