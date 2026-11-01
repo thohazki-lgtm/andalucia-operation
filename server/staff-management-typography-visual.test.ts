@@ -259,8 +259,8 @@ try {
   assert.equal(membershipDialogTheme.background, 'rgb(242, 248, 243)')
   assert.equal(membershipDialogTheme.borderTopColor, membershipDialogTheme.fieldBorder)
   assert.equal(membershipDialogTheme.fieldBackground, 'rgb(255, 255, 255)')
-  assert.match(membershipDialogTheme.titleFontFamily, /(?:AO Good Sans|Good Sans|DM Sans)/)
-  assert.equal(membershipDialogTheme.titleFontSize, '18px')
+  assert.match(membershipDialogTheme.titleFontFamily, /(?:AO Dahlia|Dahlia|Georgia)/)
+  assert.equal(membershipDialogTheme.titleFontSize, '22px')
   assert.equal(membershipDialogTheme.titleFontWeight, '500')
   assert.equal(membershipDialogTheme.pageOverflow, false)
   await screenshot(cdp, 'team-membership-correction-dialog-after-1440.png')
@@ -296,12 +296,24 @@ try {
   assert.equal(timesheetDesktop.heroTitleColor, 'rgb(250, 247, 239)')
   assert.equal(timesheetDesktop.error, null)
   assert.ok(timesheetDesktop.kpiBackground)
-  await screenshot(cdp, 'timesheets-after-1440.png')
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
-  await cdp.evaluate(`(()=>{const close=document.querySelector('button[aria-label="Close navigation menu"]');if(close&&getComputedStyle(close).display!=='none')close.click()})()`)
-  await sleep(100)
-  assert.equal(await cdp.evaluate<boolean>(`document.documentElement.scrollWidth>document.documentElement.clientWidth+1`), false)
-  await screenshot(cdp, 'timesheets-after-390.png')
+  const timesheetMeasurements: Record<string, unknown> = {}
+  for (const width of [1440, 1024, 768, 430, 390, 360]) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    await cdp.evaluate(`(()=>{const close=document.querySelector('button[aria-label="Close navigation menu"]');if(close&&getComputedStyle(close).display!=='none')close.click()})()`)
+    await sleep(100)
+    const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.manager-timesheets');const nav=document.querySelector('.manager-month-nav');const month=document.querySelector('.manager-month-label>span');const arrows=[...document.querySelectorAll('.manager-month-nav>button')];if(!root||!nav||!month||arrows.length!==2)return null;const navRect=nav.getBoundingClientRect();return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,rootOverflow:root.scrollWidth>root.clientWidth+1,monthFont:getComputedStyle(month).fontFamily,monthCentered:Math.abs((month.getBoundingClientRect().left+month.getBoundingClientRect().right)/2-(navRect.left+navRect.right)/2)<2,arrowsContained:arrows.every(button=>{const rect=button.getBoundingClientRect();return rect.left>=navRect.left&&rect.right<=navRect.right}),arrowHeights:[...new Set(arrows.map(button=>Math.round(button.getBoundingClientRect().height)))],error:document.querySelector('.manager-timesheets .save-error')?.textContent?.trim()||null}})()`)
+    assert.ok(result)
+    assert.equal(result.pageOverflow, false, `Timesheets caused page overflow at ${width}px.`)
+    assert.equal(result.rootOverflow, false, `Timesheets root overflowed at ${width}px.`)
+    assert.match(result.monthFont, /(?:AO Dahlia|Dahlia|Georgia)/)
+    assert.equal(result.monthCentered, true, `Timesheets month was not centered at ${width}px.`)
+    assert.equal(result.arrowsContained, true, `Timesheets arrows escaped the navigation box at ${width}px.`)
+    assert.equal(result.arrowHeights.length, 1)
+    assert.equal(result.error, null)
+    timesheetMeasurements[String(width)] = result
+    await screenshot(cdp, `timesheets-after-${width}.png`)
+  }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-section-tabs button')].find(item=>item.textContent?.trim()==='Team Membership');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.membership-approved-page .membership-mobile-list article')`)) break; await sleep(100) }
@@ -332,8 +344,8 @@ try {
     const result = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.staff-account-panel');const name=document.querySelector(${mobile ? "'.staff-account-cards article header b'" : "'.staff-account-table tbody td:first-child b'"});const status=document.querySelector('.staff-account-status');const title=document.querySelector('.staff-account-header h2');const label=document.querySelector('.staff-account-header .section-label');const summary=document.querySelector('.staff-account-summary dd');const controls=[...document.querySelectorAll('.staff-account-tools input,.staff-account-tools select')];const table=document.querySelector('.staff-account-table');const tableWrap=table?.closest('.staff-table-wrap');const cells=[...document.querySelectorAll('.staff-account-table tbody tr:first-child td')];const headers=[...document.querySelectorAll('.staff-account-table thead th')];const divider=cells[0]?getComputedStyle(cells[0]):null;const actions=[...document.querySelectorAll('.staff-account-cards .staff-account-actions button')];return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:root.scrollWidth>root.clientWidth+1,nameFontSize:getComputedStyle(name).fontSize,nameFontWeight:getComputedStyle(name).fontWeight,statusFontSize:getComputedStyle(status).fontSize,statusFontWeight:getComputedStyle(status).fontWeight,statusAlignment:getComputedStyle(status).justifyContent,titleFont:getComputedStyle(title).fontFamily,titleSize:getComputedStyle(title).fontSize,titleWeight:getComputedStyle(title).fontWeight,labelSize:getComputedStyle(label).fontSize,labelWeight:getComputedStyle(label).fontWeight,summarySize:getComputedStyle(summary).fontSize,summaryWeight:getComputedStyle(summary).fontWeight,filterCountPresent:[...document.querySelectorAll('.staff-account-tools p')].some(node=>node.textContent?.includes('Showing')),controlsReadable:controls.every(control=>control.scrollWidth<=control.clientWidth+1),minimumControlHeight:Math.min(...controls.map(control=>control.getBoundingClientRect().height)),tableVisible:!!tableWrap&&getComputedStyle(tableWrap).display!=='none'&&table.getBoundingClientRect().width>0,headerAlign:headers.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),cellAlign:cells.slice(0,5).map(cell=>getComputedStyle(cell).textAlign),dividerWidth:divider?.borderRightWidth,dividerStyle:divider?.borderRightStyle,smallActions:actions.map(button=>({text:button.textContent?.trim(),width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height})).filter(item=>item.width<44||item.height<44)}})()`)
     assert.equal(result.pageOverflow, false, `Account page overflow at ${width}px.`)
     assert.equal(result.panelOverflow, false, `Account panel overflow at ${width}px.`)
-    assert.match(result.titleFont, /(?:AO Good Sans|Good Sans|DM Sans)/)
-    assert.equal(result.titleSize, mobile ? '17px' : '18px')
+    assert.match(result.titleFont, /(?:AO Dahlia|Dahlia|Georgia)/)
+    assert.equal(result.titleSize, mobile ? '20px' : '22px')
     assert.equal(result.titleWeight, '500')
     assert.equal(result.labelSize, '9px')
     assert.equal(result.labelWeight, '500')
@@ -369,8 +381,8 @@ try {
     assert.ok(modal)
     assert.equal(modal.fits, true)
     assert.equal(modal.background, 'rgb(242, 248, 243)')
-    assert.match(modal.titleFont, /(?:AO Good Sans|Good Sans|DM Sans)/)
-    assert.equal(modal.titleSize, mobile ? '17px' : '18px')
+    assert.match(modal.titleFont, /(?:AO Dahlia|Dahlia|Georgia)/)
+    assert.equal(modal.titleSize, mobile ? '20px' : '22px')
     assert.equal(modal.titleWeight, '500')
     assert.equal(modal.inputBackground, 'rgb(255, 255, 255)')
     assert.ok(modal.actionHeights.every((height: number) => height >= 44))
@@ -414,7 +426,7 @@ try {
   }
   console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
-  console.log(JSON.stringify({ measurements, modalMeasurements, profileDesktop, profileMobile, timesheetDesktop, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', 'artifacts/staff-management-typography/staff-profile-after-1440.png', 'artifacts/staff-management-typography/staff-profile-after-390.png', 'artifacts/staff-management-typography/timesheets-after-1440.png', 'artifacts/staff-management-typography/timesheets-after-390.png', ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
+  console.log(JSON.stringify({ measurements, modalMeasurements, profileDesktop, profileMobile, timesheetDesktop, timesheetMeasurements, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', 'artifacts/staff-management-typography/staff-profile-after-1440.png', 'artifacts/staff-management-typography/staff-profile-after-390.png', ...Object.keys(timesheetMeasurements).map(width => `artifacts/staff-management-typography/timesheets-after-${width}.png`), ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
 } finally {
   try { socket?.close() } catch {}
   for (const process of processes.reverse()) { try { process.kill() } catch {} }

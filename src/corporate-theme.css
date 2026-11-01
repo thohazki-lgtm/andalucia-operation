@@ -2695,16 +2695,42 @@ main.module-staff-management :is(
   font-weight: 500;
 }
 
+/* Staff Management display titles use the same Dahlia hierarchy as the page
+   title and Timesheets month navigation. Operational copy remains Good Sans. */
 html body .app-shell main.module-staff-management :is(
   .membership-command-header h2,
   .membership-dialog h2,
   .staff-account-header h2,
-  .staff-account-modal h2
+  .staff-account-modal h2,
+  .manager-month-label > span
 ) {
-  font-family: var(--ao-font-ui);
-  font-size: 18px;
+  font-family: var(--ao-font-display);
+  font-size: 22px;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.15;
+}
+
+html body .app-shell main.module-staff-management :is(
+  .membership-summary-title b,
+  .membership-review-card h3,
+  .membership-history-disclosure summary h3
+) {
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+main.module-staff-management :is(
+  .staff-directory-page .staff-panel,
+  .membership-approved-page,
+  .staff-account-panel,
+  .manager-timesheet-hero
+) {
+  border-color: var(--ao-staff-gold);
+}
+
+main.module-staff-management .manager-timesheet-modal__body {
+  background: var(--ao-staff-surface);
 }
 
 @media (max-width: 700px) {
@@ -2714,7 +2740,15 @@ html body .app-shell main.module-staff-management :is(
     .staff-account-header h2,
     .staff-account-modal h2
   ) {
-    font-size: 17px;
+    font-size: 20px;
+  }
+
+  html body .app-shell main.module-staff-management :is(
+    .membership-summary-title b,
+    .membership-review-card h3,
+    .membership-history-disclosure summary h3
+  ) {
+    font-size: 16px;
   }
 }
 
