@@ -13,10 +13,10 @@
 
 .duty-roster-page > .duty-roster-tabs {
   display: grid;
-  width: min(520px, 100%);
+  width: min(500px, 100%);
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
-  margin: 0 0 14px;
+  gap: 8px;
+  margin: 0 0 10px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -26,8 +26,8 @@
 .duty-roster-page > .duty-roster-tabs button {
   justify-content: center;
   min-width: 0;
-  min-height: 48px;
-  padding: 10px 18px;
+  min-height: 42px;
+  padding: 8px 14px;
   border: 2px solid var(--roster-gold);
   border-radius: 11px;
   background: rgb(255 246 233 / 90%);
@@ -71,10 +71,10 @@
 }
 
 .duty-roster-page .roster-controls.roster-calendar-header {
-  margin-bottom: 9px;
-  padding: 10px 12px;
+  margin-bottom: 7px;
+  padding: 6px 10px;
   border: 1px solid var(--roster-line-strong);
-  border-top: 4px solid var(--roster-gold);
+  border-top: 3px solid var(--roster-gold);
   background: linear-gradient(120deg, #8b3f25, #c85c31);
   box-shadow: 0 7px 20px rgb(91 42 28 / 14%);
 }
@@ -104,16 +104,17 @@
 }
 
 .duty-roster-page .roster-view-switch.roster-view-switch-standalone {
-  width: min(360px, 100%);
-  margin: 0 0 10px;
+  width: min(320px, 100%);
+  margin: 0 0 8px;
+  padding: 2px;
   border-color: var(--roster-line-strong);
   background: rgb(255 246 233 / 84%);
 }
 
 .duty-roster-page .roster-view-switch .view {
-  min-height: 38px;
+  min-height: 36px;
   margin: 0;
-  padding: 8px 14px;
+  padding: 6px 12px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
@@ -164,14 +165,14 @@
   min-height: 40px;
   align-items: center;
   justify-content: center;
-  padding: 7px 38px;
+  padding: 4px 28px;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: #fff8ec;
   cursor: pointer;
   font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   font-synthesis: none;
   line-height: 1.15;
@@ -500,8 +501,8 @@
 .duty-roster-page .roster-member-cell b {
   display: block;
   color: var(--roster-teal-dark);
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.25;
 }
 
@@ -509,8 +510,8 @@
   display: block;
   margin-top: 4px;
   color: #758894;
-  font-size: 10.5px;
-  font-weight: 550;
+  font-size: 9.5px;
+  font-weight: 500;
   line-height: 1.25;
 }
 
@@ -678,8 +679,8 @@
 .duty-roster-page .mobile-roster-identity b {
   display: block;
   color: var(--roster-teal-dark);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 650;
   line-height: 1.25;
 }
 
