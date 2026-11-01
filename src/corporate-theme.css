@@ -2835,21 +2835,21 @@ main.module-staff-management .staff-module-info {
   border-left-color: var(--ao-staff-gold);
 }
 
-main.module-staff-management :is(
+html body .app-shell main.module-staff-management :is(
+  .staff-directory-page .staff-table th,
+  .manager-timesheet-table th,
   .membership-approved-page .membership-table.approved-table th,
   .staff-account-panel .staff-account-table th,
-  .manager-timesheet-table th,
   .manager-detail-table th
 ) {
   border-color: var(--ao-staff-line);
+  border-bottom: 2px solid var(--ao-staff-emerald-deep);
   background: var(--ao-staff-surface-strong);
-  color: var(--ao-premium-navy);
-}
-
-html body .app-shell main.module-staff-management .staff-account-panel .staff-account-table th {
+  color: var(--ao-staff-emerald-deep);
   font-family: var(--ao-font-ui);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 main.module-staff-management :is(
@@ -3109,7 +3109,7 @@ html body .app-shell main.module-staff-management .staff-header-month-popover in
 
 html body .app-shell main.module-staff-management .membership-command-header .membership-intro-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 @media (max-width: 800px) {
@@ -4433,7 +4433,7 @@ html body .app-shell main.module-staff-management .membership-command-header .me
 
 html body .app-shell main.module-staff-management .membership-command-header .membership-intro-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   min-width: 0;
   width: 100%;
 }
@@ -4467,7 +4467,7 @@ html body .app-shell main.module-staff-management .membership-summary-heading .m
 }
 
 html body .app-shell main.module-staff-management .membership-approved-page > .membership-review-card > header {
-  padding: 12px 16px;
+  padding: 9px 14px 7px;
   border-bottom: 1px solid var(--ao-staff-line-strong);
   background: var(--ao-staff-surface-strong);
 }
@@ -4494,6 +4494,10 @@ html body .app-shell main.module-staff-management .membership-approved-page > .s
   html body .app-shell main.module-staff-management .membership-command-header {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  html body .app-shell main.module-staff-management .membership-command-header .membership-intro-actions {
+    justify-content: center;
   }
 
   html body .app-shell main.module-staff-management .membership-approved-page > .membership-approved-banner {
@@ -4638,7 +4642,7 @@ html body .app-shell main.module-staff-management .staff-account-directory-headi
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
+  padding: 9px 14px 7px;
   border-bottom: 1px solid var(--ao-staff-line-strong);
   background: var(--ao-staff-surface-strong);
 }
