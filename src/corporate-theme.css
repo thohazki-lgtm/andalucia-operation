@@ -732,7 +732,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card) {
   border-color: var(--ao-module-line);
 }
 
@@ -797,7 +797,7 @@ main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
   border-color: var(--ao-module-line);
 }
 
-html body .app-shell main[class*='module-'] table :is(th, td) {
+html body .app-shell main[class*='module-'] table:not(.leave-planner-grid) :is(th, td) {
   border-color: var(--ao-module-divider);
   vertical-align: middle;
 }
