@@ -732,7 +732,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card) {
   border-color: var(--ao-module-line);
 }
 
@@ -1302,9 +1302,7 @@ main.module-leave-planner :is(
   .entitlement-policy-row,
   .employee-entitlement-row,
   .holiday-record,
-  .off-days-summary,
-  .balance-carry-forward,
-  .additional-entitlement-balances article
+  .balance-carry-forward
 ) {
   border-color: var(--ao-leave-line) !important;
   background: #fff !important;
@@ -1345,9 +1343,7 @@ main.module-leave-planner :is(
   .leave-records-header,
   .policy-card-header,
   .employee-entitlement-header,
-  .off-days-summary > header,
   .balance-carry-forward > header,
-  .additional-entitlement-balances article header,
   .public-holiday-form .form-actions,
   .confirmed-leave-history > header,
   .accumulated-off-opening,
@@ -1537,15 +1533,7 @@ main.module-leave-planner :is(
   font-weight: 500;
 }
 
-main.module-leave-planner .off-days-weekly-review {
-  border-top-color: var(--ao-leave-line) !important;
-  border-right-color: var(--ao-leave-line) !important;
-  border-bottom-color: var(--ao-leave-line) !important;
-  background: #fff;
-}
-
 main.module-leave-planner :is(
-  .off-days-metrics > div,
   .leave-record-modal-scroll > section,
   .leave-mobile-cards article,
   .planned-leave-cards article
