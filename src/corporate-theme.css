@@ -2993,6 +2993,145 @@ html body .app-shell main.module-staff-management .staff-account-modal :is(
   min-height: 44px;
 }
 
+/* Timesheets and Team Membership share one compact header-month treatment.
+   The month remains the native functional value, while its picker is exposed
+   from a small, themed popover instead of a large mint navigation box. */
+html body .app-shell main.module-staff-management .staff-header-month-navigation {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(180px, 300px) 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(420px, 100%);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--ao-staff-gold);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ao-soft-ivory);
+  box-shadow: none;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action:hover:not(:disabled),
+html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action:focus-visible {
+  background: rgb(213 235 217 / 12%);
+  border-color: color-mix(in srgb, var(--ao-staff-gold) 82%, white);
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-picker {
+  position: relative;
+  min-width: 0;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-trigger {
+  display: block;
+  min-width: 0;
+  padding: 6px 10px;
+  color: var(--ao-soft-ivory);
+  font-family: var(--ao-font-display);
+  font-size: clamp(20px, 2.2vw, 27px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  text-align: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-trigger::-webkit-details-marker {
+  display: none;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-trigger:focus-visible {
+  border-radius: 7px;
+  outline: 2px solid var(--ao-staff-gold);
+  outline-offset: 2px;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: min(250px, calc(100vw - 40px));
+  padding: 11px;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-top: 3px solid var(--ao-staff-gold);
+  border-radius: 10px;
+  background: var(--ao-staff-surface-strong);
+  box-shadow: 0 12px 28px rgb(16 62 56 / 24%);
+  transform: translateX(-50%);
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-popover label {
+  display: grid;
+  gap: 5px;
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-ui);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-popover input[type='month'] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ao-staff-mint) 68%, white);
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+html body .app-shell main.module-staff-management .staff-header-month-popover input[type='month']:focus-visible {
+  border-color: var(--ao-staff-gold);
+  outline: 2px solid color-mix(in srgb, var(--ao-staff-gold) 42%, transparent);
+  outline-offset: 1px;
+}
+
+html body .app-shell main.module-staff-management .membership-command-header .membership-intro-actions {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 800px) {
+  html body .app-shell main.module-staff-management .staff-header-month-navigation {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    width: 100%;
+    gap: 7px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-header-month-trigger {
+    padding-inline: 4px;
+    font-size: clamp(20px, 6vw, 24px);
+  }
+}
+
 main.module-staff-management :is(
   .membership-approved-page input,
   .membership-approved-page select,
@@ -3080,7 +3219,7 @@ main.module-staff-management .manager-roster-warning {
 main.module-staff-management :is(
   .manager-timesheets,
   .manager-timesheet-modal
-) :is(.ao-action, .ao-icon-action):not(.danger):not(.ao-action--primary) {
+) :is(.ao-action, .ao-icon-action):not(.danger):not(.ao-action--primary):not(.manager-month-nav > .ao-icon-action) {
   border-color: var(--ao-staff-line-strong);
   background: #fff;
   color: var(--ao-staff-emerald-deep);
@@ -4293,69 +4432,10 @@ html body .app-shell main.module-staff-management .membership-command-header .me
 }
 
 html body .app-shell main.module-staff-management .membership-command-header .membership-intro-actions {
-  display: block;
+  display: flex;
+  justify-content: center;
   min-width: 0;
   width: 100%;
-}
-
-html body .app-shell main.module-staff-management .membership-month-nav {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  min-width: 0;
-  padding: 4px;
-  border: 1px solid var(--ao-staff-gold);
-  border-radius: 12px;
-  background: var(--ao-staff-surface-strong);
-  overflow: hidden;
-}
-
-html body .app-shell main.module-staff-management .membership-month-label {
-  position: relative;
-  display: grid;
-  min-width: 0;
-  min-height: 44px;
-  padding: 4px 12px;
-  border-radius: 8px;
-  place-items: center;
-  color: var(--ao-staff-emerald-deep);
-  cursor: pointer;
-}
-
-html body .app-shell main.module-staff-management .membership-month-label > span {
-  font-family: var(--ao-font-display);
-  font-size: clamp(20px, 2.2vw, 27px);
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -.02em;
-  text-align: center;
-}
-
-html body .app-shell main.module-staff-management .membership-month-label > input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-html body .app-shell main.module-staff-management .membership-month-nav > .ao-icon-action {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-color: var(--ao-staff-line-strong);
-  background: #fff;
-  color: var(--ao-staff-emerald-deep);
-}
-
-html body .app-shell main.module-staff-management .membership-month-nav > .ao-icon-action:disabled {
-  opacity: .45;
 }
 
 html body .app-shell main.module-staff-management .membership-approved-page > :is(.membership-approved-banner, .membership-review-card) {
