@@ -58,7 +58,22 @@ function DutyCodeSelect({ value, options, label, title, disabled, mobile = false
  useLayoutEffect(() => { if (!open) return; positionMenu(); const closeOutside = (event: PointerEvent) => { const target = event.target as Node; if (!buttonRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false) }; const closeEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setOpen(false); buttonRef.current?.focus() } }; const reposition = () => positionMenu(); document.addEventListener('pointerdown', closeOutside); document.addEventListener('keydown', closeEscape); window.addEventListener('resize', reposition); window.addEventListener('scroll', reposition, true); const focusTimer = window.setTimeout(() => { const selectedOption = menuRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]'); (selectedOption || menuRef.current?.querySelector<HTMLButtonElement>('[role="option"]'))?.focus() }, 0); return () => { window.clearTimeout(focusTimer); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); window.removeEventListener('resize', reposition); window.removeEventListener('scroll', reposition, true) } }, [open, positionMenu])
  const moveFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => { if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); const items = [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') || [])]; if (!items.length) return; const current = items.indexOf(document.activeElement as HTMLButtonElement); const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : event.key === 'ArrowDown' ? (current + 1) % items.length : (current - 1 + items.length) % items.length; items[next]?.focus() }
  return <div className={`duty-code-select${mobile ? ' mobile-duty-select' : ''}`}>
-  <button ref={buttonRef} type="button" className={`duty-code-trigger${selected ? '' : ' no-assignment'}`} aria-label={label} aria-haspopup="listbox" aria-expanded={open} title={title} disabled={disabled} style={selected ? { backgroundColor: selected.color, color: readableDutyText(selected.color) } : undefined} onClick={() => setOpen(current => !current)} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true) } }}><span>{selected ? dutyDisplayCode(selected) : 'Select duty'}</span><SvgIcon name="chevron-right" className="duty-code-chevron" /></button>
+  <button
+   ref={buttonRef}
+   type="button"
+   className={`duty-code-trigger${selected ? '' : ' no-assignment'}`}
+   aria-label={label}
+   aria-haspopup="listbox"
+   aria-expanded={open}
+   title={title}
+   disabled={disabled}
+   style={selected ? { backgroundColor: selected.color, color: readableDutyText(selected.color) } : undefined}
+   onClick={() => setOpen(current => !current)}
+   onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true) } }}
+  >
+   <span className="duty-code-trigger-copy"><b>{selected ? dutyDisplayCode(selected) : 'Select duty'}</b>{mobile && selected && <small>{selected.label}</small>}</span>
+   <SvgIcon name="chevron-right" className="duty-code-chevron" />
+  </button>
   {open && createPortal(<div ref={menuRef} className="duty-code-menu" role="listbox" aria-label={`${label} options`} style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight: menuPosition.maxHeight }} onKeyDown={moveFocus}>{options.map(item => <button type="button" role="option" aria-selected={item.value === value} key={item.id} onClick={() => { onChange(item.value); setOpen(false); buttonRef.current?.focus() }}><span className="duty-code-option-pill" style={{ backgroundColor: item.color, color: readableDutyText(item.color) }}>{dutyDisplayCode(item)}</span><span className="duty-code-option-copy"><b>{item.label}</b>{!item.active && <small>Historical</small>}</span></button>)}</div>, document.body)}
  </div>
 }

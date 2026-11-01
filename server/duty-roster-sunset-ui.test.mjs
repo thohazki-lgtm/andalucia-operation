@@ -8,7 +8,8 @@ const [app, corporateTheme, rosterTheme, sharedStyles] = await Promise.all([
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
 ])
 
-assert.match(corporateTheme, /linear-gradient\(to bottom, #b94f2c 0%, #ed7140 28%, #fd9454 58%, #ffbd6f 100%\)/, 'Duty Roster must use one continuous rich-orange-to-soft-gold page gradient.')
+assert.match(corporateTheme, /linear-gradient\(to bottom, #fd8451 0%, #fd9860 38%, #fea96a 70%, #ffbd6f 100%\)/, 'Duty Roster must use one continuous approved orange-to-soft-gold page gradient.')
+assert.match(corporateTheme, /\.app-shell:has\(> main\.module-duty-roster\) \{[\s\S]*?background-size: 100% 100%;[\s\S]*?background-attachment: scroll;/, 'Duty Roster must retain the Staff Management full-height gradient behavior.')
 assert.match(corporateTheme, /main\.module-duty-roster > \.page-header :is\(h1, \.eyebrow\) \{ color: #fff8ec; \}/, 'The external Workforce Planning page heading must remain readable in ivory on orange.')
 assert.match(rosterTheme, /--roster-gold: #c9a65a/, 'Duty Roster must expose the approved muted-gold accent token.')
 assert.match(rosterTheme, /\.duty-roster-page > \.duty-roster-tabs \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?gap: 8px;[\s\S]*?border: 0;[\s\S]*?background: transparent;/, 'Roster and Duty Code Settings must remain separate compact equal tabs without a shared frame.')
