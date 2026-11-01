@@ -115,14 +115,14 @@ function App() {
 </div>
 <AuthUserButton />
 </div>
-{page !== 'Duty Roster' && <header className={`page-header${page === 'Reports' ? ' reports-header' : ''}${page === 'Staff Management' ? ' staff-management-header' : ''}${page === 'Training' ? ' training-page-header' : ''}${page === 'Guest Occasions' ? ' guest-occasions-page-header' : ''}${page === 'Incentives & Bill Tips' ? ' financial-page-header' : ''}${page === 'Customization Center' ? ' customization-page-header' : ''}`}>
+<header className={`page-header${page === 'Reports' ? ' reports-header' : ''}${page === 'Staff Management' ? ' staff-management-header' : ''}${page === 'Training' ? ' training-page-header' : ''}${page === 'Guest Occasions' ? ' guest-occasions-page-header' : ''}${page === 'Incentives & Bill Tips' ? ' financial-page-header' : ''}${page === 'Customization Center' ? ' customization-page-header' : ''}`}>
 <div>
 <p className="eyebrow">{pageContext}</p>
 <h1>{page}</h1>
 </div>
 <div className="header-actions">{page === 'Reports' && <span className="report-header-date">{reportHeaderDate}</span>}<AuthUserButton />
 </div>
-</header>}
+</header>
 {toast && <div className="toast" role="status" aria-live="polite">{toast}<IconAction icon="close" label="Dismiss notification" onClick={() => setToast('')}/>
 </div>}
 {page === 'My Timesheet' && <MyTimesheetPage />}
@@ -469,10 +469,12 @@ function Roster({ staff, dutyOptions, positions, onToast, onDirtyChange }: { sta
  const exportPdf = async () => { if (draftCount) { setSaveError('Save or discard your unsaved changes before exporting. PDF export always uses the confirmed saved roster.'); return } try { const result = await shareOrDownloadRosterPdf({ view, start, end, dates, staff: visibleStaff, roster, dutyOptions }); if (result !== 'cancelled') onToast(result === 'shared' ? 'Saved Duty Roster shared.' : 'Saved Duty Roster PDF downloaded.') } catch (cause) { setSaveError(cause instanceof Error ? cause.message : 'Duty Roster PDF could not be prepared.') } }
  return <>
 <header className="roster-command-header" aria-label="Duty roster period controls">
-<div className="roster-command-copy"><p className="eyebrow">WORKFORCE PLANNING</p><h2>Duty Roster</h2><p>Weekly and monthly team planning</p></div>
+<div className="roster-command-main">
+<div className="roster-command-copy"><h2>Duty Roster</h2></div>
 <StaffHeaderMonthNavigation ariaLabel="Duty Roster month" className="roster-period-navigation" month={anchor.slice(0,7)} monthLabel={periodLabel} onChange={month => proceed(() => { const next=`${month}-01`; setAnchor(next); setMobileDate(next) })} onPrevious={() => shift(-1)} onNext={() => shift(1)} />
-</header>
+</div>
 <div className="roster-view-switch roster-view-switch-standalone" role="group" aria-label="Roster view"><button type="button" className={view === 'Weekly' ? 'view active' : 'view'} aria-pressed={view === 'Weekly'} onClick={() => proceed(() => setView('Weekly'))}>Weekly</button><button type="button" className={view === 'Monthly' ? 'view active' : 'view'} aria-pressed={view === 'Monthly'} onClick={() => proceed(() => setView('Monthly'))}>Monthly</button></div>
+</header>
 {saveError && <div className="roster-save-feedback error-state" role="alert">{saveError}</div>}{loading && <section className="panel inline-state">
 <p>Loading duty roster…</p>
 </section>}{error && <section className="panel inline-state error-state">
