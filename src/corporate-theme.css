@@ -2367,6 +2367,13 @@ main.module-staff-management .staff-section-bar .staff-section-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 main.module-staff-management .staff-section-bar .staff-section-tabs button.selected {
@@ -2386,8 +2393,10 @@ main.module-staff-management .staff-directory-page .staff-mobile-card {
 main[class*='module-'].module-staff-management .staff-directory-page .staff-summary > .panel:not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
   min-height: 66px;
   padding: 10px 13px;
-  border: 1px solid var(--ao-staff-gold);
-  border-color: var(--ao-staff-gold) !important;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-color: var(--ao-staff-line-strong) !important;
+  border-top: 3px solid var(--ao-staff-gold);
+  border-top-color: var(--ao-staff-gold) !important;
   border-radius: 10px;
   background: var(--ao-staff-surface);
   box-shadow: 0 6px 16px rgb(16 62 56 / 9%);
@@ -2730,8 +2739,10 @@ main[class*='module-'].module-staff-management :is(
   .manager-timesheet-hero,
   .manager-timesheet-table
 ):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
-  border: 1px solid var(--ao-staff-gold);
-  border-color: var(--ao-staff-gold) !important;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-color: var(--ao-staff-line-strong) !important;
+  border-top: 3px solid var(--ao-staff-gold);
+  border-top-color: var(--ao-staff-gold) !important;
 }
 
 main.module-staff-management .manager-timesheet-modal__body {
@@ -2901,8 +2912,10 @@ main.module-staff-management .manager-timesheet-hero p {
 }
 
 html body main.module-staff-management .manager-timesheet-kpis article {
-  border: 1px solid var(--ao-staff-gold);
-  border-color: var(--ao-staff-gold) !important;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-color: var(--ao-staff-line-strong) !important;
+  border-top: 3px solid var(--ao-staff-gold);
+  border-top-color: var(--ao-staff-gold) !important;
   background: var(--ao-staff-surface);
 }
 
