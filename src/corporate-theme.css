@@ -206,6 +206,8 @@ body,
 }
 
 .module-leave-planner {
+  --ao-leave-gold: #c5a35a;
+  --ao-leave-grid-gold: color-mix(in srgb, var(--ao-leave-gold) 72%, white);
   --ao-leave-line: color-mix(in srgb, var(--ao-violet-hour) 34%, white);
   --ao-leave-line-strong: color-mix(in srgb, var(--ao-violet-hour) 50%, white);
   --ao-leave-divider: color-mix(in srgb, var(--ao-violet-hour) 22%, white);
@@ -1207,7 +1209,7 @@ main.module-leave-planner .leave-planner-module-tabs button.active {
 
 main.module-leave-planner .leave-planner-panel {
   padding-bottom: 10px;
-  border-color: var(--ao-leave-line) !important;
+  border-color: var(--ao-leave-gold) !important;
   background: var(--ao-leave-surface) !important;
 }
 
@@ -1298,7 +1300,7 @@ main.module-leave-planner :is(
 main.module-leave-planner .leave-command-panel {
   margin: 0 14px 10px;
   padding: 10px;
-  border: 1px solid var(--ao-leave-line) !important;
+  border: 1px solid var(--ao-leave-gold) !important;
   border-radius: 10px;
   background: var(--ao-leave-surface-strong);
 }
@@ -1354,7 +1356,7 @@ main.module-leave-planner .leave-month-navigation .ao-icon-action,
 main.module-leave-planner .leave-planner-filters select,
 main.module-leave-planner .leave-record-filters :is(input, select),
 main.module-leave-planner .leave-period-controls :is(input, select) {
-  border-color: var(--ao-leave-line-strong) !important;
+  border-color: var(--ao-leave-gold) !important;
   background: #fff !important;
   color: var(--ao-premium-navy);
 }
@@ -1375,14 +1377,16 @@ main.module-leave-planner .leave-summary-section > header {
 }
 
 main.module-leave-planner .leave-summary-grid {
+  align-items: stretch;
   gap: 8px;
 }
 
 main.module-leave-planner .leave-summary-card {
+  height: 100%;
   min-height: 76px;
   padding: 9px 11px;
-  border-color: var(--ao-leave-line);
-  background: #fff;
+  border-color: var(--ao-leave-gold);
+  background: #fffdf9;
 }
 
 main.module-leave-planner .leave-summary-card > b {
@@ -1399,9 +1403,11 @@ main.module-leave-planner .leave-summary-card:not(.off):not(.holiday):not(.sick)
 }
 
 main.module-leave-planner .leave-planner-grid-wrap {
+  box-sizing: border-box;
   max-width: calc(100% - 28px);
   margin-inline: 14px;
-  border-color: var(--ao-leave-line) !important;
+  border: 1px solid var(--ao-leave-gold) !important;
+  border-top-width: 2px !important;
   scrollbar-color: var(--ao-leave-scrollbar) var(--ao-leave-scrollbar-track);
 }
 
@@ -1454,8 +1460,12 @@ main.module-leave-planner .leave-planner-grid tbody tr:nth-child(even) > :is(th,
   background: var(--ao-leave-row-alt);
 }
 
+main.module-leave-planner .leave-planner-grid tbody tr:nth-child(odd) > :is(th, td) {
+  background: #fffdf9;
+}
+
 main.module-leave-planner .leave-planner-grid :is(th, td) {
-  border-color: var(--ao-leave-divider);
+  border-color: var(--ao-leave-grid-gold);
 }
 
 main.module-leave-planner .leave-planner-grid thead th .weekday {

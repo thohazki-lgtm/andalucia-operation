@@ -49,14 +49,14 @@ try {
   const dutyCodes = (await repository.configuration()).dutyCodes
   const code = (classification: string) => dutyCodes.find(option => option.metadata?.dutyClassification === classification)!
   assert.ok(code('annualLeave') && code('off') && code('emergencyLeave'))
-  await operations.updateRoster(staff[0].id, '2026-10-20', code('annualLeave').value)
-  await operations.updateRoster(staff[0].id, '2026-10-21', code('off').value)
-  await operations.updateRoster(staff[1].id, '2026-10-22', code('emergencyLeave').value)
+  await operations.updateRoster(staff[0].id, '2026-11-20', code('annualLeave').value)
+  await operations.updateRoster(staff[0].id, '2026-11-21', code('off').value)
+  await operations.updateRoster(staff[1].id, '2026-11-22', code('emergencyLeave').value)
   await fixture.db.query("insert into auth_sessions(id,token_hash,user_id,expires_at) values($1,$2,$3,now()+interval '1 hour')", [randomUUID(), createHash('sha256').update(token).digest('hex'), owner.id])
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', API_PORT: '3012', APP_ORIGIN: 'http://127.0.0.1:5182' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3012', APP_ORIGIN: 'http://127.0.0.1:5182' }, stdio: 'inherit' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5182', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3012' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3012/api/health'), waitFor('http://127.0.0.1:5182/')])
 
@@ -74,12 +74,10 @@ try {
   assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5182/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false })
   await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5182/' })
-  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Staff Management"]')`)) break; await sleep(100) }
-  const planned = await cdp.evaluate<any>(`fetch('/api/workforce/planned-leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffId:${JSON.stringify(staff[0].id)},startDate:'2026-10-28',endDate:'2026-10-29',leaveType:'annual_leave',managerNote:'Isolated L1 visual validation'})}).then(async response=>({status:response.status,body:await response.text()}))`)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Leave Planner"]')`)) break; await sleep(100) }
+  const planned = await cdp.evaluate<any>(`fetch('/api/workforce/planned-leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffId:${JSON.stringify(staff[0].id)},startDate:'2026-11-28',endDate:'2026-11-29',leaveType:'annual_leave',managerNote:'Isolated L1 visual validation'})}).then(async response=>({status:response.status,body:await response.text()}))`)
   assert.equal(planned.status, 201, planned.body)
-  await cdp.evaluate(`document.querySelector('button[aria-label="Staff Management"]')?.click()`)
-  for (let attempt = 0; attempt < 80; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-section-tabs')`)) break; await sleep(100) }
-  await cdp.evaluate(`Array.from(document.querySelectorAll('.staff-section-tabs button')).find(button=>button.textContent?.trim()==='Leave Planner')?.click()`)
+  await cdp.evaluate(`document.querySelector('button[aria-label="Leave Planner"]')?.click()`)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-summary-section')&&!/Loading confirmed roster/i.test(document.querySelector('.leave-planner-panel')?.textContent||'')`)) break; await sleep(100) }
 
   const widths = [1440, 1280, 1024, 768, 430, 390, 360]
@@ -94,8 +92,8 @@ try {
     const otherTotal = Object.values(layout.detailValues).reduce((sum: number, value) => sum + Number(value), 0)
     assert.deepEqual(layout.summaryLabels, ['Annual Leave', 'Day Off', 'Booked / Future Leave', 'Other Leave'])
     assert.deepEqual({ annual: layout.summaryValues['Annual Leave'], off: layout.summaryValues['Day Off'], booked: layout.summaryValues['Booked / Future Leave'], other: layout.summaryValues['Other Leave'], otherTotal }, { annual: 1, off: 1, booked: 2, other: 1, otherTotal: 1 })
-    assert.deepEqual({ details: layout.details, gridVisible: layout.gridVisible, stickyStaff: layout.stickyStaff, confirmed: layout.confirmed, booked: layout.booked, bookedDashed: layout.bookedDashed, colorParity: layout.colorParity, today: layout.today, availability: layout.availability, calendar: layout.calendar, calendarIcon: layout.calendarIcon, pageOverflow: layout.pageOverflow, rootOverflow: layout.rootOverflow, mobileTargets: layout.mobileTargets }, { details: 8, gridVisible: true, stickyStaff: 'sticky', confirmed: 3, booked: 2, bookedDashed: true, colorParity: true, today: true, availability: 31, calendar: 'month', calendarIcon: true, pageOverflow: false, rootOverflow: false, mobileTargets: true }, `Leave Planner layout failed at ${width}px; small targets: ${JSON.stringify(layout.smallTargets)}`)
-    assert.equal(layout.dateColumns, 31)
+    assert.deepEqual({ details: layout.details, gridVisible: layout.gridVisible, stickyStaff: layout.stickyStaff, confirmed: layout.confirmed, booked: layout.booked, bookedDashed: layout.bookedDashed, colorParity: layout.colorParity, today: layout.today, availability: layout.availability, calendar: layout.calendar, calendarIcon: layout.calendarIcon, pageOverflow: layout.pageOverflow, rootOverflow: layout.rootOverflow, mobileTargets: layout.mobileTargets }, { details: 8, gridVisible: true, stickyStaff: 'sticky', confirmed: 3, booked: 2, bookedDashed: true, colorParity: true, today: true, availability: 30, calendar: 'month', calendarIcon: true, pageOverflow: false, rootOverflow: false, mobileTargets: true }, `Leave Planner layout failed at ${width}px; small targets: ${JSON.stringify(layout.smallTargets)}`)
+    assert.equal(layout.dateColumns, 30)
     assert.ok(layout.columnDrift.every((drift: number) => drift <= .1), `Calendar column drift at ${width}px: ${layout.columnDrift}`)
     assert.equal(layout.staffMetaVisible, mobile)
     assert.ok(Math.abs(layout.stickyDrift) <= 1)
@@ -106,8 +104,8 @@ try {
     if (mobile) { await cdp.evaluate(`document.querySelector('.leave-planner-grid-wrap').scrollIntoView({block:'start'});document.querySelector('.leave-planner-grid-wrap').scrollLeft=180`); await sleep(50); await screenshot(cdp, `after-${width}-calendar.png`); await cdp.evaluate(`window.scrollTo(0,0)`) }
   }
 
-  const navigation = await cdp.evaluate<any>(`(async()=>{const input=document.querySelector('.leave-month-navigation input');const initial=input.value;document.querySelector('button[aria-label="Next month"]').click();for(let i=0;i<100&&input.value===initial;i++)await new Promise(done=>setTimeout(done,50));const next=input.value;document.querySelector('button[aria-label="Previous month"]').click();for(let i=0;i<100&&input.value!==initial;i++)await new Promise(done=>setTimeout(done,50));const restored=input.value;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'2026-09');input.dispatchEvent(new Event('input',{bubbles:true}));for(let i=0;i<100&&input.value!=='2026-09';i++)await new Promise(done=>setTimeout(done,50));const direct=input.value;setter.call(input,initial);input.dispatchEvent(new Event('input',{bubbles:true}));for(let i=0;i<100&&input.value!==initial;i++)await new Promise(done=>setTimeout(done,50));return{initial,next,restored,direct,final:input.value}})()`)
-  assert.deepEqual(navigation, { initial: '2026-10', next: '2026-11', restored: '2026-10', direct: '2026-09', final: '2026-10' })
+  const navigation = await cdp.evaluate<any>(`(async()=>{const input=document.querySelector('.leave-month-navigation input');const initial=input.value;document.querySelector('button[aria-label="Next month"]').click();for(let i=0;i<100&&input.value===initial;i++)await new Promise(done=>setTimeout(done,50));const next=input.value;document.querySelector('button[aria-label="Previous month"]').click();for(let i=0;i<100&&input.value!==initial;i++)await new Promise(done=>setTimeout(done,50));const restored=input.value;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'2026-10');input.dispatchEvent(new Event('input',{bubbles:true}));for(let i=0;i<100&&input.value!=='2026-10';i++)await new Promise(done=>setTimeout(done,50));const direct=input.value;setter.call(input,initial);input.dispatchEvent(new Event('input',{bubbles:true}));for(let i=0;i<100&&input.value!==initial;i++)await new Promise(done=>setTimeout(done,50));return{initial,next,restored,direct,final:input.value}})()`)
+  assert.deepEqual(navigation, { initial: '2026-11', next: '2026-12', restored: '2026-11', direct: '2026-10', final: '2026-11' })
   assert.deepEqual(cdp.errors, [])
   await writeFile(join(output, 'measurements.json'), JSON.stringify({ results, navigation, runtimeErrors: cdp.errors.length }, null, 2))
   console.log(JSON.stringify({ status: 'PASS', widths, navigation, runtimeErrors: cdp.errors.length, screenshots: widths.flatMap(width => [`artifacts/leave-planner-l1/after-${width}.png`, ...(width <= 700 ? [`artifacts/leave-planner-l1/after-${width}-calendar.png`] : [])]) }, null, 2))
