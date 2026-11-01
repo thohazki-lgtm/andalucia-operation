@@ -2352,14 +2352,25 @@ main.module-staff-management > .page-header .avatar {
 }
 
 main.module-staff-management .staff-section-bar .staff-section-tabs button {
+  width: 100%;
+  max-width: none;
+  min-height: 50px;
   border-color: color-mix(in srgb, var(--ao-staff-emerald) 58%, white);
   background: color-mix(in srgb, var(--ao-staff-surface) 90%, transparent);
   color: var(--ao-staff-emerald-deep);
+  white-space: normal;
+}
+
+main.module-staff-management .staff-section-bar .staff-section-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
 }
 
 main.module-staff-management .staff-section-bar .staff-section-tabs button.selected {
   border-color: var(--ao-staff-gold);
   background: var(--ao-staff-emerald-deep);
+  color: #fff;
   box-shadow: inset 0 3px var(--ao-staff-gold), 0 4px 10px rgb(16 62 56 / 22%);
 }
 
@@ -2451,10 +2462,15 @@ main.module-staff-management .staff-directory-page .staff-table th {
   border-bottom-color: var(--ao-staff-emerald-deep);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-premium-navy);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .035em;
 }
 
 main.module-staff-management .staff-directory-page .staff-table td {
   border-bottom-color: var(--ao-staff-line);
+  font-size: 12.5px;
+  font-weight: 450;
 }
 
 main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(odd) {
@@ -2477,6 +2493,13 @@ main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; text-align: center; }
 main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(7) { width: 150px; text-align: center; }
 
+main.module-staff-management .staff-directory-page .staff-table td:nth-child(2),
+main.module-staff-management .staff-directory-page .staff-table td:nth-child(3),
+main.module-staff-management .staff-directory-page .staff-table td:nth-child(6) {
+  color: #234f48;
+  font-weight: 550;
+}
+
 main.module-staff-management .staff-table-identity {
   display: flex;
   align-items: center;
@@ -2492,12 +2515,99 @@ main.module-staff-management .staff-table-identity b {
 }
 
 main.module-staff-management .staff-directory-page .staff-row-icon-actions {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 7px;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-icon-action {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
 }
 
 main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-icon-action:hover {
   border-color: var(--ao-lagoon-teal);
   background: #eef7f4;
+}
+
+.staff-archive-confirm-modal {
+  width: min(500px, calc(100vw - 28px));
+  padding: 22px;
+  border: 1px solid var(--ao-staff-line-strong);
+  border-top: 4px solid var(--ao-staff-emerald-deep);
+  border-radius: 14px;
+  background: var(--ao-staff-surface);
+  box-shadow: 0 20px 54px rgb(16 62 56 / 24%);
+}
+
+.staff-archive-confirm-modal > h2 {
+  margin: 0 0 8px;
+  color: var(--ao-premium-navy);
+  font: 500 24px/1.15 var(--ao-font-display);
+}
+
+.staff-archive-confirm-copy {
+  display: grid;
+  gap: 12px;
+  color: #365f58;
+  font: 450 13px/1.5 var(--ao-font-body);
+}
+
+.staff-archive-confirm-copy > p {
+  margin: 0;
+}
+
+.staff-archive-confirm-copy dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.staff-archive-confirm-copy dl > div {
+  padding: 10px 12px;
+  border: 1px solid var(--ao-staff-line);
+  border-radius: 9px;
+  background: var(--ao-staff-surface-strong);
+}
+
+.staff-archive-confirm-copy dt {
+  margin-bottom: 3px;
+  color: var(--ao-staff-emerald);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.staff-archive-confirm-copy dd {
+  margin: 0;
+  color: var(--ao-premium-navy);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.staff-archive-confirm-modal .staff-archive-warning {
+  padding: 10px 12px;
+  border-left: 3px solid #a44b43;
+  border-radius: 7px;
+  background: #fff1ef;
+  color: #7f3934;
+}
+
+.staff-archive-confirm-modal .form-actions {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ao-staff-line);
+}
+
+.staff-archive-confirm-modal .staff-archive-confirm {
+  border-color: #853f39;
+  background: #853f39;
+  color: #fff;
 }
 
 main.module-staff-management .staff-profile-drawer {
@@ -3141,15 +3251,48 @@ main.module-staff-management .staff-training-controls .ao-action {
     padding: 0;
   }
 
+  main.module-staff-management .staff-section-bar .staff-section-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  main.module-staff-management .staff-section-bar .staff-section-tabs button {
+    min-height: 48px;
+    padding: 7px 9px;
+    line-height: 1.25;
+  }
+
   main.module-staff-management .staff-directory-page .staff-table-wrap {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
+    display: none;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-cards {
-    display: none;
+    display: grid;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card dl > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card dd {
+    overflow-wrap: anywhere;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-row-icon-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   main.module-staff-management .staff-directory-page .staff-summary .panel {
@@ -3159,6 +3302,19 @@ main.module-staff-management .staff-training-controls .ao-action {
 
   main.module-staff-management .staff-directory-page .staff-summary strong {
     font-size: 19px;
+  }
+
+  .staff-archive-confirm-modal {
+    padding: 18px;
+  }
+
+  .staff-archive-confirm-copy dl {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-archive-confirm-modal .form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   main.module-staff-management .staff-training-controls {

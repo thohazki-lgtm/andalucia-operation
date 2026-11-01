@@ -129,24 +129,41 @@ try {
     const mobile = width <= 700
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
     await sleep(100)
-    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector('.staff-directory-page .staff-name-cell b');const style=getComputedStyle(name);const header=document.querySelector('.staff-management-header');const wrap=document.querySelector('.staff-directory-page .staff-table-wrap');const cards=document.querySelector('.staff-directory-page .staff-mobile-cards');return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,headerTop:Math.round(header.getBoundingClientRect().top),containedTableScroll:wrap.scrollWidth>wrap.clientWidth,tableOverflowX:getComputedStyle(wrap).overflowX,mobileCardsDisplay:getComputedStyle(cards).display,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&getComputedStyle(tab).whiteSpace==='nowrap'),nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector('.staff-directory-page .staff-name-cell b');const style=getComputedStyle(name);const header=document.querySelector('.staff-management-header');const wrap=document.querySelector('.staff-directory-page .staff-table-wrap');const cards=document.querySelector('.staff-directory-page .staff-mobile-cards');const selected=tabs.find(tab=>tab.classList.contains('selected'));return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,headerTop:Math.round(header.getBoundingClientRect().top),tableDisplay:getComputedStyle(wrap).display,mobileCardsDisplay:getComputedStyle(cards).display,visibleMobileCards:[...cards.children].filter(card=>getComputedStyle(card).display!=='none').length,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabHeights:[...new Set(tabs.map(tab=>Math.round(tab.getBoundingClientRect().height)))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&tab.scrollHeight<=tab.clientHeight+1),selectedLabel:selected?.textContent?.trim(),selectedTextColor:selected?getComputedStyle(selected).color:null,nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1}})()`)
     assert.equal(result.pageOverflow, false, `Page overflow at ${width}px.`)
     assert.ok(result.headerTop <= (mobile ? 90 : 40), `Staff header was vertically displaced at ${width}px: ${result.headerTop}px.`)
     if (mobile) {
-      assert.equal(result.containedTableScroll, true)
-      assert.equal(result.tableOverflowX, 'auto')
-      assert.equal(result.mobileCardsDisplay, 'none')
+      assert.equal(result.tableDisplay, 'none')
+      assert.equal(result.mobileCardsDisplay, 'grid')
+      assert.ok(result.visibleMobileCards > 0)
     }
     assert.equal(result.tabCount, 4)
     assert.deepEqual(result.tabFontSizes, ['12px'])
     assert.deepEqual(result.tabFontWeights, ['600'])
+    assert.equal(result.tabHeights.length, 1)
     assert.equal(result.tabLabelsFit, true)
+    assert.equal(result.selectedLabel, 'Team Directory')
+    assert.equal(result.selectedTextColor, 'rgb(255, 255, 255)')
     assert.equal(result.nameFontSize, '13px')
     assert.equal(result.nameFontWeight, '650')
     assert.equal(result.nameColor, 'rgb(23, 61, 86)')
     assert.equal(result.nameFits, true)
     measurements[String(width)] = result
     await screenshot(cdp, `team-directory-after-${width}.png`)
+  }
+  for (const width of [1440, 390]) {
+    const mobile = width <= 700
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="archive"]');if(!button)return false;button.click();return true})()`), true)
+    for (let attempt = 0; attempt < 40; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-archive-confirm-modal')`)) break; await sleep(50) }
+    const archiveDialog = await cdp.evaluate<any>(`(()=>{const dialog=document.querySelector('.staff-archive-confirm-modal');const actions=[...dialog.querySelectorAll('button')];return{visible:!!dialog,title:dialog?.querySelector('h2')?.textContent?.trim(),preservesHistory:dialog?.textContent?.includes('does not delete roster, booking, leave, timesheet, or financial history'),pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,actions:actions.map(button=>button.textContent?.trim())}})()`)
+    assert.equal(archiveDialog.visible, true)
+    assert.equal(archiveDialog.title, 'Archive staff member?')
+    assert.equal(archiveDialog.preservesHistory, true)
+    assert.equal(archiveDialog.pageOverflow, false)
+    assert.deepEqual(archiveDialog.actions, ['Cancel', 'Archive Staff'])
+    await screenshot(cdp, `team-directory-archive-dialog-${width}.png`)
+    assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-archive-confirm-modal button')].find(item=>item.textContent?.trim()==='Cancel');if(!button)return false;button.click();return true})()`), true)
   }
   const modalMeasurements: Record<string, unknown> = {}
   for (const width of [1440, 390]) {
