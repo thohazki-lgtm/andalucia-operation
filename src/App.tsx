@@ -28,6 +28,7 @@ import { shareOrDownloadRosterPdf } from './roster-pdf'
 import { approvedDutyFinancialRule } from './duty-financial-policy'
 import { ActionButton, DateControl, IconAction, StatusPill, SvgIcon } from './action-system'
 import { BrandWordmark } from './brand'
+import { StaffHeaderMonthNavigation } from './staff-header-month-navigation'
 
 const navigation = [
  { label: 'Dashboard', icon: '⌂', eyebrow: 'OPERATIONS OVERVIEW' },
@@ -470,14 +471,7 @@ function Roster({ staff, dutyOptions, positions, onToast, onDirtyChange }: { sta
 <div className="roster-period-tools">
 <div className="roster-view-switch" role="group" aria-label="Roster view"><button type="button" className={view === 'Weekly' ? 'view active' : 'view'} aria-pressed={view === 'Weekly'} onClick={() => proceed(() => setView('Weekly'))}>Weekly</button>
 <button type="button" className={view === 'Monthly' ? 'view active' : 'view'} aria-pressed={view === 'Monthly'} onClick={() => proceed(() => setView('Monthly'))}>Monthly</button></div>
-<div className="roster-period-navigation"><IconAction icon="chevron-left" label={`Previous ${view}`} onClick={() => shift(-1)}/>
-<ActionButton icon="calendar" className="roster-period-label" onClick={() => proceed(() => setAnchor(serviceDate()))}>{periodLabel}</ActionButton>
-<IconAction icon="chevron-right" label={`Next ${view}`} onClick={() => shift(1)}/></div>
-</div>
-<div className="roster-actions">
-<span className={draftCount ? 'unsaved-count active' : 'unsaved-count'} aria-live="polite">{draftCount ? `${draftCount} unsaved` : 'All changes saved'}</span>
-<ActionButton icon="download" className="roster-export" disabled={saving} onClick={() => void exportPdf()}>Export PDF</ActionButton>
-<ActionButton variant="primary" icon="save" className="roster-save" disabled={!draftCount || saving} onClick={() => void saveChanges()}>{saving ? 'Saving…' : 'Save Changes'}</ActionButton>
+<StaffHeaderMonthNavigation ariaLabel="Duty Roster month" className="roster-period-navigation" month={anchor.slice(0,7)} monthLabel={periodLabel} onChange={month => proceed(() => { const next=`${month}-01`; setAnchor(next); setMobileDate(next) })} onPrevious={() => shift(-1)} onNext={() => shift(1)} />
 </div>
 </section>{saveError && <div className="roster-save-feedback error-state" role="alert">{saveError}</div>}{loading && <section className="panel inline-state">
 <p>Loading duty roster…</p>
@@ -531,7 +525,7 @@ function Roster({ staff, dutyOptions, positions, onToast, onDirtyChange }: { sta
 <DutyCodeSelect value={code} options={available} label={`${person.name} duty ${mobileDate}`} title={option ? `${dutyDisplayCode(option)} · ${option.label}${option.metadata?.description ? ` — ${option.metadata.description}` : ''}${option.active ? '' : ' (Historical)'}` : 'Select duty'} disabled={inactive || saving} mobile onChange={dutyCode => updateDraft(person.id, mobileDate, dutyCode)} />
 </article>})}</div>
 </div>
-</section>}
+</section>}{!loading && !error && <footer className="roster-bottom-actions"><span className={draftCount ? 'unsaved-count active' : 'unsaved-count'} aria-live="polite">{draftCount ? `${draftCount} unsaved` : 'All changes saved'}</span><div><ActionButton icon="download" className="roster-export" disabled={saving} onClick={() => void exportPdf()}>Export PDF</ActionButton><ActionButton variant="primary" icon="save" className="roster-save" disabled={!draftCount || saving} onClick={() => void saveChanges()}>{saving ? 'Saving…' : 'Save Changes'}</ActionButton></div></footer>}
 </>
 }
 type LeavePlannerSection = 'planner' | 'history' | 'leave-types' | 'entitlement-policies' | 'employee-entitlements' | 'public-holidays'

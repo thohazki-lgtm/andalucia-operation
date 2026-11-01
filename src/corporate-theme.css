@@ -305,10 +305,14 @@ body:has(.app-shell > main.module-dashboard) {
   --ao-page-canvas-tint: var(--ao-orange-glow);
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: #fff8f2;
-  background-image: linear-gradient(to bottom, #fff8f2 0%, #fbe8dd 56%, #f3c6ad 100%);
+  background-color: #ffbd6f;
+  background-image: linear-gradient(to bottom, #fd8451 0%, #f99b58 48%, #ffbd6f 100%);
   background-repeat: no-repeat;
+  background-attachment: local;
 }
+
+html:has(.app-shell > main.module-duty-roster),
+body:has(.app-shell > main.module-duty-roster) { background: #ffbd6f; }
 .app-shell:has(> main.module-leave-planner) {
   --ao-shell-accent: var(--ao-violet-hour);
   --ao-shell-highlight: var(--ao-lilac-calm);
@@ -723,6 +727,8 @@ main.module-duty-roster > .page-header::before {
   display: none;
   content: none;
 }
+
+main.module-duty-roster > .page-header :is(h1, .eyebrow) { color: #2f1e24; }
 
 main.module-dashboard > .page-header::before {
   display: none;

@@ -1,11 +1,12 @@
 /* Duty Roster presentation. Scoped here so legacy module styles cannot leak outward. */
 .duty-roster-page {
   --roster-teal: var(--ao-sunset-orange);
-  --roster-teal-dark: var(--ao-premium-navy);
-  --roster-line: #e6bda7;
-  --roster-line-strong: #d99a79;
-  --roster-mint: #fff0e7;
-  --roster-surface: #fff8f3;
+  --roster-teal-dark: #8b3f25;
+  --roster-line: #d8794f;
+  --roster-line-strong: #a84f2d;
+  --roster-mint: #fff0df;
+  --roster-surface: #fff6e9;
+  --roster-gold: #c9a65a;
   --roster-muted: #6f8390;
   min-width: 0;
 }
@@ -57,13 +58,13 @@
 }
 
 .duty-roster-page .roster-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: block;
   align-items: center;
   gap: 12px 18px;
   margin: 0 0 14px;
   padding: 12px 14px;
-  border: 1px solid var(--roster-line);
+  border: 1px solid var(--roster-line-strong);
+  border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
   background: var(--roster-surface);
   box-shadow: 0 5px 18px rgb(206 98 51 / 8%);
@@ -76,7 +77,8 @@
 }
 
 .duty-roster-page .roster-period-tools {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
@@ -113,7 +115,8 @@
 
 .duty-roster-page .roster-period-navigation {
   display: grid;
-  grid-template-columns: 40px minmax(210px, auto) 40px;
+  position: relative;
+  grid-template-columns: 40px minmax(210px, 1fr) 40px;
   align-items: center;
   gap: 7px;
 }
@@ -123,8 +126,56 @@
   height: 40px;
   flex-basis: 40px;
   border-color: var(--roster-line-strong);
-  background: #fff;
+  background: #fff8ec;
+  color: var(--roster-teal-dark);
 }
+
+.duty-roster-page .staff-header-month-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.duty-roster-page .staff-header-month-picker > summary {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 38px;
+  border: 1px solid var(--roster-gold);
+  border-radius: 9px;
+  background: #fff3df;
+  color: #5b2a1c;
+  cursor: pointer;
+  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
+  font-size: 19px;
+  font-weight: 500;
+  font-synthesis: none;
+  line-height: 1.15;
+  list-style: none;
+  text-align: center;
+}
+
+.duty-roster-page .staff-header-month-picker > summary::-webkit-details-marker { display: none; }
+.duty-roster-page .staff-header-month-picker > summary:focus-visible { outline: 3px solid rgb(253 132 81 / 35%); outline-offset: 2px; }
+
+.duty-roster-page .staff-header-month-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  left: 50%;
+  width: min(280px, calc(100vw - 38px));
+  padding: 12px;
+  border: 1px solid var(--roster-line-strong);
+  border-top: 3px solid var(--roster-gold);
+  border-radius: 10px;
+  background: #fff6e9;
+  box-shadow: 0 12px 30px rgb(91 42 28 / 20%);
+  transform: translateX(-50%);
+}
+
+.duty-roster-page .staff-header-month-popover label { display: grid; gap: 7px; color: #5b2a1c; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.duty-roster-page .staff-header-month-popover input { width: 100%; min-height: 42px; border: 1px solid var(--roster-line); border-radius: 8px; background: #fff; color: #3f2a25; font: 600 14px var(--ao-font-body, "Good Sans", Arial, sans-serif); }
 
 .duty-roster-page .roster-period-label.ao-action {
   width: 100%;
@@ -200,9 +251,9 @@
   overflow: hidden;
   padding: 0 18px 14px;
   border-color: var(--roster-line);
-  border-top: 3px solid var(--roster-teal);
+  border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
-  background: #fff;
+  background: color-mix(in srgb, #fff 88%, #ffbd6f);
   box-shadow: 0 7px 22px rgb(206 98 51 / 7%);
 }
 
@@ -218,6 +269,23 @@
   scrollbar-color: var(--roster-teal) var(--roster-mint);
   scrollbar-gutter: auto;
 }
+
+.duty-roster-page .roster-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--roster-line-strong);
+  border-top: 4px solid var(--roster-gold);
+  border-radius: 12px;
+  background: rgb(255 246 233 / 92%);
+  box-shadow: 0 7px 22px rgb(91 42 28 / 10%);
+}
+
+.duty-roster-page .roster-bottom-actions > div { display: flex; gap: 8px; }
+.duty-roster-page .roster-bottom-actions .unsaved-count { margin-right: auto; }
 
 .duty-roster-page .roster {
   width: 100%;
@@ -894,6 +962,12 @@
     flex-basis: 44px;
   }
 
+  .duty-roster-page .staff-header-month-picker > summary {
+    min-height: 44px;
+    padding-inline: 8px;
+    font-size: 16px;
+  }
+
   .duty-roster-page .roster-period-label.ao-action {
     min-width: 0;
     min-height: 44px;
@@ -927,6 +1001,30 @@
     min-height: 44px;
     padding-inline: 8px;
     font-size: 11px;
+  }
+
+  .duty-roster-page .roster-bottom-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .duty-roster-page .roster-bottom-actions .unsaved-count {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+  }
+
+  .duty-roster-page .roster-bottom-actions > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .duty-roster-page .roster-bottom-actions .ao-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 8px;
   }
 
   .duty-roster-page .roster-panel {
