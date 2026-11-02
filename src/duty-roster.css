@@ -67,10 +67,10 @@
   margin: 0 0 8px;
   padding: 13px 18px 11px;
   border: 1px solid var(--roster-gold);
-  border-top: 3px solid var(--roster-gold);
+  border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
   background: linear-gradient(120deg, #8b3f25, #c85c31);
-  box-shadow: 0 7px 20px rgb(91 42 28 / 14%);
+  box-shadow: inset 0 1px rgb(255 237 199 / 42%), 0 7px 20px rgb(91 42 28 / 14%);
 }
 
 .duty-roster-page .roster-command-main {
@@ -270,9 +270,10 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
 
 .duty-roster-page .roster-panel {
   min-width: 0;
+  margin-bottom: 0;
   overflow: hidden;
-  padding: 0 18px 14px;
-  border-color: var(--roster-gold);
+  padding: 0 18px 0;
+  border: 1px solid var(--roster-gold);
   border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
   background: rgb(255 239 223 / 76%);
@@ -281,7 +282,12 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
 
 .duty-roster-page .roster-panel.weekly-view {
   padding-inline: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
 }
+
+.duty-roster-page .roster-panel.weekly-view .roster-scroll { border-top: 0; }
 
 .duty-roster-page .roster-scroll {
   box-sizing: border-box;
@@ -301,7 +307,7 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 8px;
   padding: 12px 14px;
   border: 1px solid var(--roster-gold);
   border-top: 4px solid var(--roster-gold);
@@ -365,8 +371,8 @@ main.module-duty-roster .duty-roster-page .roster thead th {
   padding: 4px 3px 3px;
   border: 0;
   border-right: 1px solid var(--roster-gold);
-  background: var(--roster-mint);
-  color: var(--roster-teal-dark);
+  background: #f2c49d;
+  color: #6f2e1d;
   font-size: 15px;
   font-weight: 650;
   line-height: 1.05;
@@ -443,10 +449,10 @@ main.module-duty-roster .duty-roster-page .roster thead th {
 }
 
 .duty-roster-page .roster-weekly .roster-compact-weekday {
-  color: var(--roster-teal-dark);
+  color: #6f2e1d;
   font-family: var(--ao-font-ui, "Good Sans", Arial, sans-serif);
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 21px;
+  font-weight: 750;
   line-height: 1.05;
   letter-spacing: .01em;
   font-synthesis: none;
@@ -459,25 +465,25 @@ main.module-duty-roster .duty-roster-page .roster thead th {
   gap: 4px;
   min-width: 48px;
   padding-top: 2px;
-  border-top: 1px solid var(--roster-line-strong);
-  color: #536b79;
+  border-top: 1px solid var(--roster-gold);
+  color: #5b382b;
   line-height: 1;
 }
 
 .duty-roster-page .roster-weekly .roster-compact-day {
   color: inherit;
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
+  font-family: var(--ao-font-ui, "Good Sans", Arial, sans-serif);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.05;
   font-synthesis: none;
 }
 
 .duty-roster-page .roster-weekly .roster-compact-month {
   color: inherit;
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
-  font-size: 14px;
-  font-weight: 500;
+  font-family: var(--ao-font-ui, "Good Sans", Arial, sans-serif);
+  font-size: 12.5px;
+  font-weight: 700;
   letter-spacing: .04em;
   font-synthesis: none;
 }
@@ -759,8 +765,8 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   min-width: 0;
   padding: 0;
   overflow: hidden;
-  border-color: var(--roster-gold);
-  border-top: 3px solid var(--roster-gold);
+  border: 1px solid var(--roster-gold);
+  border-top: 4px solid var(--roster-gold);
   background: #fff;
   box-shadow: 0 7px 22px rgba(23, 61, 86, .055);
 }
@@ -769,7 +775,7 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   min-height: 76px;
   margin: 0;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--roster-gold);
+  border-bottom: 2px solid var(--roster-gold);
   background: var(--roster-mint);
 }
 
@@ -785,7 +791,7 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   box-sizing: border-box;
   min-width: 0;
   border: 1px solid var(--roster-gold);
-  border-top-width: 2px;
+  border-top-width: 3px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-gutter: auto;

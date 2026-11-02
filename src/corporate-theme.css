@@ -821,7 +821,7 @@ main[class*='module-'] :is(input, select, textarea):focus-visible {
 /* Corporate color replaces decorative gold on structural surfaces only.
    Semantic states, configured swatches, duty codes and financial indicators
    retain their own authoritative colors. */
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-duty-roster) :is(
   .panel,
   .customization-category-panel,
   .booking-config-section,
