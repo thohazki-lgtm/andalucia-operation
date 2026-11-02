@@ -1406,7 +1406,7 @@ main.module-leave-planner .leave-summary-card:not(.off):not(.holiday):not(.sick)
 main.module-leave-planner .leave-planner-grid-wrap {
   box-sizing: border-box;
   max-width: calc(100% - 28px);
-  margin: 12px 14px 0;
+  margin-inline: 14px;
   border: 1px solid var(--ao-leave-gold) !important;
   border-top-width: 2px !important;
   scrollbar-color: var(--ao-leave-scrollbar) var(--ao-leave-scrollbar-track);
@@ -1429,26 +1429,15 @@ html body .app-shell main.module-leave-planner .leave-planner-grid thead .identi
 html body .app-shell main.module-leave-planner .employee-entitlement-table thead th {
   background: var(--ao-leave-table-header);
   color: var(--ao-violet-hour);
-  font-family: var(--ao-font-ui);
-  font-size: 9px;
-  font-weight: 500;
 }
 
-html body .app-shell main.module-leave-planner .employee-entitlement-table .employee-entitlement-identity b {
-  font-family: var(--ao-font-ui);
-  font-size: 11.5px;
-  font-weight: 500;
+main.module-leave-planner .employee-entitlement-table .employee-entitlement-id b {
+  font-size: 11px;
+  font-weight: 400;
 }
 
-html body .app-shell main.module-leave-planner .employee-entitlement-table .employee-entitlement-id b {
-  font-family: var(--ao-font-ui);
-  font-size: 11.25px;
-  font-weight: 500;
-}
-
-html body .app-shell main.module-leave-planner .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity):not(.employee-entitlement-id):not(.employee-entitlement-action) > b {
-  font-family: var(--ao-font-ui);
-  font-size: 11.5px;
+main.module-leave-planner .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity):not(.employee-entitlement-id):not(.employee-entitlement-action) > b {
+  font-size: 12px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
@@ -2272,7 +2261,7 @@ main.module-leave-planner .booked-leave-form footer {
 
   main.module-leave-planner .leave-planner-grid-wrap {
     max-width: calc(100% - 18px);
-    margin: 10px 9px 0;
+    margin-inline: 9px;
   }
 
   main.module-leave-planner .leave-planner-filters {

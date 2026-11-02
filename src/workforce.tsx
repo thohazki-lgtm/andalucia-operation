@@ -79,6 +79,7 @@ export function StaffEntitlementsManager() {
     <div className="panel-title workforce-section-title"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
+      <div className="entitlement-view-summary" aria-live="polite"><span><b>{visible.length}</b> {visible.length === 1 ? 'employee' : 'employees'} shown</span></div>
       <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
         <table className="employee-entitlement-table">
           <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-action-column" /></colgroup>
