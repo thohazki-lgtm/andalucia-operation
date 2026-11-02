@@ -2321,11 +2321,6 @@ main.module-leave-planner .booked-leave-form footer {
     overflow: visible;
   }
 
-  main.module-leave-planner .leave-planner-workspace:has(.leave-planner-main-card) .leave-planner-module-tabs {
-    width: calc(100% - 18px);
-    margin-inline: 9px;
-  }
-
   main.module-leave-planner .leave-planner-module-tabs button {
     box-sizing: border-box;
     width: 100%;
@@ -2371,13 +2366,13 @@ main.module-leave-planner .booked-leave-form footer {
   }
 
   main.module-leave-planner .leave-planner-heading-card {
-    width: calc(100% - 18px);
-    margin-inline: 9px;
+    width: 100%;
+    margin-inline: 0;
   }
 
   main.module-leave-planner .leave-planner-main-card {
-    width: calc(100% - 18px);
-    margin: 12px 9px 0;
+    width: 100%;
+    margin: 12px 0 0;
   }
 
   main.module-leave-planner .leave-summary-section {

@@ -74,8 +74,9 @@ try {
 
   const assertMobileTabAlignment = async (width: number, cardSelector: string, label: string) => {
     if (width > 700) return
-    const alignment = await cdp.evaluate<{ left: number; right: number; tabWidth: number; cardWidth: number }>(`(()=>{const tabs=document.querySelector('.leave-planner-module-tabs');const card=document.querySelector(${JSON.stringify(cardSelector)});const tabRect=tabs.getBoundingClientRect();const cardRect=card.getBoundingClientRect();return{left:Math.abs(tabRect.left-cardRect.left),right:Math.abs(tabRect.right-cardRect.right),tabWidth:tabRect.width,cardWidth:cardRect.width}})()`)
+    const alignment = await cdp.evaluate<{ left: number; right: number; headingLeft: number; headingRight: number; tabWidth: number; cardWidth: number }>(`(()=>{const tabs=document.querySelector('.leave-planner-module-tabs');const card=document.querySelector(${JSON.stringify(cardSelector)});const heading=document.querySelector('main.module-leave-planner>.page-header');const tabRect=tabs.getBoundingClientRect();const cardRect=card.getBoundingClientRect();const headingRect=heading.getBoundingClientRect();return{left:Math.abs(tabRect.left-cardRect.left),right:Math.abs(tabRect.right-cardRect.right),headingLeft:Math.abs(tabRect.left-headingRect.left),headingRight:Math.abs(tabRect.right-headingRect.right),tabWidth:tabRect.width,cardWidth:cardRect.width}})()`)
     assert.ok(alignment.left <= 1 && alignment.right <= 1, `${label} tab edges differ from its content card at ${width}px: ${JSON.stringify(alignment)}.`)
+    assert.ok(alignment.headingLeft <= 1 && alignment.headingRight <= 1, `${label} tab edges differ from the main Leave Planner heading at ${width}px: ${JSON.stringify(alignment)}.`)
   }
 
   const results: Record<string, unknown> = {}
