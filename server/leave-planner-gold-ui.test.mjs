@@ -5,8 +5,12 @@ const theme = await readFile(new URL('../src/corporate-theme.css', import.meta.u
 const planner = await readFile(new URL('../src/leave-planner.tsx', import.meta.url), 'utf8')
 
 assert.match(theme, /\.module-leave-planner\s*\{[\s\S]*--ao-leave-gold:\s*#c5a35a;/)
-assert.match(theme, /main\.module-leave-planner \.leave-planner-panel\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;/)
+assert.match(planner, /leave-planner-panel leave-planner-card-stack/, 'The Planner must use an unframed stack instead of one shared card.')
+assert.match(planner, /leave-planner-header leave-planner-heading-card/, 'The Planner heading must be its own card.')
+assert.match(theme, /main\.module-leave-planner \.leave-planner-panel\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/)
+assert.match(theme, /main\.module-leave-planner \.leave-planner-heading-card\s*\{[\s\S]*?margin:\s*0 14px;[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-command-panel\s*\{[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;/)
+assert.match(theme, /main\.module-leave-planner \.leave-command-panel\s*\{[\s\S]*?margin:\s*14px 14px 10px;/)
 assert.match(theme, /main\.module-leave-planner \.leave-summary-card\s*\{[\s\S]*?height:\s*68px;[\s\S]*?min-height:\s*68px;[\s\S]*?padding:\s*8px 11px;[\s\S]*?border-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-summary-card:not\(\.off\):not\(\.holiday\):not\(\.sick\)\s*\{[\s\S]*?border-top-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /:not\(\.dashboard-card\):not\(\.leave-summary-card\)[^{]*\{[\s\S]*?border-color:\s*var\(--ao-module-line\);/)
