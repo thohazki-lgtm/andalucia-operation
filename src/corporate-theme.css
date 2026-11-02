@@ -2092,6 +2092,11 @@ main.module-leave-planner .booked-leave-form footer {
     overflow: visible;
   }
 
+  main.module-leave-planner .leave-planner-workspace:has(.leave-planner-main-card) .leave-planner-module-tabs {
+    width: calc(100% - 18px);
+    margin-inline: 9px;
+  }
+
   main.module-leave-planner .leave-planner-module-tabs button {
     box-sizing: border-box;
     width: 100%;
