@@ -5168,7 +5168,7 @@ html body .app-shell main.module-guest-occasions :is(.occasion-toolbar, .occasio
 }
 
 html body .app-shell main.module-guest-occasions .occasion-toolbar {
-  padding: 13px 16px;
+  padding: 11px 14px;
   border-top-width: 3px;
   background: linear-gradient(120deg, #45176b 0%, #6f348b 100%);
   box-shadow: 0 8px 20px rgb(53 18 73 / 18%);
@@ -5200,7 +5200,7 @@ html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-
   width: 100%;
 }
 
-html body .app-shell main.module-guest-occasions .occasion-toolbar :is(.ao-icon-action, .occasion-date-today) {
+html body .app-shell main.module-guest-occasions .occasion-toolbar .ao-icon-action {
   border-color: var(--ao-occasion-gold);
   background: rgb(57 16 82 / 42%);
   color: #fff;
@@ -5213,7 +5213,6 @@ html body .app-shell main.module-guest-occasions .occasion-add-manual {
 }
 
 html body .app-shell main.module-guest-occasions .occasion-add-manual :is(.ao-action__label, .ao-icon),
-html body .app-shell main.module-guest-occasions .occasion-date-today :is(.ao-action__label, .ao-icon),
 html body .app-shell main.module-guest-occasions .occasion-date-controls .ao-icon {
   color: #fff;
 }
@@ -5490,8 +5489,8 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form
   }
 
   html body .app-shell main.module-guest-occasions .occasion-toolbar {
-    gap: 9px;
-    padding: 10px;
+    gap: 8px;
+    padding: 9px;
   }
 
   html body .app-shell main.module-guest-occasions .occasion-calendar-title-row h2 {
