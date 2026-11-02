@@ -222,13 +222,26 @@ body,
 }
 
 .module-training,
-.module-incentives-and-bill-tips,
 .module-my-timesheet {
   --ao-module-accent: var(--ao-lagoon-teal);
   --ao-module-accent-ink: var(--ao-lagoon-teal);
   --ao-module-accent-soft: var(--ao-turquoise-coral);
   --ao-module-canvas-primary: var(--ao-turquoise-coral);
   --ao-module-canvas-secondary: var(--ao-lagoon-teal);
+}
+
+.module-incentives-and-bill-tips {
+  --ao-module-accent: var(--ao-staff-emerald);
+  --ao-module-accent-ink: var(--ao-staff-emerald-deep);
+  --ao-module-accent-soft: var(--ao-staff-mint);
+  --ao-module-canvas-primary: var(--ao-staff-mint);
+  --ao-module-canvas-secondary: var(--ao-staff-emerald);
+  --ao-financial-gold: #c5a35a;
+  --ao-financial-green-line: #8fb9ad;
+  --ao-financial-green-line-strong: #4f8a7c;
+  --ao-financial-ivory: #fffaf0;
+  --ao-financial-surface: #f2f8f3;
+  --ao-financial-row-alt: #eaf5ed;
 }
 
 .module-guest-occasions {
@@ -372,7 +385,24 @@ body:has(.app-shell > main.module-guest-occasions) {
   --ao-occasion-purple-line: color-mix(in srgb, #5b146f 34%, white);
   background: #c89feb;
 }
-.app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+.app-shell:has(> main.module-incentives-and-bill-tips) {
+  --ao-shell-accent: var(--ao-staff-emerald-deep);
+  --ao-shell-highlight: var(--ao-staff-gold);
+  --ao-page-canvas-top: var(--ao-staff-emerald-deep);
+  --ao-page-canvas-tint: var(--ao-staff-mint);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--ao-staff-emerald-deep);
+  background-image: linear-gradient(to bottom, #103e38 0%, #287a69 34%, #8fc3a8 68%, #d5ebd9 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: scroll;
+}
+
+html:has(.app-shell > main.module-incentives-and-bill-tips),
+body:has(.app-shell > main.module-incentives-and-bill-tips) {
+  background: var(--ao-staff-mint);
+}
 .app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
 .app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
@@ -5549,5 +5579,302 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form
 
   html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
     width: calc(100vw - 16px);
+  }
+}
+
+/* Incentives & Bill Tips premium emerald system. The corporate theme owns the
+   page canvas and visual hierarchy; transaction and calculation components
+   retain their existing markup, behavior and semantic status colors. */
+html body .app-shell main.module-incentives-and-bill-tips {
+  margin: 0 auto;
+  background: transparent;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header {
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header::before {
+  display: none;
+  content: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header h1 {
+  color: #fff;
+  font-family: var(--ao-font-display);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header .eyebrow {
+  color: color-mix(in srgb, var(--ao-staff-mint) 82%, white);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header .avatar {
+  border-color: color-mix(in srgb, var(--ao-staff-gold) 78%, white);
+  background: color-mix(in srgb, var(--ao-staff-emerald-deep) 80%, transparent);
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-module {
+  --financial-gold: var(--ao-financial-gold);
+  --financial-gold-strong: var(--ao-staff-gold);
+  color: var(--ao-staff-emerald-deep);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs {
+  display: grid;
+  width: 100%;
+  max-width: 900px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs button {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--ao-financial-gold);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ao-financial-ivory) 94%, transparent);
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-ui);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: normal;
+  box-shadow: 0 3px 10px rgb(16 62 56 / 8%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs button:hover {
+  border-color: var(--ao-staff-gold);
+  background: var(--ao-financial-ivory);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs button.selected {
+  border-color: var(--ao-financial-gold);
+  background: var(--ao-staff-emerald-deep);
+  color: #fff;
+  box-shadow: inset 0 -3px 0 var(--ao-staff-gold), 0 4px 12px rgb(16 62 56 / 18%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-toolbar,
+  .wine-toolbar,
+  .financial-command.bill-tip-command,
+  .financial-command.earnings-command
+) {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--ao-financial-gold);
+  border-top-width: 2px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
+  box-shadow: 0 6px 18px rgb(16 62 56 / 12%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .wine-toolbar h2,
+  .financial-command.bill-tip-command h2,
+  .financial-command.earnings-command h2
+) {
+  color: #fff;
+  font-family: var(--ao-font-display);
+  font-weight: 400;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .financial-command.bill-tip-command,
+  .financial-command.earnings-command
+) :is(.eyebrow, p) {
+  color: color-mix(in srgb, var(--ao-staff-mint) 86%, white);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-picker input,
+  .wine-toolbar input,
+  .financial-command-controls .ao-date-control input
+) {
+  border-color: var(--ao-financial-gold);
+  background: var(--ao-financial-ivory);
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-display);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-step,
+  .chargeable-today,
+  .chargeable-add,
+  .wine-toolbar-actions > .ao-action
+) {
+  border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(.chargeable-add, .wine-toolbar-actions > .ao-action) {
+  background: color-mix(in srgb, var(--ao-staff-emerald-deep) 80%, transparent);
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary article,
+html body .app-shell main.module-incentives-and-bill-tips .financial-metrics article {
+  min-height: 88px;
+  height: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--ao-financial-gold);
+  border-top: 2px solid var(--ao-staff-gold);
+  border-radius: 11px;
+  background: linear-gradient(150deg, var(--ao-financial-ivory), var(--ao-financial-surface));
+  box-shadow: 0 3px 10px rgb(16 62 56 / 7%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-panel,
+  .wine-panel,
+  .external-allocations,
+  .bill-tip-team-preview,
+  .bill-tip-finalization-card,
+  .financial-subsection,
+  .financial-preview-banner,
+  .financial-reconciliation
+) {
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(180deg, var(--ao-financial-ivory), var(--ao-financial-surface));
+  box-shadow: 0 4px 14px rgb(16 62 56 / 7%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(.chargeable-tabs, .chargeable-filters, .wine-filters) {
+  border-color: var(--ao-financial-green-line);
+  background: color-mix(in srgb, var(--ao-financial-surface) 76%, var(--ao-financial-ivory));
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(.chargeable-tabs button, .chargeable-filters input, .chargeable-filters select, .wine-filters input, .wine-filters select) {
+  border-color: var(--ao-financial-gold);
+  background-color: var(--ao-financial-ivory);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid,
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-grid {
+  align-items: start;
+  align-content: start;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(.mobile-chargeable-card, .wine-sale-card) {
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(150deg, var(--ao-financial-ivory), var(--ao-financial-row-alt));
+  box-shadow: 0 3px 10px rgb(16 62 56 / 7%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-empty-state {
+  width: min(520px, calc(100% - 24px));
+  min-height: 0;
+  margin: 12px auto;
+  padding: 18px 16px;
+  border-color: var(--ao-financial-gold);
+  background: var(--ao-financial-ivory);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-preview-results {
+  gap: 12px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ao-financial-gold);
+  border-top-width: 2px;
+  border-radius: 10px;
+  background: var(--ao-financial-ivory);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap table {
+  margin: 0;
+  border-collapse: collapse;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap thead th {
+  border-color: var(--ao-financial-green-line-strong);
+  background: #dceee5;
+  color: var(--ao-staff-emerald-deep);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap :is(th, td) + :is(th, td),
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap tbody td {
+  border-color: var(--ao-financial-green-line);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap tbody tr:nth-child(odd) {
+  background: var(--ao-financial-ivory);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap tbody tr:nth-child(even) {
+  background: var(--ao-financial-row-alt);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .bill-tip-team-preview > header h3,
+  .financial-subsection > header h3,
+  .bill-tip-finalization-card h3,
+  .wine-empty-state h3
+) {
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-display);
+  font-weight: 400;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips > .financial-page-header {
+    margin-bottom: 9px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .financial-primary-tabs button {
+    min-height: 46px;
+    padding-inline: 9px;
+    font-size: 10.5px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .chargeable-toolbar,
+    .wine-toolbar,
+    .financial-command.bill-tip-command,
+    .financial-command.earnings-command
+  ) {
+    gap: 9px;
+    padding: 10px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary article,
+  html body .app-shell main.module-incentives-and-bill-tips .financial-metrics article {
+    min-height: 82px;
+    padding: 11px 12px;
   }
 }

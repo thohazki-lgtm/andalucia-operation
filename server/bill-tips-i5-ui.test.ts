@@ -3,9 +3,10 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const [component, styles] = await Promise.all([
+const [component, styles, corporateTheme] = await Promise.all([
   readFile(`${root}src/financial-preview.tsx`, 'utf8'),
-  readFile(`${root}src/financial-preview.css`, 'utf8')
+  readFile(`${root}src/financial-preview.css`, 'utf8'),
+  readFile(`${root}src/corporate-theme.css`, 'utf8')
 ])
 const app = await readFile(`${root}src/App.tsx`, 'utf8')
 
@@ -17,7 +18,7 @@ assert.match(component, /Future \/ Unclosed/)
 assert.match(component, /AL Excluded/)
 assert.match(component, /className="panel bill-tip-finalization-card"/)
 assert.match(component, /Manager action: open Duty Roster → Duty Code Settings/)
-assert.match(app, /<main className=\{page === 'Incentives & Bill Tips' \? 'financial-main' : undefined\}>/)
+assert.match(app, /page === 'Incentives & Bill Tips' \? ' financial-main' : ''/)
 
 assert.match(styles, /\.bill-tip-command \.financial-command-controls\{display:grid;grid-template-columns:168px minmax\(180px,1fr\) auto/)
 assert.match(styles, /\.external-allocation-actions\{display:flex/)
@@ -30,5 +31,17 @@ assert.match(styles, /\.financial-primary-tabs\{display:grid;width:100%;min-widt
 assert.match(styles, /\.financial-primary-tabs button\{width:100%;max-width:none;min-width:0/)
 assert.match(styles, /\.financial-main\{align-self:start;margin:0 auto\}/)
 assert.match(styles, /\.staff-incentive-table :is\(th,td\):not\(:first-child\),\.earnings-summary-table :is\(th,td\):not\(:first-child\)\{text-align:center\}/)
+
+assert.match(corporateTheme, /\.app-shell:has\(> main\.module-incentives-and-bill-tips\)[\s\S]*?linear-gradient\(to bottom, #103e38 0%, #287a69 34%, #8fc3a8 68%, #d5ebd9 100%\)/)
+assert.match(corporateTheme, /main\.module-incentives-and-bill-tips > \.financial-page-header[\s\S]*?background: transparent/)
+assert.match(corporateTheme, /main\.module-incentives-and-bill-tips > \.financial-page-header h1[\s\S]*?color: #fff/)
+assert.match(corporateTheme, /main\.module-incentives-and-bill-tips \.financial-primary-tabs[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+assert.match(corporateTheme, /\.financial-primary-tabs button[\s\S]*?text-transform: uppercase/)
+assert.match(corporateTheme, /\.financial-primary-tabs button\.selected[\s\S]*?background: var\(--ao-staff-emerald-deep\)/)
+assert.match(corporateTheme, /\.financial-command\.bill-tip-command,[\s\S]*?\.financial-command\.earnings-command[\s\S]*?background: linear-gradient\(120deg, var\(--ao-staff-emerald-deep\), var\(--ao-staff-emerald\)\)/)
+assert.match(corporateTheme, /\.chargeable-summary article,[\s\S]*?\.financial-metrics article[\s\S]*?border: 1px solid var\(--ao-financial-gold\)/)
+assert.match(corporateTheme, /\.financial-table-wrap thead th[\s\S]*?background: #dceee5/)
+assert.match(corporateTheme, /\.financial-table-wrap tbody tr:nth-child\(even\)[\s\S]*?background: var\(--ao-financial-row-alt\)/)
+assert.match(corporateTheme, /@media \(max-width: 700px\)[\s\S]*?\.financial-primary-tabs[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
 
 console.log('Bill Tips I5 UI assertions passed.')
