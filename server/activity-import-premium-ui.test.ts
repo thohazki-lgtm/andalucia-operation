@@ -7,6 +7,8 @@ import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 import { syntheticActivityProgramPdf } from './activity-program-test-fixture.js'
 import { ACTIVITY_PROGRAM_PARSER_VERSION, parseActivityProgramPdf } from './activity-program-parser.js'
 import { BookingRepository } from './booking-repository.js'
+import { BookingDayLockService } from './booking-day-lock-service.js'
+import type { AuthPrincipal } from '../src/domain.js'
 
 const fixture = await createDisposableDevelopmentStore('activity-import-premium-ui')
 const profile = join(fixture.root, 'edge-profile')
@@ -59,6 +61,7 @@ try {
   const seededIndex = seededPreview.bookings.findIndex(booking => booking.readiness === 'READY')
   assert.ok(seededIndex >= 0)
   assert.equal((await repository.confirmImport(seededPreview.batchId, [seededIndex], [], 'Isolated UI fixture')).importedBookings, 1)
+  await new BookingDayLockService(fixture.db).reopen(parsed.reportDate, { userId: owner.id, displayName: 'Isolated UI Fixture' } as AuthPrincipal)
   await fixture.db.close()
   await writeFile(pdfPath, pdf)
 
@@ -87,8 +90,11 @@ try {
   const premiumMain = await cdp.evaluate<any>(`(()=>{const style=node=>getComputedStyle(node),rect=node=>node.getBoundingClientRect(),header=document.querySelector('main.module-bookings>.page-header'),shell=document.querySelector('.app-shell'),command=document.querySelector('.booking-command'),overview=document.querySelector('.booking-service-overview'),date=document.querySelector('.booking-command input[type=date]'),cards=Array.from(document.querySelectorAll('.service-summary>.panel')),panel=document.querySelector('.booking-panel.service-panel'),tools=document.querySelector('.service-tools');const fontRules=[];for(const sheet of document.styleSheets){try{for(const rule of sheet.cssRules){if(rule.selectorText&&date.matches(rule.selectorText)&&(rule.style.fontFamily||rule.style.font)){fontRules.push({selector:rule.selectorText,fontFamily:rule.style.fontFamily,font:rule.style.font})}}}catch{}}const cardColors=cards.map(node=>style(node).borderLeftColor);return{header:{border:style(header).borderTopWidth,background:style(header).backgroundColor,title:style(header.querySelector('h1')).color},shellGradient:style(shell).backgroundImage,command:{border:style(command).borderTopWidth,background:style(command).backgroundColor},overview:{border:style(overview).borderTopWidth,background:style(overview).backgroundColor,containsSummary:overview.contains(document.querySelector('.service-summary')),containsProgress:overview.contains(document.querySelector('.service-progress'))},date:{family:style(date).fontFamily,align:style(date).textAlign,border:style(date).borderColor,fontRules},cards:{count:cards.length,heightSpread:Math.max(...cards.map(node=>rect(node).height))-Math.min(...cards.map(node=>rect(node).height)),gold:cardColors.every(color=>color==='rgb(197, 163, 90)'),colors:cardColors},panelGold:style(panel).borderLeftColor==='rgb(197, 163, 90)',panelColor:style(panel).borderLeftColor,toolsGold:style(tools).borderLeftColor==='rgb(197, 163, 90)',toolsColor:style(tools).borderLeftColor,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
   assert.equal(premiumMain.header.border, '0px')
   assert.equal(premiumMain.header.background, 'rgba(0, 0, 0, 0)')
-  assert.equal(premiumMain.command.border, '2px')
-  assert.match(premiumMain.command.background, /rgba?\(255, 246, 233/)
+  assert.equal(premiumMain.command.border, '4px')
+  assert.match(await cdp.evaluate<string>(`getComputedStyle(document.querySelector('.booking-command')).backgroundImage`), /linear-gradient/)
+  const commandVisual = await cdp.evaluate<any>(`(()=>{const title=document.querySelector('.booking-command-copy h2'),date=document.querySelector('.booking-command input[type=date]'),actions=Array.from(document.querySelectorAll('.booking-command-actions .ao-action')),style=node=>getComputedStyle(node);return{title:title?.textContent?.trim(),titleColor:style(title).color,titleFont:style(title).fontFamily,dateColor:style(date).color,dateBackground:style(date).backgroundColor,dateBorder:style(date).borderTopWidth,actionLabels:actions.map(node=>node.textContent?.trim()),actionColors:actions.map(node=>style(node).color),today:Array.from(document.querySelectorAll('.booking-command button')).some(node=>node.textContent?.trim()==='Today')}})()`)
+  assert.deepEqual({ ...commandVisual, titleFont: undefined }, { title: 'TodayBooking', titleColor: 'rgb(255, 248, 236)', titleFont: undefined, dateColor: 'rgb(255, 248, 236)', dateBackground: 'rgba(0, 0, 0, 0)', dateBorder: '0px', actionLabels: ['UPLOAD', 'WALK IN'], actionColors: ['rgb(255, 255, 255)', 'rgb(255, 255, 255)'], today: false })
+  assert.match(commandVisual.titleFont, /Dahlia/i)
   assert.deepEqual({ border: premiumMain.overview.border, containsSummary: premiumMain.overview.containsSummary, containsProgress: premiumMain.overview.containsProgress }, { border: '2px', containsSummary: true, containsProgress: true })
   assert.match(premiumMain.shellGradient, /linear-gradient/)
   assert.match(premiumMain.date.family, /Dahlia/i, JSON.stringify(premiumMain.date.fontRules))
@@ -101,7 +107,7 @@ try {
   await screenshot(cdp, 'bookings-main-390.png')
   await setViewport(cdp, 1440)
   await sleep(80)
-  assert.equal(await clickText(cdp, 'Upload Booking'), true)
+  assert.equal(await clickText(cdp, 'UPLOAD'), true)
   await waitForSelector(cdp, '.activity-import-modal')
   await cdp.evaluate(`(()=>{const original=window.fetch.bind(window);window.fetch=async(input,init)=>{const response=await original(input,init);if(!String(input).includes('/api/bookings/import-preview')||!response.ok)return response;const body=await response.clone().json();const duplicate=body.bookings.find(item=>item.readiness==='DUPLICATE');if(duplicate){for(let index=1;index<7;index++)body.bookings.push({...duplicate,bookingNumber:duplicate.bookingNumber+'-'+index,primaryGuest:duplicate.primaryGuest+' '+index,duplicateBookingId:duplicate.duplicateBookingId+'-'+index});body.summary.possibleDuplicates=7}return new Response(JSON.stringify(body),{status:response.status,headers:{'Content-Type':'application/json'}})}})()`)
 

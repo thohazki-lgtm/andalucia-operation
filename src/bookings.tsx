@@ -260,16 +260,16 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
   const noShowStatus = configuration.statuses.find(option => option.active && option.metadata?.serviceStage === 'noShow')
 
   return <>
-    <section className="booking-command">
-<div>
+    <section className="booking-command" aria-label="Booking calendar controls">
+<div className="booking-command-copy"><h2>TodayBooking</h2></div>
+<div className="booking-command-navigation">
 <IconAction className="date-step" icon="chevron-left" label="Previous service day" onClick={() => setDate(current => addCalendarDays(current, -1))}/>
 <DateControl label="Booking date" value={date} onChange={event => setDate(event.target.value)} />
 <IconAction className="date-step" icon="chevron-right" label="Next service day" onClick={() => setDate(current => addCalendarDays(current, 1))}/>
-<ActionButton compact icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
-<div>
-<ActionButton className="upload-action" icon="upload" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setShowImport(true)}>Upload Booking</ActionButton>
-<ActionButton variant="primary" icon="add" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setEditing('walk-in')}>Add Walk-In</ActionButton>
+<div className="booking-command-actions">
+<ActionButton className="upload-action" icon="upload" aria-label="Upload Booking" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setShowImport(true)}>UPLOAD</ActionButton>
+<ActionButton className="walk-in-action" icon="add" aria-label="Add Walk-In" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setEditing('walk-in')}>WALK IN</ActionButton>
 </div>
 </section>
     <section className="booking-service-overview">

@@ -1106,8 +1106,12 @@ html body .app-shell main.module-bookings :is(
 }
 
 html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
+  border: 0;
+  background: transparent;
+  color: #fff8ec;
   font-family: var(--ao-font-display);
   font-synthesis: none;
+  box-shadow: none;
 }
 
 html body .app-shell main.module-bookings .booking-status-field .service-status-select {

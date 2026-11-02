@@ -120,7 +120,7 @@ try {
   assert.deepEqual(desktop.rows.map((row: any) => row.selectBackground), ['rgb(255, 255, 255)', 'rgb(217, 170, 67)', 'rgb(36, 95, 70)', 'rgb(138, 51, 46)', 'rgb(255, 255, 255)'])
   assert.deepEqual(desktop.rows.map((row: any) => row.selectColor), ['rgb(23, 62, 84)', 'rgb(61, 40, 0)', 'rgb(255, 255, 255)', 'rgb(255, 255, 255)', 'rgb(23, 62, 84)'])
   assert.deepEqual(desktop.rows.map((row: any) => row.statusIcons), [0, 0, 0, 0, 0])
-  assert.equal(desktop.uploadLabel, 'Upload Booking')
+  assert.equal(desktop.uploadLabel, 'UPLOAD')
   assert.ok(desktop.assignmentSelects.every((select: any) => select.height >= 38 && select.radius === '8px' && select.background === 'rgb(255, 250, 240)' && select.color === 'rgb(119, 91, 34)' && !select.clipped))
   assert.equal(desktop.dateInputType, 'date')
   assert.equal(desktop.hasTodayServiceText, false)
@@ -280,7 +280,7 @@ try {
   assert.deepEqual(await cdp.evaluate<any>(`(()=>{const card=Array.from(document.querySelectorAll('.mobile-operation-card')).find(item=>item.textContent?.includes('Confirmed Guest'));const badge=card?.querySelector('.booking-walk-in-badge');return{text:badge?.textContent?.trim(),noBookingNumber:card?.textContent?.includes('No booking number')}})()`), { text: 'Walk-In', noBookingNumber: false })
   const mobileMainShot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
   await writeFile(join(output, `bookings-${visualPhase}-mobile-main-390.png`), Buffer.from(mobileMainShot.data, 'base64'))
-  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.booking-command .ao-action')).find(node=>node.textContent?.includes('Add Walk-In'));if(!button)return false;button.click();return true})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('.booking-command .walk-in-action');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 40; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.booking-walk-in-modal')`)) break; await sleep(100) }
   const walkInModalVisual = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.booking-walk-in-modal');const rect=modal?.getBoundingClientRect();const style=modal?getComputedStyle(modal):null;const actions=Array.from(modal?.querySelectorAll('.form-actions .ao-action')||[]).map(node=>node.getBoundingClientRect());return{present:!!modal,width:Math.round(rect?.width||0),height:Math.round(rect?.height||0),viewportHeight:innerHeight,background:style?.backgroundImage,borderTop:style?.borderTopColor,borderSide:style?.borderRightColor,actionMinHeight:actions.length?Math.min(...actions.map(rect=>rect.height)):0,pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}})()`)
   assert.equal(walkInModalVisual.present, true)
