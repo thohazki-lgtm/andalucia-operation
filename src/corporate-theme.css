@@ -1110,8 +1110,32 @@ html body .app-shell main.module-bookings .booking-command .ao-date-control inpu
   background: transparent;
   color: #fff8ec;
   font-family: var(--ao-font-display);
+  font-size: 31px;
   font-synthesis: none;
   box-shadow: none;
+}
+
+html body .app-shell main.module-bookings .booking-command {
+  display: grid;
+  grid-template-areas:
+    "copy copy"
+    "navigation actions";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-bookings .booking-command {
+    grid-template-areas:
+      "copy"
+      "navigation"
+      "actions";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
+    font-size: 26px;
+  }
 }
 
 html body .app-shell main.module-bookings .booking-status-field .service-status-select {

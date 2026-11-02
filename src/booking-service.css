@@ -384,13 +384,15 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 .booking-command{
   display:grid;
   grid-template-areas:
-    "copy actions"
+    "copy copy"
     "navigation actions";
+  box-sizing:border-box;
+  width:100%;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  gap:7px 18px;
+  gap:8px 18px;
   margin-bottom:10px;
-  padding:12px 16px 11px;
+  padding:11px 16px 12px;
   border:1px solid #c5a35a;
   border-top:4px solid #c5a35a;
   border-radius:12px;
@@ -399,18 +401,18 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 }
 .booking-command-copy{grid-area:copy;min-width:0}
 .booking-command-copy h2{margin:0;color:#fff8ec;font-family:var(--ao-font-display,"Dahlia",Georgia,serif);font-size:23px;font-weight:500;line-height:1.1}
-.booking-command-navigation{display:grid;grid-area:navigation;width:min(500px,100%);grid-template-columns:40px minmax(210px,1fr) 40px;align-items:center;justify-self:center;gap:7px}
+.booking-command-navigation{display:grid;grid-area:navigation;width:100%;grid-template-columns:40px minmax(260px,1fr) 40px;align-items:center;justify-self:stretch;gap:8px}
 .booking-command-actions{display:grid;grid-area:actions;grid-template-columns:repeat(2,minmax(112px,1fr));align-items:center;gap:8px}
 .booking-command .ao-date-control{width:100%;border:0;background:transparent}
 .booking-command .ao-date-control input{
-  min-height:40px;
+  min-height:44px;
   padding:6px 36px 6px 12px;
   border:0;
   border-radius:0;
   background:transparent;
   color:#fff8ec;
   font-family:var(--ao-font-display);
-  font-size:22px;
+  font-size:31px;
   font-weight:500;
   font-synthesis:none;
   line-height:1.1;
@@ -575,7 +577,7 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 }
 
 @media(max-width:700px){
-  .booking-command{display:grid;grid-template-areas:"copy" "navigation" "actions";grid-template-columns:1fr;gap:9px;padding:11px}
+  .booking-command{display:grid;grid-template-areas:"copy" "navigation" "actions";grid-template-columns:1fr;gap:8px;padding:10px}
   .booking-command .ao-action,.booking-command .ao-icon-action{min-height:44px}
   .booking-command-copy h2{font-size:21px}
   .booking-command-navigation{
@@ -588,11 +590,11 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
   .booking-command .ao-date-control input{
     min-width:0;
     padding-right:34px;
-    font-size:18px;
+    font-size:26px;
   }
   .booking-command .ao-date-control__icon{right:9px;width:16px;height:16px}
   .booking-command-actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:0}
-  .booking-command-actions .ao-action{width:100%;min-width:0;min-height:44px}
+  .booking-command-actions .ao-action{width:100%;min-width:0;min-height:42px;padding-block:7px}
   .service-summary{gap:7px}
   .service-summary .panel{min-height:78px;padding:8px 9px}
   .service-summary span{font-size:10px}
