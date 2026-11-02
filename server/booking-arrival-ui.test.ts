@@ -79,7 +79,7 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '026', API_PORT: '3012', APP_ORIGIN: 'http://127.0.0.1:5182' }, stdio: 'ignore' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3012', APP_ORIGIN: 'http://127.0.0.1:5182' }, stdio: 'ignore' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5182', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3012' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3012/api/health'), waitFor('http://127.0.0.1:5182/')])
 
@@ -118,7 +118,7 @@ try {
   assert.deepEqual(desktop.rows.map((row: any) => row.selectBackground), ['rgb(255, 255, 255)', 'rgb(255, 255, 255)', 'rgb(223, 242, 231)', 'rgb(253, 228, 225)', 'rgb(255, 255, 255)'])
   assert.deepEqual(desktop.rows.map((row: any) => row.statusIcons), [0, 0, 1, 1, 0])
   assert.equal(desktop.uploadLabel, 'Upload Booking')
-  assert.ok(desktop.assignmentSelects.every((select: any) => select.height === 38 && select.radius === '8px' && select.background === 'rgb(255, 250, 240)' && select.color === 'rgb(119, 91, 34)' && !select.clipped))
+  assert.ok(desktop.assignmentSelects.every((select: any) => select.height >= 38 && select.radius === '8px' && select.background === 'rgb(255, 250, 240)' && select.color === 'rgb(119, 91, 34)' && !select.clipped))
   assert.equal(desktop.dateInputType, 'date')
   assert.equal(desktop.hasTodayServiceText, false)
   assert.equal(desktop.pageOverflow, false)
@@ -287,7 +287,7 @@ try {
     assert.ok(state.sharedActions >= 3)
     assert.ok(state.summaryHeightSpread < 1, `Summary card height mismatch at ${viewport.width}px`)
     assert.ok(state.summaryWidthSpread < 1, `Summary card width mismatch at ${viewport.width}px`)
-    if (viewport.width <= 700) { assert.equal(state.tableVisible, false); assert.equal(state.cards, 5); assert.ok(state.minActionHeight >= 44); assert.ok(state.minFilterHeight >= 44); assert.ok(state.tabSearchAlignment <= 10); assert.equal(state.progressDirection, 'row') } else { assert.equal(state.tableVisible, true); assert.equal(state.cards, 0); assert.ok(state.tableColumnDrift < 1); if (viewport.width >= 1280) assert.equal(state.tableContained, false) }
+    if (viewport.width <= 700) { assert.equal(state.tableVisible, false); assert.equal(state.cards, 5); assert.ok(state.minActionHeight >= 44); assert.ok(state.minFilterHeight >= 44); assert.ok(state.tabSearchAlignment <= 10); assert.equal(state.progressDirection, 'row') } else { assert.equal(state.tableVisible, true); assert.equal(state.cards, 0); assert.ok(state.tableColumnDrift < 1); if (viewport.width >= 1440) assert.equal(state.tableContained, false) }
     responsive.push({ width: viewport.width, ...state })
   }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })

@@ -192,7 +192,7 @@ body,
   --ao-module-accent: var(--ao-sunset-orange);
   --ao-module-accent-ink: #9b4b29;
   --ao-module-accent-soft: var(--ao-orange-glow);
-  --ao-module-canvas-primary: var(--ao-linen-grey);
+  --ao-module-canvas-primary: #f7d5c2;
   --ao-module-canvas-secondary: var(--ao-sunset-orange);
 }
 
@@ -271,7 +271,8 @@ main[class*='module-'] {
 /* The shared module frame above wins over component backgrounds by
    specificity. Scope the authoritative Duty Roster surface at the same
    specificity so its warm tint remains translucent over the page gradient. */
-main.module-duty-roster {
+main.module-duty-roster,
+main.module-bookings {
   --ao-module-surface: rgb(255 239 223 / 36%);
   --ao-module-surface-strong: rgb(255 246 233 / 48%);
 }
@@ -333,7 +334,21 @@ body:has(.app-shell > main.module-duty-roster) { background: #ffbd6f; }
   background-image: linear-gradient(to bottom, #5b146f 0%, #c89feb 46%, #f5eff9 100%);
 }
 .app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
-.app-shell:has(> main.module-bookings) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-bookings) {
+  --ao-shell-accent: var(--ao-sunset-orange);
+  --ao-shell-highlight: var(--ao-orange-glow);
+  --ao-page-canvas-tint: var(--ao-orange-glow);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #ffbd6f;
+  background-image: linear-gradient(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: scroll;
+}
+
+html:has(.app-shell > main.module-bookings),
+body:has(.app-shell > main.module-bookings) { background: #ffbd6f; }
 .app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
@@ -726,7 +741,8 @@ main.module-dashboard > .page-header {
 
 /* Duty Roster keeps the clean editorial shell while using its own restrained
    burnt-orange and peach identity. Configured duty-code colors stay authoritative. */
-main.module-duty-roster > .page-header {
+main.module-duty-roster > .page-header,
+main.module-bookings > .page-header {
   min-height: 0;
   margin-bottom: 14px;
   padding: 0;
@@ -735,7 +751,8 @@ main.module-duty-roster > .page-header {
   background: transparent;
 }
 
-main.module-duty-roster > .page-header::before {
+main.module-duty-roster > .page-header::before,
+main.module-bookings > .page-header::before {
   display: none;
   content: none;
 }
@@ -754,7 +771,8 @@ main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-ti
   color: var(--ao-module-accent-ink);
 }
 
-main.module-duty-roster > .page-header :is(h1, .eyebrow) { color: #fff8ec; }
+main.module-duty-roster > .page-header :is(h1, .eyebrow),
+main.module-bookings > .page-header :is(h1, .eyebrow) { color: #fff8ec; }
 
 /* A quiet wash and inset ribbon make the palette visible in section hierarchy
    while leaving operational badges, duty codes, configured swatches and
@@ -821,7 +839,7 @@ main[class*='module-'] :is(input, select, textarea):focus-visible {
 /* Corporate color replaces decorative gold on structural surfaces only.
    Semantic states, configured swatches, duty codes and financial indicators
    retain their own authoritative colors. */
-main[class*='module-']:not(.module-duty-roster) :is(
+main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   .panel,
   .customization-category-panel,
   .booking-config-section,
@@ -950,7 +968,7 @@ main[class*='module-'] .field-mode-control button {
   border-color: var(--ao-module-divider);
 }
 
-main[class*='module-']:not(.module-duty-roster) :is(
+main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   section,
   article,
   [class$='-row'],
@@ -1023,13 +1041,66 @@ main[class*='module-'] :is(
   box-shadow: inset 0 -2px var(--ao-module-accent);
 }
 
-main[class*='module-']:not(.module-duty-roster) :is([class$='-table-wrap'], [class*='-table-wrap ']) {
+main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is([class$='-table-wrap'], [class*='-table-wrap ']) {
   border-color: var(--ao-module-line);
 }
 
-html body .app-shell main[class*='module-']:not(.module-duty-roster) table:not(.leave-planner-grid) :is(th, td) {
+html body .app-shell main[class*='module-']:not(.module-duty-roster):not(.module-bookings) table:not(.leave-planner-grid) :is(th, td) {
   border-color: var(--ao-module-divider);
   vertical-align: middle;
+}
+
+/* Bookings uses gold only for outer operational frames and controls.  Keep
+   the denser table grid in its warm orange family so the hierarchy remains
+   calm and the semantic booking states retain their own colors. */
+html body .app-shell main.module-bookings :is(
+  .service-summary > .panel,
+  .service-progress,
+  .booking-panel.service-panel,
+  .booking-panel.service-panel .service-tools,
+  .time-group
+) {
+  border-color: #c5a35a;
+}
+
+html body .app-shell main.module-bookings :is(
+  .booking-command .ao-date-control input,
+  .booking-command .ao-action,
+  .booking-command .ao-icon-action,
+  .booking-service-tabs button,
+  .service-tools input,
+  .service-tools select
+) {
+  border-color: #c5a35a;
+}
+
+html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
+  font-family: var(--ao-font-display);
+  font-synthesis: none;
+}
+
+html body .app-shell main.module-bookings .booking-status-field .service-status-select {
+  background-color: #fff;
+}
+
+html body .app-shell main.module-bookings .booking-status-field--arrived .service-status-select {
+  background-color: #dff2e7;
+  color: #205f44;
+}
+
+html body .app-shell main.module-bookings .booking-status-field--noshow .service-status-select {
+  background-color: #fde4e1;
+  color: #943a34;
+}
+
+html body .app-shell main.module-bookings .service-table :is(th, td) {
+  border-color: #e4b99b;
+}
+
+html body .app-shell main.module-bookings .service-table thead th {
+  border-bottom-color: #c87b55;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 html body .app-shell main[class*='module-'] table th {
