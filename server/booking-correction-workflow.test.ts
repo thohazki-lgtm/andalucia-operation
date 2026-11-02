@@ -89,6 +89,9 @@ try {
   assert.equal((await request(`/api/bookings/${targetId}`, 'PUT', tokens.viewer, trustedOrigin, correction)).status, 403)
   assert.equal((await request(`/api/bookings/${targetId}`, 'PUT', tokens.manager, 'https://untrusted.example', correction)).status, 401)
 
+  const reopenResponse = await request('/api/bookings/day-lock/reopen', 'POST', tokens.manager, trustedOrigin, { date: reservationDate, reason: 'Correct reviewed Activity Program cover evidence', confirmation: `REOPEN BOOKINGS ${reservationDate}` })
+  assert.equal(reopenResponse.status, 200)
+
   const savedResponse = await request(`/api/bookings/${targetId}`, 'PUT', tokens.manager, trustedOrigin, correction)
   assert.equal(savedResponse.status, 200)
   const saved = await savedResponse.json() as BookingRecord
@@ -167,8 +170,8 @@ try {
   assert.match(apiSource, /bookingNumber: imported \? previous\.bookingNumber/)
   assert.match(css, /\.booking-detail-actions[\s\S]*?\.booking-source-protection|\.booking-source-protection[\s\S]*?\.booking-detail-actions/)
   assert.match(css, /\.service-table td\.service-status-cell\{height:72px;padding-block:0;vertical-align:middle/)
-  assert.match(css, /\.service-table \.service-status-controls\{box-sizing:border-box;display:flex;min-height:72px;padding-block:8px;flex-direction:column;justify-content:center/)
-  assert.match(css, /\.service-table \.service-actions\{display:flex;gap:4px;margin-top:0;white-space:nowrap\}/)
+  assert.match(css, /\.service-table \.service-status-controls\{box-sizing:border-box;display:flex;min-height:64px;padding-block:6px;flex-direction:column;justify-content:center/)
+  assert.match(css, /\.service-table \.service-actions\{display:flex;gap:3px;margin-top:0;white-space:nowrap\}/)
   assert.match(css, /\.service-table \.service-actions button\{flex:1 1 0;width:auto/)
 
   console.log(JSON.stringify({ managerEditAction: true, importedIdentityProtected: true, sourceEvidencePreserved: true, anonymousRejected: true, insufficientPermissionRejected: true, trustedOriginRequired: true, auditBeforeAfterPreserved: true, refreshPersistence: true, bookings: { '2723242': target?.covers, '2691640': companion?.covers, combined: 20 }, dashboardAndHostessCovers: board.summary.arrivedCovers, reportIncludingNoShows: report.bookings.totalCovers, canonicalDatabaseTouched: false }, null, 2))

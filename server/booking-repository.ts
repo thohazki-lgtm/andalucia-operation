@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { PGlite } from '@electric-sql/pglite'
 import type { BookingGuestMemberPreview, BookingImportPreview, BookingImportPreviewRecord, BookingImportResult, BookingImportReviewChanges, BookingImportReviewDecision, BookingImportReviewValidation, BookingRecord, BookingSummary, ConfigOption, WalkInBookingInput, WalkInFieldMode } from '../src/domain.js'
 import { reconcileAnalyzedBookingCovers } from './booking-intelligence-engine.js'
+import { bookingCorrectionAudit, type BookingDayCorrectionContext } from './booking-day-lock-service.js'
 
 export type BookingConfigGroup = 'statuses' | 'sources' | 'tables' | 'tableRanges' | 'walkInFields'
 
@@ -31,8 +32,10 @@ const sourceKeyFor = (booking: BookingImportPreviewRecord) => `${booking.venue}|
 const validDate = (value: unknown) => { const match = typeof value === 'string' ? value.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null; if (!match) return false; const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))); return date.getUTCFullYear() === Number(match[1]) && date.getUTCMonth() === Number(match[2]) - 1 && date.getUTCDate() === Number(match[3]) }
 const validTime = (value: unknown) => { const match = typeof value === 'string' ? value.match(/^(\d{2}):(\d{2})$/) : null; return Boolean(match && Number(match[1]) < 24 && Number(match[2]) < 60) }
 
+type BookingRepositoryOptions = { assertDateEditable?: (date: string, database?: Pick<PGlite, 'query'>) => Promise<BookingDayCorrectionContext | null> }
+
 export class BookingRepository {
-  constructor(private readonly db: PGlite) {}
+  constructor(private readonly db: PGlite, private readonly options: BookingRepositoryOptions = {}) {}
 
   async initialize() {
     for (const group of Object.keys(groupKeys) as BookingConfigGroup[]) {
@@ -144,14 +147,19 @@ export class BookingRepository {
       if (!waiter.rows[0]) throw new Error('The selected waiter no longer exists.')
       if (!waiter.rows[0].eligible) throw new Error('This staff member is not eligible for new booking assignments.')
     }
-    if (previous) {
-      await this.db.query('update bookings set room_number=$2, guest_name=$3, birth_date=$4, arrival_date=$5, departure_date=$6, meal_period=$7, reservation_date=$8, reservation_time=$9, booking_number=$10, booking_status=$11, covers=$12, booking_source=$13, booked_by=$14, guest_notes=$15, table_number=$16, waiter_id=$17, import_source=$18, updated_by=$19, updated_at=now() where id=$1', [booking.id, booking.roomNumber || null, booking.guestName, booking.birthDate || null, booking.arrivalDate || null, booking.departureDate || null, booking.mealPeriod || null, booking.reservationDate, booking.reservationTime, booking.bookingNumber || null, booking.bookingStatus, booking.covers, booking.bookingSource || null, booking.bookedBy || null, booking.guestNotes || null, booking.tableNumber || null, booking.waiterId || null, booking.importSource || 'manual', actor])
-    } else {
-      await this.db.query('insert into bookings (id, room_number, guest_name, birth_date, arrival_date, departure_date, meal_period, reservation_date, reservation_time, booking_number, booking_status, covers, booking_source, booked_by, guest_notes, table_number, waiter_id, import_source, created_by, updated_by) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19)', [booking.id, booking.roomNumber || null, booking.guestName, booking.birthDate || null, booking.arrivalDate || null, booking.departureDate || null, booking.mealPeriod || null, booking.reservationDate, booking.reservationTime, booking.bookingNumber || null, booking.bookingStatus, booking.covers, booking.bookingSource || null, booking.bookedBy || null, booking.guestNotes || null, booking.tableNumber || null, booking.waiterId || null, booking.importSource || 'manual', actor])
-    }
+    let correctionContext: BookingDayCorrectionContext | null = null
+    await this.db.transaction(async transaction => {
+      correctionContext = this.options.assertDateEditable ? await this.options.assertDateEditable(booking.reservationDate, transaction) : null
+      if (previous && previous.reservationDate !== booking.reservationDate && this.options.assertDateEditable) await this.options.assertDateEditable(previous.reservationDate, transaction)
+      if (previous) {
+        await transaction.query('update bookings set room_number=$2, guest_name=$3, birth_date=$4, arrival_date=$5, departure_date=$6, meal_period=$7, reservation_date=$8, reservation_time=$9, booking_number=$10, booking_status=$11, covers=$12, booking_source=$13, booked_by=$14, guest_notes=$15, table_number=$16, waiter_id=$17, import_source=$18, updated_by=$19, updated_at=now() where id=$1', [booking.id, booking.roomNumber || null, booking.guestName, booking.birthDate || null, booking.arrivalDate || null, booking.departureDate || null, booking.mealPeriod || null, booking.reservationDate, booking.reservationTime, booking.bookingNumber || null, booking.bookingStatus, booking.covers, booking.bookingSource || null, booking.bookedBy || null, booking.guestNotes || null, booking.tableNumber || null, booking.waiterId || null, booking.importSource || 'manual', actor])
+      } else {
+        await transaction.query('insert into bookings (id, room_number, guest_name, birth_date, arrival_date, departure_date, meal_period, reservation_date, reservation_time, booking_number, booking_status, covers, booking_source, booked_by, guest_notes, table_number, waiter_id, import_source, created_by, updated_by) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19)', [booking.id, booking.roomNumber || null, booking.guestName, booking.birthDate || null, booking.arrivalDate || null, booking.departureDate || null, booking.mealPeriod || null, booking.reservationDate, booking.reservationTime, booking.bookingNumber || null, booking.bookingStatus, booking.covers, booking.bookingSource || null, booking.bookedBy || null, booking.guestNotes || null, booking.tableNumber || null, booking.waiterId || null, booking.importSource || 'manual', actor])
+      }
+      await transaction.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'booking', booking.id, previous ? 'updated' : 'created', previous ? JSON.stringify(previous) : null, JSON.stringify({ ...booking, ...bookingCorrectionAudit(correctionContext) }), actor])
+    })
     const saved = await this.find(booking.id)
     if (!saved) throw new Error('Booking could not be saved.')
-    await this.db.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'booking', booking.id, previous ? 'updated' : 'created', previous ? JSON.stringify(previous) : null, JSON.stringify(saved), actor])
     return (await this.find(booking.id)) || saved
   }
 
@@ -315,6 +323,7 @@ export class BookingRepository {
         if (booking.warnings.length) warnings++
         if (!booking.bookingNumber || !booking.reservationDate || !booking.reservationTime) { failedRecords.push({ bookingNumber: booking.bookingNumber || 'Missing', reason: 'Booking number, report date and reservation time are required for safe duplicate protection.' }); continue }
         if (!booking.covers || booking.covers < 1 || !booking.primaryGuest) { failedRecords.push({ bookingNumber: booking.bookingNumber, reason: 'Primary guest and explicit pax are required.' }); continue }
+        const correctionContext = this.options.assertDateEditable ? await this.options.assertDateEditable(booking.reservationDate, tx) : null
         const sourceKey = sourceKeyFor(booking)
         const duplicate = await tx.query<{ id: string }>('select id from bookings where source_booking_key=$1 or (venue_key=$2 and reservation_date=$3 and reservation_time=$4 and booking_number=$5) limit 1', [sourceKey, booking.venue, booking.reservationDate, booking.reservationTime, booking.bookingNumber])
         if (duplicate.rows[0]) {
@@ -336,7 +345,7 @@ export class BookingRepository {
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$21,$22)
             on conflict(booking_id,finding_type,normalized_key,evidence_sha256,rule_version) do nothing`, [randomUUID(), outletScopeId, bookingId, batchId, memberOrder ? memberIds.get(Number(memberOrder)) || null : null, finding.findingType, finding.normalizedKey, finding.rawEvidence, finding.detectedPhrase || null, finding.evidenceLocation, finding.evidenceSha256, finding.ruleKey, finding.ruleVersion, JSON.stringify({ value: finding.sourceValue, sourceCandidateIdentity: finding.sourceCandidateIdentity }), JSON.stringify({ value: finding.detectedValue, displayLabel: finding.displayLabel }), JSON.stringify({ value: finding.effectiveCandidate, classification: finding.normalizedKey }), finding.resolutionMethod, finding.confidence, reviewRequired ? 'required' : 'not_required', reviewRequired, actorUserId, actor])
         }
-        await tx.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'booking', bookingId, 'imported', null, JSON.stringify({ batchId, bookingNumber: booking.bookingNumber, sourceKey }), actor])
+        await tx.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'booking', bookingId, 'imported', null, JSON.stringify({ batchId, bookingNumber: booking.bookingNumber, sourceKey, ...bookingCorrectionAudit(correctionContext) }), actor])
         if (decision) {
           managerApprovedReviewItems++
           await tx.query('insert into audit_logs (id, entity_type, entity_id, action, before_data, after_data, actor) values ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'booking_import_review', batchId, decision.action === 'EDIT_BEFORE_IMPORT' ? 'edited_before_import' : 'imported_anyway', JSON.stringify({ fileName: batch.original_filename, fileHash: batch.file_hash, originalSourceBookingKey: sourceKeyFor(original), reviewReasons: original.warnings, sourceRecord: original }), JSON.stringify({ reviewIndex: index, managerAction: decision.action, reviewedAt: new Date().toISOString(), resultingBookingId: bookingId, effectiveRecord: booking }), actor])

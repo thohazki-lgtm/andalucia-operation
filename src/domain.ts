@@ -263,6 +263,25 @@ export interface TrainingImportResult { imported: number; skipped: number; dupli
 export type BookingServiceKind = 'dinner' | 'celebration'
 export interface BookingRecord { id: string; guestName: string; roomNumber: string; birthDate: string | null; arrivalDate: string | null; departureDate: string | null; mealPeriod: string; reservationDate: string; reservationTime: string; bookingNumber: string; covers: number; bookingStatus: string; bookingSource: string; bookedBy: string; guestNotes: string; tableNumber: string; waiterId: string | null; waiter: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> | null; importedBatchId?: string | null; importSource?: string | null; sourceActivityLabel?: string | null; sourceServiceKind?: BookingServiceKind; sourceServiceEndTime?: string | null; sourceBookingStatus?: string | null; sourceFilename?: string | null; sourceReportDate?: string | null; sourceParserVersion?: string | null; sourceGuestNotes?: string | null; coverResolution?: BookingCoverResolution; memberSearchText?: string; arrivedAt?: string | null; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export type WalkInBookingInput = Pick<BookingRecord, 'id' | 'guestName' | 'roomNumber' | 'birthDate' | 'arrivalDate' | 'departureDate' | 'mealPeriod' | 'reservationDate' | 'reservationTime' | 'covers' | 'guestNotes' | 'tableNumber' | 'waiterId'>
+export interface BookingDayLockStatus {
+  date: string
+  state: 'open' | 'locked' | 'reopened'
+  locked: boolean
+  lockKind: 'manual' | 'automatic' | 'relock' | null
+  cutoffLocalTime: string
+  cutoffAt: string
+  reason: string | null
+  actor: string | null
+  actorUserId: string | null
+  changedAt: string | null
+  reopenedAt: string | null
+  reopenedBy: string | null
+  reopenedByUserId: string | null
+  reopenReason: string | null
+  reopenedUntil: string | null
+  correctionWindowMinutes: number
+  canManageDayLock: boolean
+}
 export interface BookingSummary { totalBookings: number; expectedCovers: number; arrived: number; arrivedCovers: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number; unassignedTables: number; unassignedWaiters: number }
 export interface ChargeableRecord { id: string; date: string; bookingId: string | null; guestName: string; roomNumber: string; checkInvoiceNumber?: string; tableNumber: string; itemValue: string; itemLabel: string; itemCategory: string; quantity: number; unitPrice: number; totalAmount: number; waiterId: string | null; waiter: Pick<Staff, 'name' | 'number' | 'position' | 'employmentStatus'> | null; status: string; notes: string; active: boolean; bookingNumber?: string | null; covers?: number; reservationDate?: string; reservationTime?: string; bookingSource?: string | null; importSource?: string | null; sourceGuestNotes?: string | null; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export interface ChargeableSummary { totalCharges: number; totalValue: number; realizedRevenue: number; pendingValue: number; charged: number; pending: number; itemsSold?: number; topSeller?: string; guests?: number }

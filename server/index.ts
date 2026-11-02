@@ -6,6 +6,7 @@ import { TrainingRepository } from './training-repository.js'
 import { TrainingR2Service } from './training-r2-service.js'
 import { TrainingSharePointConnection } from './training-sharepoint-connection.js'
 import { BookingRepository, type BookingConfigGroup } from './booking-repository.js'
+import { BookingDayLockService } from './booking-day-lock-service.js'
 import { ChargeableRepository, type ChargeableConfigGroup } from './chargeable-repository.js'
 import { WineSpiritsRepository } from './wine-spirits-repository.js'
 import { GuestOccasionRepository, type GuestOccasionConfigGroup } from './guest-occasion-repository.js'
@@ -52,7 +53,8 @@ const operations = new OperationsRepository(repository.getDatabase(), (changes, 
 const training = new TrainingRepository(repository.getDatabase())
 const trainingR2 = new TrainingR2Service(repository.getDatabase(), training)
 const trainingSharePoint = new TrainingSharePointConnection()
-const bookings = new BookingRepository(repository.getDatabase())
+const bookingDayLocks = new BookingDayLockService(repository.getDatabase())
+const bookings = new BookingRepository(repository.getDatabase(), { assertDateEditable: (date, database) => bookingDayLocks.assertEditable(date, database) })
 const chargeables = new ChargeableRepository(repository.getDatabase())
 const wineSpirits = new WineSpiritsRepository(repository.getDatabase())
 const occasions = new GuestOccasionRepository(repository.getDatabase())
@@ -100,6 +102,8 @@ const expectedErrorStatus = (error: unknown): 400 | 409 | null => {
   if (/^(ACCUMULATED_OFF_|Accumulated OFF allocation exceeds|Accumulated OFF consumption requires|Confirmed accumulated OFF usage exceeds|The edited booking range must retain)/.test(error.message)) return 409
   if (/^(.* is already configured and active\.|.* has multiple stored configurations\.)/.test(error.message)) return 409
   if (/^A clear correction reason is required/.test(error.message)) return 400
+  if (/^(Select a valid Booking service date\.|Future Booking service days cannot be locked\.|Type (LOCK|REOPEN|RELOCK) BOOKINGS |A clear Booking day|This Booking service day is not)/.test(error.message)) return 400
+  if (/^BOOKING_DAY_LOCKED:/.test(error.message)) return 409
   if (/^(Select a valid booked leave date range\.|Booked leave must begin today or later\.|Annual Leave is the only supported booked leave type\.|Booked leave notes are limited|The booked period must remain within)/.test(error.message)) return 400
   if (/^(Realized and cancelled|Chargeable request identity already belongs)/.test(error.message)) return 409
   if (/^(Invalid JSON request body\.|Invalid calendar date:|MONTHLY_REPORT_MONTH_INVALID|MONTHLY_REPORT_MONTH_START_INVALID|MONTHLY_FINANCE_VALUE_INVALID|MONTHLY_FINANCE_REQUIRED_FIELDS_MISSING|The PDF exceeds|The Training calendar exceeds|Training spreadsheet rejected:|Training spreadsheet parsing exceeded|The Training spreadsheet is malformed|The isolated Training spreadsheet parser|Select a valid report|Select a valid Daily Report|Select a valid Weekly Report|Weekly commentary must|Daily Report service date|Select a valid Wine\/Spirits|Select a valid Service Date|Service Date, Check|Quantity must|Gross unit price|Select a valid holiday year|Select a valid entitlement year|Carry Forward must|Carry Forward is available|Select a valid Annual Leave effective date|Annual Leave effective date|Reports are limited|Display code, duty name|Select a valid duty color|Entitlement values must|Default entitlement allowance must|This protected leave type has no approved allowance calculation|Yearly entitlement values must|Annual Leave opening balance must|An HR approval reason is required|Explicit manager confirmation is required|Configure the Annual Leave yearly allowance|Partial joining months require HR clarification|Partial exit months require HR clarification|Annual Leave history has an unconfigured year|Holiday name, valid date|Unsupported training calendar|Image calendar OCR|Training topic, date|End time must|Trainer is required|No training records|Select a valid Training month|Training target policy is unavailable|Enter a valid actual Training duration|Review every eligible staff member|Resolve eligibility for|Confirm participation for|Baseline month must|Select a valid baseline|A selected baseline membership|A selected baseline membership begins|A selected baseline membership exceeds|Select at least one regular staff|A reset reason|A correction reason|Walk-in covers|Select a valid Walk-in|Enter a valid table range|This table range overlaps|Protected Walk-in|System-controlled Walk-in|.* is required for this Walk-in)/.test(error.message)) return 400
@@ -278,6 +282,10 @@ const server = createServer(async (request, response) => {
     if (request.method === 'DELETE' && trainingImportBatchMatch) { assertTrustedOrigin(request); const context = await authorizedTrainingContext(request); const removed = await training.removeImportBatch(trainingImportBatchMatch[1], auditActorLabel(context.principal)); return send(response, 200, { imported: 0, skipped: 0, duplicates: 0, failed: 0, importedIds: [], removed }) }
     if (request.method === 'GET' && url.pathname === '/api/bookings') return send(response, 200, await bookings.list(url.searchParams.get('date') || serviceDate()))
     if (request.method === 'GET' && url.pathname === '/api/bookings/summary') return send(response, 200, await bookings.summary(url.searchParams.get('date') || serviceDate()))
+    if (request.method === 'GET' && url.pathname === '/api/bookings/day-lock') { const context = await authorizedBookingsContext(request); const date = url.searchParams.get('date') || serviceDate(); return send(response, 200, await bookingDayLocks.status(date, canManageBookingDayLocks(context.principal)), { 'Cache-Control': 'no-store' }) }
+    if (request.method === 'POST' && url.pathname === '/api/bookings/day-lock') { assertTrustedOrigin(request); const context = await authorizedBookingDayLockManager(request); const input = await body(request) as { date?: string; confirmation?: string }; return send(response, 200, await bookingDayLocks.lock(input.date || '', input.confirmation || '', context.principal), { 'Cache-Control': 'no-store' }) }
+    if (request.method === 'POST' && url.pathname === '/api/bookings/day-lock/reopen') { assertTrustedOrigin(request); const context = await authorizedBookingDayLockManager(request); const input = await body(request) as { date?: string; reason?: string; confirmation?: string }; return send(response, 200, await bookingDayLocks.reopen(input.date || '', input.reason || '', input.confirmation || '', context.principal), { 'Cache-Control': 'no-store' }) }
+    if (request.method === 'POST' && url.pathname === '/api/bookings/day-lock/relock') { assertTrustedOrigin(request); const context = await authorizedBookingDayLockManager(request); const input = await body(request) as { date?: string; reason?: string; confirmation?: string }; return send(response, 200, await bookingDayLocks.relock(input.date || '', input.reason || '', input.confirmation || '', context.principal), { 'Cache-Control': 'no-store' }) }
     if (request.method === 'GET' && url.pathname === '/api/chargeables') { const context = await authorizedChargeableContext(request); return send(response, 200, await chargeables.list(url.searchParams.get('date') || serviceDate(), context.outlet.id)) }
     if (request.method === 'GET' && url.pathname === '/api/chargeables/summary') { const context = await authorizedChargeableContext(request); return send(response, 200, await chargeables.summary(url.searchParams.get('date') || serviceDate(), context.outlet.id)) }
     if (request.method === 'GET' && url.pathname === '/api/guest-occasions') { const context = await authorizedGuestOccasionsContext(request); return send(response, 200, await occasions.list(url.searchParams.get('date') || serviceDate(), context.outlet.scopeKey)) }
@@ -564,6 +572,14 @@ async function authorizedBookingsContext(request: import('node:http').IncomingMe
   if (!outlet?.active) throw new Error('The Andalucía Bookings outlet is unavailable.')
   await authorization.requireOutletPermission(principal, 'manage_bookings', outlet.id)
   return { principal, outlet }
+}
+
+const canManageBookingDayLocks = (principal: Awaited<ReturnType<typeof requireAuthenticatedUser>>) => principal.isOwner || principal.roleKeys.includes('outlet_manager')
+
+async function authorizedBookingDayLockManager(request: import('node:http').IncomingMessage) {
+  const context = await authorizedBookingsContext(request)
+  if (!canManageBookingDayLocks(context.principal)) throw new AuthorizationError('FORBIDDEN', 'Outlet manager authority is required to lock or reopen a Booking service day.')
+  return context
 }
 
 async function authorizedGuestOccasionsContext(request: import('node:http').IncomingMessage) {

@@ -4,7 +4,7 @@ import './import-preview.css'
 import './import-confirm.css'
 import './booking-service.css'
 import './booking-intelligence.css'
-import type { BookingGuestMemberPreview, BookingImportPreview, BookingImportPreviewRecord, BookingImportResult, BookingImportReviewChanges, BookingImportReviewDecision, BookingIntelligenceReanalysisPreview, BookingIntelligenceReanalysisRecord, BookingRecord, ConfigOption, GuestOccasionRecord, Staff, WalkInBookingInput, WalkInFieldMode } from './domain'
+import type { BookingDayLockStatus, BookingGuestMemberPreview, BookingImportPreview, BookingImportPreviewRecord, BookingImportResult, BookingImportReviewChanges, BookingImportReviewDecision, BookingIntelligenceReanalysisPreview, BookingIntelligenceReanalysisRecord, BookingRecord, ConfigOption, GuestOccasionRecord, Staff, WalkInBookingInput, WalkInFieldMode } from './domain'
 import { addCalendarDays, serviceDate } from './service-date'
 import { consumeWorkflow } from './workflow-intent'
 import { bookingTimeWindow } from './booking-time'
@@ -111,6 +111,32 @@ function BookingModal({ title, children, onClose, wide = false, side = false, cl
 </div>
 }
 
+function BookingDayLockDialog({ action, date, status, onClose, onSaved }: { action: 'lock' | 'reopen' | 'relock'; date: string; status: BookingDayLockStatus; onClose: () => void; onSaved: (status: BookingDayLockStatus) => void }) {
+  const [reason, setReason] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const verb = action === 'reopen' ? 'REOPEN' : action === 'relock' ? 'RELOCK' : 'LOCK'
+  const expected = `${verb} BOOKINGS ${date}`
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setSaving(true); setError('')
+    try {
+      const next = action === 'lock' ? await bookingApi.lockDay(date, confirmation) : action === 'reopen' ? await bookingApi.reopenDay(date, reason, confirmation) : await bookingApi.relockDay(date, reason, confirmation)
+      onSaved(next)
+    } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to update this Booking service day.') } finally { setSaving(false) }
+  }
+  return <BookingModal title={action === 'reopen' ? 'Reopen Booking service day' : action === 'relock' ? 'Relock Booking service day' : 'Lock Booking service day'} onClose={onClose} className="booking-day-lock-dialog">
+    <form className="booking-day-lock-form" onSubmit={submit}>
+      <div className={`booking-day-lock-notice is-${status.state}`}><b>{date}</b><span>{action === 'reopen' ? `Corrections will remain open for ${status.correctionWindowMinutes} minutes and every save will retain the reopening evidence.` : action === 'relock' ? 'Further booking changes will be blocked immediately.' : 'Bookings remain viewable, but all operational changes and imports will be blocked.'}</span></div>
+      {action !== 'lock' && <label>Reason<textarea required minLength={8} value={reason} onChange={event => setReason(event.target.value)} placeholder="Explain why this service day needs correction or re-locking" /></label>}
+      <label>Confirmation<input required value={confirmation} onChange={event => setConfirmation(event.target.value)} placeholder={expected} autoComplete="off" /></label>
+      <p className="booking-day-lock-confirmation">Type <b>{expected}</b> to confirm.</p>
+      {error && <p className="inline-error">{error}</p>}
+      <footer><ActionButton type="button" onClick={onClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon={action === 'reopen' ? 'edit' : 'archive'} disabled={saving || confirmation !== expected || (action !== 'lock' && reason.trim().length < 8)}>{saving ? 'Saving…' : action === 'reopen' ? 'Reopen Day' : action === 'relock' ? 'Relock Day' : 'Lock Day'}</ActionButton></footer>
+    </form>
+  </BookingModal>
+}
+
 function ConfigArchiveButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   const action = active ? `Remove ${label}` : `Restore ${label}`
   return <button type="button" className={`config-icon-action${active ? ' remove' : ' restore'}`} aria-label={action} title={action} onClick={onClick}>
@@ -135,6 +161,8 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
   const [editing, setEditing] = useState<BookingRecord | 'walk-in' | null>(null)
   const [viewing, setViewing] = useState<BookingRecord | null>(null)
   const [showImport, setShowImport] = useState(false)
+  const [dayLock, setDayLock] = useState<BookingDayLockStatus | null>(null)
+  const [lockAction, setLockAction] = useState<'lock' | 'reopen' | 'relock' | null>(null)
 
   useEffect(() => {
     if (consumeWorkflow('booking-add')) setEditing('walk-in')
@@ -146,9 +174,10 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
     setError('')
     try {
       const occasionRequest = guestOccasionApi.list(targetDate).catch(() => [] as GuestOccasionRecord[])
-      const [nextBookings, nextOccasions] = await Promise.all([bookingApi.list(targetDate), occasionRequest])
+      const [nextBookings, nextOccasions, nextDayLock] = await Promise.all([bookingApi.list(targetDate), occasionRequest, bookingApi.dayLock(targetDate)])
       setBookings(nextBookings)
       setOccasions(nextOccasions)
+      setDayLock(nextDayLock)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load bookings.')
     } finally {
@@ -215,6 +244,8 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
     return saved
   }
   const quickUpdate = async (booking: BookingRecord, changes: Partial<BookingRecord>) => { try { await persist({ ...booking, ...changes }) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to update booking.') } }
+  const locked = Boolean(dayLock?.locked)
+  useEffect(() => { if (locked) { setEditing(null); setShowImport(false) } }, [locked])
   const waitingStatus = configuration.statuses.find(option => option.active && (option.metadata?.operationalAction === 'waiting' || option.value === 'waiting'))
   const arrivedStatus = configuration.statuses.find(option => option.active && option.metadata?.serviceStage === 'arrived')
   const noShowStatus = configuration.statuses.find(option => option.active && option.metadata?.serviceStage === 'noShow')
@@ -227,9 +258,15 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
 <IconAction className="date-step" icon="chevron-right" label="Next service day" onClick={() => setDate(current => addCalendarDays(current, 1))}/>
 <ActionButton compact icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
+<div className="booking-day-lock-controls">
+{dayLock && <span className={`booking-day-lock-status is-${dayLock.state}`} title={dayLock.reason || undefined}><span aria-hidden="true">{dayLock.locked ? '🔒' : dayLock.state === 'reopened' ? '✎' : '○'}</span><b>{dayLock.locked ? 'Locked' : dayLock.state === 'reopened' ? 'Reopened' : 'Open'}</b>{dayLock.state === 'reopened' && <small>Correction window</small>}</span>}
+{dayLock?.canManageDayLock && dayLock.state === 'open' && <ActionButton compact icon="archive" onClick={() => setLockAction('lock')}>Lock Day</ActionButton>}
+{dayLock?.canManageDayLock && dayLock.locked && <ActionButton compact icon="edit" onClick={() => setLockAction('reopen')}>Reopen Day</ActionButton>}
+{dayLock?.canManageDayLock && dayLock.state === 'reopened' && <ActionButton compact icon="archive" onClick={() => setLockAction('relock')}>Relock Day</ActionButton>}
+</div>
 <div>
-<ActionButton className="upload-action" icon="upload" onClick={() => setShowImport(true)}>Upload Booking</ActionButton>
-<ActionButton variant="primary" icon="add" onClick={() => setEditing('walk-in')}>Add Walk-In</ActionButton>
+<ActionButton className="upload-action" icon="upload" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setShowImport(true)}>Upload Booking</ActionButton>
+<ActionButton variant="primary" icon="add" disabled={locked} title={locked ? 'This Booking service day is locked.' : undefined} onClick={() => setEditing('walk-in')}>Add Walk-In</ActionButton>
 </div>
 </section>
     <section className="booking-service-overview">
@@ -279,15 +316,16 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
 <th>Status</th>
 </tr>
 </thead>
-<tbody>{group.bookings.map(booking => <ServiceBookingRow key={booking.id} booking={booking} occasions={occasionByBooking.get(booking.id) || []} staff={staff} configuration={configuration} waitingStatus={waitingStatus} arrivedStatus={arrivedStatus} noShowStatus={noShowStatus} onUpdate={quickUpdate} onView={() => setViewing(booking)} />)}</tbody>
+<tbody>{group.bookings.map(booking => <ServiceBookingRow key={booking.id} booking={booking} occasions={occasionByBooking.get(booking.id) || []} staff={staff} configuration={configuration} waitingStatus={waitingStatus} arrivedStatus={arrivedStatus} noShowStatus={noShowStatus} locked={locked} onUpdate={quickUpdate} onView={() => setViewing(booking)} />)}</tbody>
 </table>
 </div>
-<div className="mobile-booking-list">{group.bookings.map(booking => <MobileBookingCard key={booking.id} booking={booking} occasions={occasionByBooking.get(booking.id) || []} staff={staff} configuration={configuration} waitingStatus={waitingStatus} arrivedStatus={arrivedStatus} noShowStatus={noShowStatus} onUpdate={quickUpdate} onView={() => setViewing(booking)} />)}</div>
+<div className="mobile-booking-list">{group.bookings.map(booking => <MobileBookingCard key={booking.id} booking={booking} occasions={occasionByBooking.get(booking.id) || []} staff={staff} configuration={configuration} waitingStatus={waitingStatus} arrivedStatus={arrivedStatus} noShowStatus={noShowStatus} locked={locked} onUpdate={quickUpdate} onView={() => setViewing(booking)} />)}</div>
 </section> })}{visible.length === 0 && <div className="inline-empty"><span>No bookings match this service date and filters.</span></div>}</div>}</section>
     {editing === 'walk-in' && <WalkInBookingForm date={date} staff={staff} configuration={configuration} onClose={() => setEditing(null)} onSave={async record => { const saved = await bookingApi.createWalkIn(record); if (saved.reservationDate === date) setBookings(current => [...current, saved].sort((a, b) => a.reservationTime.localeCompare(b.reservationTime))); else await load(); setEditing(null) }} />}
     {editing && editing !== 'walk-in' && <BookingForm booking={editing} date={date} staff={staff} configuration={configuration} onClose={() => setEditing(null)} onSave={async record => { await save(record); setEditing(null) }} />}
-    {viewing && <BookingView booking={viewing} occasions={occasionByBooking.get(viewing.id) || []} configuration={configuration} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null) }} />}
+    {viewing && <BookingView booking={viewing} occasions={occasionByBooking.get(viewing.id) || []} configuration={configuration} locked={locked} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null) }} />}
     {showImport && <ActivityProgramImport statuses={configuration.statuses} onClose={() => setShowImport(false)} onImported={showImportedDate} onViewImported={targetDate => { showImportedDate(targetDate); setShowImport(false) }} />}
+    {lockAction && dayLock && <BookingDayLockDialog action={lockAction} date={date} status={dayLock} onClose={() => setLockAction(null)} onSaved={next => { setDayLock(next); setLockAction(null); onToast(next.state === 'reopened' ? 'Booking service day reopened for audited corrections.' : 'Booking service day locked.'); void load(date) }} />}
   </>
 }
 
@@ -310,7 +348,7 @@ function AllergyBadges({ booking, full = false, emptyLabel = 'None recorded' }: 
   return alerts.length ? <div className={`allergy-badges${full ? ' full' : ''}`} role="note" aria-label={`Allergy or dietary alert: ${alerts.map(alert => alert.label).join(', ')}`}>{alerts.map(alert => <span key={alert.label} className="allergy-alert booking-info-pill booking-allergy-pill" title={alert.note}>⚠ {alert.label}</span>)}{full && <p>{alerts[0].note}</p>}</div> : <span className="quiet-value" aria-label="No allergies recorded">{emptyLabel}</span>
 }
 
-function ServiceBookingRow({ booking, occasions, staff, configuration, waitingStatus, arrivedStatus, noShowStatus, onUpdate, onView }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; staff: Staff[]; configuration: BookingConfiguration; waitingStatus?: ConfigOption; arrivedStatus?: ConfigOption; noShowStatus?: ConfigOption; onUpdate: (booking: BookingRecord, changes: Partial<BookingRecord>) => Promise<void>; onView: () => void }) {
+function ServiceBookingRow({ booking, occasions, staff, configuration, waitingStatus, arrivedStatus, noShowStatus, locked, onUpdate, onView }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; staff: Staff[]; configuration: BookingConfiguration; waitingStatus?: ConfigOption; arrivedStatus?: ConfigOption; noShowStatus?: ConfigOption; locked: boolean; onUpdate: (booking: BookingRecord, changes: Partial<BookingRecord>) => Promise<void>; onView: () => void }) {
   const status = configuration.statuses.find(option => option.value === booking.bookingStatus)
   const stage = serviceStageFor(configuration.statuses, booking.bookingStatus)
   const availableStaff = staff.filter(person => canReceiveServiceAssignment(person) || person.id === booking.waiterId)
@@ -331,21 +369,21 @@ function ServiceBookingRow({ booking, occasions, staff, configuration, waitingSt
 <td><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></td>
 <td><AllergyBadges booking={booking} emptyLabel="" /></td>
 <td>
-<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}>
+<select disabled={locked} className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}>
 <option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select>
 </td>
 <td>
-<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}>
+<select disabled={locked} className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}>
 <option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select>
 </td>
 <td className="service-status-cell">
-<div className="service-status-controls"><div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div>
-<div className="service-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div></div>
+<div className="service-status-controls"><div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect disabled={locked} className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div>
+<div className="service-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton disabled={locked} compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton disabled={locked} compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton disabled={locked} compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div></div>
 </td>
 </tr>
 }
 
-function MobileBookingCard({ booking, occasions, staff, configuration, waitingStatus, arrivedStatus, noShowStatus, onUpdate, onView }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; staff: Staff[]; configuration: BookingConfiguration; waitingStatus?: ConfigOption; arrivedStatus?: ConfigOption; noShowStatus?: ConfigOption; onUpdate: (booking: BookingRecord, changes: Partial<BookingRecord>) => Promise<void>; onView: () => void }) {
+function MobileBookingCard({ booking, occasions, staff, configuration, waitingStatus, arrivedStatus, noShowStatus, locked, onUpdate, onView }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; staff: Staff[]; configuration: BookingConfiguration; waitingStatus?: ConfigOption; arrivedStatus?: ConfigOption; noShowStatus?: ConfigOption; locked: boolean; onUpdate: (booking: BookingRecord, changes: Partial<BookingRecord>) => Promise<void>; onView: () => void }) {
   const status = configuration.statuses.find(option => option.value === booking.bookingStatus)
   const stage = serviceStageFor(configuration.statuses, booking.bookingStatus)
   const availableStaff = staff.filter(person => canReceiveServiceAssignment(person) || person.id === booking.waiterId)
@@ -355,8 +393,8 @@ function MobileBookingCard({ booking, occasions, staff, configuration, waitingSt
     <header><div><span className="mobile-card-kicker">{bookingDisplayTime(booking) || 'Time not set'}{bookingServiceKind(booking) === 'celebration' ? ' · Celebration' : ''}</span><button type="button" className="booking-guest-trigger mobile" onClick={onView} aria-label={`Open booking details for ${guestLabel}`}><b>{guestLabel}</b><SvgIcon name="chevron-right" size={18} /></button>{booking.bookingSource === 'walk_in' ? <span className="booking-walk-in-badge">Walk-In</span> : <small>#{booking.bookingNumber || 'No booking number'}</small>}</div><StatusPill className={`booking-status ${bookingStatusClass(booking.bookingStatus)}`} tone={bookingStatusTone(booking.bookingStatus)}>{status?.label || booking.bookingStatus}</StatusPill></header>
     {stage === 'arrived' && <p className="mobile-arrived-state">✓ Guest has arrived</p>}
     <div className="mobile-card-facts"><span><small>Room</small><b>{booking.roomNumber || '—'}</b></span><span><small>Covers</small><b>{booking.covers}</b></span><span><small>Occasion</small><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></span><span><small>Allergies</small><AllergyBadges booking={booking} /></span></div>
-    <div className="mobile-card-fields"><label>Table<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select></label><label>Waiter<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
-    <div className="mobile-card-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div>
+    <div className="mobile-card-fields"><label>Table<select disabled={locked} className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select></label><label>Waiter<select disabled={locked} className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect disabled={locked} className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
+    <div className="mobile-card-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton disabled={locked} compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton disabled={locked} compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton disabled={locked} compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div>
   </article>
 }
 
@@ -808,7 +846,7 @@ function BookingForm({ booking, date, staff, configuration, onClose, onSave }: {
 </BookingModal>
 }
 
-function BookingView({ booking, occasions, configuration, onClose, onEdit }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; configuration: BookingConfiguration; onClose: () => void; onEdit: () => void }) {
+function BookingView({ booking, occasions, configuration, locked, onClose, onEdit }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; configuration: BookingConfiguration; locked: boolean; onClose: () => void; onEdit: () => void }) {
   const [members, setMembers] = useState<BookingGuestMemberPreview[]>([])
   useEffect(() => { if (booking.importedBatchId) void bookingApi.guestMembers(booking.id).then(setMembers) }, [booking.id, booking.importedBatchId])
   const stage = serviceStageFor(configuration.statuses, booking.bookingStatus)
@@ -903,7 +941,7 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 </div>
 </section>
 </div>
-<footer className="booking-detail-actions"><ActionButton variant="primary" icon="edit" onClick={onEdit}>Edit Booking</ActionButton></footer>
+<footer className="booking-detail-actions">{locked ? <span className="booking-detail-locked-note">🔒 This Booking service day is locked and view-only.</span> : <ActionButton variant="primary" icon="edit" onClick={onEdit}>Edit Booking</ActionButton>}</footer>
 </BookingModal>
 }
 
