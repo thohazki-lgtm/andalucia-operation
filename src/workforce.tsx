@@ -75,8 +75,8 @@ export function StaffEntitlementsManager() {
   useEffect(() => { void load() }, [])
   const visible = items.filter(item => item.employmentStatus === 'active')
   const showDetails = (staffId: string | null) => setExpandedStaffId(staffId)
-  return <article className="panel workforce-foundation-panel staff-entitlements-panel">
-    <div className="panel-title workforce-section-title"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3></div></div>
+  return <article className="panel workforce-foundation-panel staff-entitlements-panel entitlement-card-stack">
+    <div className="panel-title workforce-section-title entitlement-heading-card"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES</p><h3>Employee Entitlements</h3></div></div>
     {error && <p className="save-error" role="alert">{error}</p>}
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
       <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
