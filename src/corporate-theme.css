@@ -965,7 +965,7 @@ main[class*='module-'] :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card) {
+):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card) {
   border-color: var(--ao-module-line);
 }
 
@@ -1234,6 +1234,19 @@ main.module-leave-planner .leave-planner-heading-card {
   border-radius: 12px;
 }
 
+main.module-leave-planner .leave-planner-main-card {
+  box-sizing: border-box;
+  width: calc(100% - 28px);
+  margin: 14px 14px 0;
+  padding: 0 0 10px;
+  overflow: hidden;
+  border: 1px solid var(--ao-leave-gold);
+  border-top-width: 2px;
+  border-radius: 12px;
+  background: var(--ao-leave-surface);
+  box-shadow: 0 7px 18px rgba(69, 23, 107, .06);
+}
+
 main.module-leave-planner .leave-planner-header h2,
 main.module-leave-planner .staff-profile-overlay.leave-modal-overlay .staff-profile-drawer > header h2,
 main.module-leave-planner .public-holiday-modal > h2,
@@ -1311,10 +1324,11 @@ main.module-leave-planner :is(
 }
 
 main.module-leave-planner .leave-command-panel {
-  margin: 14px 14px 10px;
-  padding: 10px;
-  border: 1px solid var(--ao-leave-gold) !important;
-  border-radius: 10px;
+  margin: 0;
+  padding: 10px 10px 12px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ao-leave-gold) !important;
+  border-radius: 0;
   background: var(--ao-leave-surface-strong);
 }
 
@@ -1381,7 +1395,7 @@ main.module-leave-planner :is(.leave-planner-filters label, .leave-period-contro
 main.module-leave-planner .leave-summary-section {
   margin-inline: 14px;
   padding-block: 10px 11px;
-  border-bottom-color: var(--ao-leave-divider);
+  border-bottom-color: var(--ao-leave-gold);
 }
 
 main.module-leave-planner .leave-summary-section > header {
@@ -1418,10 +1432,14 @@ main.module-leave-planner .leave-summary-card:not(.off):not(.holiday):not(.sick)
 main.module-leave-planner .leave-planner-grid-wrap {
   box-sizing: border-box;
   max-width: calc(100% - 28px);
-  margin: 12px 14px 0;
+  margin-inline: 14px;
   border: 1px solid var(--ao-leave-gold) !important;
   border-top-width: 2px !important;
   scrollbar-color: var(--ao-leave-scrollbar) var(--ao-leave-scrollbar-track);
+}
+
+main.module-leave-planner .leave-planner-main-card > .staff-module-info {
+  margin: 16px 14px 0;
 }
 
 main.module-leave-planner .leave-planner-grid :is(th, td) {
@@ -2296,13 +2314,17 @@ main.module-leave-planner .booked-leave-form footer {
     margin-inline: 9px;
   }
 
-  main.module-leave-planner .leave-command-panel,
+  main.module-leave-planner .leave-planner-main-card {
+    width: calc(100% - 18px);
+    margin: 12px 9px 0;
+  }
+
   main.module-leave-planner .leave-summary-section {
     margin-inline: 9px;
   }
 
   main.module-leave-planner .leave-command-panel {
-    margin-top: 12px;
+    margin: 0;
     padding: 9px;
   }
 
@@ -2312,7 +2334,11 @@ main.module-leave-planner .booked-leave-form footer {
 
   main.module-leave-planner .leave-planner-grid-wrap {
     max-width: calc(100% - 18px);
-    margin: 10px 9px 0;
+    margin-inline: 9px;
+  }
+
+  main.module-leave-planner .leave-planner-main-card > .staff-module-info {
+    margin-inline: 9px;
   }
 
   main.module-leave-planner .leave-planner-filters {
