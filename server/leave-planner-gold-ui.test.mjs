@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 
 const theme = await readFile(new URL('../src/corporate-theme.css', import.meta.url), 'utf8')
 const planner = await readFile(new URL('../src/leave-planner.tsx', import.meta.url), 'utf8')
+const history = await readFile(new URL('../src/staff-leave.tsx', import.meta.url), 'utf8')
 
 assert.match(theme, /\.module-leave-planner\s*\{[\s\S]*--ao-leave-gold:\s*#c5a35a;/)
 assert.match(planner, /leave-planner-panel leave-planner-card-stack/, 'The Planner must use an unframed stack instead of one shared card.')
@@ -26,5 +27,12 @@ assert.match(theme, /--ao-leave-table-header:\s*#d8c8ef;/)
 assert.match(theme, /html body \.app-shell main\.module-leave-planner \.leave-planner-grid thead th,[\s\S]*?background:\s*var\(--ao-leave-table-header\);/)
 assert.match(theme, /html body \.app-shell main\.module-leave-planner \.employee-entitlement-table thead th\s*\{[\s\S]*?background:\s*var\(--ao-leave-table-header\);/)
 assert.doesNotMatch(planner, /confirmed days|planned · not confirmed/, 'Summary cards must not render descriptive wording below their values.')
+assert.match(history, /leave-records-panel leave-history-card-stack/, 'Leave History must use an unframed card stack.')
+assert.match(history, /leave-records-header leave-history-heading-card/, 'Leave History heading must be an independent card.')
+assert.match(history, /leave-history-filter-card[\s\S]*leave-record-filters/, 'Leave History filters must be grouped in their own card.')
+assert.match(theme, /main\.module-leave-planner \.leave-records-panel\.leave-history-card-stack\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/)
+assert.match(theme, /\.leave-history-heading-card,[\s\S]*?\.leave-history-filter-card,[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;/)
+assert.match(theme, /\.panel\.leave-types-panel,[\s\S]*?\.panel\.entitlement-policies-panel,[\s\S]*?\.panel\.public-holidays-panel[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;/)
+assert.match(theme, /\.leave-type-card,[\s\S]*?\.entitlement-policy-row,[\s\S]*?\.holiday-record[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;/)
 
 console.log(JSON.stringify({ status: 'PASS', suite: 'leave-planner-gold-ui' }))

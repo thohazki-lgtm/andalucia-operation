@@ -1348,21 +1348,42 @@ main.module-leave-planner .leave-planner-module-content :is(
   .panel.entitlement-policies-panel,
   .panel.public-holidays-panel
 ) {
-  margin-bottom: 10px;
+  margin: 0 0 10px;
   padding: 11px 12px;
-  border-color: var(--ao-leave-line) !important;
+  border-color: var(--ao-leave-gold) !important;
+  border-top-width: 2px !important;
   background: var(--ao-leave-surface) !important;
+}
+
+main.module-leave-planner :is(
+  .employee-entitlement-row,
+  .balance-carry-forward
+) {
+  border-color: var(--ao-leave-line) !important;
+  background: #fff !important;
 }
 
 main.module-leave-planner :is(
   .leave-type-card,
   .entitlement-policy-row,
-  .employee-entitlement-row,
-  .holiday-record,
-  .balance-carry-forward
+  .holiday-record
 ) {
-  border-color: var(--ao-leave-line) !important;
+  border-color: var(--ao-leave-gold) !important;
   background: #fff !important;
+}
+
+main.module-leave-planner :is(
+  .leave-types-panel,
+  .entitlement-policies-panel,
+  .public-holidays-panel
+) > .workforce-section-title {
+  margin-bottom: 9px;
+  padding-bottom: 9px;
+  border-bottom-color: var(--ao-leave-gold) !important;
+}
+
+main.module-leave-planner .public-holidays-panel .holiday-command > :is(label, .holiday-active-summary) {
+  border-color: var(--ao-leave-gold) !important;
 }
 
 main.module-leave-planner .employee-entitlement-table-wrap {
@@ -1416,7 +1437,7 @@ main.module-leave-planner .employee-entitlement-details-row > td {
 main.module-leave-planner :is(
   .workforce-section-title:not(.entitlement-heading-card),
   .holiday-panel-heading,
-  .leave-records-header,
+  .leave-records-header:not(.leave-history-heading-card),
   .policy-card-header,
   .employee-entitlement-header,
   .balance-carry-forward > header,
@@ -1430,9 +1451,6 @@ main.module-leave-planner :is(
 }
 
 main.module-leave-planner :is(
-  .leave-records-panel,
-  .planned-leave-history,
-  .confirmed-leave-history,
   .leave-employee-history,
   .leave-record-modal,
   .opening-balance-snapshot,
@@ -1443,6 +1461,38 @@ main.module-leave-planner :is(
   background: var(--ao-leave-surface) !important;
 }
 
+main.module-leave-planner .leave-records-panel.leave-history-card-stack {
+  display: grid;
+  gap: 10px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+main.module-leave-planner :is(
+  .leave-history-heading-card,
+  .leave-history-filter-card,
+  .planned-leave-history,
+  .confirmed-leave-history
+) {
+  margin: 0;
+  border: 1px solid var(--ao-leave-gold) !important;
+  border-radius: 12px;
+  background: var(--ao-leave-surface) !important;
+  box-shadow: 0 5px 14px rgba(69, 23, 107, .05);
+}
+
+main.module-leave-planner .leave-history-heading-card {
+  padding: 11px 12px;
+  border-top-width: 2px !important;
+}
+
+main.module-leave-planner .leave-history-filter-card {
+  padding: 10px;
+}
+
 main.module-leave-planner :is(
   .leave-employee-history > summary,
   .leave-record-modal > header,
@@ -1451,12 +1501,9 @@ main.module-leave-planner :is(
   .leave-details-scroll .staff-profile-grid > div,
   .opening-balance-snapshot dl div,
   .additional-entitlement-balances dl div,
-  .holiday-command > label,
-  .holiday-active-summary,
   .entitlement-view-summary,
   .modal.entitlement-balance-modal > h2,
   .entitlement-balance-modal > .workforce-modal-person,
-  .leave-record-filters,
   .leave-records-table th,
   .planned-leave-history .leave-records-table th
 ) {
@@ -1661,10 +1708,10 @@ main.module-leave-planner .leave-history-expand {
 main.module-leave-planner .leave-record-filters {
   align-items: end;
   gap: 8px;
-  margin-block: 12px;
-  padding: 10px;
-  border: 1px solid var(--ao-leave-line) !important;
-  background: var(--ao-leave-surface-strong) !important;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
 }
 
 main.module-leave-planner .leave-record-filters :is(input, select),
