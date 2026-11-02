@@ -3809,9 +3809,10 @@ main.module-training {
   --ao-training-ink: #1e5b53;
   --ao-training-ink-strong: #123e48;
   --ao-training-mint: #ccffaa;
-  --ao-training-border: #2f6f64;
-  --ao-training-line: #8dbdaf;
-  --ao-training-divider: #b6d7cd;
+  --ao-training-gold: #bda16a;
+  --ao-training-border: #bda16a;
+  --ao-training-line: #c9b47d;
+  --ao-training-divider: #ddcfa8;
   --ao-training-surface: #f6fbf7;
   --ao-training-surface-soft: #eaf6ed;
   --ao-training-surface-strong: #dcefe2;
@@ -3850,7 +3851,7 @@ main.module-training > .page-header .avatar {
 }
 
 main.module-training .training-r2 {
-  gap: 8px;
+  gap: 9px;
   font-family: var(--ao-font-ui);
 }
 
@@ -3900,23 +3901,22 @@ main.module-training .training-r2-toolbar .view-switch {
   grid-template-columns: repeat(2, minmax(116px, 1fr));
   gap: 6px;
   padding: 4px;
-  border: 1px solid var(--ao-training-line);
+  border: 1px solid var(--ao-training-gold);
   border-radius: 12px;
-  border-color: var(--ao-training-line);
   background: color-mix(in srgb, var(--ao-training-surface-soft) 92%, transparent);
 }
 
 main.module-training .training-r2-toolbar .view-switch .ao-action {
   min-width: 0;
   min-height: 40px;
-  border: 1px solid var(--ao-training-divider);
+  border: 1px solid var(--ao-training-gold);
   border-radius: 8px;
   background: #fff;
   box-shadow: none;
 }
 
 main.module-training .training-r2-toolbar .view-switch .ao-action.selected {
-  border-color: var(--ao-training-ink);
+  border-color: var(--ao-training-gold);
   background: var(--ao-training-ink);
   color: #fff;
   box-shadow: none;
@@ -3926,7 +3926,7 @@ main.module-training .training-r2-toolbar .ao-action,
 main.module-training .training-r2-actions .ao-action,
 main.module-training .training-r2-period .ao-icon-action,
 main.module-training .training-coverage > header .ao-action {
-  border-color: var(--ao-training-line);
+  border-color: var(--ao-training-gold);
   color: var(--ao-training-ink);
 }
 
@@ -3946,26 +3946,29 @@ main.module-training :is(.training-form, .training-confirm-modal) .ao-action--pr
 }
 
 main.module-training .training-r2-period {
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: 36px minmax(180px, 240px) 36px;
   align-items: center;
-  gap: 4px;
-  max-width: none;
-  width: 100%;
-  margin: 0;
-  padding: 4px;
-  border: 1px solid var(--ao-training-border) !important;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, white);
-  box-shadow: 0 3px 9px rgb(18 62 72 / .06);
-  overflow: hidden;
+  gap: 7px;
+  max-width: 100%;
+  width: max-content;
+  margin: 0 auto;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 main.module-training .training-r2-period > .ao-icon-action {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
   padding: 0;
+  border: 1px solid var(--ao-training-gold);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 74%, white);
 }
 
 main.module-training .training-r2-month {
@@ -3973,8 +3976,8 @@ main.module-training .training-r2-month {
   display: grid;
   box-sizing: border-box;
   min-width: 0;
-  min-height: 44px;
-  padding: 4px 12px;
+  min-height: 36px;
+  padding: 2px 8px;
   border: 0 !important;
   border-radius: 8px;
   background: transparent;
@@ -3985,7 +3988,7 @@ main.module-training .training-r2-month {
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-month > span {
-  font: 500 clamp(22px, 2.5vw, 30px)/1.05 var(--ao-font-display);
+  font: 500 clamp(21px, 2.2vw, 27px)/1.05 var(--ao-font-display);
   letter-spacing: -.02em;
   text-align: center;
 }
@@ -4015,7 +4018,7 @@ html body .app-shell main.module-training .training-r2 .training-r2-kpis > .pane
   align-content: center;
   gap: 2px;
   border: 1px solid var(--ao-training-border) !important;
-  border-top: 3px solid var(--ao-training-ink) !important;
+  border-top: 2px solid var(--ao-training-gold) !important;
   border-radius: 10px;
   background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
 }
@@ -4054,6 +4057,7 @@ html body .app-shell main.module-training .training-r2 .training-next {
   margin: 0;
   padding: 10px 13px;
   border: 1px solid var(--ao-training-border) !important;
+  border-top: 2px solid var(--ao-training-gold) !important;
   border-left: 4px solid var(--ao-training-ink) !important;
   background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, white);
 }
@@ -4088,7 +4092,8 @@ html body .app-shell main.module-training .training-r2 .training-r2-view {
 html body .app-shell main.module-training .training-r2 .training-r2-view--calendar {
   gap: 8px;
   padding: 10px;
-  border: 1px solid var(--ao-training-border) !important;
+  border: 1px solid var(--ao-training-gold) !important;
+  border-top-width: 2px !important;
   border-radius: 12px;
   background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
   box-shadow: 0 6px 16px rgb(18 62 72 / .07);
@@ -4127,13 +4132,13 @@ html body .app-shell main.module-training .training-r2 .training-r2-view--calend
   background: transparent;
 }
 
-main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
-  border-color: var(--ao-training-divider);
+html body .app-shell main.module-training .training-r2 :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
+  border-color: var(--ao-training-gold);
   background: #fff;
   color: var(--ao-premium-navy);
 }
 
-main.module-training :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea):focus {
+html body .app-shell main.module-training .training-r2 :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea):focus {
   border-color: var(--ao-training-ink);
   box-shadow: 0 0 0 3px rgb(30 91 83 / .13);
   outline: 0;
@@ -4141,14 +4146,13 @@ main.module-training :is(.training-r2-filters, .training-form, .training-confirm
 
 html body .app-shell main.module-training .training-r2 .training-r2-view--calendar .panel.training-r2-calendar {
   overflow: hidden;
-  border: 0 !important;
-  border-top: 1px solid var(--ao-training-border) !important;
+  border: 1px solid var(--ao-training-gold) !important;
   border-radius: 8px;
   background: var(--ao-training-surface);
 }
 
 main.module-training .training-weekdays {
-  border-bottom: 1px solid var(--ao-training-line);
+  border-bottom: 1px solid var(--ao-training-gold);
   background: var(--ao-training-ink);
 }
 
@@ -4160,8 +4164,16 @@ main.module-training .training-weekdays b {
   text-transform: uppercase;
 }
 
+main.module-training .training-weekdays b:not(:last-child) {
+  border-right: 1px solid var(--ao-training-gold);
+}
+
+main.module-training .training-weekdays b:last-child {
+  border-right: 0;
+}
+
 main.module-training .training-calendar-grid {
-  background: var(--ao-training-divider);
+  background: var(--ao-training-gold);
   gap: 1px;
 }
 
@@ -4218,7 +4230,7 @@ main.module-training .training-confirm-header {
 html body .app-shell main.module-training .training-r2 .panel.training-r2-list,
 html body .app-shell main.module-training .training-r2 .panel.training-coverage {
   border: 1px solid var(--ao-training-border);
-  border-top: 3px solid var(--ao-training-ink) !important;
+  border-top: 2px solid var(--ao-training-gold) !important;
 }
 
 main.module-training .training-r2-list {
@@ -4549,7 +4561,18 @@ main.module-training .training-import-list > article {
 
   main.module-training .training-r2-period {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
-    max-width: none;
+    width: min(100%, 320px);
+  }
+
+  main.module-training .training-r2-period > .ao-icon-action {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  main.module-training .training-r2-month {
+    min-height: 44px;
   }
 
   main.module-training .training-r2-month > span {
