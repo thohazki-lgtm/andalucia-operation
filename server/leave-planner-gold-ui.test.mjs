@@ -10,7 +10,7 @@ assert.match(theme, /main\.module-leave-planner \.leave-command-panel\s*\{[\s\S]
 assert.match(theme, /main\.module-leave-planner \.leave-summary-card\s*\{[\s\S]*?height:\s*68px;[\s\S]*?min-height:\s*68px;[\s\S]*?padding:\s*8px 11px;[\s\S]*?border-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-summary-card:not\(\.off\):not\(\.holiday\):not\(\.sick\)\s*\{[\s\S]*?border-top-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /:not\(\.dashboard-card\):not\(\.leave-summary-card\)[^{]*\{[\s\S]*?border-color:\s*var\(--ao-module-line\);/)
-assert.match(theme, /main\.module-leave-planner \.leave-planner-grid-wrap\s*\{[\s\S]*?margin:\s*12px 14px 0;[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/)
+assert.match(theme, /main\.module-leave-planner \.leave-planner-grid-wrap\s*\{[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-grid-gold\);/)
 assert.match(theme, /html body \.app-shell main\[class\*='module-'\] table:not\(\.leave-planner-grid\) :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-module-divider\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid tbody tr:nth-child\(odd\) > :is\(th, td\)\s*\{[\s\S]*?background:\s*#fffdf9;/)

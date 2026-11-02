@@ -212,19 +212,19 @@
 }
 
 /* Employee Entitlements: compact table with inline detail expansion. */
-.employee-entitlement-table-wrap{margin-top:10px;overflow-x:auto;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:12px;background:#fff;box-shadow:0 7px 18px rgba(69,23,107,.06)}
+.employee-entitlement-table-wrap{overflow-x:auto;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:12px;background:#fff;box-shadow:0 7px 18px rgba(69,23,107,.06)}
 .employee-entitlement-table{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#173e54;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
 .employee-entitlement-table .entitlement-employee-column{width:20%}.employee-entitlement-table .entitlement-id-column{width:14%}.employee-entitlement-table .entitlement-metric-column{width:13.75%}.employee-entitlement-table .entitlement-action-column{width:11%}
 .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:table-row;padding:0;border:0;border-radius:0}
-.employee-entitlement-table th{height:42px;padding:8px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.25;text-align:center;text-transform:uppercase;white-space:nowrap}
+.employee-entitlement-table th{height:42px;padding:8px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:10px;font-weight:500;letter-spacing:.05em;line-height:1.2;text-align:center;text-transform:uppercase;white-space:nowrap}
 .employee-entitlement-table th:first-child{text-align:left}.employee-entitlement-table th:last-child{border-right:0}
 .employee-entitlement-table tbody+tbody .employee-entitlement-row td{border-top:1px solid var(--ao-leave-grid-gold,#d5bd88)}
-.employee-entitlement-table .employee-entitlement-row td{height:54px;padding:9px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);background:#fffdf9;text-align:center;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);font-size:11.5px;font-variant-numeric:tabular-nums;line-height:1.3;vertical-align:middle}
+.employee-entitlement-table .employee-entitlement-row td{height:54px;padding:9px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);background:#fffdf9;text-align:center;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);font-size:12px;font-variant-numeric:tabular-nums;line-height:1.3;vertical-align:middle}
 .employee-entitlement-table tbody:nth-of-type(odd)>.employee-entitlement-row td{background:#fffdf9}.employee-entitlement-table tbody:nth-of-type(even)>.employee-entitlement-row td{background:var(--ao-leave-row-alt,#f5f1fb)}
 .employee-entitlement-table .employee-entitlement-row:hover td,.employee-entitlement-table .employee-entitlement-row.expanded td{background:var(--ao-leave-surface,#f8f5ff)}
 .employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0}
-.employee-entitlement-table .employee-entitlement-row td>b{color:#173e54;font-size:11.5px;font-weight:400;line-height:1.25}
-.employee-entitlement-table .employee-entitlement-row td.employee-entitlement-identity{text-align:left}.employee-entitlement-table .employee-entitlement-identity b,.employee-entitlement-table .employee-entitlement-id b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.employee-entitlement-table .employee-entitlement-identity b{font-size:11.5px;font-weight:500}.employee-entitlement-table .employee-entitlement-id b{color:#554863;font-size:11.25px;font-weight:500;letter-spacing:.01em}.employee-entitlement-table .employee-entitlement-action{padding-left:7px;padding-right:7px}
+.employee-entitlement-table .employee-entitlement-row td>b{color:#173e54;font-size:12px;font-weight:400;line-height:1.25}
+.employee-entitlement-table .employee-entitlement-row td.employee-entitlement-identity{text-align:left}.employee-entitlement-table .employee-entitlement-identity b,.employee-entitlement-table .employee-entitlement-id b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.employee-entitlement-table .employee-entitlement-identity b{font-size:13px;font-weight:500}.employee-entitlement-table .employee-entitlement-id b{color:#554863;font-size:11px;font-weight:400;letter-spacing:.01em}.employee-entitlement-table .employee-entitlement-action{padding-left:7px;padding-right:7px}
 .entitlement-details-toggle{min-width:66px;min-height:32px;padding:6px 9px;border:1px solid var(--ao-leave-line,#c0b7f0);border-radius:8px;background:#fff;color:var(--ao-violet-hour,#45176b);font:600 9px/1 var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif);cursor:pointer}
 .entitlement-details-toggle:hover,.entitlement-details-toggle:focus-visible,.entitlement-details-toggle[aria-expanded="true"]{border-color:var(--ao-violet-hour,#45176b);background:var(--ao-violet-hour,#45176b);color:#fff;outline:0}
 .employee-entitlement-details-row>td{padding:0;border-top:1px solid var(--ao-leave-line,#c0b7f0);background:var(--ao-leave-surface,#f8f5ff)}
@@ -248,15 +248,15 @@
 
 @media(max-width:700px){
   .entitlement-view-summary{align-items:flex-start;flex-direction:column;gap:4px}.entitlement-view-summary small{text-align:left}
-  .employee-entitlement-table-wrap{margin-top:9px;overflow:visible;border:0;background:transparent;box-shadow:none}
+  .employee-entitlement-table-wrap{overflow:visible;border:0;background:transparent;box-shadow:none}
   .employee-entitlement-table{display:block;min-width:0}.employee-entitlement-table colgroup,.employee-entitlement-table thead{display:none}.employee-entitlement-table tbody{display:block;margin-bottom:8px;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:11px;background:#fff;overflow:hidden}
   .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   .employee-entitlement-table .employee-entitlement-row td{display:flex;box-sizing:border-box;height:auto;min-height:48px;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);text-align:right}
   .employee-entitlement-table .employee-entitlement-row td:nth-child(even){border-right:0}.employee-entitlement-table .employee-entitlement-row td:last-child{border-right:0;border-bottom:0}
   .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity)::before{content:attr(data-label);color:var(--ao-violet-hour,#45176b);font-size:8.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
-  .employee-entitlement-table .employee-entitlement-id{flex-direction:column;align-items:flex-start;justify-content:center;text-align:left}.employee-entitlement-table .employee-entitlement-id b{max-width:100%;font-size:11.25px}
+  .employee-entitlement-table .employee-entitlement-id{flex-direction:column;align-items:flex-start;justify-content:center;text-align:left}.employee-entitlement-table .employee-entitlement-id b{max-width:100%;font-size:11px}
   .employee-entitlement-table .employee-entitlement-identity{min-width:0}.employee-entitlement-table .employee-entitlement-action{grid-column:1/-1;justify-content:flex-end;min-height:46px}
-  .employee-entitlement-table .employee-entitlement-identity b{font-size:11.5px}.employee-entitlement-table .employee-entitlement-row td>b{font-size:11.5px}
+  .employee-entitlement-table .employee-entitlement-identity b{font-size:12px}.employee-entitlement-table .employee-entitlement-row td>b{font-size:12px}
   .entitlement-details-toggle{min-height:40px}
   .employee-entitlement-details-row{display:block}.employee-entitlement-details-row>td{display:block;width:100%;padding:0}
   .employee-entitlement-details{padding:10px}
