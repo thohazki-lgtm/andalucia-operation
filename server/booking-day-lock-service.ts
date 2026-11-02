@@ -5,7 +5,6 @@ import { serviceDate } from '../src/service-date.js'
 import { auditActorLabel } from './authorization-service.js'
 
 export const BOOKING_DAY_LOCK_CUTOFF = '04:00'
-export const BOOKING_DAY_REOPEN_WINDOW_MINUTES = 120
 
 const bookingDayLockGroup = 'booking_day_locks'
 type Queryable = Pick<PGlite, 'query'>
@@ -25,11 +24,9 @@ type BookingDayLockMetadata = {
 
 export type BookingDayCorrectionContext = {
   date: string
-  reason: string
   reopenedBy: string
   reopenedByUserId: string
   reopenedAt: string
-  reopenedUntil: string
 }
 
 type BookingDayLockServiceOptions = { now?: () => Date }
@@ -63,28 +60,26 @@ export class BookingDayLockService {
   }
   private effective(date: string, metadata: BookingDayLockMetadata, now = this.now()): Omit<BookingDayLockStatus, 'canManageDayLock'> {
     const cutoff = this.cutoffAt(date)
-    const reopenedUntil = metadata.state === 'reopened' && metadata.reopenedUntil ? new Date(metadata.reopenedUntil) : null
-    const reopened = Boolean(reopenedUntil && reopenedUntil.getTime() > now.getTime())
+    const reopened = metadata.state === 'reopened'
     const automatic = !metadata.state && now.getTime() >= cutoff.getTime()
-    const expiredReopen = metadata.state === 'reopened' && !reopened
-    const locked = metadata.state === 'locked' || automatic || expiredReopen
+    const locked = metadata.state === 'locked' || automatic
     return {
       date,
       state: locked ? 'locked' : reopened ? 'reopened' : 'open',
       locked,
-      lockKind: metadata.state === 'locked' ? metadata.lockKind || 'manual' : automatic ? 'automatic' : expiredReopen ? 'relock' : null,
+      lockKind: metadata.state === 'locked' ? metadata.lockKind || 'manual' : automatic ? 'automatic' : null,
       cutoffLocalTime: BOOKING_DAY_LOCK_CUTOFF,
       cutoffAt: cutoff.toISOString(),
-      reason: metadata.reason || (automatic ? 'Automatic Maldives service cutoff' : expiredReopen ? 'Authorized correction window expired' : null),
+      reason: metadata.reason || (automatic ? 'Automatic Maldives service cutoff' : null),
       actor: metadata.actor || null,
       actorUserId: metadata.actorUserId || null,
       changedAt: metadata.changedAt || (automatic ? cutoff.toISOString() : null),
       reopenedAt: metadata.reopenedAt || null,
       reopenedBy: metadata.reopenedBy || null,
       reopenedByUserId: metadata.reopenedByUserId || null,
-      reopenReason: metadata.reopenReason || null,
-      reopenedUntil: metadata.reopenedUntil || null,
-      correctionWindowMinutes: BOOKING_DAY_REOPEN_WINDOW_MINUTES
+      reopenReason: null,
+      reopenedUntil: null,
+      correctionWindowMinutes: null
     }
   }
   private async write(date: string, action: 'locked' | 'reopened' | 'relocked', before: Omit<BookingDayLockStatus, 'canManageDayLock'>, metadata: BookingDayLockMetadata, actor: string) {
@@ -105,15 +100,13 @@ export class BookingDayLockService {
     this.validateDate(date)
     const stored = await this.metadata(date, database)
     const status = this.effective(date, stored.metadata)
-    if (status.locked) throw new Error(`BOOKING_DAY_LOCKED: ${date} is locked. An authorized manager must reopen it with a reason before corrections can be saved.`)
+    if (status.locked) throw new Error(`BOOKING_DAY_LOCKED: ${date} is locked. An authorized manager must reopen it before corrections can be saved.`)
     if (status.state !== 'reopened') return null
     return {
       date,
-      reason: status.reopenReason || '',
       reopenedBy: status.reopenedBy || '',
       reopenedByUserId: status.reopenedByUserId || '',
-      reopenedAt: status.reopenedAt || '',
-      reopenedUntil: status.reopenedUntil || ''
+      reopenedAt: status.reopenedAt || ''
     }
   }
 
@@ -130,24 +123,20 @@ export class BookingDayLockService {
     return this.status(date, true)
   }
 
-  async reopen(date: string, reason: string, confirmation: string, principal: AuthPrincipal) {
+  async reopen(date: string, principal: AuthPrincipal) {
     this.validateDate(date)
-    const trimmedReason = reason.trim()
-    if (trimmedReason.length < 8) throw new Error('A clear Booking day reopening reason is required.')
-    if (confirmation !== `REOPEN BOOKINGS ${date}`) throw new Error(`Type REOPEN BOOKINGS ${date} to confirm.`)
     const actor = auditActorLabel(principal)
     const stored = await this.metadata(date)
     const before = this.effective(date, stored.metadata)
     if (!before.locked) throw new Error('This Booking service day is not locked.')
     const reopenedAt = this.now()
+    const { reopenReason: _legacyReason, reopenedUntil: _legacyUntil, ...preserved } = stored.metadata
     const metadata: BookingDayLockMetadata = {
-      ...stored.metadata,
+      ...preserved,
       state: 'reopened',
       reopenedAt: reopenedAt.toISOString(),
       reopenedBy: actor,
       reopenedByUserId: principal.userId,
-      reopenReason: trimmedReason,
-      reopenedUntil: new Date(reopenedAt.getTime() + BOOKING_DAY_REOPEN_WINDOW_MINUTES * 60_000).toISOString(),
       actor,
       actorUserId: principal.userId,
       changedAt: reopenedAt.toISOString()

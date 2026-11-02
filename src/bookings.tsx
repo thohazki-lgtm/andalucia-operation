@@ -111,28 +111,28 @@ function BookingModal({ title, children, onClose, wide = false, side = false, cl
 </div>
 }
 
-function BookingDayLockDialog({ action, date, status, onClose, onSaved }: { action: 'lock' | 'reopen' | 'relock'; date: string; status: BookingDayLockStatus; onClose: () => void; onSaved: (status: BookingDayLockStatus) => void }) {
+function BookingDayLockDialog({ action, date, status, onClose, onSaved }: { action: 'lock' | 'relock'; date: string; status: BookingDayLockStatus; onClose: () => void; onSaved: (status: BookingDayLockStatus) => void }) {
   const [reason, setReason] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const verb = action === 'reopen' ? 'REOPEN' : action === 'relock' ? 'RELOCK' : 'LOCK'
+  const verb = action === 'relock' ? 'RELOCK' : 'LOCK'
   const expected = `${verb} BOOKINGS ${date}`
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true); setError('')
     try {
-      const next = action === 'lock' ? await bookingApi.lockDay(date, confirmation) : action === 'reopen' ? await bookingApi.reopenDay(date, reason, confirmation) : await bookingApi.relockDay(date, reason, confirmation)
+      const next = action === 'lock' ? await bookingApi.lockDay(date, confirmation) : await bookingApi.relockDay(date, reason, confirmation)
       onSaved(next)
     } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to update this Booking service day.') } finally { setSaving(false) }
   }
-  return <BookingModal title={action === 'reopen' ? 'Reopen Booking service day' : action === 'relock' ? 'Relock Booking service day' : 'Lock Booking service day'} onClose={onClose} className="booking-day-lock-dialog">
+  return <BookingModal title={action === 'relock' ? 'Relock Booking service day' : 'Lock Booking service day'} onClose={onClose} className="booking-day-lock-dialog">
     <form className="booking-day-lock-form" onSubmit={submit}>
-      <div className={`booking-day-lock-notice is-${status.state}`}><b>{date}</b><span>{action === 'reopen' ? `Corrections will remain open for ${status.correctionWindowMinutes} minutes and every save will retain the reopening evidence.` : action === 'relock' ? 'Further booking changes will be blocked immediately.' : 'Bookings remain viewable, but all operational changes and imports will be blocked.'}</span></div>
+      <div className={`booking-day-lock-notice is-${status.state}`}><b>{date}</b><span>{action === 'relock' ? 'Further booking changes will be blocked immediately.' : 'Bookings remain viewable, but all operational changes and imports will be blocked.'}</span></div>
       {action !== 'lock' && <label>Reason<textarea required minLength={8} value={reason} onChange={event => setReason(event.target.value)} placeholder="Explain why this service day needs correction or re-locking" /></label>}
       <label>Confirmation<input required value={confirmation} onChange={event => setConfirmation(event.target.value)} placeholder={expected} autoComplete="off" /></label>
       <p className="booking-day-lock-confirmation">Type <b>{expected}</b> to confirm.</p>
       {error && <p className="inline-error">{error}</p>}
-      <footer><ActionButton type="button" onClick={onClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon={action === 'reopen' ? 'edit' : 'archive'} disabled={saving || confirmation !== expected || (action !== 'lock' && reason.trim().length < 8)}>{saving ? 'Saving…' : action === 'reopen' ? 'Reopen Day' : action === 'relock' ? 'Relock Day' : 'Lock Day'}</ActionButton></footer>
+      <footer><ActionButton type="button" onClick={onClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="archive" disabled={saving || confirmation !== expected || (action !== 'lock' && reason.trim().length < 8)}>{saving ? 'Saving…' : action === 'relock' ? 'Relock Day' : 'Lock Day'}</ActionButton></footer>
     </form>
   </BookingModal>
 }
@@ -162,7 +162,8 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
   const [viewing, setViewing] = useState<BookingRecord | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [dayLock, setDayLock] = useState<BookingDayLockStatus | null>(null)
-  const [lockAction, setLockAction] = useState<'lock' | 'reopen' | 'relock' | null>(null)
+  const [lockAction, setLockAction] = useState<'lock' | 'relock' | null>(null)
+  const [reopening, setReopening] = useState(false)
 
   useEffect(() => {
     if (consumeWorkflow('booking-add')) setEditing('walk-in')
@@ -245,6 +246,14 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
   }
   const quickUpdate = async (booking: BookingRecord, changes: Partial<BookingRecord>) => { try { await persist({ ...booking, ...changes }) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to update booking.') } }
   const locked = Boolean(dayLock?.locked)
+  const reopenDay = async () => {
+    setReopening(true)
+    try {
+      const next = await bookingApi.reopenDay(date)
+      setDayLock(next)
+      onToast('Booking service day reopened for audited corrections.')
+    } catch (reopenError) { onToast(reopenError instanceof Error ? reopenError.message : 'Unable to reopen this Booking service day.') } finally { setReopening(false) }
+  }
   useEffect(() => { if (locked) { setEditing(null); setShowImport(false) } }, [locked])
   const waitingStatus = configuration.statuses.find(option => option.active && (option.metadata?.operationalAction === 'waiting' || option.value === 'waiting'))
   const arrivedStatus = configuration.statuses.find(option => option.active && option.metadata?.serviceStage === 'arrived')
@@ -259,9 +268,9 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
 <ActionButton compact icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
 <div className="booking-day-lock-controls">
-{dayLock && <span className={`booking-day-lock-status is-${dayLock.state}`} title={dayLock.reason || undefined}><span aria-hidden="true">{dayLock.locked ? '🔒' : dayLock.state === 'reopened' ? '✎' : '○'}</span><b>{dayLock.locked ? 'Locked' : dayLock.state === 'reopened' ? 'Reopened' : 'Open'}</b>{dayLock.state === 'reopened' && <small>Correction window</small>}</span>}
+{dayLock && <span className={`booking-day-lock-status is-${dayLock.state}`} title={dayLock.reason || undefined}><span aria-hidden="true">{dayLock.locked ? '🔒' : dayLock.state === 'reopened' ? '✎' : '○'}</span><b>{dayLock.locked ? 'Locked' : dayLock.state === 'reopened' ? 'Reopened' : 'Open'}</b></span>}
 {dayLock?.canManageDayLock && dayLock.state === 'open' && <ActionButton compact icon="archive" onClick={() => setLockAction('lock')}>Lock Day</ActionButton>}
-{dayLock?.canManageDayLock && dayLock.locked && <ActionButton compact icon="edit" onClick={() => setLockAction('reopen')}>Reopen Day</ActionButton>}
+{dayLock?.canManageDayLock && dayLock.locked && <ActionButton compact icon="edit" disabled={reopening} onClick={() => void reopenDay()}>{reopening ? 'Reopening…' : 'Reopen'}</ActionButton>}
 {dayLock?.canManageDayLock && dayLock.state === 'reopened' && <ActionButton compact icon="archive" onClick={() => setLockAction('relock')}>Relock Day</ActionButton>}
 </div>
 <div>

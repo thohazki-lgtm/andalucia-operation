@@ -135,7 +135,7 @@ export const bookingApi = {
   summary: (date: string) => request<BookingSummary>(`/api/bookings/summary?date=${date}`),
   dayLock: (date: string) => request<BookingDayLockStatus>(`/api/bookings/day-lock?date=${encodeURIComponent(date)}`),
   lockDay: (date: string, confirmation: string) => request<BookingDayLockStatus>('/api/bookings/day-lock', { method: 'POST', body: JSON.stringify({ date, confirmation }) }),
-  reopenDay: (date: string, reason: string, confirmation: string) => request<BookingDayLockStatus>('/api/bookings/day-lock/reopen', { method: 'POST', body: JSON.stringify({ date, reason, confirmation }) }),
+  reopenDay: (date: string) => request<BookingDayLockStatus>('/api/bookings/day-lock/reopen', { method: 'POST', body: JSON.stringify({ date }) }),
   relockDay: (date: string, reason: string, confirmation: string) => request<BookingDayLockStatus>('/api/bookings/day-lock/relock', { method: 'POST', body: JSON.stringify({ date, reason, confirmation }) }),
   create: (booking: BookingRecord) => request<BookingRecord>('/api/bookings', { method: 'POST', body: JSON.stringify(booking) }),
   createWalkIn: (booking: WalkInBookingInput) => request<BookingRecord>('/api/bookings/walk-in', { method: 'POST', body: JSON.stringify(booking) }),

@@ -53,15 +53,19 @@ try {
   assert.equal(automatic.status, 200)
   assert.equal(((await automatic.json()) as BookingDayLockStatus).lockKind, 'automatic')
 
-  assert.equal((await request('/api/bookings/day-lock/reopen', 'POST', tokens.operational, { date, reason: 'Unauthorized correction attempt', confirmation: `REOPEN BOOKINGS ${date}` })).status, 403)
-  assert.equal((await request('/api/bookings/day-lock/reopen', 'POST', tokens.manager, { date, reason: 'Manager approved isolated correction', confirmation: `REOPEN BOOKINGS ${date}` })).status, 200)
+  assert.equal((await request('/api/bookings/day-lock/reopen', 'POST', tokens.operational, { date })).status, 403)
+  const managerReopen = await request('/api/bookings/day-lock/reopen', 'POST', tokens.manager, { date })
+  assert.equal(managerReopen.status, 200)
+  const reopened = await managerReopen.json() as BookingDayLockStatus
+  assert.equal(reopened.state, 'reopened')
+  assert.equal(reopened.reopenedUntil, null)
 
   const booking: BookingRecord = { id: randomUUID(), guestName: 'Authorized correction guest', roomNumber: 'I02', birthDate: null, arrivalDate: null, departureDate: null, mealPeriod: 'Dinner', reservationDate: date, reservationTime: '19:00', bookingNumber: 'LOCK-AUTH', covers: 2, bookingStatus: 'confirmed', bookingSource: 'manual', bookedBy: 'Operational user', guestNotes: '', tableNumber: '', waiterId: null, waiter: null }
   assert.equal((await request('/api/bookings', 'POST', tokens.operational, booking)).status, 201, 'authorized booking editors may make audited corrections during the manager-opened window')
   assert.equal((await request('/api/bookings/day-lock/relock', 'POST', tokens.operational, { date, reason: 'Unauthorized re-lock attempt', confirmation: `RELOCK BOOKINGS ${date}` })).status, 403)
   assert.equal((await request('/api/bookings/day-lock/relock', 'POST', tokens.manager, { date, reason: 'Manager finalized correction window', confirmation: `RELOCK BOOKINGS ${date}` })).status, 200)
   assert.equal((await request(`/api/bookings/${booking.id}`, 'PUT', tokens.operational, { ...booking, covers: 3 })).status, 409)
-  console.log('Booking day lock manager authorization and locked API mutation denial tests passed.')
+  console.log('Booking day lock one-click manager authorization, persistent reopen and locked API mutation denial tests passed.')
 } finally {
   await stop()
   await fixture.cleanup()

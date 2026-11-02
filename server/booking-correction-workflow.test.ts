@@ -89,7 +89,7 @@ try {
   assert.equal((await request(`/api/bookings/${targetId}`, 'PUT', tokens.viewer, trustedOrigin, correction)).status, 403)
   assert.equal((await request(`/api/bookings/${targetId}`, 'PUT', tokens.manager, 'https://untrusted.example', correction)).status, 401)
 
-  const reopenResponse = await request('/api/bookings/day-lock/reopen', 'POST', tokens.manager, trustedOrigin, { date: reservationDate, reason: 'Correct reviewed Activity Program cover evidence', confirmation: `REOPEN BOOKINGS ${reservationDate}` })
+  const reopenResponse = await request('/api/bookings/day-lock/reopen', 'POST', tokens.manager, trustedOrigin, { date: reservationDate })
   assert.equal(reopenResponse.status, 200)
 
   const savedResponse = await request(`/api/bookings/${targetId}`, 'PUT', tokens.manager, trustedOrigin, correction)

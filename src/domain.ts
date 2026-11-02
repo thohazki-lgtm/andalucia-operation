@@ -279,7 +279,7 @@ export interface BookingDayLockStatus {
   reopenedByUserId: string | null
   reopenReason: string | null
   reopenedUntil: string | null
-  correctionWindowMinutes: number
+  correctionWindowMinutes: number | null
   canManageDayLock: boolean
 }
 export interface BookingSummary { totalBookings: number; expectedCovers: number; arrived: number; arrivedCovers: number; remainingBookings: number; remainingCovers: number; noShows: number; noShowCovers: number; unassignedTables: number; unassignedWaiters: number }

@@ -37,27 +37,26 @@ assert.equal((await locks.status(current, true)).state, 'open')
 await assert.rejects(() => locks.lock(current, 'LOCK BOOKINGS WRONG', manager), /Type LOCK BOOKINGS/)
 assert.equal((await locks.lock(current, `LOCK BOOKINGS ${current}`, manager)).state, 'locked')
 await assert.rejects(() => bookings.save(record(current), manager.displayName), /BOOKING_DAY_LOCKED/)
-await assert.rejects(() => locks.reopen(current, 'short', `REOPEN BOOKINGS ${current}`, manager), /clear Booking day reopening reason/)
-
-const reopened = await locks.reopen(current, 'Correct table assignment after signed manager review', `REOPEN BOOKINGS ${current}`, manager)
+const reopened = await locks.reopen(current, manager)
 assert.equal(reopened.state, 'reopened')
 assert.match(reopened.reopenedBy || '', /^Isolated Booking Manager \[/)
 const corrected = await bookings.save(record(current), manager.displayName)
 const correctionAudit = await db.query<{ after_data: any }>("select after_data from audit_logs where entity_type='booking' and entity_id=$1 order by created_at desc limit 1", [corrected.id])
 const after = typeof correctionAudit.rows[0].after_data === 'string' ? JSON.parse(correctionAudit.rows[0].after_data) : correctionAudit.rows[0].after_data
-assert.equal(after.bookingDayCorrection.reason, 'Correct table assignment after signed manager review')
 assert.equal(after.bookingDayCorrection.reopenedByUserId, manager.userId)
+assert.equal(after.bookingDayCorrection.reopenedAt, reopened.reopenedAt)
 
+clock = new Date(clock.getTime() + 121 * 60_000)
+assert.equal((await locks.status(current, true)).state, 'reopened', 'an explicitly reopened day remains editable until a manager re-locks it')
+await bookings.save({ ...corrected, covers: 3 }, manager.displayName)
+
+clock = new Date(clock.getTime() + 24 * 60 * 60_000)
+assert.equal((await locks.status(current, true)).state, 'reopened', 'the historical automatic cutoff must not override an explicit manager reopen')
 assert.equal((await locks.relock(current, 'Correction reviewed and service day finalized', `RELOCK BOOKINGS ${current}`, manager)).state, 'locked')
 await assert.rejects(() => bookings.save({ ...corrected, covers: 3 }, manager.displayName), /BOOKING_DAY_LOCKED/)
 
-await locks.reopen(current, 'Second isolated correction window expiry check', `REOPEN BOOKINGS ${current}`, manager)
-clock = new Date(clock.getTime() + 121 * 60_000)
-assert.equal((await locks.status(current, true)).state, 'locked')
-await assert.rejects(() => bookings.save({ ...corrected, covers: 3 }, manager.displayName), /BOOKING_DAY_LOCKED/)
-
 const lockAudits = await db.query<{ action: string }>("select action from audit_logs where entity_type='booking_day_lock' order by created_at")
-assert.deepEqual(lockAudits.rows.map(row => row.action), ['locked', 'reopened', 'relocked', 'reopened'])
+assert.deepEqual(lockAudits.rows.map(row => row.action), ['locked', 'reopened', 'relocked'])
 
 const pdf = Buffer.from(syntheticActivityProgramPdf('import'))
 const parsed = await parseActivityProgramPdf(new Uint8Array(pdf))
@@ -67,4 +66,4 @@ await assert.rejects(() => bookings.confirmImport(preview.batchId, readyIndexes,
 assert.equal((await bookings.list(parsed.reportDate)).length, 0, 'locked import confirmation must not partially mutate the booking sheet')
 
 await fixture.cleanup()
-console.log('Booking daily lock automatic cutoff, manual lock, audited reopen correction, re-lock, expiry and import denial tests passed.')
+console.log('Booking daily lock automatic cutoff, unrestricted audited manager reopen, persistence, re-lock and import denial tests passed.')
