@@ -2559,19 +2559,19 @@ main.module-staff-management .staff-section-bar .staff-section-tabs button.selec
   box-shadow: inset 0 3px var(--ao-staff-gold), 0 4px 10px rgb(16 62 56 / 22%);
 }
 
-main.module-staff-management .staff-directory-page .staff-tools,
 main.module-staff-management .staff-directory-page .staff-mobile-card {
-  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 42%, white);
+  border-color: var(--ao-staff-gold);
+  border-top-width: 2px;
 }
 
 /* Staff Management's approved gold perimeter is authoritative over the shared
-   module frame while internal dividers retain the emerald line tokens. */
+   module frame and data grids. Semantic status colors remain untouched. */
 main[class*='module-'].module-staff-management .staff-directory-page .staff-summary > .panel:not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
   min-height: 66px;
   padding: 10px 13px;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-color: var(--ao-staff-line-strong) !important;
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
+  border-top: 2px solid var(--ao-staff-gold);
   border-top-color: var(--ao-staff-gold) !important;
   border-radius: 10px;
   background: var(--ao-staff-surface);
@@ -2605,7 +2605,7 @@ main.module-staff-management .staff-directory-page .staff-mobile-cards {
 main.module-staff-management .staff-directory-page .staff-tools {
   margin: 9px 11px;
   padding: 9px;
-  border: 1px solid var(--ao-staff-line);
+  border: 1px solid var(--ao-staff-gold);
   border-radius: 9px;
   background: color-mix(in srgb, var(--ao-staff-surface-strong) 82%, white);
 }
@@ -2623,8 +2623,11 @@ main.module-staff-management .staff-directory-page .staff-tools :is(input, selec
 }
 
 main.module-staff-management .staff-directory-page .staff-table-wrap {
+  margin: 0 11px 11px;
   overflow-x: auto;
-  border-top-color: #acd0c7;
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
+  border-radius: 9px;
   scrollbar-gutter: stable;
 }
 
@@ -2635,19 +2638,19 @@ main.module-staff-management .staff-directory-page .staff-table {
   border-spacing: 0;
 }
 
-main.module-staff-management .staff-directory-page .staff-table th,
-main.module-staff-management .staff-directory-page .staff-table td {
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table th,
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
   box-sizing: border-box;
-  border-right: 1px solid var(--ao-staff-line-strong);
+  border-right: 1px solid var(--ao-staff-gold);
   vertical-align: middle;
 }
 
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):last-child {
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table :is(th, td):last-child {
   border-right: 0;
 }
 
-main.module-staff-management .staff-directory-page .staff-table th {
-  border-bottom-color: var(--ao-staff-emerald-deep);
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table th {
+  border-bottom: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-premium-navy);
   font-size: 10.5px;
@@ -2655,8 +2658,11 @@ main.module-staff-management .staff-directory-page .staff-table th {
   letter-spacing: .035em;
 }
 
-main.module-staff-management .staff-directory-page .staff-table td {
-  border-bottom-color: var(--ao-staff-line);
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
+  border-bottom: 1px solid var(--ao-staff-gold);
+  box-shadow:
+    inset -1px 0 0 var(--ao-staff-gold),
+    inset 0 -1px 0 var(--ao-staff-gold);
   font-size: 12.5px;
   font-weight: 450;
 }
@@ -2915,9 +2921,9 @@ main[class*='module-'].module-staff-management :is(
   .manager-timesheet-hero,
   .manager-timesheet-table
 ):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
-  border: 1px solid var(--ao-staff-line-strong);
-  border-color: var(--ao-staff-line-strong) !important;
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
+  border-top: 2px solid var(--ao-staff-gold);
   border-top-color: var(--ao-staff-gold) !important;
 }
 
@@ -3018,8 +3024,8 @@ html body .app-shell main.module-staff-management :is(
   .staff-account-panel .staff-account-table th,
   .manager-detail-table th
 ) {
-  border-color: var(--ao-staff-line);
-  border-bottom: 2px solid var(--ao-staff-emerald-deep);
+  border-color: var(--ao-staff-gold);
+  border-bottom: 2px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-staff-emerald-deep);
   font-family: var(--ao-font-ui);
@@ -3034,7 +3040,10 @@ main.module-staff-management :is(
   .manager-timesheet-table td,
   .manager-detail-table td
 ) {
-  border-color: color-mix(in srgb, var(--ao-lagoon-teal) 20%, white);
+  border-color: var(--ao-staff-gold);
+  box-shadow:
+    inset -1px 0 0 var(--ao-staff-gold),
+    inset 0 -1px 0 var(--ao-staff-gold);
 }
 
 main.module-staff-management :is(
@@ -3074,6 +3083,11 @@ main.module-staff-management .staff-account-cards {
   background: var(--ao-staff-surface);
 }
 
+main.module-staff-management .staff-account-cards > article {
+  border-color: var(--ao-staff-gold);
+  border-top-width: 2px;
+}
+
 main.module-staff-management .manager-timesheet-hero {
   border-color: var(--ao-staff-gold);
   background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
@@ -3088,9 +3102,9 @@ main.module-staff-management .manager-timesheet-hero p {
 }
 
 html body main.module-staff-management .manager-timesheet-kpis article {
-  border: 1px solid var(--ao-staff-line-strong);
-  border-color: var(--ao-staff-line-strong) !important;
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-color: var(--ao-staff-gold) !important;
+  border-top: 2px solid var(--ao-staff-gold);
   border-top-color: var(--ao-staff-gold) !important;
   background: var(--ao-staff-surface);
 }
@@ -3345,6 +3359,11 @@ main.module-staff-management :is(
   .manager-calculated-hours
 ) {
   background: var(--ao-staff-surface);
+}
+
+main.module-staff-management .manager-timesheet-card {
+  border-color: var(--ao-staff-gold);
+  border-top-color: var(--ao-staff-gold);
 }
 
 main.module-staff-management :is(
@@ -4579,8 +4598,8 @@ html body .app-shell main.module-staff-management .membership-command-header {
   gap: 20px;
   margin: 0;
   padding: 16px 20px;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
   border-radius: 12px;
   background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
   box-shadow: 0 8px 24px rgb(16 62 56 / 12%);
@@ -4616,8 +4635,8 @@ html body .app-shell main.module-staff-management .membership-command-header .me
 
 html body .app-shell main.module-staff-management .membership-approved-page > :is(.membership-approved-banner, .membership-review-card) {
   margin: 0;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
   border-top-color: var(--ao-staff-gold) !important;
   border-radius: 12px;
   background: var(--ao-staff-surface);
@@ -4644,15 +4663,15 @@ html body .app-shell main.module-staff-management .membership-summary-heading .m
 
 html body .app-shell main.module-staff-management .membership-approved-page > .membership-review-card > header {
   padding: 9px 14px 7px;
-  border-bottom: 1px solid var(--ao-staff-line-strong);
+  border-bottom: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
 }
 
 html body .app-shell main.module-staff-management .membership-approved-page > .membership-history {
   margin: 0;
   padding: 0 16px;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
   border-radius: 12px;
   background: var(--ao-staff-surface);
 }
@@ -4722,6 +4741,11 @@ html body .app-shell main.module-staff-management .membership-approved-page > .s
   html body .app-shell main.module-staff-management .membership-approved-page > .membership-history {
     padding-inline: 12px;
   }
+
+  html body .app-shell main.module-staff-management .membership-approved-page .approved-member-cards > article {
+    border-color: var(--ao-staff-gold);
+    border-top-width: 2px;
+  }
 }
 
 /* Account Management mirrors the approved Team Membership hierarchy: a dark
@@ -4742,8 +4766,8 @@ html body .app-shell main.module-staff-management .staff-account-header {
   align-items: center;
   gap: 20px;
   padding: 16px 20px;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
   border-radius: 12px;
   background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
   box-shadow: 0 8px 24px rgb(16 62 56 / 12%);
@@ -4798,8 +4822,8 @@ html body .app-shell main.module-staff-management .staff-account-summary :is(.ac
 html body .app-shell main.module-staff-management .staff-account-tools-panel,
 html body .app-shell main.module-staff-management .staff-account-directory-panel {
   margin: 0;
-  border: 1px solid var(--ao-staff-line-strong);
-  border-top: 3px solid var(--ao-staff-gold);
+  border: 1px solid var(--ao-staff-gold);
+  border-top-width: 2px;
   border-top-color: var(--ao-staff-gold) !important;
   border-radius: 12px;
   background: var(--ao-staff-surface);
@@ -4818,8 +4842,8 @@ html body .app-shell main.module-staff-management .staff-account-directory-headi
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 9px 14px 7px;
-  border-bottom: 1px solid var(--ao-staff-line-strong);
+  padding: 7px 14px 5px;
+  border-bottom: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
 }
 
@@ -4845,7 +4869,7 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-guidance {
-  border-top: 1px solid var(--ao-staff-line-strong);
+  border-top: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
 }
 
