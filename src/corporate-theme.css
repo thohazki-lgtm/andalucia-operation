@@ -751,6 +751,12 @@ main.module-bookings > .page-header {
   background: transparent;
 }
 
+main.module-bookings > .page-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #c5a35a;
+}
+
 main.module-duty-roster > .page-header::before,
 main.module-bookings > .page-header::before {
   display: none;
@@ -910,7 +916,7 @@ main[class*='module-'] :is(
   .view,
   .compact-edit-action,
   .config-icon-action
-):not(.danger):not(.remove) {
+):not(.danger):not(.remove):not(main.module-bookings .service-table .service-actions .ao-action) {
   min-height: var(--ao-module-control-height);
   padding-block: 0;
   padding-inline: 12px;
