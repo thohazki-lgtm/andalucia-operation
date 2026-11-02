@@ -1118,8 +1118,8 @@ html body .app-shell main.module-bookings .booking-command .ao-date-control inpu
 html body .app-shell main.module-bookings .booking-command {
   display: grid;
   grid-template-areas:
-    "copy copy"
-    "navigation actions";
+    "copy actions"
+    "navigation navigation";
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
 }
@@ -1128,8 +1128,8 @@ html body .app-shell main.module-bookings .booking-command {
   html body .app-shell main.module-bookings .booking-command {
     grid-template-areas:
       "copy"
-      "navigation"
-      "actions";
+      "actions"
+      "navigation";
     grid-template-columns: minmax(0, 1fr);
   }
 
