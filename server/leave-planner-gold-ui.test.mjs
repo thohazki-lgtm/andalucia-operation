@@ -2,17 +2,22 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const theme = await readFile(new URL('../src/corporate-theme.css', import.meta.url), 'utf8')
+const planner = await readFile(new URL('../src/leave-planner.tsx', import.meta.url), 'utf8')
 
 assert.match(theme, /\.module-leave-planner\s*\{[\s\S]*--ao-leave-gold:\s*#c5a35a;/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-panel\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-command-panel\s*\{[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;/)
-assert.match(theme, /main\.module-leave-planner \.leave-summary-card\s*\{[\s\S]*?height:\s*84px;[\s\S]*?min-height:\s*84px;[\s\S]*?border-color:\s*var\(--ao-leave-gold\);/)
+assert.match(theme, /main\.module-leave-planner \.leave-summary-card\s*\{[\s\S]*?height:\s*68px;[\s\S]*?min-height:\s*68px;[\s\S]*?padding:\s*8px 11px;[\s\S]*?border-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-summary-card:not\(\.off\):not\(\.holiday\):not\(\.sick\)\s*\{[\s\S]*?border-top-color:\s*var\(--ao-leave-gold\);/)
-assert.match(theme, /:not\(\.dashboard-card\):not\(\.leave-summary-card\)\s*\{[\s\S]*?border-color:\s*var\(--ao-module-line\);/)
+assert.match(theme, /:not\(\.dashboard-card\):not\(\.leave-summary-card\)[^{]*\{[\s\S]*?border-color:\s*var\(--ao-module-line\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid-wrap\s*\{[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-grid-gold\);/)
 assert.match(theme, /html body \.app-shell main\[class\*='module-'\] table:not\(\.leave-planner-grid\) :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-module-divider\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid tbody tr:nth-child\(odd\) > :is\(th, td\)\s*\{[\s\S]*?background:\s*#fffdf9;/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-grid tbody tr:nth-child\(even\) > :is\(th, td\)\s*\{[\s\S]*?background:\s*var\(--ao-leave-row-alt\);/)
+assert.match(theme, /--ao-leave-table-header:\s*#d8c8ef;/)
+assert.match(theme, /html body \.app-shell main\.module-leave-planner \.leave-planner-grid thead th,[\s\S]*?background:\s*var\(--ao-leave-table-header\);/)
+assert.match(theme, /html body \.app-shell main\.module-leave-planner \.employee-entitlement-table thead th\s*\{[\s\S]*?background:\s*var\(--ao-leave-table-header\);/)
+assert.doesNotMatch(planner, /confirmed days|planned · not confirmed/, 'Summary cards must not render descriptive wording below their values.')
 
 console.log(JSON.stringify({ status: 'PASS', suite: 'leave-planner-gold-ui' }))
