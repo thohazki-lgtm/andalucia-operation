@@ -3811,8 +3811,8 @@ main.module-training {
   --ao-training-mint: #ccffaa;
   --ao-training-gold: #bda16a;
   --ao-training-border: #bda16a;
-  --ao-training-line: #c9b47d;
-  --ao-training-divider: #ddcfa8;
+  --ao-training-line: #8dbdaf;
+  --ao-training-divider: #b6d7cd;
   --ao-training-surface: #f6fbf7;
   --ao-training-surface-soft: #eaf6ed;
   --ao-training-surface-strong: #dcefe2;
@@ -3851,7 +3851,9 @@ main.module-training > .page-header .avatar {
 }
 
 main.module-training .training-r2 {
-  gap: 9px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
   font-family: var(--ao-font-ui);
 }
 
@@ -3899,11 +3901,11 @@ main.module-training .training-r2-toolbar {
 main.module-training .training-r2-toolbar .view-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(116px, 1fr));
-  gap: 6px;
-  padding: 4px;
-  border: 1px solid var(--ao-training-gold);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 92%, transparent);
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 main.module-training .training-r2-toolbar .view-switch .ao-action {
@@ -3946,12 +3948,13 @@ main.module-training :is(.training-form, .training-confirm-modal) .ao-action--pr
 }
 
 main.module-training .training-r2-period {
-  grid-template-columns: 36px minmax(180px, 240px) 36px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
   align-items: center;
-  gap: 7px;
-  max-width: 100%;
-  width: max-content;
-  margin: 0 auto;
+  gap: 10px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 0;
   border: 0 !important;
   border-radius: 0;
@@ -3968,7 +3971,7 @@ main.module-training .training-r2-period > .ao-icon-action {
   padding: 0;
   border: 1px solid var(--ao-training-gold);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 74%, white);
+  background: transparent;
 }
 
 main.module-training .training-r2-month {
@@ -4005,7 +4008,7 @@ main.module-training .training-r2-month > input {
 
 main.module-training .training-r2-kpis {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 12px;
   margin: 0;
 }
 
@@ -4090,7 +4093,7 @@ html body .app-shell main.module-training .training-r2 .training-r2-view {
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-view--calendar {
-  gap: 8px;
+  gap: 10px;
   padding: 10px;
   border: 1px solid var(--ao-training-gold) !important;
   border-top-width: 2px !important;
@@ -4152,7 +4155,7 @@ html body .app-shell main.module-training .training-r2 .training-r2-view--calend
 }
 
 main.module-training .training-weekdays {
-  border-bottom: 1px solid var(--ao-training-gold);
+  border-bottom: 1px solid var(--ao-training-divider);
   background: var(--ao-training-ink);
 }
 
@@ -4165,7 +4168,7 @@ main.module-training .training-weekdays b {
 }
 
 main.module-training .training-weekdays b:not(:last-child) {
-  border-right: 1px solid var(--ao-training-gold);
+  border-right: 1px solid var(--ao-training-divider);
 }
 
 main.module-training .training-weekdays b:last-child {
@@ -4173,7 +4176,7 @@ main.module-training .training-weekdays b:last-child {
 }
 
 main.module-training .training-calendar-grid {
-  background: var(--ao-training-gold);
+  background: var(--ao-training-divider);
   gap: 1px;
 }
 
@@ -4561,7 +4564,7 @@ main.module-training .training-import-list > article {
 
   main.module-training .training-r2-period {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
-    width: min(100%, 320px);
+    width: 100%;
   }
 
   main.module-training .training-r2-period > .ao-icon-action {
@@ -4597,7 +4600,7 @@ main.module-training .training-import-list > article {
 
   main.module-training .training-r2-kpis {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: 10px;
   }
 
   main.module-training .training-r2-list > header {
@@ -4608,13 +4611,13 @@ main.module-training .training-import-list > article {
 @media (max-width: 700px) {
   main.module-training .training-r2-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
   }
 }
 
 @media (max-width: 430px) {
   main.module-training .training-r2 {
-    gap: 8px;
+    gap: 10px;
   }
 
   main.module-training .training-r2-kpis > .panel {
