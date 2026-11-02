@@ -956,7 +956,7 @@ main.module-leave-planner .leave-planner-module-tabs {
 main.module-leave-planner .leave-planner-module-tabs button {
   min-height: 38px;
   padding: 6px 7px;
-  border-color: var(--ao-leave-line);
+  border-color: var(--ao-leave-gold);
   color: var(--ao-violet-hour);
   font-family: var(--ao-font-ui);
   font-size: 9.5px;
@@ -967,13 +967,13 @@ main.module-leave-planner .leave-planner-module-tabs button {
 }
 
 main.module-leave-planner .leave-planner-module-tabs button:hover {
-  border-color: var(--ao-leave-line-strong);
+  border-color: var(--ao-leave-gold);
   background: var(--ao-leave-surface-strong);
   color: var(--ao-violet-hour);
 }
 
 main.module-leave-planner .leave-planner-module-tabs button.active {
-  border-color: var(--ao-violet-hour);
+  border-color: var(--ao-leave-gold);
   background: var(--ao-violet-hour);
   color: #fff;
   box-shadow: inset 0 -2px var(--ao-lilac-calm);
@@ -1219,7 +1219,7 @@ main.module-leave-planner .leave-planner-grid :is(th, td) {
 
 html body .app-shell main.module-leave-planner .leave-planner-grid thead th,
 html body .app-shell main.module-leave-planner .leave-planner-grid thead .identity {
-  border-color: var(--ao-leave-divider);
+  border-color: var(--ao-leave-grid-gold);
   background: var(--ao-leave-table-header);
   font-size: 9px;
   font-weight: 500;
@@ -1294,7 +1294,10 @@ main.module-leave-planner .leave-planner-grid tbody tr:nth-child(odd) > :is(th, 
 }
 
 main.module-leave-planner .leave-planner-grid :is(th, td) {
-  border-color: var(--ao-leave-grid-gold);
+  border-top: 0;
+  border-left: 0;
+  border-right-color: var(--ao-leave-grid-gold);
+  border-bottom-color: var(--ao-leave-grid-gold);
 }
 
 main.module-leave-planner .leave-planner-grid thead th .weekday {
@@ -1302,7 +1305,7 @@ main.module-leave-planner .leave-planner-grid thead th .weekday {
 }
 
 main.module-leave-planner .leave-planner-grid .today {
-  border-color: var(--ao-leave-line-strong) !important;
+  border-color: var(--ao-leave-grid-gold) !important;
   background: var(--ao-leave-surface-strong) !important;
   box-shadow: inset 1px 0 var(--ao-lilac-calm), inset -1px 0 var(--ao-lilac-calm) !important;
 }
@@ -2084,18 +2087,24 @@ main.module-leave-planner .booked-leave-form footer {
     margin-left: 0;
     align-items: stretch;
     justify-self: stretch;
-    gap: 6px;
+    gap: 8px;
     padding: 0;
     overflow: visible;
   }
 
   main.module-leave-planner .leave-planner-module-tabs button {
+    box-sizing: border-box;
+    width: 100%;
     height: 100%;
     min-height: 48px;
     padding: 6px 8px;
+    border: 1px solid var(--ao-leave-gold);
+    border-radius: 9px;
     font-size: 9px;
     line-height: 1.25;
     white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
 
   main.module-leave-planner .leave-month-navigation {
