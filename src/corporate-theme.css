@@ -1090,15 +1090,15 @@ html body .app-shell main.module-bookings .booking-status-field .service-status-
 }
 
 html body .app-shell main.module-bookings .booking-status-field--arrived .service-status-select {
-  border-color: #245f46;
-  background-color: #2f7656;
+  border-color: #184a35;
+  background-color: #245f46;
   color: #fff;
   font-weight: 800;
 }
 
 html body .app-shell main.module-bookings .booking-status-field--noshow .service-status-select {
-  border-color: #87352f;
-  background-color: #a94740;
+  border-color: #682520;
+  background-color: #8a332e;
   color: #fff;
   font-weight: 800;
 }

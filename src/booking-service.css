@@ -473,10 +473,10 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 
 .service-groups{padding:8px;background:rgb(255 239 223 / 46%)}
 .time-group{margin-bottom:8px;border-color:#c5a35a;box-shadow:0 2px 8px #173d5608}
-.time-group-header{padding:7px 11px;background:#7b3a25}
+.time-group-header{margin:0;padding:7px 11px;background:#7b3a25}
 .time-group-header strong{font-size:16px}
 .service-table{table-layout:fixed}
-.service-table thead th{padding-block:8px;border-right:0;border-bottom:1px solid #c87b55;background:#ffe9d3;color:#5f2e21;font-size:11px;font-weight:700;line-height:1.15;letter-spacing:.045em}
+.service-table thead th{padding-block:8px;border-right:0;border-bottom:1px solid #c87b55;background:#ffe9d3;color:#5f2e21;font-size:11px;font-weight:700;line-height:1.15;letter-spacing:.045em;vertical-align:middle}
 .service-table thead th:nth-child(7),.service-table thead th:nth-child(8),.service-table thead th:nth-child(9){text-align:center}
 .service-table tbody td{border-top:0;border-right:0;border-bottom:1px solid #e4b99b;color:#334f61;font-size:10.5px;line-height:1.3}
 .service-table tbody tr:last-child td{border-bottom:0}
@@ -507,11 +507,9 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 .booking-assignment-select.is-assigned{border-color:#c2923d;background:#f6ddb2;color:#5f361c;font-weight:700}
 .booking-assignment-select.unassigned-control{border-color:#d7b96f!important;background:#fffaf0!important;color:#775b22!important;font-weight:650}
 .booking-status-field{position:relative;display:flex;align-items:center;width:100%;min-width:0}
-.booking-status-field>.ao-icon{position:absolute;left:10px;z-index:1;pointer-events:none}
-.booking-status-field--arrived>.ao-icon,.booking-status-field--noshow>.ao-icon{color:#fff}
 .booking-status-field .service-status-select{width:100%}
-.booking-status-field--arrived .service-status-select{border-color:#245f46;background:#2f7656;color:#fff;padding-left:32px;font-weight:800}
-.booking-status-field--noshow .service-status-select{border-color:#87352f;background:#a94740;color:#fff;padding-left:32px;font-weight:800}
+.booking-status-field--arrived .service-status-select{border-color:#184a35;background:#245f46;color:#fff;padding-left:8px;font-weight:800}
+.booking-status-field--noshow .service-status-select{border-color:#682520;background:#8a332e;color:#fff;padding-left:8px;font-weight:800}
 .booking-status-field .service-status-select.booking-status--waiting{border-color:#b68125;background:#d9aa43;color:#3d2800;font-weight:800}
 
 .booking-walk-in-badge{
