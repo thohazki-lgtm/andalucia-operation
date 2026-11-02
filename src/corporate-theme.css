@@ -1090,13 +1090,24 @@ html body .app-shell main.module-bookings .booking-status-field .service-status-
 }
 
 html body .app-shell main.module-bookings .booking-status-field--arrived .service-status-select {
-  background-color: #dff2e7;
-  color: #205f44;
+  border-color: #245f46;
+  background-color: #2f7656;
+  color: #fff;
+  font-weight: 800;
 }
 
 html body .app-shell main.module-bookings .booking-status-field--noshow .service-status-select {
-  background-color: #fde4e1;
-  color: #943a34;
+  border-color: #87352f;
+  background-color: #a94740;
+  color: #fff;
+  font-weight: 800;
+}
+
+html body .app-shell main.module-bookings .booking-status-field .service-status-select.booking-status--waiting {
+  border-color: #b68125;
+  background-color: #d9aa43;
+  color: #3d2800;
+  font-weight: 800;
 }
 
 html body .app-shell main.module-bookings .service-table :is(th, td) {
@@ -1109,7 +1120,7 @@ html body .app-shell main.module-bookings .service-table thead th {
   font-weight: 700;
 }
 
-html body .app-shell main[class*='module-'] table th {
+html body .app-shell main[class*='module-'] table:where(:not(.booking-members-data-table)) th {
   background-color: var(--ao-module-surface-strong);
   color: var(--ao-premium-navy);
   font-size: var(--ao-label-size);
@@ -1118,7 +1129,7 @@ html body .app-shell main[class*='module-'] table th {
   letter-spacing: .045em;
 }
 
-html body .app-shell main[class*='module-'] table td {
+html body .app-shell main[class*='module-'] table:where(:not(.booking-members-data-table)) td {
   color: #315167;
   font-size: var(--ao-table-copy-size);
   font-weight: 400;

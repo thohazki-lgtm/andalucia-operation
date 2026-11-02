@@ -807,30 +807,10 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 {stage === 'arrived' && <div className="booking-arrived-banner" role="status"><strong>✓ Guest has arrived</strong><small>{arrivedTime ? `Arrived at ${arrivedTime}` : 'Arrival time not recorded'}</small></div>}
 {guestAlerts(booking).length > 0 && <section className="booking-alert-detail"><p className="eyebrow">ALLERGIES / DIETARY ALERTS</p><AllergyBadges booking={booking} full /></section>}
 <div className="detail-sections">
-<section className="detail-section booking-reservation-summary">
-<p className="eyebrow">GUEST &amp; RESERVATION</p>
-<div className="booking-summary-facts">
-<article className="booking-primary-fact"><span>Primary guest</span><b>{booking.guestName || (booking.bookingSource === 'walk_in' ? 'Walk-In Guest' : '—')}</b></article>
-<article><span>All room numbers</span><b>{booking.roomNumber || '—'}</b></article>
-<article><span>Reservation</span><b>{formatDate(booking.reservationDate)} · {bookingDisplayTime(booking)}</b></article>
-<article><span>Covers</span><b>{booking.covers}</b></article>
-<article><span>Booking number</span><b>{booking.bookingNumber || '—'}</b></article>
-<article><span>Occasion</span><b><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></b></article>
-</div>
-</section>
-<section className="detail-section booking-source-summary">
-<p className="eyebrow">SOURCE INFORMATION &amp; NOTES</p>
-<div className="booking-source-facts">
-<article><span>Source</span><b>{optionLabel(configuration.sources, booking.bookingSource)}</b></article>
-<article><span>Original source status</span><b>{booking.sourceBookingStatus || booking.bookingStatus || '—'}</b></article>
-<article><span>Booked by</span><b>{booking.bookedBy || '—'}</b></article>
-<article className="booking-source-notes"><span>Guest/source notes</span><b>{booking.sourceGuestNotes || '—'}</b></article>
-</div>
-</section>
 {members.length > 0 && <section className="detail-section booking-members-section">
 <div className="booking-detail-section-heading"><div><p className="eyebrow">LINKED GUEST MEMBERS</p><h3>Guest party</h3></div><span>{members.length} guests</span></div>
 <div className="guest-member-table booking-members-table">
-<table>
+<table className="booking-members-data-table">
 <thead>
 <tr>
 <th>#</th>
@@ -869,6 +849,26 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 </dl>
 </article>)}</div>
 </section>}
+<section className="detail-section booking-reservation-summary">
+<p className="eyebrow">GUEST &amp; RESERVATION</p>
+<div className="booking-summary-facts">
+<article className="booking-primary-fact"><span>Primary guest</span><b>{booking.guestName || (booking.bookingSource === 'walk_in' ? 'Walk-In Guest' : '—')}</b></article>
+<article><span>All room numbers</span><b>{booking.roomNumber || '—'}</b></article>
+<article><span>Reservation</span><b>{formatDate(booking.reservationDate)} · {bookingDisplayTime(booking)}</b></article>
+<article><span>Covers</span><b>{booking.covers}</b></article>
+<article><span>Booking number</span><b>{booking.bookingNumber || '—'}</b></article>
+<article><span>Occasion</span><b><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></b></article>
+</div>
+</section>
+<section className="detail-section booking-source-summary">
+<p className="eyebrow">SOURCE INFORMATION &amp; NOTES</p>
+<div className="booking-source-facts">
+<article><span>Source</span><b>{optionLabel(configuration.sources, booking.bookingSource)}</b></article>
+<article><span>Original source status</span><b>{booking.sourceBookingStatus || booking.bookingStatus || '—'}</b></article>
+<article><span>Booked by</span><b>{booking.bookedBy || '—'}</b></article>
+<article className="booking-source-notes"><span>Guest/source notes</span><b>{booking.sourceGuestNotes || '—'}</b></article>
+</div>
+</section>
 <section className="detail-section operation-section compact-operation-card">
 <p className="eyebrow">ANDALUCÍA OPERATIONAL DETAILS</p>
 <div className="booking-operation-facts">
