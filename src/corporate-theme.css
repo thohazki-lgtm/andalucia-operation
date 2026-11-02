@@ -2536,6 +2536,9 @@ main.module-staff-management .staff-section-bar .staff-section-tabs button {
   border-radius: 11px;
   background: color-mix(in srgb, var(--ao-staff-surface) 90%, transparent);
   color: var(--ao-staff-emerald-deep);
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
   white-space: normal;
 }
 
@@ -2641,16 +2644,17 @@ main.module-staff-management .staff-directory-page .staff-table {
 html body .app-shell main.module-staff-management .staff-directory-page .staff-table th,
 html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
   box-sizing: border-box;
-  border-right: 1px solid var(--ao-staff-gold);
+  border: 0;
+  box-shadow: none;
   vertical-align: middle;
 }
 
-html body .app-shell main.module-staff-management .staff-directory-page .staff-table :is(th, td):last-child {
-  border-right: 0;
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table :is(th, td):not(:last-child) {
+  box-shadow: inset -1px 0 0 var(--ao-staff-gold);
 }
 
 html body .app-shell main.module-staff-management .staff-directory-page .staff-table th {
-  border-bottom: 1px solid var(--ao-staff-gold);
+  box-shadow: inset 0 -1px 0 var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-premium-navy);
   font-size: 10.5px;
@@ -2658,13 +2662,25 @@ html body .app-shell main.module-staff-management .staff-directory-page .staff-t
   letter-spacing: .035em;
 }
 
-html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
-  border-bottom: 1px solid var(--ao-staff-gold);
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table th:not(:last-child) {
   box-shadow:
     inset -1px 0 0 var(--ao-staff-gold),
     inset 0 -1px 0 var(--ao-staff-gold);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
   font-size: 12.5px;
   font-weight: 450;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:not(:last-child) td {
+  box-shadow: inset 0 -1px 0 var(--ao-staff-gold);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:not(:last-child) td:not(:last-child) {
+  box-shadow:
+    inset -1px 0 0 var(--ao-staff-gold),
+    inset 0 -1px 0 var(--ao-staff-gold);
 }
 
 main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(odd) {
@@ -3018,14 +3034,41 @@ main.module-staff-management .staff-module-info {
 }
 
 html body .app-shell main.module-staff-management :is(
-  .staff-directory-page .staff-table th,
-  .manager-timesheet-table th,
-  .membership-approved-page .membership-table.approved-table th,
-  .staff-account-panel .staff-account-table th,
-  .manager-detail-table th
+  .manager-timesheet-table table,
+  .membership-approved-page .membership-table.approved-table,
+  .staff-account-panel .staff-account-table,
+  .manager-detail-table table
 ) {
-  border-color: var(--ao-staff-gold);
-  border-bottom: 2px solid var(--ao-staff-gold);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) :is(th, td) {
+  border: 0;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) :is(th, td):not(:last-child) {
+  box-shadow: inset -1px 0 0 var(--ao-staff-gold);
+}
+
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) thead th {
+  box-shadow: inset 0 -1px 0 var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
   color: var(--ao-staff-emerald-deep);
   font-family: var(--ao-font-ui);
@@ -3034,13 +3077,32 @@ html body .app-shell main.module-staff-management :is(
   line-height: 1.2;
 }
 
-main.module-staff-management :is(
-  .membership-approved-page .membership-table.approved-table td,
-  .staff-account-panel .staff-account-table td,
-  .manager-timesheet-table td,
-  .manager-detail-table td
-) {
-  border-color: var(--ao-staff-gold);
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) thead th:not(:last-child) {
+  box-shadow:
+    inset -1px 0 0 var(--ao-staff-gold),
+    inset 0 -1px 0 var(--ao-staff-gold);
+}
+
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) tbody tr:not(:last-child) td {
+  box-shadow: inset 0 -1px 0 var(--ao-staff-gold);
+}
+
+html body .app-shell main.module-staff-management :is(
+  .manager-timesheet-table,
+  .membership-approved-page .membership-review-card,
+  .staff-account-panel .staff-account-directory-panel,
+  .manager-detail-table
+) tbody tr:not(:last-child) td:not(:last-child) {
   box-shadow:
     inset -1px 0 0 var(--ao-staff-gold),
     inset 0 -1px 0 var(--ao-staff-gold);
