@@ -950,7 +950,7 @@ main[class*='module-'] .field-mode-control button {
   border-color: var(--ao-module-divider);
 }
 
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-duty-roster) :is(
   section,
   article,
   [class$='-row'],
@@ -1023,11 +1023,11 @@ main[class*='module-'] :is(
   box-shadow: inset 0 -2px var(--ao-module-accent);
 }
 
-main[class*='module-'] :is([class$='-table-wrap'], [class*='-table-wrap ']) {
+main[class*='module-']:not(.module-duty-roster) :is([class$='-table-wrap'], [class*='-table-wrap ']) {
   border-color: var(--ao-module-line);
 }
 
-html body .app-shell main[class*='module-'] table:not(.leave-planner-grid) :is(th, td) {
+html body .app-shell main[class*='module-']:not(.module-duty-roster) table:not(.leave-planner-grid) :is(th, td) {
   border-color: var(--ao-module-divider);
   vertical-align: middle;
 }

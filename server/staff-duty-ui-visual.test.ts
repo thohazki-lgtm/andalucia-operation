@@ -158,7 +158,7 @@ try {
   assert.equal(rosterDesktop.globalHeaderCount, 1)
   assert.deepEqual(rosterPageHeadingColors, { eyebrow: 'rgb(255, 248, 236)', title: 'rgb(255, 248, 236)' })
   assert.equal(rosterVisualRoot.installedDahliaReady, true)
-  assert.match(rosterVisualRoot.weekdayFamily, /AO Dahlia|Dahlia/)
+  assert.match(rosterVisualRoot.weekdayFamily, /AO Good Sans|Good Sans/)
   assert.match(rosterVisualRoot.dayFamily, /AO Dahlia|Dahlia/)
   assert.equal(rosterVisualRoot.weekdaySize, '20px')
   assert.equal(rosterVisualRoot.daySize, '14px')

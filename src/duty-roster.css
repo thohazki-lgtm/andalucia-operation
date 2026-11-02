@@ -66,7 +66,7 @@
   gap: 9px;
   margin: 0 0 8px;
   padding: 13px 18px 11px;
-  border: 1px solid var(--roster-line-strong);
+  border: 1px solid var(--roster-gold);
   border-top: 3px solid var(--roster-gold);
   border-radius: 12px;
   background: linear-gradient(120deg, #8b3f25, #c85c31);
@@ -104,7 +104,7 @@
   grid-template-columns: repeat(2, minmax(92px, 1fr));
   gap: 5px;
   padding: 3px;
-  border: 1px solid var(--roster-line);
+  border: 1px solid var(--roster-gold);
   border-radius: 10px;
   background: rgb(91 42 28 / 22%);
 }
@@ -113,7 +113,7 @@
   width: min(280px, 100%);
   margin: 0;
   padding: 1px;
-  border-color: var(--roster-line-strong);
+  border-color: var(--roster-gold);
   background: rgb(91 42 28 / 24%);
 }
 
@@ -272,7 +272,7 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
   min-width: 0;
   overflow: hidden;
   padding: 0 18px 14px;
-  border-color: var(--roster-line);
+  border-color: var(--roster-gold);
   border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
   background: rgb(255 239 223 / 76%);
@@ -303,7 +303,7 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-mon
   gap: 12px;
   margin-top: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--roster-line-strong);
+  border: 1px solid var(--roster-gold);
   border-top: 4px solid var(--roster-gold);
   border-radius: 12px;
   background: rgb(255 246 233 / 92%);
@@ -444,7 +444,7 @@ main.module-duty-roster .duty-roster-page .roster thead th {
 
 .duty-roster-page .roster-weekly .roster-compact-weekday {
   color: var(--roster-teal-dark);
-  font-family: var(--ao-font-display, "Dahlia", Georgia, serif);
+  font-family: var(--ao-font-ui, "Good Sans", Arial, sans-serif);
   font-size: 20px;
   font-weight: 500;
   line-height: 1.05;
@@ -681,7 +681,7 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   gap: 6px;
   margin: 0 0 8px;
   padding: 6px;
-  border: 1px solid var(--roster-line);
+  border: 1px solid var(--roster-gold);
   border-radius: 10px;
   background: var(--roster-surface);
 }
@@ -705,7 +705,7 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
 .duty-roster-page .mobile-roster-card {
   min-width: 0;
   padding: 10px;
-  border: 1px solid var(--roster-line);
+  border: 1px solid var(--roster-gold);
   border-left: 3px solid var(--roster-teal);
   border-radius: 10px;
   background: linear-gradient(110deg, #fff8ef 0%, var(--roster-surface) 100%);
@@ -759,8 +759,8 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   min-width: 0;
   padding: 0;
   overflow: hidden;
-  border-color: var(--roster-line);
-  border-top: 3px solid var(--roster-teal);
+  border-color: var(--roster-gold);
+  border-top: 3px solid var(--roster-gold);
   background: #fff;
   box-shadow: 0 7px 22px rgba(23, 61, 86, .055);
 }
@@ -769,7 +769,7 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   min-height: 76px;
   margin: 0;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--roster-line);
+  border-bottom: 1px solid var(--roster-gold);
   background: var(--roster-mint);
 }
 
@@ -955,7 +955,7 @@ main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:first-child 
   .duty-roster-page .duty-code-card {
     min-width: 0;
     padding: 12px;
-    border: 1px solid var(--roster-line);
+    border: 1px solid var(--roster-gold);
     border-left: 3px solid var(--roster-teal);
     border-radius: 10px;
     background: linear-gradient(110deg, #fff 0%, var(--roster-surface) 100%);
@@ -969,7 +969,7 @@ main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:first-child 
   .duty-roster-page .duty-code-card > header span { display: block; }
   .duty-roster-page .duty-code-card > header b { color: var(--roster-teal-dark); font-size: 15px; font-weight: 700; letter-spacing: .04em; }
   .duty-roster-page .duty-code-card > header > div span { margin-top: 2px; overflow: hidden; color: #607887; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-  .duty-roster-page .duty-code-card-preview { display: grid; grid-template-columns: 22px minmax(84px, 122px) 1fr; align-items: center; gap: 9px; margin-top: 10px; padding: 9px 0; border-block: 1px solid var(--roster-line); }
+  .duty-roster-page .duty-code-card-preview { display: grid; grid-template-columns: 22px minmax(84px, 122px) 1fr; align-items: center; gap: 9px; margin-top: 10px; padding: 9px 0; border-block: 1px solid var(--roster-gold); }
   .duty-roster-page .duty-code-card-preview small { color: #718492; font-size: 10px; text-transform: uppercase; }
   .duty-roster-page .duty-code-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 10px 0 0; }
   .duty-roster-page .duty-code-card dl > div { min-width: 0; }
