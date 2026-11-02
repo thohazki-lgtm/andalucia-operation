@@ -26,7 +26,9 @@ assert.match(employeeManager, /<footer className="entitlement-information-footer
 assert.ok(employeeManager.indexOf('entitlement-information-footer') > employeeManager.indexOf('employee-entitlement-table-wrap'), 'The information footer must follow the table and expanded inline details.')
 assert.doesNotMatch(employeeManager, /Close Details/, 'Inline details must not duplicate the row-level Close action.')
 assert.match(styles, /\.employee-entitlement-table th\{[^}]*text-align:center/, 'Metric headings must be centered.')
-assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td>b\{[^}]*font-size:13px[^}]*font-weight:500/, 'Entitlement values must use the refined readable numeric typography.')
+assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td>b\{[^}]*font-size:12px[^}]*font-weight:400/, 'Entitlement values must use the refined lighter numeric typography.')
+assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*font-variant-numeric:tabular-nums/, 'Entitlement values must remain tabular and aligned.')
+assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-id b\{[^}]*font-size:11px[^}]*font-weight:400/, 'Employee IDs must use the refined lighter typography.')
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-identity b\{font-size:13px;font-weight:500/, 'Employee names must remain readable and aligned.')
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*vertical-align:middle/, 'Table values must stay vertically aligned.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-table \.employee-entitlement-row\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Mobile rows must use a readable two-column layout.')
@@ -35,6 +37,8 @@ assert.match(styles, /\.employee-entitlement-table \.entitlement-metric-column\{
 assert.match(styles, /\.entitlement-information-footer\{[^}]*display:flex[^}]*border:1px solid var\(--ao-leave-gold/, 'The explanatory footer must use one compact gold-framed information treatment.')
 assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table-wrap\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/, 'Employee Entitlements must retain a continuous gold outer and top table border.')
 assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-grid-gold\) !important;/, 'Employee Entitlements row and column dividers must render gold.')
+assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table \.employee-entitlement-id b\s*\{[^}]*font-size:\s*11px;[^}]*font-weight:\s*400;/, 'The authoritative theme layer must preserve the lighter Employee ID typography.')
+assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table \.employee-entitlement-row td:not\(\.employee-entitlement-identity\):not\(\.employee-entitlement-id\):not\(\.employee-entitlement-action\) > b\s*\{[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*font-variant-numeric:\s*tabular-nums;/, 'The authoritative theme layer must preserve aligned lighter balance values.')
 
 const inlineDetails = workforce.match(/function EntitlementInlineDetails[\s\S]*?\n\}/)?.[0] || ''
 assert.doesNotMatch(inlineDetails, /Accruing Next Service Year|accruingForNextServiceYear/, 'The misleading next-service-year accrual display must be removed from inline details.')

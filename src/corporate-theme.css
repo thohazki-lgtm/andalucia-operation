@@ -213,6 +213,7 @@ body,
   --ao-leave-divider: color-mix(in srgb, var(--ao-violet-hour) 22%, white);
   --ao-leave-surface: color-mix(in srgb, var(--ao-lilac-calm) 16%, white);
   --ao-leave-surface-strong: color-mix(in srgb, var(--ao-lilac-calm) 27%, white);
+  --ao-leave-table-header: #d8c8ef;
   --ao-leave-row-alt: color-mix(in srgb, var(--ao-lilac-calm) 19%, white);
   --ao-leave-scrollbar: color-mix(in srgb, var(--ao-violet-hour) 55%, white);
   --ao-leave-scrollbar-track: color-mix(in srgb, var(--ao-lilac-calm) 14%, white);
@@ -1382,9 +1383,9 @@ main.module-leave-planner .leave-summary-grid {
 }
 
 main.module-leave-planner .leave-summary-card {
-  height: 84px;
-  min-height: 84px;
-  padding: 9px 11px;
+  height: 68px;
+  min-height: 68px;
+  padding: 8px 11px;
   border-color: var(--ao-leave-gold);
   background: #fffdf9;
 }
@@ -1415,14 +1416,30 @@ main.module-leave-planner .leave-planner-grid :is(th, td) {
   font-family: var(--ao-font-ui);
 }
 
-main.module-leave-planner .leave-planner-grid thead th,
-main.module-leave-planner .leave-planner-grid thead .identity {
+html body .app-shell main.module-leave-planner .leave-planner-grid thead th,
+html body .app-shell main.module-leave-planner .leave-planner-grid thead .identity {
   border-color: var(--ao-leave-divider);
-  background: var(--ao-leave-surface-strong);
+  background: var(--ao-leave-table-header);
   font-size: 9px;
   font-weight: 500;
   letter-spacing: .05em;
   text-transform: uppercase;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table thead th {
+  background: var(--ao-leave-table-header);
+  color: var(--ao-violet-hour);
+}
+
+main.module-leave-planner .employee-entitlement-table .employee-entitlement-id b {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+main.module-leave-planner .employee-entitlement-table .employee-entitlement-row td:not(.employee-entitlement-identity):not(.employee-entitlement-id):not(.employee-entitlement-action) > b {
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 main.module-leave-planner .leave-planner-grid thead th > span {
