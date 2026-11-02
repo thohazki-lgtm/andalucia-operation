@@ -13,6 +13,7 @@ assert.match(theme, /main\.module-leave-planner \.leave-planner-panel\s*\{[\s\S]
 assert.match(theme, /main\.module-leave-planner \.leave-planner-heading-card\s*\{[\s\S]*?margin:\s*0 14px;[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\) !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-main-card\s*\{[\s\S]*?margin:\s*14px 14px 0;[\s\S]*?border:\s*1px solid var\(--ao-leave-gold\);[\s\S]*?background:\s*var\(--ao-leave-surface\);/)
 assert.match(theme, /main\.module-leave-planner \.leave-planner-module-tabs button\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\);/, 'Every Leave Planner tab must use the approved thin gold outline.')
+assert.match(theme, /main\.module-leave-planner \.leave-planner-workspace:has\(\.leave-planner-main-card\) \.leave-planner-module-tabs\s*\{[\s\S]*?width:\s*calc\(100% - 18px\);[\s\S]*?margin-inline:\s*9px;/, 'The mobile Planner tabs must share the existing card inset without changing card width.')
 assert.match(theme, /main\.module-leave-planner \.leave-command-panel\s*\{[\s\S]*?margin:\s*0;[\s\S]*?border-bottom:\s*1px solid var\(--ao-leave-gold\) !important;/)
 assert.match(theme, /main\.module-leave-planner \.leave-summary-section\s*\{[\s\S]*?border-bottom-color:\s*var\(--ao-leave-gold\);/)
 assert.match(theme, /:not\(\.dashboard-card\):not\(\.leave-summary-card\):not\(\.leave-summary-section\)/, 'The shared structural theme must not recolor the Planner section divider.')
