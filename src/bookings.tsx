@@ -222,15 +222,17 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
 <ActionButton variant="primary" icon="add" onClick={() => setEditing('walk-in')}>Add Walk-In</ActionButton>
 </div>
 </section>
-    <section className="service-summary">
+    <section className="booking-service-overview">
+    <div className="service-summary">
 <ServiceMetric label="Total Covers" value={summary.covers} detail={`${expected.length} expected bookings`} />
 <ServiceMetric label="Arrived Covers" value={summary.arrivedCovers} detail={`${summary.arrived} bookings`} tone="arrived" />
 <ServiceMetric label="Remaining Covers" value={summary.remainingCovers} detail={`${summary.remaining} bookings`} />
 <ServiceMetric label="No-Show Covers" value={summary.noShowCovers} detail={`${summary.noShows} bookings`} tone="exception" />
 <ServiceMetric label="Total Adults" value={summary.adults} detail={summary.unknownAges ? `${summary.unknownAges} age${summary.unknownAges === 1 ? '' : 's'} unverified` : summary.unverifiedAges ? 'Some ages unverified' : 'Age classification complete'} tone={summary.unknownAges || summary.unverifiedAges ? 'warning' : ''} />
 <ServiceMetric label="Total Kids" value={summary.kids} detail="Strictly under 12 on service date" />
-</section>
+</div>
     <section className="service-progress" aria-label={`${summary.arrivedCovers} of ${summary.covers} covers arrived`}><div><span>Dinner Service Progress</span><b>{summary.arrivedCovers} / {summary.covers} covers</b></div><div className="service-progress-track"><span style={{ width: `${summary.covers ? Math.min(100, summary.arrivedCovers / summary.covers * 100) : 0}%` }} /></div></section>
+    </section>
     <section className="panel booking-panel service-panel">
 <nav className="booking-service-tabs" aria-label="Booking service status">{serviceTabs.map(tab => <button key={tab.value} className={serviceTab === tab.value ? 'active' : ''} aria-pressed={serviceTab === tab.value} onClick={() => setServiceTab(tab.value)}>{tab.label}<span>{tab.count}</span></button>)}</nav>
 <div className="booking-tools service-tools">

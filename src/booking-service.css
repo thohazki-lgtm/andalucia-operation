@@ -253,6 +253,12 @@
 .service-actions .quick-waiting,.mobile-card-actions .quick-waiting{border-color:#d6b36d;background:#fff8e8;color:#80601f}
 .service-actions .quick-arrive,.mobile-card-actions .quick-arrive{border-color:#94c4af;background:#eef8f3;color:#27694f}
 .service-actions .quick-noshow,.mobile-card-actions .quick-noshow{border-color:#dfa7a1;background:#fbedeb;color:#973e38}
+
+/* The six service metrics and progress form one operational summary card. */
+.booking-service-overview{margin-bottom:14px;padding:10px;border:1px solid #c5a35a;border-top:2px solid #b17d2c;border-radius:12px;background:rgb(255 246 233 / 88%);box-shadow:0 4px 14px #73391d10}
+.booking-service-overview .service-summary{margin:0}
+.booking-service-overview .service-summary>.panel{border-color:#c5a35a;background:#fff8ee}
+.booking-service-overview .service-progress{margin:9px 0 0;border-color:#c5a35a;background:#fff8ee}
 .mobile-card-actions>.ao-action{flex:1 1 0;min-width:0}
 .booking-detail-actions .ao-action{margin-left:auto}
 .import-workflow .review-actions .ao-action,.import-workflow .duplicate-actions .ao-action{margin:0}
@@ -320,8 +326,8 @@
   .service-table .service-covers b{font-size:13px}
   .service-table select{font-size:9.5px}
   .service-table .occasion-chip,.service-table .allergy-alert,.service-table .quiet-value{font-size:8.5px}
-  .service-table .service-actions button{padding-inline:3px;font-size:8px}
-  .service-table .service-actions .ao-icon{width:12px;height:12px}
+  .service-table .service-actions button{min-height:30px;padding-inline:4px;font-size:9.5px;font-weight:800;letter-spacing:.01em}
+  .service-table .service-actions .ao-icon{width:13px;height:13px}
 }
 
 /* Bookings-only informational pills. These override older global chip rules
@@ -377,12 +383,13 @@
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
   gap:10px 14px;
-  margin-bottom:14px;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
+  margin-bottom:12px;
+  padding:10px 12px;
+  border:1px solid #c5a35a;
+  border-top:2px solid #b17d2c;
+  border-radius:12px;
+  background:rgb(255 246 233 / 88%);
+  box-shadow:0 4px 14px #73391d12;
 }
 .booking-command>div:first-child{display:grid;grid-template-columns:40px minmax(190px,240px) 40px auto;align-items:center;gap:8px}
 .booking-command>div:last-child{display:flex;align-items:center;gap:8px}
@@ -559,7 +566,7 @@
 }
 
 @media(max-width:700px){
-  .booking-command{display:block;padding:0}
+  .booking-command{display:block;padding:9px}
   .booking-command .ao-action,.booking-command .ao-icon-action{min-height:44px}
   .booking-command>div:first-child{
     display:grid;
