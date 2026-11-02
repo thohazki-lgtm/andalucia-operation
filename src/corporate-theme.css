@@ -753,8 +753,8 @@ main.module-bookings > .page-header {
 
 main.module-bookings > .page-header {
   margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #c5a35a;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 main.module-duty-roster > .page-header::before,
@@ -1117,6 +1117,18 @@ html body .app-shell main.module-bookings .service-table :is(th, td) {
 html body .app-shell main.module-bookings .service-table thead th {
   border-bottom-color: #c87b55;
   font-size: 11px;
+  font-weight: 700;
+}
+
+html body .app-shell main.module-bookings .service-table thead th:nth-child(-n + 3) {
+  color: #4f2418;
+  font-weight: 800;
+}
+
+html body .app-shell main.module-bookings .booking-assignment-select.is-assigned {
+  border-color: #c2923d;
+  background: #f6ddb2;
+  color: #5f361c;
   font-weight: 700;
 }
 

@@ -55,6 +55,16 @@ const orderedBookingStatuses = (statuses: ConfigOption[]) => statuses.map((optio
   return left.index - right.index
 }).map(({ option }) => option)
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`)) : '—'
+const noteKey = (value?: string | null) => (value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+const distinctNoteParts = (value?: string | null) => {
+  const seen = new Set<string>()
+  return (value || '').split(/\s*\|\s*/).map(part => part.trim()).filter(part => {
+    const key = noteKey(part)
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 const serviceStageFor = (statuses: ConfigOption[], value: string) => { const metadata = statuses.find(option => option.value === value)?.metadata; return metadata?.serviceStage || (metadata?.bookingMetric === 'arrived' ? 'arrived' : metadata?.bookingMetric === 'noShow' ? 'noShow' : 'remaining') }
 const timeWindow = bookingTimeWindow
 const bookingServiceKind = (booking: Pick<BookingRecord, 'sourceServiceKind' | 'sourceActivityLabel'>) => booking.sourceServiceKind === 'celebration' || /\bCelebration\s*@\s*Andalucia\b/i.test(booking.sourceActivityLabel || '') ? 'celebration' as const : 'dinner' as const
@@ -803,6 +813,20 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
   useEffect(() => { if (booking.importedBatchId) void bookingApi.guestMembers(booking.id).then(setMembers) }, [booking.id, booking.importedBatchId])
   const stage = serviceStageFor(configuration.statuses, booking.bookingStatus)
   const arrivedTime = maldivesArrivalTime(booking.arrivedAt)
+  const linkedNotes = useMemo(() => {
+    const memberNoteKeys = new Set(members.map(member => noteKey(member.guestNotes)).filter(Boolean))
+    const sourceParts = distinctNoteParts(booking.sourceGuestNotes)
+    const primarySourceNote = sourceParts.find(part => !memberNoteKeys.has(noteKey(part))) || sourceParts[0] || ''
+    const seenMemberNotes = new Set<string>(primarySourceNote ? [noteKey(primarySourceNote)] : [])
+    const bySourceRow = new Map<BookingGuestMemberPreview['sourceRowOrder'], string>()
+    members.forEach(member => {
+      const value = member.guestNotes?.trim() || ''
+      const key = noteKey(value)
+      bySourceRow.set(member.sourceRowOrder, !key || seenMemberNotes.has(key) ? '' : value)
+      if (key) seenMemberNotes.add(key)
+    })
+    return { primarySourceNote, bySourceRow }
+  }, [booking.sourceGuestNotes, members])
   return <BookingModal title="Booking details" onClose={onClose} side>
 {stage === 'arrived' && <div className="booking-arrived-banner" role="status"><strong>✓ Guest has arrived</strong><small>{arrivedTime ? `Arrived at ${arrivedTime}` : 'Arrival time not recorded'}</small></div>}
 {guestAlerts(booking).length > 0 && <section className="booking-alert-detail"><p className="eyebrow">ALLERGIES / DIETARY ALERTS</p><AllergyBadges booking={booking} full /></section>}
@@ -833,7 +857,7 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 <td>{formatDate(member.arrivalDate)}</td>
 <td>{formatDate(member.departureDate)}</td>
 <td>{member.mealPlan || '—'}</td>
-<td>{member.guestNotes || '—'}</td>
+<td>{linkedNotes.bySourceRow.get(member.sourceRowOrder) || '—'}</td>
 </tr>)}</tbody>
 </table>
 </div>
@@ -845,7 +869,7 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 <div><dt>Arrival</dt><dd>{formatDate(member.arrivalDate)}</dd></div>
 <div><dt>Departure</dt><dd>{formatDate(member.departureDate)}</dd></div>
 <div><dt>Meal plan</dt><dd>{member.mealPlan || '—'}</dd></div>
-<div className="booking-member-notes"><dt>Notes</dt><dd>{member.guestNotes || '—'}</dd></div>
+<div className="booking-member-notes"><dt>Notes</dt><dd>{linkedNotes.bySourceRow.get(member.sourceRowOrder) || '—'}</dd></div>
 </dl>
 </article>)}</div>
 </section>}
@@ -866,7 +890,7 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 <article><span>Source</span><b>{optionLabel(configuration.sources, booking.bookingSource)}</b></article>
 <article><span>Original source status</span><b>{booking.sourceBookingStatus || booking.bookingStatus || '—'}</b></article>
 <article><span>Booked by</span><b>{booking.bookedBy || '—'}</b></article>
-<article className="booking-source-notes"><span>Guest/source notes</span><b>{booking.sourceGuestNotes || '—'}</b></article>
+<article className="booking-source-notes"><span>Guest/source notes</span><b>{linkedNotes.primarySourceNote || '—'}</b></article>
 </div>
 </section>
 <section className="detail-section operation-section compact-operation-card">
