@@ -5196,7 +5196,7 @@ html body .app-shell main.module-guest-occasions :is(.occasion-toolbar, .occasio
 }
 
 html body .app-shell main.module-guest-occasions .occasion-toolbar {
-  padding: 11px 14px;
+  padding: 9px 12px 10px;
   border-top-width: 3px;
   background: linear-gradient(120deg, #45176b 0%, #6f348b 100%);
   box-shadow: 0 8px 20px rgb(53 18 73 / 18%);
@@ -5457,7 +5457,7 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-drawer > footer 
 }
 
 html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
-  width: min(720px, calc(100vw - 32px));
+  width: min(700px, calc(100vw - 32px));
   border-color: var(--ao-occasion-gold);
   border-top-color: var(--ao-occasion-gold);
   background: #f3e8fa;
@@ -5465,7 +5465,7 @@ html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasi
 }
 
 html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 {
-  padding: 12px 15px 10px;
+  padding: 11px 14px 9px;
   border-bottom-color: var(--ao-occasion-gold);
   background: linear-gradient(105deg, #45176b 0%, #6f348b 100%);
   color: #fff;
@@ -5473,13 +5473,13 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 
 }
 
 html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form {
-  padding: 9px 10px 59px;
+  padding: 7px 9px 57px;
   background: #f3e8fa;
 }
 
 html body:has(.app-shell main.module-guest-occasions) .occasion-form-section {
-  margin-bottom: 7px;
-  padding: 9px 10px;
+  margin-bottom: 5px;
+  padding: 7px 9px;
   border-color: var(--ao-occasion-gold);
   background: #fffaf2;
 }
@@ -5496,7 +5496,7 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-form-section :is
 }
 
 html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions {
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-top-color: var(--ao-occasion-gold);
   background: #fff3e2;
 }
@@ -5517,8 +5517,8 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form
   }
 
   html body .app-shell main.module-guest-occasions .occasion-toolbar {
-    gap: 8px;
-    padding: 9px;
+    gap: 7px;
+    padding: 8px 9px 9px;
   }
 
   html body .app-shell main.module-guest-occasions .occasion-calendar-title-row h2 {
