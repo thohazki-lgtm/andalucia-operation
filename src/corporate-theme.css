@@ -5906,6 +5906,29 @@ html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.charg
   color: #fff;
 }
 
+/* Wine & Spirits uses the same boxless calendar treatment as Chargeable
+   Items. Keep these scoped declarations below the shared module controls so
+   the corporate input surface cannot reintroduce an ivory month box. */
+html body .app-shell main.module-incentives-and-bill-tips .wine-month-navigation .wine-month-step {
+  border-color: var(--ao-financial-gold);
+  background: rgb(16 62 56 / 58%);
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control input {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 18px/1.15 var(--ao-font-display);
+  text-align: center;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control .ao-date-control__icon {
+  color: #fff;
+}
+
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
   width: 100%;
   max-width: 1080px;
@@ -6048,6 +6071,10 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
   }
 
   html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.chargeable-date-picker input {
+    font-size: 16px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control input {
     font-size: 16px;
   }
 
