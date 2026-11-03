@@ -77,7 +77,6 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
 <IconAction icon="chevron-left" className="chargeable-date-step" label="Previous charge date" title="Previous day" onClick={() => setDate(value => addCalendarDays(value, -1))}/>
 <DateControl className="chargeable-date-picker" label="Chargeable date" title={dateLabel(date)} value={date} onChange={event => setDate(event.target.value)} />
 <IconAction icon="chevron-right" className="chargeable-date-step" label="Next charge date" title="Next day" onClick={() => setDate(value => addCalendarDays(value, 1))}/>
-<ActionButton compact className="chargeable-today" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
 <ActionButton variant="primary" icon="add" className="chargeable-add" onClick={() => setEditing('new')}>Add Chargeable Item</ActionButton>
 </section>
