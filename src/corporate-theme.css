@@ -6053,25 +6053,17 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
   padding: 10px 12px;
 }
 
-@media (min-width: 701px) {
-  html body .app-shell main.module-incentives-and-bill-tips :is(
-    .earnings-preview-results,
-    .bill-tip-preview-results
-  ) > .financial-metrics {
-    width: 94%;
-    margin-inline: auto;
-  }
-}
-
 html body .app-shell main.module-incentives-and-bill-tips :is(
   .earnings-preview-results,
   .bill-tip-preview-results
 ) > .financial-metrics strong {
   margin-top: 4px;
   font-family: var(--ao-font-body);
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 400;
   line-height: 1.05;
+  letter-spacing: 0;
+  font-variant-numeric: normal;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap thead th {
