@@ -96,6 +96,7 @@ assert.doesNotMatch(corporateTheme, /\.earnings-preview-results,[\s\S]*?\.bill-t
 assert.match(corporateTheme, /\.earnings-preview-results,[\s\S]*?\.bill-tip-preview-results[\s\S]*?> \.financial-metrics strong \{[\s\S]*?font-size: 18px;[\s\S]*?font-weight: 400;[\s\S]*?letter-spacing: 0;[\s\S]*?font-variant-numeric: normal;/)
 assert.match(corporateTheme, /@media \(max-width: 700px\)[\s\S]*?\.earnings-preview-results,[\s\S]*?\.bill-tip-preview-results[\s\S]*?> \.financial-metrics strong \{[\s\S]*?font-size: 16px;/)
 assert.match(corporateTheme, /@media \(max-width: 700px\)[\s\S]*?\.earnings-preview-results,[\s\S]*?\.bill-tip-preview-results[\s\S]*?> \.financial-metrics article \{[\s\S]*?min-height: 70px;[\s\S]*?padding: 7px 10px;/)
+assert.doesNotMatch(corporateTheme, /@media \(max-width: 700px\)[\s\S]*?\.bill-tip-preview-results > \.financial-metrics article \{\s*min-height: 76px;\s*padding: 9px 10px;/)
 assert.match(corporateTheme, /\.earnings-preview-results \.financial-table-wrap thead th \{[\s\S]*?background: #d5e9de;[\s\S]*?font-weight: 650;/)
 assert.match(corporateTheme, /:not\(\.bill-tip-command\):not\(\.external-allocations\):not\(\.bill-tip-team-preview\):not\(\.bill-tip-finalization-card\):not\(\.financial-subsection\):not\(\.financial-metric\):not\(\.financial-preview-banner\):not\(\.financial-reconciliation\):not\(\.bill-tip-staff-card\)/)
 assert.match(corporateTheme, /:not\(\.bill-tip-finalization-card\):not\(\.financial-subsection\):not\(\.financial-metric\):not\(\.financial-preview-banner\)/)

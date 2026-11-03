@@ -6255,11 +6255,6 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
     font-size: 16px;
   }
 
-  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics article {
-    min-height: 76px;
-    padding: 9px 10px;
-  }
-
   html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
     max-width: none;
   }
