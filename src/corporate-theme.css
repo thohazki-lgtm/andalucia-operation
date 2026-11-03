@@ -1043,7 +1043,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
 }
 
@@ -6059,7 +6059,7 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
 ) > .financial-metrics strong {
   margin-top: 4px;
   font-family: var(--ao-font-body);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.05;
 }
@@ -6088,7 +6088,7 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
     .earnings-preview-results,
     .bill-tip-preview-results
   ) > .financial-metrics strong {
-    font-size: 21px;
+    font-size: 18px;
   }
 }
 
