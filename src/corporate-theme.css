@@ -5890,7 +5890,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-contr
   color: #fff;
 }
 
-html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-picker .ao-date-control input {
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.chargeable-date-picker input {
   border-color: transparent;
   background: transparent;
   color: #fff;
@@ -5899,7 +5899,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-picke
   box-shadow: none;
 }
 
-html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-picker .ao-date-control__icon {
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.chargeable-date-picker .ao-date-control__icon {
   color: #fff;
 }
 
@@ -6039,7 +6039,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 }
 
 @media (max-width: 700px) {
-  html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-picker .ao-date-control input {
+  html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.chargeable-date-picker input {
     font-size: 16px;
   }
 

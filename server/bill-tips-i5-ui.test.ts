@@ -45,7 +45,7 @@ assert.match(corporateTheme, /\.financial-table-wrap tbody tr:nth-child\(even\)[
 assert.match(corporateTheme, /@media \(max-width: 700px\)[\s\S]*?\.financial-primary-tabs[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
 assert.match(corporateTheme, /\.chargeable-toolbar \{[\s\S]*?border: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none/)
 assert.match(corporateTheme, /\.chargeable-date-controls \.chargeable-date-step \{[\s\S]*?border-color: var\(--ao-financial-gold\)/)
-assert.match(corporateTheme, /\.chargeable-date-picker \.ao-date-control input \{[\s\S]*?background: transparent;[\s\S]*?font: 500 18px\/1\.15 var\(--ao-font-display\)/)
+assert.match(corporateTheme, /\.ao-date-control\.chargeable-date-picker input \{[\s\S]*?background: transparent;[\s\S]*?font: 500 18px\/1\.15 var\(--ao-font-display\)/)
 assert.doesNotMatch(await readFile(new URL('../src/chargeables.tsx', import.meta.url), 'utf8'), /className="chargeable-today"/)
 assert.match(corporateTheme, /\.chargeable-summary \{[\s\S]*?max-width: 1080px;/)
 assert.match(corporateTheme, /\.chargeable-summary article \{[\s\S]*?height: auto;[\s\S]*?min-height: 68px;[\s\S]*?border-width: 3px 1px 1px;[\s\S]*?border-color: var\(--ao-financial-gold\)/)
