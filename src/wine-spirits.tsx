@@ -8,6 +8,11 @@ import './wine-spirits.css'
 const money = (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0))
 const statuses: Array<{ value: WineSpiritSaleStatus; label: string }> = [{ value: 'pending', label: 'Pending' }, { value: 'charged', label: 'Charged / Realized' }, { value: 'cancelled', label: 'Cancelled' }, { value: 'void', label: 'Void' }]
 const monthRange = (month: string) => ({ start: `${month}-01`, end: `${month}-${String(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()).padStart(2, '0')}` })
+const shiftMonth = (month: string, offset: number) => {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const next = new Date(Date.UTC(year, monthNumber - 1 + offset, 1))
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`
+}
 const toInput = (sale: WineSpiritSale): WineSpiritSaleInput => ({ id: sale.id, serviceDate: sale.serviceDate, checkInvoiceNumber: sale.checkInvoiceNumber, itemName: sale.itemName, roomNumber: sale.roomNumber, tableNumber: sale.tableNumber, waiterId: sale.waiterId, grossUnitPrice: sale.grossUnitPrice, quantity: sale.quantity, status: sale.status, notes: sale.notes })
 const statusLabel = (value: WineSpiritSaleStatus) => statuses.find(item => item.value === value)?.label || value
 const statusTone = (value: WineSpiritSaleStatus) => value === 'charged' ? 'success' : value === 'pending' ? 'gold' : 'danger'
@@ -33,7 +38,12 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
   return <section className="wine-page">
     <header className="wine-toolbar">
       <div className="wine-toolbar-heading"><h2>Wine &amp; Spirits Sales</h2></div>
-      <div className="wine-toolbar-actions"><div className="wine-month-control"><DateControl type="month" label="Wine and Spirits month" value={month} onChange={event => setMonth(event.target.value)} /></div><ActionButton variant="primary" icon="add" onClick={() => setEditing('new')}>Add Wine / Spirit Sale</ActionButton></div>
+      <div className="wine-month-navigation" role="group" aria-label="Wine and Spirits month navigation">
+        <IconAction icon="chevron-left" className="wine-month-step" label="Previous Wine and Spirits month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} />
+        <DateControl className="wine-month-control" type="month" label="Wine and Spirits month" value={month} onChange={event => setMonth(event.target.value)} />
+        <IconAction icon="chevron-right" className="wine-month-step" label="Next Wine and Spirits month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} />
+      </div>
+      <ActionButton variant="primary" icon="add" className="wine-add-sale" onClick={() => setEditing('new')}>Add Wine / Spirit Sale</ActionButton>
     </header>
     <section className="panel wine-panel">
       <div className="wine-filters"><input aria-label="Search Wine and Spirits sales" placeholder="Search check, room, bottle, table or waiter" value={query} onChange={event => setQuery(event.target.value)} /><select aria-label="Filter by waiter" value={waiter} onChange={event => setWaiter(event.target.value)}><option value="all">All waiters</option>{staff.map(person => <option key={person.id} value={person.id}>{person.name} · {person.number}</option>)}</select><select aria-label="Filter by status" value={status} onChange={event => setStatus(event.target.value as typeof status)}><option value="all">All statuses</option>{statuses.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>

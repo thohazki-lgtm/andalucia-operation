@@ -3,10 +3,12 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const [component, styles, corporateTheme] = await Promise.all([
+const [component, styles, corporateTheme, wineComponent, wineStyles] = await Promise.all([
   readFile(`${root}src/financial-preview.tsx`, 'utf8'),
   readFile(`${root}src/financial-preview.css`, 'utf8'),
-  readFile(`${root}src/corporate-theme.css`, 'utf8')
+  readFile(`${root}src/corporate-theme.css`, 'utf8'),
+  readFile(`${root}src/wine-spirits.tsx`, 'utf8'),
+  readFile(`${root}src/wine-spirits.css`, 'utf8')
 ])
 const app = await readFile(`${root}src/App.tsx`, 'utf8')
 
@@ -56,5 +58,14 @@ assert.match(corporateTheme, /\.panel\.chargeable-panel \{[\s\S]*?border-width: 
 assert.match(corporateTheme, /\.chargeable-card-grid \{[\s\S]*?grid-template-columns: repeat\(auto-fit, minmax\(300px, 380px\)\)/)
 assert.match(corporateTheme, /\.chargeable-table-wrap:has\(> \.inline-empty\) \.chargeable-card-grid \{[\s\S]*?display: none !important/)
 assert.match(corporateTheme, /\.mobile-operation-card\.mobile-chargeable-card \{[\s\S]*?border-width: 3px 1px 1px;[\s\S]*?border-color: var\(--ao-financial-gold\)/)
+assert.match(wineComponent, /className="wine-month-navigation" role="group" aria-label="Wine and Spirits month navigation"/)
+assert.match(wineComponent, /className="wine-month-step" label="Previous Wine and Spirits month"/)
+assert.match(wineComponent, /className="wine-month-step" label="Next Wine and Spirits month"/)
+assert.match(wineComponent, /className="wine-add-sale"/)
+assert.match(wineStyles, /\.wine-toolbar\{display:grid;grid-template-columns:minmax\(170px,\.7fr\) minmax\(280px,1fr\) auto;/)
+assert.match(wineStyles, /\.wine-toolbar \.ao-date-control\.wine-month-control input\{[\s\S]*?background:transparent;[\s\S]*?color:#fff;[\s\S]*?var\(--ao-font-display/)
+assert.match(wineStyles, /\.panel\.wine-panel\{[\s\S]*?border-width:2px 1px 1px;[\s\S]*?border-color:var\(--financial-gold/)
+assert.match(wineStyles, /\.wine-sale-card\{[\s\S]*?border-width:3px 1px 1px;[\s\S]*?border-color:#dec58f/)
+assert.match(wineStyles, /\.wine-empty-state\{[\s\S]*?width:min\(500px,calc\(100% - 20px\)\);[\s\S]*?border:1px solid var\(--financial-gold/)
 
 console.log('Bill Tips I5 UI assertions passed.')
