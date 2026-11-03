@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [source, baseStyles, stageStyles, customizationStyles, actionSource, actionStyles] = await Promise.all([
+const [source, baseStyles, stageStyles, customizationStyles, actionSource, actionStyles, corporateStyles] = await Promise.all([
   readFile('src/maintenance.tsx', 'utf8'),
   readFile('src/maintenance.css', 'utf8'),
   readFile('src/maintenance-stage1.css', 'utf8'),
   readFile('src/maintenance-customization.css', 'utf8'),
   readFile('src/action-system.tsx', 'utf8'),
-  readFile('src/action-system.css', 'utf8')
+  readFile('src/action-system.css', 'utf8'),
+  readFile('src/corporate-theme.css', 'utf8')
 ])
 
 for (const label of ['Total Issues', 'Open Issues', 'In Progress', 'Resolved']) {
@@ -48,9 +49,16 @@ assert.match(source, /className="maintenance-detail-section"><h4>Follow-up &amp;
 assert.match(stageStyles, /\.maintenance-filters :is\(input, select\) \{[\s\S]*?height: 44px;[\s\S]*?border: 1px solid #dec58f;[\s\S]*?font-size: 13px;/, 'Maintenance filters must share typography, height and gold borders')
 assert.match(stageStyles, /\.maintenance-detail-section \{[\s\S]*?border: 1px solid #dec58f;/, 'Maintenance detail sections must use the approved gold frame')
 assert.match(source, /Discard unsaved maintenance issue changes\?/, 'Maintenance form dismissal must protect unsaved changes')
-assert.equal(source.includes('className="maintenance-modal-close"'), false, 'Maintenance modal must not retain the redundant close icon')
+assert.match(source, /className="maintenance-modal-close"/, 'Maintenance dialogs must retain a visible accessible close control')
 assert.match(source, /event\.key === 'Escape'/, 'Maintenance modal must retain Escape dismissal')
 assert.match(source, /event\.currentTarget === event\.target/, 'Maintenance modal must dismiss from backdrop clicks only')
+assert.match(source, /className="maintenance-date-navigation"/, 'Maintenance must move date filtering into the premium header card')
+assert.match(source, /className="maintenance-date-label"/, 'Maintenance must expose the boxless reported-date label')
+assert.match(source, /Show all dates/, 'Maintenance must provide an accessible route back to all applicable dates')
+assert.doesNotMatch(source, /className="maintenance-filters"[^\n]*Date reported/, 'The list filters must not retain a duplicate date control')
+assert.match(corporateStyles, /\.app-shell:has\(> main\.module-maintenance\)[\s\S]*?linear-gradient\(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%\)/, 'Maintenance must use one continuous burnt-orange-to-peach canvas gradient')
+assert.match(corporateStyles, /main\.module-maintenance > \.page-header :is\(h1, \.eyebrow\)/, 'Maintenance page heading must use the unboxed white heading treatment')
+assert.match(corporateStyles, /main\.module-maintenance \.maintenance-toolbar[\s\S]*?border: 1px solid var\(--ao-maintenance-gold\);[\s\S]*?border-top-width: 2px;/, 'Maintenance header card must use the premium gold frame')
 assert.match(stageStyles, /border: 1px solid #dec58f;/, 'Maintenance cards and panels must use the approved gold border')
 assert.match(baseStyles, /\.maintenance-form-grid\{display:grid/, 'Maintenance must retain its responsive form grid foundation')
 assert.match(source, /<h3>Maintenance Settings<\/h3>/, 'Maintenance customization must use the approved section title')

@@ -289,7 +289,8 @@ main[class*='module-'] {
    specificity. Scope the authoritative Duty Roster surface at the same
    specificity so its warm tint remains translucent over the page gradient. */
 main.module-duty-roster,
-main.module-bookings {
+main.module-bookings,
+main.module-maintenance {
   --ao-module-surface: rgb(255 239 223 / 36%);
   --ao-module-surface-strong: rgb(255 246 233 / 48%);
 }
@@ -403,7 +404,21 @@ html:has(.app-shell > main.module-incentives-and-bill-tips),
 body:has(.app-shell > main.module-incentives-and-bill-tips) {
   background: var(--ao-staff-mint);
 }
-.app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
+.app-shell:has(> main.module-maintenance) {
+  --ao-shell-accent: var(--ao-sunset-orange);
+  --ao-shell-highlight: var(--ao-orange-glow);
+  --ao-page-canvas-tint: var(--ao-orange-glow);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #ffbd6f;
+  background-image: linear-gradient(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: scroll;
+}
+
+html:has(.app-shell > main.module-maintenance),
+body:has(.app-shell > main.module-maintenance) { background: #ffbd6f; }
 .app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
 
@@ -795,7 +810,8 @@ main.module-dashboard > .page-header {
    burnt-orange and peach identity. Configured duty-code colors stay authoritative. */
 main.module-duty-roster > .page-header,
 main.module-bookings > .page-header,
-main.module-guest-occasions > .page-header {
+main.module-guest-occasions > .page-header,
+main.module-maintenance > .page-header {
   min-height: 0;
   margin-bottom: 14px;
   padding: 0;
@@ -812,7 +828,8 @@ main.module-bookings > .page-header {
 
 main.module-duty-roster > .page-header::before,
 main.module-bookings > .page-header::before,
-main.module-guest-occasions > .page-header::before {
+main.module-guest-occasions > .page-header::before,
+main.module-maintenance > .page-header::before {
   display: none;
   content: none;
 }
@@ -833,7 +850,8 @@ main[class*='module-'] :is(.panel-title, .section-heading, .workforce-section-ti
 
 main.module-duty-roster > .page-header :is(h1, .eyebrow),
 main.module-bookings > .page-header :is(h1, .eyebrow),
-main.module-guest-occasions > .page-header :is(h1, .eyebrow) { color: #fff; }
+main.module-guest-occasions > .page-header :is(h1, .eyebrow),
+main.module-maintenance > .page-header :is(h1, .eyebrow) { color: #fff; }
 
 /* A quiet wash and inset ribbon make the palette visible in section hierarchy
    while leaving operational badges, duty codes, configured swatches and
@@ -900,11 +918,10 @@ main[class*='module-'] :is(input, select, textarea):focus-visible {
 /* Corporate color replaces decorative gold on structural surfaces only.
    Semantic states, configured swatches, duty codes and financial indicators
    retain their own authoritative colors. */
-main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
+main[class*='module-']:not(.module-duty-roster):not(.module-bookings):not(.module-maintenance) :is(
   .panel,
   .customization-category-panel,
   .booking-config-section,
-  .maintenance-config-card,
   .workforce-foundation-panel,
   .financial-subsection,
   .report-section,
@@ -947,7 +964,7 @@ main[class*='module-'] :is(
   background-color: var(--ao-module-surface);
 }
 
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-maintenance) :is(
   input:not([type='checkbox']):not([type='radio']):not([type='color']),
   select,
   textarea
@@ -1001,7 +1018,7 @@ main[class*='module-'] :is(
   line-height: 1.2;
 }
 
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-maintenance) :is(
   .ao-action--secondary,
   .ao-icon-action,
   .secondary,
@@ -1043,11 +1060,11 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config):not(.maintenance-toolbar):not(.maintenance-panel):not(.maintenance-card):not(.maintenance-summary article):not(.maintenance-config-card):not(.maintenance-modal):not(.maintenance-form-section):not(.maintenance-detail-hero):not(.maintenance-detail-section)) {
   border-color: var(--ao-module-line);
 }
 
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-maintenance) :is(
   .ao-action,
   .config-icon-action,
   .compact-edit-action,
@@ -1269,6 +1286,416 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
 
 .mobile-brand .mobile-wordmark {
   filter: drop-shadow(0 1px 6px rgb(0 0 0 / 24%));
+}
+
+/* Maintenance premium refinement.  The legacy module loads several component
+   style layers; this single module-scoped authority keeps their layout logic
+   while preventing the shared corporate frame from reintroducing pale boxes. */
+.module-maintenance {
+  --ao-maintenance-gold: #dec58f;
+  --ao-maintenance-cream: #fff8ec;
+  --ao-maintenance-peach: #fbe6d6;
+  --ao-maintenance-divider: #dfa27e;
+  --ao-maintenance-burnt: #8f3c25;
+}
+
+main.module-maintenance {
+  padding-bottom: 32px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-toolbar {
+  display: block;
+  margin: 0 0 12px;
+  padding: 14px 16px 13px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-top-width: 2px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #82351f 0%, #a94728 58%, #bd633a 100%);
+  box-shadow: 0 7px 18px rgb(83 35 20 / 14%);
+}
+
+.module-maintenance .maintenance-toolbar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.module-maintenance .maintenance-toolbar h2 {
+  margin: 0;
+  color: #fffaf2;
+  font: 500 24px/1.12 var(--ao-font-display);
+}
+
+.module-maintenance .maintenance-toolbar-heading > .ao-action {
+  min-height: 40px;
+  border-color: var(--ao-maintenance-gold);
+  background: #9d4428;
+  color: #fff;
+  box-shadow: none;
+}
+
+.module-maintenance .maintenance-date-navigation {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.module-maintenance .maintenance-date-step,
+.module-maintenance .maintenance-date-picker {
+  border-color: var(--ao-maintenance-gold);
+  background: rgb(110 40 23 / 34%);
+  color: #fff;
+  box-shadow: none;
+}
+
+.module-maintenance .maintenance-date-step {
+  width: 42px;
+  height: 38px;
+  min-height: 38px;
+}
+
+.module-maintenance .maintenance-date-display {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-label {
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 27px/1.1 var(--ao-font-display);
+  text-align: center;
+  cursor: pointer;
+}
+
+.module-maintenance .maintenance-date-picker {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  flex: 0 0 34px;
+}
+
+.module-maintenance .maintenance-date-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.module-maintenance .maintenance-date-clear {
+  width: max-content;
+  min-height: 32px;
+  margin: 8px auto 0;
+  border-color: var(--ao-maintenance-gold);
+  background: rgb(255 246 233 / 13%);
+  color: #fff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary article {
+  min-height: 78px;
+  padding: 11px 14px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffaf1 0%, #fcebdc 100%);
+  box-shadow: 0 4px 12px rgb(112 55 31 / 9%);
+}
+
+.module-maintenance .maintenance-summary article::before {
+  top: 0;
+  right: auto;
+  left: 14px;
+  width: 30px;
+  height: 2px;
+}
+
+.module-maintenance .maintenance-summary span {
+  color: #694939;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.module-maintenance .maintenance-summary strong {
+  margin-top: 4px;
+  color: #49291f;
+  font: 500 22px/1 var(--ao-font-ui);
+}
+
+html body .app-shell main.module-maintenance .panel.maintenance-panel {
+  overflow: hidden;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-top-width: 2px;
+  border-radius: 13px;
+  background: var(--ao-maintenance-cream);
+  box-shadow: 0 7px 18px rgb(83 35 20 / 10%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-panel .maintenance-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, 220px);
+  gap: 10px;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ao-maintenance-divider);
+  border-radius: 0;
+  background: #fbe9da;
+}
+
+html body .app-shell main.module-maintenance .maintenance-filters :is(input, select) {
+  height: 40px;
+  min-height: 40px;
+  border-color: var(--ao-maintenance-gold);
+  background: #fffaf2;
+  color: #4d3127;
+  font-family: var(--ao-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.module-maintenance .maintenance-cards {
+  gap: 12px;
+  padding: 12px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-card {
+  padding: 13px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffaf1 0%, #fff5e9 100%);
+  box-shadow: 0 3px 10px rgb(96 45 27 / 8%);
+}
+
+.module-maintenance .maintenance-card-urgent {
+  box-shadow: inset 4px 0 #a9362b, 0 3px 10px rgb(96 45 27 / 8%);
+}
+
+.module-maintenance .maintenance-card-date,
+.module-maintenance .maintenance-card dt,
+.module-maintenance .maintenance-card-footer label > span {
+  color: #765446;
+}
+
+.module-maintenance .maintenance-issue-trigger {
+  color: #472a21;
+  font-weight: 650;
+}
+
+.module-maintenance .maintenance-card dd {
+  color: #563a2f;
+  font-weight: 450;
+}
+
+.module-maintenance .maintenance-card-footer {
+  border-top-color: var(--ao-maintenance-divider);
+}
+
+.module-maintenance .maintenance-status-select,
+.module-maintenance .maintenance-status-pill {
+  border-color: var(--ao-maintenance-gold);
+  background-color: #fffaf2;
+  color: #4d3127;
+}
+
+.module-maintenance .maintenance-card-footer .ao-action,
+.module-maintenance .maintenance-panel .empty-state-action {
+  border-color: var(--ao-maintenance-gold);
+}
+
+.module-maintenance .inline-empty {
+  margin: 12px;
+  border-color: var(--ao-maintenance-gold);
+  background: #fff4e7;
+}
+
+main.module-maintenance .maintenance-modal-backdrop {
+  background: rgb(44 21 13 / 56%);
+  backdrop-filter: blur(2px);
+}
+
+main.module-maintenance .modal.maintenance-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(760px, calc(100dvh - 28px));
+  overflow: hidden;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-top-width: 2px;
+  border-radius: 14px;
+  background: var(--ao-maintenance-cream);
+  box-shadow: 0 20px 52px rgb(49 21 12 / 30%);
+}
+
+main.module-maintenance .maintenance-modal .modal-title {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--ao-maintenance-gold);
+  background: linear-gradient(135deg, #82351f 0%, #a94728 68%, #bd633a 100%);
+}
+
+main.module-maintenance .maintenance-modal .modal-title h3 {
+  margin: 0;
+  color: #fff;
+  font: 500 22px/1.15 var(--ao-font-display);
+}
+
+main.module-maintenance .maintenance-modal-close {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+  border-color: var(--ao-maintenance-gold);
+  background: rgb(100 34 19 / 26%);
+  color: #fff;
+}
+
+main.module-maintenance .maintenance-modal .maintenance-form-body {
+  padding: 10px 10px 66px;
+  background: #f8dfcc;
+}
+
+main.module-maintenance .maintenance-form-section,
+main.module-maintenance .maintenance-detail-hero,
+main.module-maintenance .maintenance-detail-section {
+  border-color: var(--ao-maintenance-gold);
+  background: #fff8ec;
+}
+
+main.module-maintenance .maintenance-form-section {
+  margin-bottom: 8px;
+  padding: 10px 11px;
+}
+
+main.module-maintenance .maintenance-form-section h4,
+main.module-maintenance .maintenance-detail :is(h3, h4) {
+  color: #4c2c22;
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+main.module-maintenance .maintenance-form-section label {
+  color: #725244;
+}
+
+main.module-maintenance .maintenance-form-section :is(input, select, textarea) {
+  min-height: 40px;
+  border-color: color-mix(in srgb, var(--ao-maintenance-gold) 78%, white);
+  background: #fffdf8;
+}
+
+main.module-maintenance .maintenance-form-section textarea {
+  min-height: 72px;
+}
+
+main.module-maintenance .maintenance-modal .form-actions {
+  padding: 8px 10px;
+  border-top-color: var(--ao-maintenance-gold);
+  background: #fff4e5;
+}
+
+main.module-maintenance .maintenance-detail {
+  background: #f8dfcc;
+}
+
+main.module-maintenance .maintenance-detail-notes > div + div {
+  border-top-color: var(--ao-maintenance-divider);
+}
+
+@media (max-width: 700px) {
+  main.module-maintenance { padding-bottom: 20px; }
+
+  html body .app-shell main.module-maintenance .maintenance-toolbar {
+    padding: 12px;
+  }
+
+  .module-maintenance .maintenance-toolbar-heading {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 11px;
+  }
+
+  .module-maintenance .maintenance-toolbar h2 { font-size: 21px; }
+  .module-maintenance .maintenance-toolbar-heading > .ao-action { width: 100%; }
+
+  .module-maintenance :is(.maintenance-toolbar, .maintenance-card) :is(button, select) {
+    min-height: 44px;
+  }
+
+  .module-maintenance .maintenance-date-navigation {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 7px;
+  }
+
+  .module-maintenance .maintenance-date-step {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .module-maintenance .maintenance-date-label {
+    max-width: 100%;
+    font-size: 21px;
+    white-space: normal;
+  }
+
+  .module-maintenance .maintenance-date-picker {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary {
+    gap: 9px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary article {
+    min-height: 74px;
+    padding: 10px 11px;
+  }
+
+  .module-maintenance .maintenance-summary strong { font-size: 19px; }
+
+  html body .app-shell main.module-maintenance .maintenance-panel .maintenance-filters {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .module-maintenance .maintenance-cards {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card {
+    padding: 12px;
+  }
+
+  main.module-maintenance .modal.maintenance-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  main.module-maintenance .maintenance-modal .modal-title h3 { font-size: 19px; }
+  main.module-maintenance .maintenance-modal .maintenance-form-body { padding: 8px 8px 66px; }
+  main.module-maintenance .maintenance-form-section { padding: 9px; }
 }
 
 @media (max-width: 700px) {
