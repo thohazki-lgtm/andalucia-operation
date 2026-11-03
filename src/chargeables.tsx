@@ -5,6 +5,7 @@ import './chargeables.css'
 import { addCalendarDays, serviceDate } from './service-date'
 import { consumeWorkflow } from './workflow-intent'
 import { ActionButton, DateControl, IconAction, StatusPill, StatusSelect, SvgIcon } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 import { useAuth } from './auth'
 
 export interface ChargeableConfiguration { items: ConfigOption[]; statuses: ConfigOption[]; tables: ConfigOption[] }
@@ -75,7 +76,7 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
     <section className="chargeable-toolbar">
 <div className="chargeable-date-controls" role="group" aria-label="Charge date navigation">
 <IconAction icon="chevron-left" className="chargeable-date-step" label="Previous charge date" title="Previous day" onClick={() => setDate(value => addCalendarDays(value, -1))}/>
-<DateControl className="chargeable-date-picker" label="Chargeable date" title={dateLabel(date)} value={date} onChange={event => setDate(event.target.value)} />
+<FinancialDateControl className="chargeable-date-picker" label="Chargeable date" title={dateLabel(date)} value={date} onChange={setDate} />
 <IconAction icon="chevron-right" className="chargeable-date-step" label="Next charge date" title="Next day" onClick={() => setDate(value => addCalendarDays(value, 1))}/>
 </div>
 <ActionButton variant="primary" icon="add" className="chargeable-add" onClick={() => setEditing('new')}>Add Chargeable Item</ActionButton>

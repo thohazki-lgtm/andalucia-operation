@@ -5,7 +5,8 @@ import { ChargeableItemsPage, type ChargeableConfiguration } from './chargeables
 import { WineSpiritsPage } from './wine-spirits'
 import { useAuth } from './auth'
 import { serviceDate } from './service-date'
-import { ActionButton, DateControl, IconAction, StatusPill } from './action-system'
+import { ActionButton, IconAction, StatusPill } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 import './financial-preview.css'
 
 type ModuleTab = 'chargeables' | 'wine-spirits' | 'bill-tips' | 'earnings'
@@ -68,8 +69,8 @@ function ManagerPreview({ activeTab }: { activeTab: 'bill-tips' | 'earnings' }) 
       <div>{activeTab === 'bill-tips' && <p className="eyebrow bill-tip-command-eyebrow">LIVE OPERATIONAL PREVIEW</p>}<h2>{activeTab === 'bill-tips' ? 'Bill Tip Preview' : 'Earnings Summary'}</h2></div>
       <div className="financial-command-controls">
         {activeTab === 'bill-tips'
-          ? <div className="bill-tip-month-navigation" role="group" aria-label="Bill Tips month navigation"><IconAction icon="chevron-left" className="bill-tip-month-step" label="Previous Bill Tips month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} /><DateControl className="bill-tip-month-control" type="month" label="Bill Tips month" value={month} onChange={event => setMonth(event.target.value)} /><IconAction icon="chevron-right" className="bill-tip-month-step" label="Next Bill Tips month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} /></div>
-          : <div className="earnings-month-navigation" role="group" aria-label="Earnings Summary month navigation"><IconAction icon="chevron-left" className="earnings-month-step" label="Previous Earnings Summary month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} /><DateControl className="earnings-month-control" type="month" label="Earnings Summary month" value={month} onChange={event => setMonth(event.target.value)} /><IconAction icon="chevron-right" className="earnings-month-step" label="Next Earnings Summary month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} /></div>}
+          ? <div className="bill-tip-month-navigation" role="group" aria-label="Bill Tips month navigation"><IconAction icon="chevron-left" className="bill-tip-month-step" label="Previous Bill Tips month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} /><FinancialDateControl className="bill-tip-month-control" type="month" label="Bill Tips month" value={month} onChange={setMonth} /><IconAction icon="chevron-right" className="bill-tip-month-step" label="Next Bill Tips month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} /></div>
+          : <div className="earnings-month-navigation" role="group" aria-label="Earnings Summary month navigation"><IconAction icon="chevron-left" className="earnings-month-step" label="Previous Earnings Summary month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} /><FinancialDateControl className="earnings-month-control" type="month" label="Earnings Summary month" value={month} onChange={setMonth} /><IconAction icon="chevron-right" className="earnings-month-step" label="Next Earnings Summary month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} /></div>}
         {activeTab === 'bill-tips' && <label className="bill-tip-pool-control">Total Bill Tip Pool (USD)<input inputMode="decimal" disabled={finalizedLocked} value={pool} onChange={event => setPool(event.target.value)} /></label>}
         {activeTab === 'bill-tips'
           ? <ActionButton variant="primary" icon="refresh" onClick={() => void load()} disabled={loading}>{loading ? 'Calculating…' : 'Recalculate Preview'}</ActionButton>

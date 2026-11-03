@@ -3,6 +3,7 @@ import { wineSpiritsApi } from './api'
 import type { ConfigOption, Staff, WineSpiritCalculation, WineSpiritSale, WineSpiritSaleInput, WineSpiritSaleStatus } from './domain'
 import { serviceDate } from './service-date'
 import { ActionButton, DateControl, IconAction, StatusPill } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 import './wine-spirits.css'
 
 const money = (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0))
@@ -40,7 +41,7 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
       <div className="wine-toolbar-heading"><h2>Wine &amp; Spirits Sales</h2></div>
       <div className="wine-month-navigation" role="group" aria-label="Wine and Spirits month navigation">
         <IconAction icon="chevron-left" className="wine-month-step" label="Previous Wine and Spirits month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} />
-        <DateControl className="wine-month-control" type="month" label="Wine and Spirits month" value={month} onChange={event => setMonth(event.target.value)} />
+        <FinancialDateControl className="wine-month-control" type="month" label="Wine and Spirits month" value={month} onChange={setMonth} />
         <IconAction icon="chevron-right" className="wine-month-step" label="Next Wine and Spirits month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} />
       </div>
       <ActionButton variant="primary" icon="add" className="wine-add-sale" onClick={() => setEditing('new')}>Add Wine / Spirit Sale</ActionButton>

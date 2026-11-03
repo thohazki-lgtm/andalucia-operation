@@ -1,0 +1,169 @@
+.module-incentives-and-bill-tips .ao-financial-date-control { z-index: 1; }
+.module-incentives-and-bill-tips .ao-financial-date-control.is-open { z-index: 120; }
+
+.module-incentives-and-bill-tips .ao-financial-date-control__trigger {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 18px/1.15 var(--ao-font-display, 'Dahlia', serif);
+  cursor: pointer;
+}
+
+.module-incentives-and-bill-tips .ao-financial-date-control__trigger:focus-visible {
+  outline: 2px solid var(--ao-financial-gold, #c5a35a);
+  outline-offset: 2px;
+}
+
+.module-incentives-and-bill-tips .ao-financial-date-control__trigger svg { flex: 0 0 auto; }
+
+.module-incentives-and-bill-tips .ao-financial-picker {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  z-index: 240;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 28px));
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ao-financial-gold, #c5a35a);
+  border-top-width: 3px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f5faef 0%, #e4f0df 58%, #d5e7d5 100%);
+  box-shadow: 0 18px 44px rgb(8 47 43 / 26%);
+  color: #103e38;
+  font-family: var(--ao-font-body, 'Good Sans', Arial, sans-serif);
+  transform: translateX(-50%);
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgb(197 163 90 / 68%);
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__header strong {
+  overflow: hidden;
+  color: #103e38;
+  font: 500 20px/1.1 var(--ao-font-display, 'Dahlia', serif);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__header button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--ao-financial-gold, #c5a35a);
+  border-radius: 9px;
+  background: rgb(255 251 239 / 72%);
+  color: #174e46;
+  cursor: pointer;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__weekdays,
+.module-incentives-and-bill-tips .ao-financial-picker__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__weekdays {
+  padding: 10px 0 6px;
+  color: #446e64;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__days button,
+.module-incentives-and-bill-tips .ao-financial-picker__months button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 5px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: rgb(255 253 246 / 56%);
+  color: #173f3a;
+  font: 500 12px/1 var(--ao-font-body, 'Good Sans', Arial, sans-serif);
+  cursor: pointer;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__days button:hover,
+.module-incentives-and-bill-tips .ao-financial-picker__months button:hover,
+.module-incentives-and-bill-tips .ao-financial-picker__header button:hover {
+  border-color: var(--ao-financial-gold, #c5a35a);
+  background: #fff8e9;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker :is(button.is-selected, button[aria-selected='true']) {
+  border-color: #b28d3f;
+  background: #185d52;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker button.is-today:not(.is-selected) {
+  border-color: var(--ao-financial-gold, #c5a35a);
+  color: #775611;
+  font-weight: 700;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker button:focus-visible {
+  outline: 2px solid #287a69;
+  outline-offset: 1px;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker button:disabled {
+  cursor: not-allowed;
+  opacity: .38;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker__months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding-top: 11px;
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgb(197 163 90 / 52%);
+}
+
+.module-incentives-and-bill-tips .ao-financial-picker footer button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--ao-financial-gold, #c5a35a);
+  border-radius: 999px;
+  background: #fff8e9;
+  color: #164c44;
+  font: 650 11px/1 var(--ao-font-body, 'Good Sans', Arial, sans-serif);
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .module-incentives-and-bill-tips .ao-financial-date-control__trigger { min-height: 44px; font-size: 16px; }
+  .module-incentives-and-bill-tips .ao-financial-picker { width: min(304px, calc(100vw - 24px)); padding: 10px; }
+  .module-incentives-and-bill-tips .ao-financial-picker__days button { min-height: 34px; }
+}

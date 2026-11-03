@@ -3,12 +3,15 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const [component, styles, corporateTheme, wineComponent, wineStyles] = await Promise.all([
+const [component, styles, corporateTheme, wineComponent, wineStyles, chargeableComponent, pickerComponent, pickerStyles] = await Promise.all([
   readFile(`${root}src/financial-preview.tsx`, 'utf8'),
   readFile(`${root}src/financial-preview.css`, 'utf8'),
   readFile(`${root}src/corporate-theme.css`, 'utf8'),
   readFile(`${root}src/wine-spirits.tsx`, 'utf8'),
-  readFile(`${root}src/wine-spirits.css`, 'utf8')
+  readFile(`${root}src/wine-spirits.css`, 'utf8'),
+  readFile(`${root}src/chargeables.tsx`, 'utf8'),
+  readFile(`${root}src/financial-date-control.tsx`, 'utf8'),
+  readFile(`${root}src/financial-date-control.css`, 'utf8')
 ])
 const app = await readFile(`${root}src/App.tsx`, 'utf8')
 
@@ -30,6 +33,16 @@ assert.match(component, /className="bill-tip-month-step" label="Next Bill Tips m
 assert.match(component, /className="earnings-month-navigation" role="group" aria-label="Earnings Summary month navigation"/)
 assert.match(component, /className="earnings-month-step" label="Previous Earnings Summary month"/)
 assert.match(component, /className="earnings-month-step" label="Next Earnings Summary month"/)
+assert.match(component, /FinancialDateControl className="bill-tip-month-control"/)
+assert.match(component, /FinancialDateControl className="earnings-month-control"/)
+assert.match(wineComponent, /FinancialDateControl className="wine-month-control"/)
+assert.match(chargeableComponent, /FinancialDateControl className="chargeable-date-picker"/)
+assert.match(pickerComponent, /role="dialog" aria-label=\{`\$\{label\} picker`\}/)
+assert.match(pickerComponent, /role="grid" aria-label=\{monthHeading\(viewMonth\)\}/)
+assert.match(pickerComponent, /role="grid" aria-label=\{`Months in \$\{viewYear\}`\}/)
+assert.match(pickerComponent, /event\.key === 'Escape'/)
+assert.match(pickerStyles, /\.module-incentives-and-bill-tips \.ao-financial-picker \{[\s\S]*?border: 1px solid var\(--ao-financial-gold,[\s\S]*?background: linear-gradient\(180deg, #f5faef 0%, #e4f0df 58%, #d5e7d5 100%\)/)
+assert.match(pickerStyles, /\.ao-financial-picker :is\(button\.is-selected, button\[aria-selected='true'\]\) \{[\s\S]*?background: #185d52;[\s\S]*?color: #fff/)
 assert.match(styles, /\.bill-tip-metrics article\{display:flex;min-height:80px/)
 assert.doesNotMatch(styles, /\.bill-tip-preview-results>\.financial-metrics article::before/)
 assert.doesNotMatch(styles, /\.earnings-preview-results>\.financial-metrics article::before/)
