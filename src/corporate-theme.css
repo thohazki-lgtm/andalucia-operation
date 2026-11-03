@@ -5878,10 +5878,12 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
 /* Chargeable Items refinement. Keep this below the shared financial system so
    the module-wide green structural borders cannot replace its gold frames. */
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-toolbar {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  padding: 12px 14px;
+  border: 1px solid var(--ao-financial-gold);
+  border-top-width: 2px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
+  box-shadow: 0 6px 18px rgb(16 62 56 / 12%);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-date-controls .chargeable-date-step {
@@ -5913,6 +5915,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary article {
   height: auto;
   min-height: 68px;
+  margin: 0;
   padding: 8px 11px;
   border-width: 3px 1px 1px;
   border-style: solid;
@@ -6039,6 +6042,10 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 }
 
 @media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-toolbar {
+    padding: 10px;
+  }
+
   html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.chargeable-date-picker input {
     font-size: 16px;
   }
