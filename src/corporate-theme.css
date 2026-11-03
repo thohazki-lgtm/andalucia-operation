@@ -911,7 +911,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.chargeable-panel):not(.chargeable-summary article):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-panel):not(.chargeable-summary article):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-reconciliation):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -1043,7 +1043,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
 }
 
@@ -1100,11 +1100,11 @@ main[class*='module-'] :is(
   box-shadow: inset 0 -2px var(--ao-module-accent);
 }
 
-main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is([class$='-table-wrap'], [class*='-table-wrap ']) {
+main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is([class$='-table-wrap'], [class*='-table-wrap ']):not(.financial-table-wrap) {
   border-color: var(--ao-module-line);
 }
 
-html body .app-shell main[class*='module-']:not(.module-duty-roster):not(.module-bookings) table:not(.leave-planner-grid) :is(th, td) {
+html body .app-shell main[class*='module-']:not(.module-duty-roster):not(.module-bookings) table:not(.leave-planner-grid):not(.bill-tip-table) :is(th, td) {
   border-color: var(--ao-module-divider);
   vertical-align: middle;
 }
@@ -5809,7 +5809,13 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
 html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics article {
   min-height: 80px;
   padding: 10px 12px;
+  border: 1px solid var(--ao-financial-gold);
   border-top-width: 2px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics span {
+  color: color-mix(in srgb, var(--ao-staff-emerald-deep) 80%, white);
+  font-weight: 700;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics strong {
@@ -5858,7 +5864,7 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
 ) {
   color: var(--ao-staff-emerald-deep);
   font-family: var(--ao-font-display);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 @media (max-width: 700px) {
