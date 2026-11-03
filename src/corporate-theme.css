@@ -911,7 +911,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-panel):not(.chargeable-summary article):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -936,7 +936,6 @@ main[class*='module-'] :is(
   .booking-tools,
   .service-tools,
   .occasion-filters,
-  .chargeable-filters,
   .maintenance-filters,
   .attendance-toolbar,
   .report-controls
@@ -1044,7 +1043,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
 }
 
@@ -1064,7 +1063,6 @@ main[class*='module-'] :is(
   .leave-planner-tabs,
   .booking-service-tabs,
   .occasion-tabs,
-  .chargeable-tabs,
   .financial-primary-tabs,
   .report-mode-tabs,
   .customization-category-nav
@@ -1237,7 +1235,6 @@ main[class*='module-'] :is(
   .attendance-summary,
   .training-kpis,
   .training-r2-kpis,
-  .chargeable-summary,
   .financial-metrics,
   .maintenance-summary,
   .daily-kpis,
@@ -5876,5 +5873,171 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
   html body .app-shell main.module-incentives-and-bill-tips .financial-metrics article {
     min-height: 82px;
     padding: 11px 12px;
+  }
+}
+
+/* Chargeable Items refinement. Keep this below the shared financial system so
+   the module-wide green structural borders cannot replace its gold frames. */
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-toolbar {
+  border-width: 3px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
+  width: 100%;
+  max-width: 1080px;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary article {
+  height: auto;
+  min-height: 68px;
+  padding: 8px 11px;
+  border-width: 3px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(145deg, #fffaf0 0%, #eef7ef 100%);
+  box-shadow: 0 3px 10px rgb(16 62 56 / 8%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary span {
+  font-size: 10px;
+  letter-spacing: .055em;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary strong {
+  margin-top: 3px;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary .summary-text {
+  font-size: 14px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .panel.chargeable-panel {
+  padding: 8px;
+  border-width: 2px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(180deg, #fffaf0 0%, #eef7ef 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-tabs,
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-filters {
+  border: 1px solid var(--ao-financial-gold);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ao-financial-ivory) 78%, var(--ao-financial-row-alt));
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-filters {
+  margin-top: 8px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-tabs button,
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-filters :is(input, select),
+html body .app-shell main.module-incentives-and-bill-tips .mobile-chargeable-card select {
+  border-color: var(--ao-financial-gold);
+  background-color: #fffaf0;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap {
+  margin-top: 8px;
+  overflow: hidden;
+  border-width: 2px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f4f9f2 0%, #fffaf0 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid {
+  max-width: none;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 380px));
+  justify-content: start;
+  gap: 10px;
+  padding: 10px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap:has(> .inline-empty) .chargeable-card-grid {
+  display: none !important;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap > .inline-empty {
+  min-height: 72px;
+  margin: 8px;
+  padding: 14px;
+  border-color: var(--ao-financial-gold);
+  background: color-mix(in srgb, var(--ao-financial-row-alt) 72%, var(--ao-financial-ivory));
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-operation-card.mobile-chargeable-card {
+  width: 100%;
+  padding: 10px 11px;
+  border-width: 3px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(145deg, #fffaf0 0%, #edf6ef 100%);
+  box-shadow: 0 3px 10px rgb(16 62 56 / 9%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading {
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom-color: color-mix(in srgb, var(--ao-financial-gold) 68%, white);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading h4 {
+  margin-block: 3px 2px;
+  color: var(--ao-staff-emerald-deep);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-total {
+  color: var(--ao-staff-emerald-deep);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-facts {
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom-color: color-mix(in srgb, var(--ao-financial-gold) 56%, white);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-fields {
+  gap: 7px;
+  padding-top: 7px;
+}
+
+@media (max-width: 900px) {
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
+    max-width: none;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary article {
+    min-height: 62px;
+    padding: 8px 9px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary strong {
+    font-size: 18px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary .summary-text {
+    font-size: 13px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid {
+    padding: 8px;
   }
 }
