@@ -5980,10 +5980,27 @@ html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.bill-
   color: #fff;
 }
 
-html body .app-shell main.module-incentives-and-bill-tips .bill-tip-pool-control input,
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.bill-tip-command .financial-command-controls .bill-tip-pool-control input,
 html body .app-shell main.module-incentives-and-bill-tips .external-allocation-actions .ao-action,
 html body .app-shell main.module-incentives-and-bill-tips .external-list :is(input, select, textarea, .ao-action) {
   border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.bill-tip-command .financial-command-controls .bill-tip-pool-control {
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.bill-tip-command .financial-command-controls > .ao-action {
+  border-color: var(--ao-financial-gold);
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > :is(
+  .bill-tip-team-preview,
+  .financial-reconciliation.panel,
+  .bill-tip-finalization-card
+) {
+  margin-bottom: 0;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
