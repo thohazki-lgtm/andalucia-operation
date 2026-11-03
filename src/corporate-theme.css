@@ -911,7 +911,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.chargeable-panel):not(.chargeable-summary article):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-reconciliation):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-panel):not(.chargeable-summary article):not(.bill-tip-command):not(.earnings-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-reconciliation):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -6001,6 +6001,95 @@ html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-resu
   .bill-tip-finalization-card
 ) {
   margin-bottom: 0;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command {
+  padding: 14px 16px;
+  border-width: 3px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(120deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command .financial-command-controls {
+  border: 0;
+  background: transparent;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command .earnings-month-navigation .earnings-month-step,
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command .financial-command-controls > .ao-action {
+  border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command .ao-date-control.earnings-month-control input {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 18px/1.15 var(--ao-font-display);
+  text-align: center;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .financial-command.earnings-command .ao-date-control.earnings-month-control .ao-date-control__icon {
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > :is(
+  .financial-preview-banner,
+  .financial-subsection
+) {
+  margin-bottom: 0;
+  border-width: 2px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .earnings-preview-results,
+  .bill-tip-preview-results
+) > .financial-metrics article {
+  min-height: 80px;
+  padding: 10px 12px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .earnings-preview-results,
+  .bill-tip-preview-results
+) > .financial-metrics strong {
+  margin-top: 4px;
+  font-family: var(--ao-font-body);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap thead th {
+  border-color: var(--ao-financial-green-line-strong);
+  background: #d5e9de;
+  font-weight: 650;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap :is(th, td) + :is(th, td),
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap tbody td {
+  border-color: var(--ao-financial-green-line);
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .earnings-preview-results,
+    .bill-tip-preview-results
+  ) > .financial-metrics article {
+    min-height: 76px;
+    padding: 9px 10px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .earnings-preview-results,
+    .bill-tip-preview-results
+  ) > .financial-metrics strong {
+    font-size: 21px;
+  }
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
