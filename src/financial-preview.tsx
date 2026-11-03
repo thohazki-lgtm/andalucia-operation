@@ -12,6 +12,11 @@ type ModuleTab = 'chargeables' | 'wine-spirits' | 'bill-tips' | 'earnings'
 
 const money = (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0))
 const monthLabel = (month: string) => new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(new Date(`${month}-01T00:00:00`))
+const shiftMonth = (month: string, offset: number) => {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const next = new Date(Date.UTC(year, monthNumber - 1 + offset, 1))
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`
+}
 const membershipPeriodLabel = (from: string, to: string | null) => {
   const parseDate = (value: string) => {
     const [year, month, day] = value.slice(0, 10).split('-').map(Number)
@@ -63,9 +68,9 @@ function ManagerPreview({ activeTab }: { activeTab: 'bill-tips' | 'earnings' }) 
       <div>{activeTab === 'bill-tips' && <p className="eyebrow bill-tip-command-eyebrow">LIVE OPERATIONAL PREVIEW</p>}<h2>{activeTab === 'bill-tips' ? 'Bill Tip Preview' : 'Earnings Summary'}</h2></div>
       <div className="financial-command-controls">
         {activeTab === 'bill-tips'
-          ? <label><span className="bill-tip-month-label">Month</span><DateControl type="month" label="Bill Tips month" value={month} onChange={event => setMonth(event.target.value)} /></label>
+          ? <div className="bill-tip-month-navigation" role="group" aria-label="Bill Tips month navigation"><IconAction icon="chevron-left" className="bill-tip-month-step" label="Previous Bill Tips month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} /><DateControl className="bill-tip-month-control" type="month" label="Bill Tips month" value={month} onChange={event => setMonth(event.target.value)} /><IconAction icon="chevron-right" className="bill-tip-month-step" label="Next Bill Tips month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} /></div>
           : <DateControl type="month" label="Earnings Summary month" value={month} onChange={event => setMonth(event.target.value)} />}
-        {activeTab === 'bill-tips' && <label>Total Bill Tip Pool (USD)<input inputMode="decimal" disabled={finalizedLocked} value={pool} onChange={event => setPool(event.target.value)} /></label>}
+        {activeTab === 'bill-tips' && <label className="bill-tip-pool-control">Total Bill Tip Pool (USD)<input inputMode="decimal" disabled={finalizedLocked} value={pool} onChange={event => setPool(event.target.value)} /></label>}
         {activeTab === 'bill-tips'
           ? <ActionButton variant="primary" icon="refresh" onClick={() => void load()} disabled={loading}>{loading ? 'Calculating…' : 'Recalculate Preview'}</ActionButton>
           : <ActionButton variant="primary" icon="refresh" onClick={() => void load()} disabled={loading}>{loading ? 'Calculating…' : 'Recalculate Preview'}</ActionButton>}

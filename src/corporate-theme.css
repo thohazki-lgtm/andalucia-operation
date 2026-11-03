@@ -5791,7 +5791,31 @@ html body .app-shell main.module-incentives-and-bill-tips .wine-empty-state {
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .financial-preview-results {
-  gap: 12px;
+  gap: 10px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .external-allocations,
+  .financial-preview-banner,
+  .bill-tip-team-preview,
+  .financial-reconciliation,
+  .bill-tip-finalization-card
+) {
+  border-width: 2px 1px 1px;
+  border-style: solid;
+  border-color: var(--ao-financial-gold);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics article {
+  min-height: 80px;
+  padding: 10px 12px;
+  border-top-width: 2px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics strong {
+  margin-top: 4px;
+  font-size: 19px;
+  font-weight: 650;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap {
@@ -5927,6 +5951,33 @@ html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-
 
 html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control .ao-date-control__icon {
   color: #fff;
+}
+
+/* Bill Tips shares the approved boxless Chargeable Items month treatment. */
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-month-navigation .bill-tip-month-step {
+  border-color: var(--ao-financial-gold);
+  background: rgb(16 62 56 / 58%);
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.bill-tip-month-control input {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 18px/1.15 var(--ao-font-display);
+  text-align: center;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.bill-tip-month-control .ao-date-control__icon {
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-pool-control input,
+html body .app-shell main.module-incentives-and-bill-tips .external-allocation-actions .ao-action,
+html body .app-shell main.module-incentives-and-bill-tips .external-list :is(input, select, textarea, .ao-action) {
+  border-color: var(--ao-financial-gold);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {
@@ -6076,6 +6127,15 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 
   html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control input {
     font-size: 16px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.bill-tip-month-control input {
+    font-size: 16px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics article {
+    min-height: 76px;
+    padding: 9px 10px;
   }
 
   html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary {

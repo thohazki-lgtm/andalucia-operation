@@ -116,19 +116,24 @@
 .modal.bill-tip-review-modal :is(input,select,textarea):focus-visible{outline:2px solid var(--financial-gold-strong,#c5a45e);outline-offset:2px;border-color:var(--financial-gold-strong,#c5a45e)}
 
 /* Stage I5: compact Bill Tips management surfaces without changing calculations. */
-.bill-tip-command .financial-command-controls{display:grid;grid-template-columns:168px minmax(180px,1fr) auto;align-items:end;gap:10px;min-width:min(100%,560px)}
+.bill-tip-command .financial-command-controls{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,.72fr) auto;align-items:end;gap:10px;min-width:min(100%,720px);padding:0;border:0;background:transparent}
 .bill-tip-command .financial-command-controls label,.bill-tip-command .financial-command-controls .ao-date-control{width:100%;min-width:0}
+.bill-tip-month-navigation{display:grid;grid-template-columns:40px minmax(170px,1fr) 40px;align-items:center;gap:7px;min-width:0}
+.bill-tip-month-step{width:40px;height:40px;flex-basis:40px;border-color:var(--financial-gold);background:rgb(16 62 56 / 58%);color:#fff}
+.bill-tip-command .financial-command-controls .ao-date-control.bill-tip-month-control input{height:42px;padding-inline:36px;border-color:transparent;border-radius:0;background:transparent;color:#fff;font:500 18px/1.15 var(--ao-font-display,'Dahlia',serif);text-align:center;box-shadow:none}
+.bill-tip-command .financial-command-controls .ao-date-control.bill-tip-month-control .ao-date-control__icon{color:#fff}
+.bill-tip-pool-control input{border-color:var(--financial-gold);background:#fffaf0}
 .bill-tip-command .financial-command-controls input,.bill-tip-command .financial-command-controls .ao-action{height:42px;min-height:42px}
 .external-allocations>header{align-items:center}
 .external-allocation-actions{display:flex;align-items:stretch;justify-content:flex-end;gap:9px;flex:0 0 auto}
 .external-allocation-actions .ao-action{height:42px;min-height:42px}
-.external-allocations .financial-empty{margin-top:11px;padding:13px 16px}
-.bill-tip-metrics article{display:flex;min-height:94px;flex-direction:column;justify-content:space-between;padding:13px 15px}
+.external-allocations .financial-empty{margin-top:9px;padding:10px 14px}
+.bill-tip-metrics article{display:flex;min-height:80px;flex-direction:column;justify-content:space-between;padding:10px 12px}
 .bill-tip-metrics .financial-metric--financial{background:linear-gradient(180deg,#fffaf0 0%,#fff 78%)}
-.bill-tip-metrics .financial-metric--financial strong{font-size:22px;font-weight:800}
+.bill-tip-metrics .financial-metric--financial strong{font-size:20px;font-weight:700}
 .bill-tip-metrics .financial-metric--secondary{border-top-width:1px;background:#fffdf9}
 .bill-tip-metrics .financial-metric--secondary span{color:#7d8587}
-.bill-tip-metrics .financial-metric--secondary strong{font-size:17px;font-weight:700;color:#405b6a}
+.bill-tip-metrics .financial-metric--secondary strong{font-size:16px;font-weight:650;color:#405b6a}
 .bill-tip-team-preview>header{align-items:center}
 .bill-tip-team-table{margin-top:12px}
 .bill-tip-table th{padding:9px 8px}
@@ -162,11 +167,11 @@
 .bill-tip-team-preview>header{padding-bottom:11px;border-bottom:1px solid #eadbbd}
 .bill-tip-team-preview>header h3{color:#173d56;font:700 19px 'Playfair Display',serif}
 .bill-tip-team-table{overflow:hidden;border:1px solid var(--financial-gold);border-radius:10px;background:#fff}
-.bill-tip-table thead th{border-bottom:1px solid var(--financial-gold);background:#f8f1e3;color:#173d56}
-.bill-tip-table thead th+th{border-left:1px solid #eadbbd}
-.bill-tip-table tbody tr:nth-child(even){background:#fffaf2}
-.bill-tip-table tbody td{border-bottom-color:#eee0c6}
-.bill-tip-table tbody td+td{border-left:1px solid #f2e7d2}
+.bill-tip-table thead th{border-bottom:1px solid #7fa595;background:#dceee5;color:#173d56}
+.bill-tip-table thead th+th{border-left:1px solid #9bbbac}
+.bill-tip-table tbody tr:nth-child(even){background:#eef7ef}
+.bill-tip-table tbody td{border-bottom-color:#b7cfc3}
+.bill-tip-table tbody td+td{border-left:1px solid #c6d9d0}
 .financial-reconciliation.panel{min-height:58px;padding:13px 16px;border:1px solid var(--financial-gold);border-radius:12px;background:linear-gradient(90deg,#fffaf0 0%,#fffdf8 52%,#fff 100%);color:#5f7280;box-shadow:none}
 .financial-reconciliation b{color:#a47d34}
 .financial-reconciliation strong{font-size:12px;font-weight:800}
@@ -186,8 +191,10 @@
   .financial-primary-tabs{display:grid;width:100%;min-width:0;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px;padding:1px 0 1px;overflow:visible}
   .financial-primary-tabs button{width:100%;max-width:none;min-width:0;min-height:48px;padding-inline:10px}
   .financial-command.bill-tip-command{align-items:stretch;gap:12px;padding:14px;margin-bottom:16px}
-  .bill-tip-command .bill-tip-command-eyebrow,.bill-tip-command .bill-tip-month-label{display:none}
+  .bill-tip-command .bill-tip-command-eyebrow{display:none}
   .bill-tip-command .financial-command-controls{width:100%;min-width:0;grid-template-columns:minmax(0,1fr);gap:7px;padding:0;border:0;background:transparent}
+  .bill-tip-month-navigation{grid-template-columns:44px minmax(0,1fr) 44px;gap:6px}
+  .bill-tip-month-step{width:44px;height:44px;flex-basis:44px}
   .bill-tip-command .financial-command-controls>.ao-action{width:100%;min-width:0;justify-content:center}
   .bill-tip-command .financial-command-controls .ao-date-control,.bill-tip-command .financial-command-controls .ao-date-control input,.bill-tip-command .financial-command-controls>label>input,.bill-tip-command .financial-command-controls>.ao-action{width:100%;height:44px;min-height:44px}
   .financial-command.earnings-command{align-items:stretch;gap:12px;padding:14px}
