@@ -6048,16 +6048,24 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
 html body .app-shell main.module-incentives-and-bill-tips :is(
   .earnings-preview-results,
   .bill-tip-preview-results
+) > .financial-metrics {
+  row-gap: 12px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .earnings-preview-results,
+  .bill-tip-preview-results
 ) > .financial-metrics article {
-  min-height: 80px;
-  padding: 10px 12px;
+  min-height: 74px;
+  padding: 7px 12px;
+  justify-content: flex-start;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips :is(
   .earnings-preview-results,
   .bill-tip-preview-results
 ) > .financial-metrics strong {
-  margin-top: 4px;
+  margin-top: 2px;
   font-family: var(--ao-font-body);
   font-size: 18px;
   font-weight: 400;
@@ -6082,8 +6090,8 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
     .earnings-preview-results,
     .bill-tip-preview-results
   ) > .financial-metrics article {
-    min-height: 76px;
-    padding: 9px 10px;
+    min-height: 70px;
+    padding: 7px 10px;
   }
 
   html body .app-shell main.module-incentives-and-bill-tips :is(
