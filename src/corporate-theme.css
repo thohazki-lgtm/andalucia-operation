@@ -1060,7 +1060,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings) :is(
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config):not(.maintenance-toolbar):not(.maintenance-panel):not(.maintenance-card):not(.maintenance-summary article):not(.maintenance-config-card):not(.maintenance-modal):not(.maintenance-form-section):not(.maintenance-detail-hero):not(.maintenance-detail-section)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.ao-financial-picker):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config):not(.maintenance-toolbar):not(.maintenance-panel):not(.maintenance-card):not(.maintenance-summary article):not(.maintenance-config-card):not(.maintenance-modal):not(.maintenance-form-section):not(.maintenance-detail-hero):not(.maintenance-detail-section)) {
   border-color: var(--ao-module-line);
 }
 
@@ -1344,8 +1344,7 @@ html body .app-shell main.module-maintenance .maintenance-toolbar {
   width: 100%;
 }
 
-.module-maintenance .maintenance-date-step,
-.module-maintenance .maintenance-date-picker {
+.module-maintenance .maintenance-date-step {
   border-color: var(--ao-maintenance-gold);
   background: rgb(110 40 23 / 34%);
   color: #fff;
@@ -1358,17 +1357,25 @@ html body .app-shell main.module-maintenance .maintenance-toolbar {
   min-height: 38px;
 }
 
-.module-maintenance .maintenance-date-display {
+.module-maintenance .maintenance-date-control {
   position: relative;
-  display: flex;
+  display: block;
   min-width: 0;
+  z-index: 1;
+}
+
+.module-maintenance .maintenance-date-control.is-open {
+  z-index: 40;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-html body .app-shell main.module-maintenance .maintenance-date-label {
-  min-width: 0;
   padding: 2px 0;
   border: 0;
   background: transparent;
@@ -1378,21 +1385,130 @@ html body .app-shell main.module-maintenance .maintenance-date-label {
   cursor: pointer;
 }
 
-.module-maintenance .maintenance-date-picker {
+.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger svg {
+  flex: 0 0 auto;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  width: min(320px, calc(100vw - 28px));
+  padding: 12px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-top-width: 3px;
+  border-radius: 14px;
+  background: linear-gradient(155deg, #fff8ec 0%, #fbe6d6 58%, #f4c9aa 100%);
+  box-shadow: 0 18px 42px rgb(71 28 16 / 28%);
+  color: #4d2d21;
+  font-family: var(--ao-font-ui);
+  transform: translateX(-50%);
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgb(190 141 74 / 64%);
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header strong {
+  color: #71331f;
+  font: 500 19px/1.15 var(--ao-font-display);
+  text-align: center;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header button {
+  display: inline-flex;
   width: 34px;
   height: 34px;
   min-height: 34px;
-  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #c7974f;
+  border-radius: 9px;
+  background: rgb(255 250 241 / 72%);
+  color: #71331f;
 }
 
-.module-maintenance .maintenance-date-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  min-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
+.module-maintenance .maintenance-date-control :is(.ao-financial-picker__weekdays, .ao-financial-picker__days) {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__weekdays {
+  margin-top: 9px;
+  color: #7b4b38;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days {
+  margin-top: 5px;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days :is(button, span) {
+  aspect-ratio: 1;
+  min-width: 0;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button {
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid rgb(208 166 104 / 50%);
+  border-radius: 9px;
+  background: rgb(255 251 244 / 74%);
+  color: #583328;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button:hover {
+  border-color: #b96e46;
+  background: #f6d6bf;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button.is-today {
+  border-color: #b8873f;
+  box-shadow: inset 0 0 0 1px #d8b46e;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button.is-selected {
+  border-color: #73311f;
+  background: linear-gradient(145deg, #8f3c25, #b45631);
+  color: #fff;
+  box-shadow: 0 4px 10px rgb(109 47 29 / 22%);
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker button:focus-visible {
+  outline: 2px solid #71331f;
+  outline-offset: 2px;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(190 141 74 / 54%);
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker footer button {
+  min-height: 32px;
+  padding: 5px 11px;
+  border: 1px solid #c7974f;
+  border-radius: 8px;
+  background: #fff6e9;
+  color: #71331f;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .module-maintenance .maintenance-date-clear {
@@ -1405,8 +1521,8 @@ html body .app-shell main.module-maintenance .maintenance-date-label {
 }
 
 html body .app-shell main.module-maintenance .maintenance-summary {
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 html body .app-shell main.module-maintenance .maintenance-summary article {
@@ -1650,21 +1766,19 @@ main.module-maintenance .maintenance-detail-notes > div + div {
     min-height: 44px;
   }
 
-  .module-maintenance .maintenance-date-label {
-    max-width: 100%;
+  html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger {
+    min-height: 44px;
     font-size: 21px;
-    white-space: normal;
   }
 
-  .module-maintenance .maintenance-date-picker {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-    flex-basis: 44px;
+  .module-maintenance .maintenance-date-control .ao-financial-picker {
+    width: min(304px, calc(100vw - 20px));
+    padding: 10px;
   }
 
   html body .app-shell main.module-maintenance .maintenance-summary {
-    gap: 9px;
+    gap: 8px;
+    margin-bottom: 7px;
   }
 
   html body .app-shell main.module-maintenance .maintenance-summary article {

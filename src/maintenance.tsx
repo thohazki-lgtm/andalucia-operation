@@ -10,11 +10,11 @@ import { serviceDate } from './service-date'
 import { consumeWorkflow } from './workflow-intent'
 import { defaultMaintenanceReporterId, isActiveAndaluciaStaff } from './maintenance-reporter'
 import { ActionButton, IconAction, StatusPill, StatusSelect, SvgIcon } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 
 export interface MaintenanceConfiguration { areas: ConfigOption[]; statuses: ConfigOption[] }
 const emptySummary: MaintenanceSummary = { openIssues: 0, inProgress: 0, completedToday: 0, unresolved: 0, urgentUnresolved: 0, normalUnresolved: 0 }
 const formatDate = (value: string) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
-const formatFilterDate = (value: string) => value ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)) : 'All reported dates'
 const shiftDate = (value: string, days: number) => { const date = new Date(`${value || serviceDate()}T12:00:00`); date.setDate(date.getDate() + days); return date.toISOString().slice(0, 10) }
 const optionLabel = (options: ConfigOption[], value: string) => options.find(option => option.value === value)?.label || value || '—'
 const priorityLabel = (value?: string) => value === 'urgent' ? 'Urgent' : 'Normal'
@@ -28,16 +28,16 @@ const maintenanceStageLabel = (options: ConfigOption[], value: string) => {
 }
 export function MaintenancePage({ staff, authenticatedStaffId, configuration, focusedRecordId = null, onToast }: { staff: Staff[]; authenticatedStaffId: string | null; configuration: MaintenanceConfiguration; focusedRecordId?: string | null; onToast: (message: string) => void }) {
   const [records, setRecords] = useState<MaintenanceRecord[]>([]); const [summary, setSummary] = useState<MaintenanceSummary>(emptySummary)
-  const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [query, setQuery] = useState(''); const [statusFilter, setStatusFilter] = useState('active'); const [dateFilter, setDateFilter] = useState('')
+  const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [query, setQuery] = useState(''); const [statusFilter, setStatusFilter] = useState('active'); const [dateFilter, setDateFilter] = useState(''); const [dateCursor, setDateCursor] = useState(serviceDate())
   const [editing, setEditing] = useState<MaintenanceRecord | 'new' | null>(null); const [viewing, setViewing] = useState<MaintenanceRecord | null>(null)
   const consumedFocusId = useRef<string | null>(null)
-  const dateInputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => { if (consumeWorkflow('maintenance-add')) setEditing('new') }, [])
   const load = async () => { setLoading(true); setError(''); try { const [nextRecords, nextSummary] = await Promise.all([maintenanceApi.list(), maintenanceApi.summary(serviceDate())]); setRecords(nextRecords); setSummary(nextSummary) } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load maintenance issues.') } finally { setLoading(false) } }
   useEffect(() => { void load() }, [])
   useEffect(() => { if (!focusedRecordId || consumedFocusId.current === focusedRecordId) return; const record = records.find(item => item.id === focusedRecordId); if (!record) return; consumedFocusId.current = focusedRecordId; setViewing(record) }, [focusedRecordId, records])
   const stage = (record: MaintenanceRecord) => maintenanceStage(configuration.statuses, record.status)
   const visible = useMemo(() => records.filter(record => { const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? stage(record) !== 'completed' : record.status === statusFilter); const reporter = record.reportedBy ? `${record.reportedBy.name} ${record.reportedBy.number}` : `${record.reporterNameSnapshot || ''} ${record.reporterNumberSnapshot || ''}`; return matchesStatus && (!dateFilter || record.dateReported === dateFilter) && `${record.issue} ${record.notes} ${record.referenceFollowUp} ${record.area} ${reporter}`.toLowerCase().includes(query.toLowerCase()) }).sort((left, right) => Number(right.priority === 'urgent' && stage(right) !== 'completed') - Number(left.priority === 'urgent' && stage(left) !== 'completed') || right.dateReported.localeCompare(left.dateReported)), [records, query, statusFilter, dateFilter, configuration.statuses])
+  const selectDate = (value: string) => { setDateCursor(value); setDateFilter(value) }
   const save = async (record: MaintenanceRecord) => { const saved = records.some(item => item.id === record.id) ? await maintenanceApi.update(record) : await maintenanceApi.create(record); setRecords(current => current.some(item => item.id === saved.id) ? current.map(item => item.id === saved.id ? saved : item) : [saved, ...current]); setSummary(await maintenanceApi.summary(serviceDate())); return saved }
   const quickStatus = async (record: MaintenanceRecord, status: string) => { try { const saved = await save({ ...record, status }); onToast('Maintenance status updated.'); if (viewing?.id === saved.id) setViewing(saved) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to update maintenance status.') } }
   const reporterText = (record: MaintenanceRecord) => record.reportedBy ? `${record.reportedBy.name} · ${record.reportedBy.number}` : record.reporterNameSnapshot ? `${record.reporterNameSnapshot}${record.reporterNumberSnapshot ? ` · ${record.reporterNumberSnapshot}` : ''}` : 'Not recorded'
@@ -46,9 +46,9 @@ export function MaintenancePage({ staff, authenticatedStaffId, configuration, fo
     <section className="maintenance-toolbar" aria-label="Maintenance actions">
       <div className="maintenance-toolbar-heading"><h2>Maintenance Issues</h2><ActionButton variant="primary" icon="add" onClick={() => setEditing('new')}>Add Maintenance Issue</ActionButton></div>
       <div className="maintenance-date-navigation" role="group" aria-label="Maintenance date reported filter">
-        <IconAction className="maintenance-date-step" icon="chevron-left" label="Previous reported date" onClick={() => setDateFilter(value => shiftDate(value, -1))}/>
-        <div className="maintenance-date-display"><button type="button" className="maintenance-date-label" onClick={() => dateInputRef.current?.showPicker()}>{formatFilterDate(dateFilter)}</button><IconAction className="maintenance-date-picker" icon="calendar" label="Choose reported date" onClick={() => dateInputRef.current?.showPicker()}/><input ref={dateInputRef} className="maintenance-date-input" aria-label="Filter maintenance date" type="date" value={dateFilter} onChange={event => setDateFilter(event.target.value)}/></div>
-        <IconAction className="maintenance-date-step" icon="chevron-right" label="Next reported date" onClick={() => setDateFilter(value => shiftDate(value, 1))}/>
+        <IconAction className="maintenance-date-step" icon="chevron-left" label="Previous reported date" onClick={() => selectDate(shiftDate(dateCursor, -1))}/>
+        <FinancialDateControl className="maintenance-date-control" label="Choose reported date" type="date" value={dateCursor} onChange={selectDate}/>
+        <IconAction className="maintenance-date-step" icon="chevron-right" label="Next reported date" onClick={() => selectDate(shiftDate(dateCursor, 1))}/>
       </div>
       {dateFilter && <ActionButton className="maintenance-date-clear" variant="secondary" icon="close" compact onClick={() => setDateFilter('')}>Show all dates</ActionButton>}
     </section>
