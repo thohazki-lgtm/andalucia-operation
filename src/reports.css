@@ -896,9 +896,15 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
 
 /* Independent Reports cards: retain the existing section structure while
    removing the legacy white-on-white and nested-frame treatment. */
+.module-reports .reports-page .report-mode-content:has(>.daily-report-header){
+  display:grid;
+  gap:16px;
+  min-width:0;
+}
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section{
   margin:0;
   padding:14px 15px;
+  box-sizing:border-box;
   border:1px solid var(--reports-gold);
   border-top-width:2px;
   border-radius:12px;
@@ -945,8 +951,24 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   .revenue-variance,
   .void-editor
 ){
-  border-color:var(--reports-gold-soft);
+  box-sizing:border-box;
+  border:1px solid var(--reports-gold-soft);
+  border-radius:10px;
   background:linear-gradient(145deg,#f8f3fa 0%,var(--reports-purple-surface) 100%);
+}
+.module-reports .reports-page .daily-report-header~.monthly-dashboard-section :is(
+  .daily-kpis,
+  .symphony-groups,
+  .service-verification-charge-grid,
+  .upsell-summary,
+  .occasion-room-grid,
+  .daily-manager-columns,
+  .monthly-readiness
+){
+  gap:14px;
+}
+.module-reports .reports-page #daily-symphony .symphony-groups>section{
+  padding:12px;
 }
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-table-wrap{
   border-color:var(--reports-gold);
@@ -976,7 +998,21 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   margin:0;
 }
 @media(max-width:650px){
+  .module-reports .reports-page .report-mode-content:has(>.daily-report-header){
+    gap:14px;
+  }
   .module-reports .reports-page .daily-report-header~.monthly-dashboard-section{
     padding:11px;
+  }
+  .module-reports .reports-page .daily-report-header~.monthly-dashboard-section :is(
+    .daily-kpis,
+    .symphony-groups,
+    .service-verification-charge-grid,
+    .upsell-summary,
+    .occasion-room-grid,
+    .daily-manager-columns,
+    .monthly-readiness
+  ){
+    gap:12px;
   }
 }
