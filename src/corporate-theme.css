@@ -95,6 +95,15 @@ html body .auth-page .auth-card h1 {
   font-synthesis: none;
 }
 
+html body .app-shell main.module-reports .reports-page :is(.daily-report-header, .weekly-report-header, .monthly-report-header) .ao-date-control input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font-family: var(--ao-font-display);
+  font-synthesis: none;
+}
+
 html body :is(.auth-card > p:not(.eyebrow), main[class*='module-'] .panel-title > p, main[class*='module-'] .section-intro, main[class*='module-'] .helper-text) {
   font-weight: 300;
 }
@@ -272,7 +281,23 @@ main[class*='module-'] {
 .app-shell:has(> main.module-guest-occasions) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
 .app-shell:has(> main.module-incentives-and-bill-tips) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-maintenance) { --ao-shell-accent: var(--ao-sunset-orange); --ao-shell-highlight: var(--ao-orange-glow); --ao-page-canvas-tint: var(--ao-orange-glow); }
-.app-shell:has(> main.module-reports) { --ao-shell-accent: var(--ao-violet-hour); --ao-shell-highlight: var(--ao-lilac-calm); --ao-page-canvas-tint: var(--ao-lilac-calm); }
+.app-shell:has(> main.module-reports) {
+  --ao-shell-accent: var(--ao-violet-hour);
+  --ao-shell-highlight: var(--ao-lilac-calm);
+  --ao-page-canvas-tint: var(--ao-lilac-calm);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #d9cbea;
+  background-image: linear-gradient(to bottom, #35154d 0%, #673b83 32%, #9f7dbc 66%, #d9cbea 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-attachment: scroll;
+}
+
+html:has(.app-shell > main.module-reports),
+body:has(.app-shell > main.module-reports) {
+  background: #d9cbea;
+}
 .app-shell:has(> main.module-customization-center) { --ao-shell-accent: var(--ao-forest-green); --ao-shell-highlight: var(--ao-soft-mint); --ao-page-canvas-tint: var(--ao-soft-mint); }
 
 /* Hostess counts are Dashboard presentation, not an operational status. */
@@ -483,9 +508,37 @@ main.module-duty-roster > .page-header {
   background: transparent;
 }
 
+main.module-reports > .page-header {
+  min-height: 0;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 main.module-duty-roster > .page-header::before {
   display: none;
   content: none;
+}
+
+main.module-reports > .page-header::before {
+  display: none;
+  content: none;
+}
+
+main.module-reports > .page-header :is(h1, .eyebrow) {
+  color: #fff;
+}
+
+main.module-reports > .page-header .eyebrow {
+  color: color-mix(in srgb, var(--ao-lilac-calm) 78%, white);
+}
+
+main.module-reports > .page-header .avatar {
+  border-color: color-mix(in srgb, var(--ao-lilac-calm) 64%, white);
+  background: color-mix(in srgb, var(--ao-violet-hour) 74%, transparent);
+  color: #fff;
 }
 
 main.module-dashboard > .page-header::before {
@@ -567,7 +620,7 @@ main[class*='module-'] :is(input, select, textarea):focus-visible {
 /* Corporate color replaces decorative gold on structural surfaces only.
    Semantic states, configured swatches, duty codes and financial indicators
    retain their own authoritative colors. */
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-reports) :is(
   .panel,
   .customization-category-panel,
   .booking-config-section,
@@ -696,7 +749,7 @@ main[class*='module-'] .field-mode-control button {
   border-color: var(--ao-module-divider);
 }
 
-main[class*='module-'] :is(
+main[class*='module-']:not(.module-reports) :is(
   section,
   article,
   [class$='-row'],
@@ -849,7 +902,7 @@ main[class*='module-'] :is(.inline-empty, .empty, .configuration-source-note, .d
     --ao-table-copy-size: 11px;
   }
 
-  main[class*='module-'] > .page-header {
+  main[class*='module-']:not(.module-reports) > .page-header {
     gap: 9px;
     margin-bottom: 12px;
     padding: 9px 10px;
