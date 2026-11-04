@@ -956,14 +956,14 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   border-radius:10px;
   background:linear-gradient(145deg,#f8f3fa 0%,var(--reports-purple-surface) 100%);
 }
-.module-reports .reports-page .daily-report-header~.monthly-dashboard-section :is(
-  .daily-kpis,
-  .symphony-groups,
-  .service-verification-charge-grid,
-  .upsell-summary,
-  .occasion-room-grid,
-  .daily-manager-columns,
-  .monthly-readiness
+.module-reports .reports-page :is(
+  #daily-service .daily-kpis,
+  #daily-symphony .symphony-groups,
+  #daily-verification .service-verification-charge-grid,
+  #daily-upselling .upsell-summary,
+  #daily-occasions .occasion-room-grid,
+  #daily-manager .daily-manager-columns,
+  #daily-readiness .monthly-readiness
 ){
   gap:14px;
 }
@@ -1004,14 +1004,14 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   .module-reports .reports-page .daily-report-header~.monthly-dashboard-section{
     padding:11px;
   }
-  .module-reports .reports-page .daily-report-header~.monthly-dashboard-section :is(
-    .daily-kpis,
-    .symphony-groups,
-    .service-verification-charge-grid,
-    .upsell-summary,
-    .occasion-room-grid,
-    .daily-manager-columns,
-    .monthly-readiness
+  .module-reports .reports-page :is(
+    #daily-service .daily-kpis,
+    #daily-symphony .symphony-groups,
+    #daily-verification .service-verification-charge-grid,
+    #daily-upselling .upsell-summary,
+    #daily-occasions .occasion-room-grid,
+    #daily-manager .daily-manager-columns,
+    #daily-readiness .monthly-readiness
   ){
     gap:12px;
   }
