@@ -691,10 +691,10 @@ main:has(.reports-page){min-width:0;max-width:100%;overflow-x:hidden}
   --reports-gold-soft:#dcc78f;
   --reports-purple-deep:#35154d;
   --reports-purple:#673b83;
-  --reports-purple-line:#b69ac9;
-  --reports-purple-header:#d3bce2;
-  --reports-purple-surface:#eee5f4;
-  --reports-purple-surface-strong:#e4d5ed;
+  --reports-purple-line:#a984bf;
+  --reports-purple-header:#c4a2d6;
+  --reports-purple-surface:#e5d6ed;
+  --reports-purple-surface-strong:#d8c1e5;
   --reports-lavender:#eee7f5;
   --reports-ivory:#faf6fc;
   gap:12px;
@@ -761,7 +761,7 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   background:transparent;
   color:#fff;
   font-family:var(--ao-font-display);
-  font-size:16px;
+  font-size:22px;
   font-weight:500;
   letter-spacing:0;
   text-align:center;
@@ -876,6 +876,11 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   background:var(--reports-purple-deep);
   color:#fff;
 }
+.module-reports .reports-page .approval-action{
+  border-color:var(--reports-gold)!important;
+  background:var(--reports-purple-deep)!important;
+  color:#fff!important;
+}
 @media(max-width:700px){
   .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header) :is(.report-header-nav,.monthly-header-nav) .ao-icon-action{
     width:44px;
@@ -888,7 +893,7 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   .module-reports .report-mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible}
   .module-reports .report-mode-tabs .ao-action{min-width:0}
   .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header){padding:11px}
-  .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header) .ao-date-control input{font-size:15px}
+  .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header) .ao-date-control input{font-size:18px}
   .module-reports .reports-page #daily-readiness .bottom-report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}
   .module-reports .reports-page #daily-readiness .bottom-report-actions .daily-header-actions{display:grid;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
   .module-reports .reports-page #daily-readiness .bottom-report-actions :is(.daily-header-actions .ao-action,button){width:100%;min-width:0}
@@ -898,25 +903,26 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
    removing the legacy white-on-white and nested-frame treatment. */
 .module-reports .reports-page .report-mode-content:has(>.daily-report-header){
   display:grid;
-  gap:16px;
+  gap:0;
   min-width:0;
 }
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section{
-  margin:0;
+  margin:16px 0 0;
   padding:14px 15px;
   box-sizing:border-box;
   border:1px solid var(--reports-gold);
   border-top-width:2px;
   border-radius:12px;
-  background:linear-gradient(145deg,rgba(230,216,239,.98) 0%,rgba(246,240,249,.98) 100%);
-  box-shadow:0 5px 15px rgba(52,25,73,.07);
+  background:linear-gradient(145deg,rgba(211,188,225,.98) 0%,rgba(232,218,240,.98) 100%);
+  box-shadow:0 6px 17px rgba(52,25,73,.12);
 }
+.module-reports .reports-page .daily-report-header+#daily-service{margin-top:8px}
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section>header{
   margin-bottom:10px;
   padding:8px 10px;
   border:1px solid var(--reports-purple-line);
   border-radius:9px;
-  background:linear-gradient(100deg,var(--reports-purple-header),#eadff1);
+  background:linear-gradient(100deg,#b991ce 0%,#d7bfe4 100%);
 }
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section>header>h3{
   color:var(--reports-purple-deep);
@@ -952,9 +958,10 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   .void-editor
 ){
   box-sizing:border-box;
-  border:1px solid var(--reports-gold-soft);
+  border:1px solid var(--reports-gold);
   border-radius:10px;
-  background:linear-gradient(145deg,#f8f3fa 0%,var(--reports-purple-surface) 100%);
+  background:linear-gradient(145deg,#dfcce9 0%,#eee2f4 100%);
+  box-shadow:0 3px 10px rgba(52,25,73,.08);
 }
 .module-reports .reports-page :is(
   #daily-service .daily-kpis,
@@ -978,7 +985,7 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   border-color:var(--reports-purple-line);
 }
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-table th{
-  background:#cdb3de;
+  background:#b991ce;
   color:var(--reports-purple-deep);
 }
 .module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-table tbody tr:nth-child(odd){background:#f9f5fb}
@@ -990,6 +997,30 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
 }
 .module-reports .reports-page .monthly-readiness>article.complete{border-left-color:#54266d;background:#e8dbf0}
 .module-reports .reports-page .monthly-readiness>article :is(strong,.eyebrow){color:var(--reports-purple-deep)}
+.module-reports .reports-page :is(
+  .report-stat>strong,
+  .performance-supporting-value,
+  .double-dine-primary b,
+  .double-dine-subtotal b,
+  .double-dine-total-summary b,
+  .service-charge-readonly b,
+  .variance-values b,
+  .report-table :is(th,td),
+  input,
+  textarea,
+  select
+){
+  color:var(--reports-purple-deep);
+  font-family:var(--ao-font-ui);
+  font-variant-numeric:tabular-nums;
+  font-synthesis:none;
+}
+.module-reports .reports-page :is(.revenue-variance,.approved-lock,.variance-check,.report-ready>summary){
+  border-color:var(--reports-gold);
+  background:#e9dbf0;
+  color:var(--reports-purple-deep);
+}
+.module-reports .reports-page .variance-values>div{background:#f1e8f6}
 .module-reports .reports-page .report-mode-content> :is(.weekly-report,.monthly-report,.custom-report){
   display:grid;
   gap:12px;
@@ -999,11 +1030,13 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
 }
 @media(max-width:650px){
   .module-reports .reports-page .report-mode-content:has(>.daily-report-header){
-    gap:14px;
+    gap:0;
   }
   .module-reports .reports-page .daily-report-header~.monthly-dashboard-section{
+    margin-top:14px;
     padding:11px;
   }
+  .module-reports .reports-page .daily-report-header+#daily-service{margin-top:8px}
   .module-reports .reports-page :is(
     #daily-service .daily-kpis,
     #daily-symphony .symphony-groups,
