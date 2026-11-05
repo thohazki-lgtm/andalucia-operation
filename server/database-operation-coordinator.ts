@@ -64,7 +64,7 @@ export type DatabaseOperationPeriodRecord = {
 }
 
 export type CanonicalMaintenanceState =
-  | 'AUTHORIZED' | 'BACKUP_VERIFIED' | 'BACKUP_FAILED'
+  | 'AUTHORIZED' | 'RECOVERY_AUTHORIZED' | 'BACKUP_VERIFIED' | 'BACKUP_FAILED'
   | 'TARGET_CLAIMED' | 'TARGET_HEALTHY' | 'TARGET_FAILED'
   | 'RECOVERY_CLAIMED' | 'RECOVERY_HEALTHY' | 'RECOVERY_FAILED'
 
@@ -75,6 +75,7 @@ export type CanonicalMaintenanceAuthorization = {
   createdAt: string
   updatedAt: string
   expiresAt: string
+  authorizationMode: 'live_requested_backup' | 'stopped_runtime_recovery'
   previousLiveSha: string
   targetSha: string
   targetBranch: string
@@ -88,6 +89,8 @@ export type CanonicalMaintenanceAuthorization = {
   requestId: string
   requestSha256: string
   requestedBy: { userId: string; displayName: string }
+  historicalRuntimeEvidenceSha256?: string
+  schemaEvidenceSha256?: string
   backupId?: string
   failure?: string
   integritySha256: string
@@ -242,14 +245,14 @@ export class DatabaseOperationCoordinator {
     if (integritySha256 !== maintenanceIntegrity(unsigned)) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_TAMPERED')
     return record
   }
-  async createCanonicalMaintenanceAuthorization(input: Omit<CanonicalMaintenanceAuthorization, 'version' | 'authorizationId' | 'state' | 'createdAt' | 'updatedAt' | 'integritySha256'>) {
+  async createCanonicalMaintenanceAuthorization(input: Omit<CanonicalMaintenanceAuthorization, 'version' | 'authorizationId' | 'state' | 'createdAt' | 'updatedAt' | 'integritySha256'>, initialState: Extract<CanonicalMaintenanceState, 'AUTHORIZED' | 'RECOVERY_AUTHORIZED'> = 'AUTHORIZED') {
     await mkdir(this.maintenanceRoot, { recursive: true })
     const authorizationId = randomUUID().replaceAll('-', '')
     const requestClaimPath = this.maintenanceRequestClaimPath(input.requestId)
     let requestClaim
     try { requestClaim = await open(requestClaimPath, 'wx') } catch { throw new Error('CANONICAL_MAINTENANCE_REQUEST_ALREADY_AUTHORIZED') }
     const now = this.now()
-    const unsigned: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'> = { version: CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION, authorizationId, state: 'AUTHORIZED', createdAt: now, updatedAt: now, ...input }
+    const unsigned: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'> = { version: CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION, authorizationId, state: initialState, createdAt: now, updatedAt: now, ...input }
     const record: CanonicalMaintenanceAuthorization = { ...unsigned, integritySha256: maintenanceIntegrity(unsigned) }
     const path = this.maintenancePath(authorizationId)
     try {

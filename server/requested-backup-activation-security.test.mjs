@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, unlink, writeFile } from 'node:fs/promises'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { cp, mkdir, mkdtemp, readFile, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { DatabaseOperationCoordinator } from './database-operation-coordinator.ts'
-import { RequestedBackupActivationControl } from './requested-backup-activation-control.ts'
+import { RequestedBackupActivationControl, runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
 
 const previousLiveSha = '1'.repeat(40)
 const targetSha = '2'.repeat(40)
@@ -105,4 +106,99 @@ assert.match(startup, /RecoveryAuthorizationId/)
 assert.match(resolver, /approved_journal_bound_recovery/)
 assert.match(resolver, /inspect-recovery-source/)
 
-console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 10, productionDataTouched: false }, null, 2))
+// Execute the stopped-runtime bootstrap and the real PowerShell recovery orchestrator against disposable fixtures.
+const repositoryRoot = resolve('.')
+const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
+const integrationFixture = async () => {
+  const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-recovery-integration-'))
+  await mkdir(join(root, 'server'), { recursive: true })
+  await cp(join(repositoryRoot, 'server', 'database-operation-coordinator.ts'), join(root, 'server', 'database-operation-coordinator.ts'))
+  await cp(join(repositoryRoot, 'server', 'requested-backup-activation-control.ts'), join(root, 'server', 'requested-backup-activation-control.ts'))
+  await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { 'dev:canonical': 'node -e "setInterval(()=>{},1000)"' } }))
+  git(root, 'init'); git(root, 'config', 'user.email', 'security-test@example.invalid'); git(root, 'config', 'user.name', 'Security Test')
+  git(root, 'add', '.'); git(root, 'commit', '-m', 'previous healthy source')
+  const previous = git(root, 'rev-parse', 'HEAD').toLowerCase()
+  await writeFile(join(root, 'target.txt'), 'target')
+  git(root, 'add', 'target.txt'); git(root, 'commit', '-m', 'approved target source')
+  const target = git(root, 'rev-parse', 'HEAD').toLowerCase()
+  const branch = git(root, 'branch', '--show-current')
+  const storeId = 'disposable-store-security-test'
+  const dataDirectory = join(root, '.data', 'postgres')
+  await mkdir(dataDirectory, { recursive: true })
+  await mkdir(join(root, '.runtime', 'logs'), { recursive: true })
+  await mkdir(join(root, '.backups', '.db2', 'requests'), { recursive: true })
+  await mkdir(join(root, '.backups', 'verified-fixture'), { recursive: true })
+  await writeFile(join(root, '.data', 'andalucia-store-identity.json'), JSON.stringify({ role: 'canonical', databaseDirectory: dataDirectory, storeId }))
+  await writeFile(join(root, '.runtime', 'andalucia-local-ui-approval.json'), JSON.stringify({ activeSourceSha: target, previousLiveSha: previous, branch, controlCommitSha: target }))
+  await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), [JSON.stringify({ status: 'SOURCE_APPROVED', sha: previous }), JSON.stringify({ status: 'EXITED', exitCode: 0 })].join('\n') + '\n')
+  const pending = { ...request, id: `request-${target.slice(0, 8)}` }
+  await writeFile(join(root, '.backups', '.db2', 'requests', `${pending.id}.json`), JSON.stringify(pending))
+  await writeFile(join(root, '.backups', '.db2', 'audit.jsonl'), JSON.stringify({ action: 'manual_backup_requested', actor: { source: 'authenticated_user', ...pending.requestedBy }, details: { requestId: pending.id } }) + '\n')
+  await writeFile(join(root, '.backups', 'verified-fixture', 'backup-metadata.json'), JSON.stringify({ schemaVersion: '027', verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY' }))
+  await writeFile(join(root, '.backups', 'verified-fixture', 'restore-test.json'), JSON.stringify({ status: 'RESTORE_TEST_PASSED', manifestMatch: true, fingerprintMatch: true, migrationMatch: true, preflightStatus: 'READY' }))
+  await symlink(join(repositoryRoot, 'node_modules'), join(root, 'node_modules'), 'junction')
+  return { root, previous, target, pending }
+}
+
+const prepareStopped = async (value, overrides = {}) => runRequestedBackupActivationControl('prepare-stopped-recovery', ['node', 'control', '--project-root', value.root, '--request-id', value.pending.id], { portsClosed: async () => true, ...overrides })
+
+// Valid stopped-runtime authorization is independently derived from protected request, audit, runtime and backup evidence.
+{
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  assert.equal(authorization.state, 'RECOVERY_AUTHORIZED')
+  assert.equal(authorization.authorizationMode, 'stopped_runtime_recovery')
+  assert.equal(authorization.previousLiveSha, value.previous)
+}
+
+// Missing trusted authorization and altered protected bindings fail closed.
+{
+  const value = await integrationFixture()
+  await unlink(join(value.root, '.backups', '.db2', 'audit.jsonl'))
+  await assert.rejects(() => prepareStopped(value), /REQUESTED_BACKUP_AUTHENTICATED_REQUEST_INVALID/)
+}
+{
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  const approvalPath = join(value.root, '.runtime', 'andalucia-local-ui-approval.json')
+  const approval = JSON.parse(await readFile(approvalPath, 'utf8')); approval.previousLiveSha = 'f'.repeat(40)
+  await writeFile(approvalPath, JSON.stringify(approval))
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /REQUESTED_BACKUP_PROTECTED_BINDING_MISMATCH/)
+}
+
+// Concurrent claims permit exactly one recovery; deleted authorization cannot be recreated from the same request.
+{
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  const args = ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]
+  const claims = await Promise.allSettled([runRequestedBackupActivationControl('claim-recovery', args), runRequestedBackupActivationControl('claim-recovery', args)])
+  assert.equal(claims.filter(item => item.status === 'fulfilled').length, 1)
+  await unlink(join(value.root, '.backups', '.db2', 'operations', 'maintenance', `${authorization.authorizationId}.json`))
+  await assert.rejects(() => prepareStopped(value), /CANONICAL_MAINTENANCE_REQUEST_ALREADY_AUTHORIZED/)
+}
+
+// The real PowerShell orchestrator consumes a valid claim and records success/failure without starting a canonical runtime.
+const runOrchestrator = async (mode) => {
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  const wrapper = join(value.root, `orchestrator-${mode}.ps1`)
+  const orchestrationPath = join(repositoryRoot, 'deployment', 'windows', 'Invoke-AndaluciaRequestedBackupUiActivation.ps1').replaceAll("'", "''")
+  const success = mode === 'success'
+  await writeFile(wrapper, `$ErrorActionPreference='Stop'\nfunction Start-Process { [pscustomobject]@{ HasExited = $${success ? 'false' : 'true'} } }\nfunction Start-Sleep {}\nfunction Invoke-RestMethod { ${success ? `[pscustomobject]@{ ok=$true; application=[pscustomobject]@{ sha='${value.previous}' }; database=[pscustomobject]@{ status='HEALTHY'; migrationVersion='027'; migrationRequired=$false; recoveryRequired=$false } }` : `throw 'simulated restart failure'`} }\nfunction Invoke-WebRequest { [pscustomobject]@{ StatusCode=200 } }\n& '${orchestrationPath}' -ExpectedSha '${value.target}' -RepositoryRoot '${value.root.replaceAll("'", "''")}' -StoppedRuntimeRecoveryAuthorizationId '${authorization.authorizationId}'\n`)
+  const result = spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', wrapper], { encoding: 'utf8' })
+  const coordinator = new DatabaseOperationCoordinator(join(value.root, '.backups', '.db2', 'operations'))
+  const record = await coordinator.readCanonicalMaintenanceAuthorization(authorization.authorizationId)
+  return { result, record }
+}
+{
+  const { result, record } = await runOrchestrator('success')
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(record.state, 'RECOVERY_HEALTHY')
+}
+{
+  const { result, record } = await runOrchestrator('failure')
+  assert.notEqual(result.status, 0)
+  assert.equal(record.state, 'RECOVERY_FAILED')
+}
+
+console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 18, executablePowerShellRecoveryCases: 2, productionDataTouched: false }, null, 2))

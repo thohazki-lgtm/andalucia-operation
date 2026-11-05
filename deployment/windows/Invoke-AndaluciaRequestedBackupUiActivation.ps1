@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$ExpectedSha,
-    [string]$RepositoryRoot
+    [string]$RepositoryRoot,
+    [string]$StoppedRuntimeRecoveryAuthorizationId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,7 +42,7 @@ function Invoke-GuardedPreviousRuntimeRecovery([string]$Failure) {
     $record = Invoke-Control 'inspect'
     if ($record.state -eq 'AUTHORIZED') { [void](Invoke-Control 'backup-failed' @('--failure',$Failure)); $record = Invoke-Control 'inspect' }
     if ($record.state -eq 'TARGET_CLAIMED') { [void](Invoke-Control 'target-failed' @('--failure',$Failure)); $record = Invoke-Control 'inspect' }
-    if ($record.state -notin @('BACKUP_FAILED','TARGET_FAILED')) { throw "REQUESTED_BACKUP_RECOVERY_STATE_INVALID:$($record.state)" }
+    if ($record.state -notin @('RECOVERY_AUTHORIZED','BACKUP_FAILED','TARGET_FAILED')) { throw "REQUESTED_BACKUP_RECOVERY_STATE_INVALID:$($record.state)" }
     $recovery = Invoke-Control 'claim-recovery'
     $recoveryRoot = Join-Path $projectRoot ".runtime\recovery-source\$authorizationId"
     if (Test-Path -LiteralPath $recoveryRoot) { throw 'REQUESTED_BACKUP_RECOVERY_SOURCE_ALREADY_EXISTS' }
@@ -50,17 +51,20 @@ function Invoke-GuardedPreviousRuntimeRecovery([string]$Failure) {
     if ($LASTEXITCODE -ne 0) { [void](Invoke-Control 'recovery-failed' @('--failure','RECOVERY_SOURCE_PREPARATION_FAILED')); throw 'REQUESTED_BACKUP_RECOVERY_SOURCE_PREPARATION_FAILED' }
     $process = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$startScript,'-SourceRoot',$recoveryRoot,'-CanonicalProjectRoot',$projectRoot,'-RecoveryAuthorizationId',$authorizationId) -WindowStyle Hidden -PassThru
     $healthy = $null
+    $frontendHealthy = $false
     for ($attempt = 0; $attempt -lt 90; $attempt++) {
         try {
             $candidate = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 3
-            if ($candidate.ok -and $candidate.application.sha -eq $recovery.previousLiveSha -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
+            $frontend = Invoke-WebRequest -Uri 'http://127.0.0.1:5173/' -Method Get -TimeoutSec 3 -UseBasicParsing
+            $frontendHealthy = $frontend.StatusCode -eq 200
+            if ($frontendHealthy -and $candidate.ok -and $candidate.application.sha -eq $recovery.previousLiveSha -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
         } catch {}
         if ($process.HasExited) { break }
         Start-Sleep -Seconds 1
     }
     if (-not $healthy) { [void](Invoke-Control 'recovery-failed' @('--failure','RECOVERY_HEALTH_VERIFICATION_FAILED')); throw 'REQUESTED_BACKUP_RECOVERY_HEALTH_VERIFICATION_FAILED' }
     [void](Invoke-Control 'recovery-healthy')
-    Write-MaintenanceAudit 'PREVIOUS_RUNTIME_RECOVERY_HEALTH_VERIFIED' @{ previousLiveSha=[string]$recovery.previousLiveSha; originalFailure=$Failure }
+    Write-MaintenanceAudit 'PREVIOUS_RUNTIME_RECOVERY_HEALTH_VERIFIED' @{ previousLiveSha=[string]$recovery.previousLiveSha; originalFailure=$Failure; frontendHealthy=$frontendHealthy; backendHealthy=$true; databaseHealthy=$true }
 }
 
 try {
@@ -69,7 +73,16 @@ try {
     if (Test-Path -LiteralPath $schedulerLock) { throw 'REQUESTED_BACKUP_SCHEDULER_BUSY' }
     foreach ($operationMarker in @('migration-in-progress','recovery-in-progress')) { if (Test-Path -LiteralPath (Join-Path (Split-Path $canonicalData -Parent) $operationMarker)) { throw "REQUESTED_BACKUP_OPERATION_BLOCKED:$operationMarker" } }
 
-    $prepared = Invoke-Control 'prepare' @('--target-sha',$ExpectedSha)
+    if ($StoppedRuntimeRecoveryAuthorizationId) {
+        $authorizationId = $StoppedRuntimeRecoveryAuthorizationId
+        $recoveryRecord = Invoke-Control 'inspect'
+        if ($recoveryRecord.state -ne 'RECOVERY_AUTHORIZED' -or $recoveryRecord.authorizationMode -ne 'stopped_runtime_recovery' -or $recoveryRecord.targetSha -ne $ExpectedSha.ToLowerInvariant()) { throw 'REQUESTED_BACKUP_STOPPED_RECOVERY_AUTHORIZATION_INVALID' }
+        Write-MaintenanceAudit 'STOPPED_RUNTIME_RECOVERY_AUTHORIZATION_ACCEPTED' @{ previousLiveSha=[string]$recoveryRecord.previousLiveSha; requestId=[string]$recoveryRecord.requestId }
+        Invoke-GuardedPreviousRuntimeRecovery -Failure 'AUTHORIZED_STOPPED_RUNTIME_RECOVERY'
+        return
+    }
+
+    $prepared = Invoke-Control 'prepare' @('--expected-sha',$ExpectedSha)
     $authorizationId = [string]$prepared.authorizationId
     if (-not $authorizationId) { throw 'REQUESTED_BACKUP_AUTHORIZATION_ID_MISSING' }
     $source = $prepared
