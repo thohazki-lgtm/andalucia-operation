@@ -4,7 +4,10 @@ param(
     [string]$ExpectedSha,
     [string]$RepositoryRoot,
     [switch]$AllowReviewedNonUiPaths,
-    [switch]$ManagerAuthorizedRestart
+    [switch]$ManagerAuthorizedRestart,
+    [string]$StoppedRuntimeEvidencePath,
+    [string]$StoppedRuntimeEvidenceSha256,
+    [string]$MaintenanceAuthorization
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +29,9 @@ if ($approvedSource.Sha -ne $ExpectedSha) { throw "APPROVED_SOURCE_SHA_MISMATCH:
 $preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-RepositoryRoot',$projectRoot)
 if ($AllowReviewedNonUiPaths -or $isApprovedLocalCheckpoint) { $preflightArguments += '-AllowReviewedNonUiPaths' }
 if ($isApprovedLocalCheckpoint) { $preflightArguments += '-AllowApprovedLocalCheckpoint' }
+if ($StoppedRuntimeEvidencePath) {
+    $preflightArguments += @('-StoppedRuntimeEvidencePath',$StoppedRuntimeEvidencePath,'-StoppedRuntimeEvidenceSha256',$StoppedRuntimeEvidenceSha256,'-MaintenanceAuthorization',$MaintenanceAuthorization)
+}
 $preflightOutput = & powershell.exe @preflightArguments
 if ($LASTEXITCODE -ne 0) { $preflightOutput; exit $LASTEXITCODE }
 $preflight = ($preflightOutput -join [Environment]::NewLine) | ConvertFrom-Json
@@ -39,8 +45,10 @@ if (-not $ManagerAuthorizedRestart) {
     exit 0
 }
 
-& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
-if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
+if ($preflight.status -ne 'READY_STOPPED_RUNTIME') {
+    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+    if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
+}
 
 $released = $false
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
@@ -49,6 +57,17 @@ for ($attempt = 0; $attempt -lt 60; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $released) { throw 'GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED; marker and processes were left untouched.' }
+
+$evidenceClaimPath = $null
+if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
+    if ($MaintenanceAuthorization -ne 'YES_I_APPROVE_ONE_GUARDED_REQUESTED_BACKUP_ACTIVATION_WINDOW') { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }
+    $evidenceClaimPath = "$StoppedRuntimeEvidencePath.consumed.json"
+    try {
+        $claim = [ordered]@{ version='andalucia-stopped-runtime-evidence-consumption-v1'; evidenceSha256=$StoppedRuntimeEvidenceSha256.ToLowerInvariant(); targetSha=$ExpectedSha; claimedAt=[DateTime]::UtcNow.ToString('o'); state='START_ATTEMPTED' } | ConvertTo-Json -Compress
+        $stream = [IO.File]::Open($evidenceClaimPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try { $bytes = [Text.Encoding]::UTF8.GetBytes($claim); $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+    } catch { throw "STOPPED_RUNTIME_EVIDENCE_CLAIM_FAILED:$($_.Exception.Message)" }
+}
 
 Start-ScheduledTask -TaskName $runtimeTaskName
 $healthy = $null
@@ -60,6 +79,13 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $healthy) { throw 'GUARDED_START_HEALTH_VERIFICATION_FAILED; no retry or marker cleanup was attempted.' }
+
+if ($evidenceClaimPath) {
+    $claim = Get-Content -LiteralPath $evidenceClaimPath -Raw | ConvertFrom-Json
+    $claim.state = 'HEALTH_VERIFIED'
+    $claim.completedAt = [DateTime]::UtcNow.ToString('o')
+    [IO.File]::WriteAllText($evidenceClaimPath, (($claim | ConvertTo-Json -Compress) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
+}
 
 [ordered]@{
     status = 'HEALTH_VERIFIED'
