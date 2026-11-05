@@ -8,6 +8,7 @@ import type { StoreManifest } from './migration-filesystem.js'
 export const DATABASE_OPERATION_JOURNAL_VERSION = 'andalucia-database-operation-v1'
 export const DATABASE_OPERATION_LEASE_VERSION = 'andalucia-database-operation-lease-v1'
 export const DATABASE_OPERATION_PERIOD_VERSION = 'andalucia-database-operation-period-v1'
+export const CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION = 'andalucia-canonical-maintenance-authorization-v1'
 export const DATABASE_OPERATION_TIMEZONE = 'Indian/Maldives'
 
 export type DatabaseOperationType =
@@ -62,7 +63,43 @@ export type DatabaseOperationPeriodRecord = {
   terminalAt?: string
 }
 
+export type CanonicalMaintenanceState =
+  | 'AUTHORIZED' | 'BACKUP_VERIFIED' | 'BACKUP_FAILED'
+  | 'TARGET_CLAIMED' | 'TARGET_HEALTHY' | 'TARGET_FAILED'
+  | 'RECOVERY_CLAIMED' | 'RECOVERY_HEALTHY' | 'RECOVERY_FAILED'
+
+export type CanonicalMaintenanceAuthorization = {
+  version: typeof CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION
+  authorizationId: string
+  state: CanonicalMaintenanceState
+  createdAt: string
+  updatedAt: string
+  expiresAt: string
+  previousLiveSha: string
+  targetSha: string
+  targetBranch: string
+  approvalManifestSha256: string
+  canonicalIdentitySha256: string
+  canonicalStoreId: string
+  schema: '027'
+  databaseStatus: 'HEALTHY'
+  migrationRequired: false
+  recoveryRequired: false
+  requestId: string
+  requestSha256: string
+  requestedBy: { userId: string; displayName: string }
+  backupId?: string
+  failure?: string
+  integritySha256: string
+}
+
 const safeName = (value: string) => createHash('sha256').update(value).digest('hex')
+const stable = (value: unknown): string => {
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
+  if (value && typeof value === 'object') return `{${Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(',')}}`
+  return JSON.stringify(value)
+}
+const maintenanceIntegrity = (record: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'>) => createHash('sha256').update(stable(record)).digest('hex')
 const hostName = () => process.env.COMPUTERNAME || process.env.HOSTNAME || 'unknown'
 const json = async <T>(path: string) => JSON.parse(await readFile(path, 'utf8')) as T
 const replaceWithRetry = async (temporary: string, path: string) => {
@@ -180,9 +217,9 @@ export const retentionDependencyBlockers = (input: { protected: boolean; latestR
 ]
 
 export class DatabaseOperationCoordinator {
-  readonly root: string; readonly leasesRoot: string; readonly journalRoot: string; readonly periodsRoot: string; readonly temporaryRoot: string
+  readonly root: string; readonly leasesRoot: string; readonly journalRoot: string; readonly periodsRoot: string; readonly temporaryRoot: string; readonly maintenanceRoot: string
   constructor(root: string, readonly options: { host?: string; pid?: number; now?: () => Date; processAlive?: (pid: number) => boolean } = {}) {
-    this.root = resolve(root); this.leasesRoot = join(this.root, 'leases'); this.journalRoot = join(this.root, 'journal'); this.periodsRoot = join(this.root, 'periods'); this.temporaryRoot = join(this.root, 'temporary')
+    this.root = resolve(root); this.leasesRoot = join(this.root, 'leases'); this.journalRoot = join(this.root, 'journal'); this.periodsRoot = join(this.root, 'periods'); this.temporaryRoot = join(this.root, 'temporary'); this.maintenanceRoot = join(this.root, 'maintenance')
   }
   private now() { return (this.options.now || (() => new Date()))().toISOString() }
   private owner() { return { pid: this.options.pid || process.pid, host: this.options.host || hostName() } }
@@ -192,6 +229,59 @@ export class DatabaseOperationCoordinator {
   temporaryPath(operationId: string, name: string) {
     if (basename(name) !== name || name.includes('..')) throw new Error('TEMPORARY_ARTIFACT_NAME_INVALID')
     return join(this.temporaryRoot, operationId, name)
+  }
+  maintenancePath(authorizationId: string) {
+    if (!/^[0-9a-f]{32}$/i.test(authorizationId)) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_ID_INVALID')
+    return join(this.maintenanceRoot, `${authorizationId.toLowerCase()}.json`)
+  }
+  private maintenanceRequestClaimPath(requestId: string) { return join(this.maintenanceRoot, `request-${safeName(requestId)}.claim.json`) }
+  private maintenanceLockPath(authorizationId: string) { return join(this.maintenanceRoot, `${authorizationId.toLowerCase()}.lock`) }
+  private assertMaintenanceIntegrity(record: CanonicalMaintenanceAuthorization) {
+    if (record.version !== CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION_INVALID')
+    const { integritySha256, ...unsigned } = record
+    if (integritySha256 !== maintenanceIntegrity(unsigned)) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_TAMPERED')
+    return record
+  }
+  async createCanonicalMaintenanceAuthorization(input: Omit<CanonicalMaintenanceAuthorization, 'version' | 'authorizationId' | 'state' | 'createdAt' | 'updatedAt' | 'integritySha256'>) {
+    await mkdir(this.maintenanceRoot, { recursive: true })
+    const authorizationId = randomUUID().replaceAll('-', '')
+    const requestClaimPath = this.maintenanceRequestClaimPath(input.requestId)
+    let requestClaim
+    try { requestClaim = await open(requestClaimPath, 'wx') } catch { throw new Error('CANONICAL_MAINTENANCE_REQUEST_ALREADY_AUTHORIZED') }
+    const now = this.now()
+    const unsigned: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'> = { version: CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION, authorizationId, state: 'AUTHORIZED', createdAt: now, updatedAt: now, ...input }
+    const record: CanonicalMaintenanceAuthorization = { ...unsigned, integritySha256: maintenanceIntegrity(unsigned) }
+    const path = this.maintenancePath(authorizationId)
+    try {
+      const handle = await open(path, 'wx')
+      try { await handle.writeFile(`${JSON.stringify(record, null, 2)}\n`, 'utf8'); await handle.sync() } finally { await handle.close() }
+      await requestClaim.writeFile(`${JSON.stringify({ version: CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION, requestId: input.requestId, authorizationId, createdAt: now })}\n`, 'utf8')
+      await requestClaim.sync()
+    } finally { await requestClaim.close() }
+    return record
+  }
+  async readCanonicalMaintenanceAuthorization(authorizationId: string) {
+    const record = await json<CanonicalMaintenanceAuthorization>(this.maintenancePath(authorizationId)).catch(() => { throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_MISSING') })
+    return this.assertMaintenanceIntegrity(record)
+  }
+  async transitionCanonicalMaintenanceAuthorization(authorizationId: string, expectedStates: CanonicalMaintenanceState[], nextState: CanonicalMaintenanceState, details: { backupId?: string; failure?: string } = {}) {
+    await mkdir(this.maintenanceRoot, { recursive: true })
+    const lockPath = this.maintenanceLockPath(authorizationId)
+    let lock
+    try { lock = await open(lockPath, 'wx') } catch { throw new Error('CANONICAL_MAINTENANCE_CONCURRENT_CLAIM') }
+    try {
+      const current = await this.readCanonicalMaintenanceAuthorization(authorizationId)
+      if (Date.parse(current.expiresAt) <= Date.parse(this.now())) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_EXPIRED')
+      if (!expectedStates.includes(current.state)) throw new Error(`CANONICAL_MAINTENANCE_STATE_INVALID:${current.state}:${expectedStates.join('|')}`)
+      const { integritySha256: _integrity, ...previous } = current
+      const unsigned: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'> = { ...previous, ...details, state: nextState, updatedAt: this.now() }
+      const next: CanonicalMaintenanceAuthorization = { ...unsigned, integritySha256: maintenanceIntegrity(unsigned) }
+      await durableJson(this.maintenancePath(authorizationId), next)
+      return next
+    } finally {
+      await lock.close()
+      await unlink(lockPath).catch(() => undefined)
+    }
   }
   async acquire(input: { operationType: DatabaseOperationType; resource: DatabaseOperationResource; backupId?: string; periodKey?: string }) {
     const operationId = randomUUID(); const startedAt = this.now(); const owner = this.owner(); const leasePath = this.leasePath(input.resource)
