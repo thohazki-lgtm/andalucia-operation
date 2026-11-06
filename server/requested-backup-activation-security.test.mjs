@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { cp, mkdir, mkdtemp, readFile, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -109,6 +110,7 @@ assert.match(resolver, /inspect-recovery-source/)
 // Execute the stopped-runtime bootstrap and the real PowerShell recovery orchestrator against disposable fixtures.
 const repositoryRoot = resolve('.')
 const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
+const startupRecord = (state, detail, recordedAt) => JSON.stringify({ version: 'andalucia-guarded-startup-v1', recordedAt, state, detail })
 const integrationFixture = async () => {
   const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-recovery-integration-'))
   await mkdir(join(root, 'server'), { recursive: true })
@@ -129,14 +131,19 @@ const integrationFixture = async () => {
   await mkdir(join(root, '.backups', '.db2', 'requests'), { recursive: true })
   await mkdir(join(root, '.backups', 'verified-fixture'), { recursive: true })
   await writeFile(join(root, '.data', 'andalucia-store-identity.json'), JSON.stringify({ role: 'canonical', databaseDirectory: dataDirectory, storeId }))
-  await writeFile(join(root, '.runtime', 'andalucia-local-ui-approval.json'), JSON.stringify({ activeSourceSha: target, previousLiveSha: previous, branch, controlCommitSha: target }))
-  await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), [JSON.stringify({ status: 'SOURCE_APPROVED', sha: previous }), JSON.stringify({ status: 'EXITED', exitCode: 0 })].join('\n') + '\n')
+  await writeFile(join(root, '.runtime', 'andalucia-local-ui-approval.json'), JSON.stringify({ activeSourceSha: target, previousLiveSha: previous, branch, mode: 'approved_local_reviewed_ui_checkpoint', controlCommitSha: target }))
+  await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), [
+    startupRecord('SOURCE_APPROVED', `sha=${previous};branch=${branch};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z'),
+    startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.078Z'),
+  ].join('\n') + '\n')
   const pending = { ...request, id: `request-${target.slice(0, 8)}` }
   await writeFile(join(root, '.backups', '.db2', 'requests', `${pending.id}.json`), JSON.stringify(pending))
   await writeFile(join(root, '.backups', '.db2', 'audit.jsonl'), JSON.stringify({ action: 'manual_backup_requested', actor: { source: 'authenticated_user', ...pending.requestedBy }, details: { requestId: pending.id } }) + '\n')
   await writeFile(join(root, '.backups', 'verified-fixture', 'backup-metadata.json'), JSON.stringify({ schemaVersion: '027', verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY' }))
   await writeFile(join(root, '.backups', 'verified-fixture', 'restore-test.json'), JSON.stringify({ status: 'RESTORE_TEST_PASSED', manifestMatch: true, fingerprintMatch: true, migrationMatch: true, preflightStatus: 'READY' }))
-  await symlink(join(repositoryRoot, 'node_modules'), join(root, 'node_modules'), 'junction')
+  const nodeModulesRoot = [join(repositoryRoot, 'node_modules'), resolve(repositoryRoot, '..', '..', 'node_modules')].find(existsSync)
+  assert.ok(nodeModulesRoot, 'Disposable recovery fixture requires the repository dependency directory')
+  await symlink(nodeModulesRoot, join(root, 'node_modules'), 'junction')
   return { root, previous, target, pending }
 }
 
@@ -149,6 +156,20 @@ const prepareStopped = async (value, overrides = {}) => runRequestedBackupActiva
   assert.equal(authorization.state, 'RECOVERY_AUTHORIZED')
   assert.equal(authorization.authorizationMode, 'stopped_runtime_recovery')
   assert.equal(authorization.previousLiveSha, value.previous)
+}
+
+// Canonical state/detail evidence rejects malformed, reordered, and incomplete lifecycles.
+{
+  const cases = [
+    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous.slice(0, -1)};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z'), startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.078Z')],
+    value => [startupRecord('EXITED', 'exitCode=0', '2026-11-05T18:49:34.595Z'), startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T21:00:09.078Z')],
+    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z')],
+  ]
+  for (const records of cases) {
+    const value = await integrationFixture()
+    await writeFile(join(value.root, '.runtime', 'logs', 'guarded-startup.jsonl'), records(value).join('\n') + '\n')
+    await assert.rejects(() => prepareStopped(value), /REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID/)
+  }
 }
 
 // Missing trusted authorization and altered protected bindings fail closed.

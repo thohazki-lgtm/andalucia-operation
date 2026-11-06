@@ -71,7 +71,7 @@ export class RequestedBackupActivationControl {
   recoveryFailed(authorizationId: string, failure: string) { return this.coordinator.transitionCanonicalMaintenanceAuthorization(authorizationId, ['RECOVERY_CLAIMED'], 'RECOVERY_FAILED', { failure: failure.slice(0, 500) }) }
 }
 
-type ApprovalManifest = { activeSourceSha: string; previousLiveSha: string; branch: string; reviewedCheckpointSha?: string; controlCommitSha: string }
+type ApprovalManifest = { activeSourceSha: string; previousLiveSha: string; branch: string; mode?: string; reviewedCheckpointSha?: string; controlCommitSha: string }
 type StoreIdentity = { role: string; databaseDirectory: string; storeId: string }
 
 const paths = (projectRoot: string) => ({
@@ -132,16 +132,44 @@ const latestVerifiedSchemaEvidence = async (projectRoot: string): Promise<string
   return fail('REQUESTED_BACKUP_VERIFIED_SCHEMA_EVIDENCE_MISSING')
 }
 
-const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string): Promise<string> => {
+const structuredDetail = (value: unknown): Record<string, string> => {
+  if (typeof value !== 'string' || !value) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const detail = value as string
+  const fields: Record<string, string> = {}
+  for (const part of detail.split(';')) {
+    const separator = part.indexOf('=')
+    if (separator <= 0 || separator === part.length - 1) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+    const key = part.slice(0, separator); const fieldValue = part.slice(separator + 1)
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(key) || Object.hasOwn(fields, key)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+    fields[key] = fieldValue
+  }
+  return fields
+}
+
+const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
   const logPath = paths(projectRoot).startupLog
   if (!existsSync(logPath)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_MISSING')
-  const entries = (await readFile(logPath, 'utf8')).split(/\r?\n/).filter(Boolean).map(line => { try { return JSON.parse(line) } catch { return null } }).filter(Boolean)
-  let approvedIndex = -1
-  entries.forEach((item, index) => { if (item.status === 'SOURCE_APPROVED' && String(item.sha || item.sourceSha || '').toLowerCase() === previousLiveSha) approvedIndex = index })
-  const exitedHealthy = approvedIndex >= 0 && entries.slice(approvedIndex + 1).some(item => item.status === 'EXITED' && Number(item.exitCode) === 0)
-  if (approvedIndex < 0 || !exitedHealthy) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  if (!expectedBranch || !expectedMode) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const lines = (await readFile(logPath, 'utf8')).split(/\r?\n/).filter(Boolean)
+  const entries = lines.map((raw, index) => {
+    let item: any
+    try { item = JSON.parse(raw) } catch { return fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID') }
+    if (item?.version !== 'andalucia-guarded-startup-v1' || typeof item.state !== 'string' || Number.isNaN(Date.parse(item.recordedAt))) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+    return { raw, index, item }
+  })
+  const approved = entries.filter(({ item }) => {
+    if (item.state !== 'SOURCE_APPROVED') return false
+    const detail = structuredDetail(item.detail)
+    if (!/^[0-9a-f]{40}$/i.test(detail.sha || '') || !detail.branch || !detail.mode || Object.keys(detail).length !== 3) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+    return detail.sha.toLowerCase() === previousLiveSha && detail.branch === expectedBranch && detail.mode === expectedMode
+  }).at(-1) ?? fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const nextApprovalIndex = entries.find(({ index, item }) => index > approved.index && item.state === 'SOURCE_APPROVED')?.index ?? entries.length
+  const terminal = entries.find(({ index, item }) => index > approved.index && index < nextApprovalIndex && (item.state === 'EXITED' || item.state === 'FAILED')) ?? fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  if (terminal.item.state !== 'EXITED' || Date.parse(terminal.item.recordedAt) < Date.parse(approved.item.recordedAt)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const exitDetail = structuredDetail(terminal.item.detail)
+  if (Object.keys(exitDetail).length !== 1 || !/^-?\d+$/.test(exitDetail.exitCode || '') || Number(exitDetail.exitCode) !== 0) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
   git(projectRoot, 'cat-file', '-e', `${previousLiveSha}^{commit}`)
-  return sha256(entries.filter(item => item.status === 'SOURCE_APPROVED' || item.status === 'EXITED').map(item => JSON.stringify(item)).join('\n'))
+  return sha256(`${approved.raw}\n${terminal.raw}`)
 }
 
 const portsClosed = async () => {
@@ -177,7 +205,7 @@ export async function runRequestedBackupActivationControl(command: string, argv 
     const previousLiveSha = bindings.approval.previousLiveSha.toLowerCase()
     if (!await (dependencies.portsClosed || portsClosed)() || existsSync(paths(projectRoot).ownerMarker)) fail('REQUESTED_BACKUP_STOPPED_RUNTIME_NOT_EXCLUSIVE')
     const request = await requestById(projectRoot, arg('--request-id'))
-    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, previousLiveSha)
+    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, previousLiveSha, bindings.approval.branch, String(bindings.approval.mode || ''))
     const schemaEvidence = await latestVerifiedSchemaEvidence(projectRoot)
     return control.prepareStoppedRecovery({ previousLiveSha, targetSha: bindings.approval.activeSourceSha.toLowerCase(), targetBranch: bindings.approval.branch, approvalManifestSha256: bindings.approvalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, request, requestAuditVerified: await requestAuditVerified(projectRoot, request), historicalRuntimeEvidenceSha256: runtimeEvidence, schemaEvidenceSha256: schemaEvidence })
   }
