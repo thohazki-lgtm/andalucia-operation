@@ -148,6 +148,13 @@ const integrationFixture = async () => {
 }
 
 const prepareStopped = async (value, overrides = {}) => runRequestedBackupActivationControl('prepare-stopped-recovery', ['node', 'control', '--project-root', value.root, '--request-id', value.pending.id], { portsClosed: async () => true, ...overrides })
+const runResolver = async (value, sourceRoot, authorizationId) => {
+  const wrapper = join(value.root, `resolver-${authorizationId || 'ordinary'}-${sourceRoot.endsWith(value.target) ? 'target' : 'source'}.ps1`)
+  const resolverPath = join(repositoryRoot, 'deployment', 'windows', 'Resolve-AndaluciaApprovedSource.ps1').replaceAll("'", "''")
+  const canonicalArgument = authorizationId ? ` -CanonicalProjectRoot '${value.root.replaceAll("'", "''")}' -RecoveryAuthorizationId '${authorizationId}'` : ''
+  await writeFile(wrapper, `$ErrorActionPreference='Stop'\n. '${resolverPath}'\n$result = Get-AndaluciaApprovedSourceState -ProjectRoot '${sourceRoot.replaceAll("'", "''")}'${canonicalArgument}\n$result | ConvertTo-Json -Compress\n`)
+  return spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', wrapper], { encoding: 'utf8' })
+}
 
 // Valid stopped-runtime authorization is independently derived from protected request, audit, runtime and backup evidence.
 {
@@ -156,6 +163,51 @@ const prepareStopped = async (value, overrides = {}) => runRequestedBackupActiva
   assert.equal(authorization.state, 'RECOVERY_AUTHORIZED')
   assert.equal(authorization.authorizationMode, 'stopped_runtime_recovery')
   assert.equal(authorization.previousLiveSha, value.previous)
+}
+
+// Ordinary branches remain supported, while detached HEAD is accepted only with a journal-bound recovery claim.
+{
+  const value = await integrationFixture()
+  git(value.root, 'branch', '-M', 'main')
+  git(value.root, 'update-ref', 'refs/remotes/origin/main', value.target)
+  const result = await runResolver(value, value.root)
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(JSON.parse(result.stdout).Mode, 'verified_main')
+}
+{
+  const value = await integrationFixture()
+  git(value.root, 'update-ref', 'refs/remotes/origin/main', value.target)
+  const sourceRoot = join(value.root, '.runtime', 'detached-without-authorization')
+  await mkdir(join(value.root, '.runtime'), { recursive: true })
+  git(value.root, 'worktree', 'add', '--detach', sourceRoot, value.previous)
+  const result = await runResolver(value, sourceRoot)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /ANDALUCIA_RUNTIME_SOURCE_BRANCH_NOT_APPROVED/)
+  assert.doesNotMatch(result.stderr, /null-valued expression/)
+}
+{
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  await runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId])
+  const sourceRoot = join(value.root, '.runtime', 'detached-recovery-source')
+  await mkdir(join(value.root, '.runtime'), { recursive: true })
+  git(value.root, 'worktree', 'add', '--detach', sourceRoot, value.previous)
+  const result = await runResolver(value, sourceRoot, authorization.authorizationId)
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  const resolved = JSON.parse(result.stdout)
+  assert.equal(resolved.Sha, value.previous)
+  assert.equal(resolved.Mode, 'approved_journal_bound_recovery')
+}
+{
+  const value = await integrationFixture()
+  const authorization = await prepareStopped(value)
+  await runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId])
+  const sourceRoot = join(value.root, '.runtime', 'detached-mismatched-source')
+  await mkdir(join(value.root, '.runtime'), { recursive: true })
+  git(value.root, 'worktree', 'add', '--detach', sourceRoot, value.target)
+  const result = await runResolver(value, sourceRoot, authorization.authorizationId)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /ANDALUCIA_RECOVERY_SOURCE_NOT_AUTHORIZED|REQUESTED_BACKUP_RECOVERY_SOURCE_SHA_MISMATCH/)
 }
 
 // Canonical state/detail evidence rejects malformed, reordered, and incomplete lifecycles.

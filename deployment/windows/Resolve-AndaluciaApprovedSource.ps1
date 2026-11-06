@@ -391,7 +391,7 @@ function Get-AndaluciaApprovedSourceState {
   $trackedChanges = @(& git -C $ProjectRoot status --porcelain --untracked-files=no)
   if ($trackedChanges.Count -gt 0) { throw 'ANDALUCIA_RUNTIME_SOURCE_DIRTY' }
 
-  $branch = (& git -C $ProjectRoot branch --show-current 2>$null).Trim()
+  $branch = ((@(& git -C $ProjectRoot branch --show-current 2>$null)) -join '').Trim()
   $headSha = Resolve-AndaluciaGitRef $ProjectRoot 'HEAD'
   if ($RecoveryAuthorizationId) {
     if (-not $CanonicalProjectRoot) { throw 'ANDALUCIA_RECOVERY_CANONICAL_ROOT_REQUIRED' }
