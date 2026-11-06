@@ -35,7 +35,7 @@ import { parseTrainingCalendar } from './training-calendar-parser.js'
 import { TRAINING_UPLOAD_MAX_BYTES } from './training-spreadsheet-security.js'
 import { prepareTrainingImport } from './training-import-service.js'
 import { rosterWeekRange, serviceDate, weekRange } from '../src/service-date.js'
-import { defaultBackupRoot, openVerifiedDatabase, operationMarkerPaths, publicDatabaseHealth, resolveRuntimeStore } from './database-protection.js'
+import { defaultBackupRoot, openVerifiedDatabase, operationMarkerPaths, publicDatabaseHealth, resolveApplicationRuntimeStore } from './database-protection.js'
 import { startSchedulerShutdownControl } from './database-scheduler.js'
 import { createDatabaseSafeShutdown } from './database-safe-shutdown.js'
 import { DatabaseBackupAdminService } from './database-backup-admin.js'
@@ -43,7 +43,7 @@ import { createOperationalFingerprint } from './database-backup.js'
 import { DatabaseRecoveryService } from './database-recovery.js'
 import { resolve } from 'node:path'
 
-const runtimeStore = resolveRuntimeStore()
+const runtimeStore = resolveApplicationRuntimeStore()
 const guardedDatabase = await openVerifiedDatabase({ dataDirectory: runtimeStore.dataDirectory, role: runtimeStore.role, requiredVersion: process.env.ANDALUCIA_REQUIRED_SCHEMA_VERSION })
 const databaseHealth = guardedDatabase.health
 const repository = new StaffRepository(runtimeStore.dataDirectory, guardedDatabase.db)

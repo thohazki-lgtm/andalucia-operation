@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { initializeDevelopmentStore } from './development-store-init.js'
-import { CANONICAL_STARTUP_AUTHORIZATION, resolveRuntimeStore } from './database-protection.js'
+import { CANONICAL_STARTUP_AUTHORIZATION, resolveApplicationRuntimeStore, resolveRuntimeStore } from './database-protection.js'
 import { StaffRepository } from './staff-repository.js'
 
 const root = await mkdtemp(join(tmpdir(), 'andalucia-development-isolation-'))
@@ -26,6 +26,30 @@ try {
   const canonicalRuntime = resolveRuntimeStore({ ANDALUCIA_DATA_DIR: canonical, ANDALUCIA_STORE_ROLE: 'canonical', ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION }, expected)
   assert.equal(canonicalRuntime.dataDirectory, canonical)
   assert.equal(canonicalRuntime.role, 'canonical')
+  const recoveryAuthorizationId = 'a'.repeat(32)
+  const recoveryRuntime = resolveApplicationRuntimeStore({
+    ANDALUCIA_DATA_DIR: canonical,
+    ANDALUCIA_STORE_ROLE: 'canonical',
+    ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
+    ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical,
+    ANDALUCIA_RECOVERY_AUTHORIZATION_ID: recoveryAuthorizationId,
+    ANDALUCIA_ACTIVE_SOURCE_BRANCH: `recovery/${recoveryAuthorizationId}`
+  })
+  assert.equal(recoveryRuntime.dataDirectory, canonical)
+  assert.throws(() => resolveApplicationRuntimeStore({
+    ANDALUCIA_DATA_DIR: canonical,
+    ANDALUCIA_STORE_ROLE: 'canonical',
+    ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
+    ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical
+  }), /RECOVERY_CANONICAL_PATH_BINDING_INVALID/)
+  assert.throws(() => resolveApplicationRuntimeStore({
+    ANDALUCIA_DATA_DIR: canonical,
+    ANDALUCIA_STORE_ROLE: 'canonical',
+    ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
+    ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical,
+    ANDALUCIA_RECOVERY_AUTHORIZATION_ID: recoveryAuthorizationId,
+    ANDALUCIA_ACTIVE_SOURCE_BRANCH: 'main'
+  }), /RECOVERY_CANONICAL_PATH_BINDING_INVALID/)
   const developmentRuntime = resolveRuntimeStore({ ANDALUCIA_DATA_DIR: development, ANDALUCIA_STORE_ROLE: 'development' }, expected)
   assert.equal(developmentRuntime.dataDirectory, development)
   assert.equal(developmentRuntime.role, 'development')
@@ -41,5 +65,5 @@ try {
   await repository.close()
   assert.equal(StaffRepository.length, 2)
 
-  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
+  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, recoveryCanonicalPathBoundToJournalAuthorization: true, unboundRecoveryPathRejected: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
 } finally { await rm(root, { recursive: true, force: true }) }
