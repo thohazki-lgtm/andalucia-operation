@@ -132,7 +132,7 @@ const integrationFixture = async () => {
   await mkdir(join(root, '.backups', 'verified-fixture'), { recursive: true })
   await writeFile(join(root, '.data', 'andalucia-store-identity.json'), JSON.stringify({ role: 'canonical', databaseDirectory: dataDirectory, storeId }))
   await writeFile(join(root, '.runtime', 'andalucia-local-ui-approval.json'), JSON.stringify({ activeSourceSha: target, previousLiveSha: previous, branch, mode: 'approved_local_reviewed_ui_checkpoint', controlCommitSha: target }))
-  await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), [
+  await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), '\ufeff' + [
     startupRecord('SOURCE_APPROVED', `sha=${previous};branch=${branch};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.5950882Z'),
     startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.0784484Z'),
   ].join('\n') + '\n')

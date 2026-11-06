@@ -164,7 +164,8 @@ const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: s
   const lines = (await readFile(logPath, 'utf8')).split(/\r?\n/).filter(Boolean)
   const entries = lines.map((raw, index) => {
     let item: any
-    try { item = JSON.parse(raw) } catch { return fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID') }
+    const parseable = index === 0 && raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw
+    try { item = JSON.parse(parseable) } catch { return fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID') }
     if (item?.version !== 'andalucia-guarded-startup-v1' || typeof item.state !== 'string') fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
     return { raw, index, item, recordedAt: canonicalTimestamp(item.recordedAt) }
   })
