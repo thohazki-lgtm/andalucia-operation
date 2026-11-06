@@ -19,6 +19,10 @@ $nodeRoot = Join-Path $env:ProgramFiles 'nodejs'
 $gitRoot = Join-Path $env:ProgramFiles 'Git\cmd'
 $npmCommand = Join-Path $nodeRoot 'npm.cmd'
 $gitCommand = Join-Path $gitRoot 'git.exe'
+$tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
+$viteCommand = Join-Path $projectRoot 'node_modules\.bin\vite.cmd'
+$concurrentlyCommand = Join-Path $projectRoot 'node_modules\.bin\concurrently.cmd'
+$recoveryBootstrap = Join-Path $projectRoot 'server\recovery-runtime-bootstrap.mjs'
 
 function Write-StartupLog([string]$State, [string]$Detail) {
   New-Item -ItemType Directory -Path $startupLogRoot -Force | Out-Null
@@ -86,7 +90,16 @@ try {
   if (-not $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION) { $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027' }
   $startedAtUtc = [DateTime]::UtcNow
   Write-StartupLog 'SOURCE_APPROVED' "sha=$($source.Sha);branch=$($source.Branch);mode=$($source.Mode)"
-  & $npmCommand run dev:canonical
+  if ($RecoveryAuthorizationId) {
+    foreach ($recoveryDependency in @($tsxCommand, $viteCommand, $concurrentlyCommand, $recoveryBootstrap)) {
+      if (-not (Test-Path -LiteralPath $recoveryDependency -PathType Leaf)) { throw "ANDALUCIA_RECOVERY_RUNTIME_DEPENDENCY_MISSING:$recoveryDependency" }
+    }
+    $apiCommand = "`"$tsxCommand`" `"$recoveryBootstrap`" --source-root `"$runtimeSourceRoot`" --canonical-root `"$projectRoot`" --authorization-id `"$RecoveryAuthorizationId`""
+    $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$runtimeSourceRoot`""
+    & $concurrentlyCommand -k -n api,client -c blue,cyan $apiCommand $clientCommand
+  } else {
+    & $npmCommand run dev:canonical
+  }
   $runtimeExit = $LASTEXITCODE
   if ($runtimeExit -ne 0) {
     $responseRoot = Join-Path $projectRoot '.backups\.db2\scheduler\control\responses'
