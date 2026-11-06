@@ -93,6 +93,17 @@ export const resolveRuntimeStore = (environment: NodeJS.ProcessEnv = process.env
   return { dataDirectory, role }
 }
 
+export const resolveApplicationRuntimeStore = (environment: NodeJS.ProcessEnv = process.env) => {
+  const expectedCanonicalDirectory = environment.ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR?.trim()
+  if (!expectedCanonicalDirectory) return resolveRuntimeStore(environment)
+  const authorizationId = environment.ANDALUCIA_RECOVERY_AUTHORIZATION_ID?.trim() || ''
+  const recoveryBranch = environment.ANDALUCIA_ACTIVE_SOURCE_BRANCH?.trim() || ''
+  if (!/^[0-9a-f]{32}$/i.test(authorizationId) || recoveryBranch !== `recovery/${authorizationId}`) {
+    throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'RECOVERY_CANONICAL_PATH_BINDING_INVALID')
+  }
+  return resolveRuntimeStore(environment, { canonicalDirectory: expectedCanonicalDirectory })
+}
+
 export const createStoreIdentity = async (databaseDirectoryInput: string, role: DatabaseStoreRole, options: { authorization?: string; storeId?: string; now?: Date; expectedCanonicalDirectory?: string } = {}) => {
   const databaseDirectory = resolve(databaseDirectoryInput)
   if (!existsSync(join(databaseDirectory, 'PG_VERSION'))) throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'DATABASE_STORE_NOT_INITIALIZED')
