@@ -13,12 +13,20 @@ export type AnnualLeaveServiceYearEvidence = {
   accrualUnitsPerCompletedMonth: number
   approvedOpeningCarryUnits?: number | null
   openingCarryEffectiveDate?: string | null
+  openingCarryReason?: string | null
+}
+
+export type AnnualLeaveOpeningAdjustmentEvidence = {
+  effectiveDate: string
+  units: number
+  reason: string
 }
 
 export type ServiceYearAnnualLeavePosition = {
   period: ServiceYearPeriod
   completedServiceMonths: number
   accruingForNextServiceYear: number
+  openingAdjustment: number
   knownAvailableEntitlement: number
   confirmedUsed: number
   knownRemaining: number
@@ -26,8 +34,6 @@ export type ServiceYearAnnualLeavePosition = {
   evidenceStatus: 'complete' | 'unconfigured'
   preAvailabilityUsageDates: string[]
 }
-
-export const ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE = '2026-01-01'
 
 const isoDate = (value: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('SERVICE_YEAR_DATE_INVALID')
@@ -69,13 +75,35 @@ export const serviceYearPeriodFor = (joinDate: string, asOf: string): ServiceYea
 export const completedServiceMonths = (joinDate: string, asOf: string) => {
   const joined = isoDate(joinDate)
   const cutoff = isoDate(asOf)
-  const period = serviceYearPeriodFor(joinDate, asOf)
-  const completedYears = period.serviceYearNumber - 1
+  if (cutoff < joined) throw new Error('SERVICE_YEAR_NOT_STARTED')
   let completed = 0
-  for (let month = 1; month <= 12; month += 1) {
-    if (addMonthsClamped(joined, completedYears * 12 + month) <= cutoff) completed += 1
+  for (let month = 1; month <= 1200; month += 1) {
+    if (addMonthsClamped(joined, month) > cutoff) break
+    completed += 1
   }
   return completed
+}
+
+const resolvedOpeningAdjustment = (joinDate: string, asOf: string, evidence: AnnualLeaveOpeningAdjustmentEvidence[]) => {
+  const joined = isoDate(joinDate)
+  const cutoff = isoDate(asOf)
+  const byDate = new Map<string, Set<number>>()
+  for (const item of evidence) {
+    const effectiveDate = isoDate(item.effectiveDate)
+    if (effectiveDate < joined) throw new Error('ANNUAL_LEAVE_OPENING_ADJUSTMENT_BEFORE_JOINING')
+    if (!Number.isFinite(item.units) || !item.reason.trim()) throw new Error('ANNUAL_LEAVE_OPENING_ADJUSTMENT_INVALID')
+    if (effectiveDate > cutoff) continue
+    const effectiveDateKey = formatDate(effectiveDate)
+    const values = byDate.get(effectiveDateKey) || new Set<number>()
+    values.add(decimal(item.units))
+    byDate.set(effectiveDateKey, values)
+  }
+  let total = 0
+  for (const values of byDate.values()) {
+    if (values.size > 1) throw new Error('ANNUAL_LEAVE_OPENING_ADJUSTMENT_CONFLICT')
+    total += [...values][0] || 0
+  }
+  return decimal(total)
 }
 
 const validateEvidence = (joinDate: string, records: AnnualLeaveServiceYearEvidence[]) => {
@@ -102,30 +130,31 @@ export const calculateServiceYearAnnualLeavePosition = (input: {
   asOf: string
   serviceYears: AnnualLeaveServiceYearEvidence[]
   confirmedAnnualLeaveDates: string[]
+  openingAdjustments?: AnnualLeaveOpeningAdjustmentEvidence[]
 }) : ServiceYearAnnualLeavePosition => {
   const period = serviceYearPeriodFor(input.joinDate, input.asOf)
   const ordered = validateEvidence(input.joinDate, input.serviceYears)
   const cutoff = isoDate(input.asOf)
   const months = completedServiceMonths(input.joinDate, input.asOf)
-  const accruing = decimal(Math.min(30, 2.5 * months))
-  const joined = isoDate(input.joinDate)
-  const agreedBaseline = isoDate(ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE)
-  let baselineAvailability = addYearsClamped(joined, 1)
-  while (baselineAvailability < agreedBaseline) baselineAvailability = addYearsClamped(baselineAvailability, 1)
-  let automaticAvailable = 0
-  for (let anniversary = baselineAvailability; anniversary <= cutoff; anniversary = addYearsClamped(anniversary, 1)) automaticAvailable += 30
-  const availabilityCutoff = formatDate(baselineAvailability)
-  const carry = ordered.filter(item => item.openingCarryEffectiveDate && isoDate(item.openingCarryEffectiveDate) >= baselineAvailability && isoDate(item.openingCarryEffectiveDate) <= cutoff && item.approvedOpeningCarryUnits !== null && item.approvedOpeningCarryUnits !== undefined).at(-1)
-  const knownAvailableEntitlement = decimal(automaticAvailable + (carry?.approvedOpeningCarryUnits || 0))
+  // Historical service-year rows and manual carry-forward records remain audit
+  // evidence only. Lifetime earning is derived once from Date of Joining, so
+  // adding those rows again would duplicate entitlement already earned.
+  void ordered
+  const accruing = decimal(2.5 * months)
+  const openingAdjustment = resolvedOpeningAdjustment(input.joinDate, input.asOf, input.openingAdjustments || [])
+  const knownAvailableEntitlement = decimal(accruing + openingAdjustment)
   const uniqueUsage = [...new Set(input.confirmedAnnualLeaveDates)].sort()
   uniqueUsage.forEach(isoDate)
-  const preAvailabilityUsageDates = uniqueUsage.filter(value => value < availabilityCutoff)
-  const confirmedUsed = uniqueUsage.filter(value => value >= availabilityCutoff).length
+  const applicableUsage = uniqueUsage.filter(value => value >= input.joinDate && isoDate(value) <= cutoff)
+  const firstMonthlyAvailability = formatDate(addMonthsClamped(isoDate(input.joinDate), 1))
+  const preAvailabilityUsageDates = applicableUsage.filter(value => value < firstMonthlyAvailability)
+  const confirmedUsed = applicableUsage.length
   const knownRemaining = decimal(knownAvailableEntitlement - confirmedUsed)
   return {
     period,
     completedServiceMonths: months,
     accruingForNextServiceYear: accruing,
+    openingAdjustment,
     knownAvailableEntitlement,
     confirmedUsed,
     knownRemaining,

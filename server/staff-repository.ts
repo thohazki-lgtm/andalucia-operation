@@ -2,11 +2,11 @@ import { PGlite } from '@electric-sql/pglite'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { CORE_DUTY_CODES, EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, LEAVE_CLASSIFICATIONS, YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS, canManageDutyCodeAvailability, config, coreDutyCode, isLeaveClassification, leaveClassificationForCode, type AnnualLeaveCarryForwardDraft, type AnnualLeaveCarryForwardPreview, type AnnualLeaveCarryForwardWrite, type AnnualLeaveServiceYearBalance, type AuthPrincipal, type ConfigOption, type EmployeeOverrideLeaveClassification, type EntitlementPolicy, type LeaveClassification, type PublicHoliday, type Staff, type StaffEntitlement, type StaffEntitlementReconciliation, type StaffEntitlementUpdate, type StaffLeaveDay, type StaffLeaveRecord, type StaffYearlyEntitlementBalance, type StaffYearlyEntitlementDraft, type StaffYearlyEntitlementPreview, type StaffYearlyEntitlementRecord, type StaffYearlyEntitlementWrite, type YearlyEntitlementLeaveClassification } from '../src/domain.js'
+import { CORE_DUTY_CODES, EMPLOYEE_OVERRIDE_LEAVE_CLASSIFICATIONS, LEAVE_CLASSIFICATIONS, YEARLY_ENTITLEMENT_LEAVE_CLASSIFICATIONS, canManageDutyCodeAvailability, config, coreDutyCode, isLeaveClassification, leaveClassificationForCode, type AnnualLeaveServiceYearBalance, type AuthPrincipal, type ConfigOption, type EmployeeOverrideLeaveClassification, type EntitlementPolicy, type LeaveClassification, type PublicHoliday, type Staff, type StaffEntitlement, type StaffEntitlementReconciliation, type StaffEntitlementUpdate, type StaffLeaveDay, type StaffLeaveRecord, type StaffYearlyEntitlementBalance, type StaffYearlyEntitlementDraft, type StaffYearlyEntitlementPreview, type StaffYearlyEntitlementRecord, type StaffYearlyEntitlementWrite, type YearlyEntitlementLeaveClassification } from '../src/domain.js'
 import { buildStaffLeaveRecords } from '../src/leave-records.js'
 import { serviceDate, weekRange } from '../src/service-date.js'
 import { calculateCalendarYearBalance, calendarYearPeriod } from './yearly-leave-entitlement-calculator.js'
-import { ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE, calculateServiceYearAnnualLeavePosition, serviceYearPeriodFor, type AnnualLeaveServiceYearEvidence } from './service-year-annual-leave-calculator.js'
+import { calculateServiceYearAnnualLeavePosition, type AnnualLeaveOpeningAdjustmentEvidence, type AnnualLeaveServiceYearEvidence } from './service-year-annual-leave-calculator.js'
 import { approvedDutyFinancialRule } from '../src/duty-financial-policy.js'
 
 type StaffRow = { id: string; staff_number: string; full_name: string; position_key: string; nationality: string; division: string; department: string; outlet: string; identity_document_number: string; employment_status_key: string; assignment_eligible: boolean; service_assignment_eligible: boolean; join_date: string; resignation_date: string | null; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null }
@@ -20,6 +20,7 @@ const staffConfigSeeds: Record<StaffConfigGroup, ConfigOption[]> = {
   positions: config.positions
 }
 const entitlementPolicyGroup = 'leave_entitlement_policies'
+const isHistoricalAnnualLeaveCarryReason = (reason: string | null | undefined) => /\bcarry[\s-]?forward\b|\banniversary carry\b/i.test((reason || '').trim())
 const staffDisplayOrderGroup = 'staff_display_order'
 const staffDisplayOrderValue = 'shared'
 const entitlementFallbacks: Record<'annualLeave' | 'off' | 'publicHoliday', { allowance: number; cadence: 'annual' | 'weekly' }> = { annualLeave: { allowance: 30, cadence: 'annual' }, off: { allowance: 1, cadence: 'weekly' }, publicHoliday: { allowance: 11, cadence: 'annual' } }
@@ -390,21 +391,35 @@ export class StaffRepository {
     return rows.rows.map((row: any) => ({ serviceYearStart: row.serviceYearStart, serviceYearEnd: row.serviceYearEnd, availableFrom: row.availableFrom, entitledUnits: Number(row.entitledUnits), accrualUnitsPerCompletedMonth: Number(row.accrualUnitsPerCompletedMonth), approvedOpeningCarryUnits: row.approvedOpeningCarryUnits == null ? null : Number(row.approvedOpeningCarryUnits), openingCarryEffectiveDate: row.openingCarryEffectiveDate || null, openingCarryReason: row.openingCarryReason || null })) as Array<AnnualLeaveServiceYearEvidence & { openingCarryReason: string | null }>
   }
 
+  private async annualLeaveOpeningAdjustments(staffId: string, evidence: Array<AnnualLeaveServiceYearEvidence & { openingCarryReason?: string | null }>): Promise<AnnualLeaveOpeningAdjustmentEvidence[]> {
+    const yearly = await this.database.query<{ effectiveDate: string; units: string; reason: string }>(`select coalesce(eligible_from,make_date(entitlement_year,1,1))::text as "effectiveDate",opening_balance_adjustment_units::text as units,opening_balance_reason as reason from staff_leave_entitlement_years where staff_id=$1 and leave_classification='annualLeave' and opening_balance_adjustment_units is not null order by 1`, [staffId])
+    const adjustments: AnnualLeaveOpeningAdjustmentEvidence[] = yearly.rows.map(row => ({ effectiveDate: row.effectiveDate, units: Number(row.units), reason: row.reason }))
+    for (const row of evidence) {
+      if (row.approvedOpeningCarryUnits === null || row.approvedOpeningCarryUnits === undefined || !row.openingCarryEffectiveDate) continue
+      // Lifetime accrual already carries unused earned leave across anniversaries.
+      // Keep carry-forward rows as audit evidence while retaining distinct, approved
+      // pre-system opening adjustments stored by the legacy service-year workflow.
+      if (isHistoricalAnnualLeaveCarryReason(row.openingCarryReason)) continue
+      adjustments.push({ effectiveDate: row.openingCarryEffectiveDate, units: Number(row.approvedOpeningCarryUnits), reason: row.openingCarryReason || 'Approved opening adjustment' })
+    }
+    return adjustments
+  }
+
   private async annualLeaveServiceYearBalanceFromEvidence(staff: Staff, evidence: Array<AnnualLeaveServiceYearEvidence & { openingCarryReason?: string | null }>, asOf: string): Promise<AnnualLeaveServiceYearBalance> {
-    const provisional = calculateServiceYearAnnualLeavePosition({ joinDate: staff.joinDate, asOf, serviceYears: evidence, confirmedAnnualLeaveDates: [] })
-    const usage = await this.database.query<{ date: string }>(`select distinct r.duty_date::text as date from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4 and c.metadata->>'dutyClassification'='annualLeave' order by date`, [staff.id, staffConfigKeys['duty-codes'], staff.joinDate, provisional.period.end])
-    const position = calculateServiceYearAnnualLeavePosition({ joinDate: staff.joinDate, asOf, serviceYears: evidence, confirmedAnnualLeaveDates: usage.rows.map(row => row.date) })
-    const bookedFuture = await this.bookedFutureAnnualLeaveRange(staff.id, position.period.start, position.period.end)
-    const latestOpening = evidence.filter(row => row.openingCarryEffectiveDate && row.openingCarryEffectiveDate >= ANNUAL_LEAVE_ZERO_CARRY_BASELINE_DATE && row.openingCarryEffectiveDate <= asOf).at(-1)
+    const openingAdjustments = await this.annualLeaveOpeningAdjustments(staff.id, evidence)
+    const appliedOpeningReasons = [...new Set(openingAdjustments.filter(item => item.effectiveDate <= asOf).map(item => item.reason.trim()))]
+    const usage = await this.database.query<{ date: string }>(`select distinct r.duty_date::text as date from duty_roster_entries r join configuration_options c on c.group_key=$2 and c.value=r.duty_code_value where r.staff_id=$1 and r.duty_date between $3 and $4 and c.metadata->>'dutyClassification'='annualLeave' order by date`, [staff.id, staffConfigKeys['duty-codes'], staff.joinDate, asOf])
+    const position = calculateServiceYearAnnualLeavePosition({ joinDate: staff.joinDate, asOf, serviceYears: evidence, confirmedAnnualLeaveDates: usage.rows.map(row => row.date), openingAdjustments })
+    const bookedFuture = await this.bookedFutureAnnualLeaveRange(staff.id, serviceDate(), '9999-12-31')
     const decimal = (value: number) => Number(value.toFixed(4))
     return {
       serviceYearNumber: position.period.serviceYearNumber, serviceYearStart: position.period.start, serviceYearEnd: position.period.end,
-      nextEntitlementAvailabilityDate: position.period.availableFrom, availableLeave: position.availableBalance === null ? null : position.knownAvailableEntitlement,
+      nextEntitlementAvailabilityDate: position.period.availableFrom, availableLeave: position.availableBalance,
       knownAvailableLeave: position.knownAvailableEntitlement, used: position.confirmedUsed, remaining: position.availableBalance,
       accruingForNextServiceYear: position.accruingForNextServiceYear, completedServiceMonths: position.completedServiceMonths,
       bookedFuture, availableAfterBooked: position.availableBalance === null ? null : decimal(position.availableBalance - bookedFuture),
-      evidenceStatus: position.evidenceStatus, approvedOpeningCarry: latestOpening?.approvedOpeningCarryUnits == null ? null : Number(latestOpening.approvedOpeningCarryUnits),
-      openingCarryReason: latestOpening?.openingCarryReason || null, preAvailabilityUsageDates: position.preAvailabilityUsageDates,
+      evidenceStatus: position.evidenceStatus, approvedOpeningCarry: position.openingAdjustment || null,
+      openingCarryReason: position.openingAdjustment ? appliedOpeningReasons.length === 1 ? appliedOpeningReasons[0] : 'Multiple approved opening adjustments' : null, preAvailabilityUsageDates: position.preAvailabilityUsageDates,
     }
   }
 
@@ -413,46 +428,6 @@ export class StaffRepository {
     const staff = await this.find(staffId)
     if (!staff) throw new Error('Staff member not found.')
     return this.annualLeaveServiceYearBalanceFromEvidence(staff, await this.annualLeaveServiceYearEvidence(staffId), asOf)
-  }
-
-  private async validatedAnnualLeaveCarryForward(input: AnnualLeaveCarryForwardDraft) {
-    if (!(await this.serviceYearEntitlementTableAvailable())) throw new Error('Annual Leave Carry Forward requires database schema 022.')
-    const staff = await this.find(input.staffId)
-    if (!staff) throw new Error('Staff member not found.')
-    let effectivePeriod
-    try { effectivePeriod = serviceYearPeriodFor(staff.joinDate, serviceDate()) } catch { throw new Error('A valid Staff Management Date of Joining is required before Carry Forward can be configured.') }
-    if (effectivePeriod.serviceYearNumber <= 1) throw new Error('Carry Forward is available only after the first completed service year.')
-    const effectiveDate = effectivePeriod.start
-    const previousDay = new Date(`${effectiveDate}T00:00:00Z`); previousDay.setUTCDate(previousDay.getUTCDate() - 1)
-    const evidencePeriod = serviceYearPeriodFor(staff.joinDate, previousDay.toISOString().slice(0, 10))
-    const carryForward = Number(input.carryForward)
-    if (!Number.isFinite(carryForward) || carryForward < 0 || Math.abs(carryForward * 10000 - Math.round(carryForward * 10000)) > 1e-7) throw new Error('Carry Forward must be a non-negative number with no more than four decimal places.')
-    return { staff, effectiveDate, evidencePeriod, carryForward, auditReason: 'Manager-confirmed manual carry forward' }
-  }
-
-  async previewAnnualLeaveCarryForward(input: AnnualLeaveCarryForwardDraft): Promise<AnnualLeaveCarryForwardPreview> {
-    const validated = await this.validatedAnnualLeaveCarryForward(input)
-    const evidence = await this.annualLeaveServiceYearEvidence(input.staffId)
-    const proposed = { serviceYearStart: validated.evidencePeriod.start, serviceYearEnd: validated.evidencePeriod.end, availableFrom: validated.effectiveDate, entitledUnits: 30, accrualUnitsPerCompletedMonth: 2.5, approvedOpeningCarryUnits: validated.carryForward, openingCarryEffectiveDate: validated.effectiveDate, openingCarryReason: validated.auditReason }
-    const afterEvidence = [...evidence.filter(row => row.serviceYearStart !== proposed.serviceYearStart), proposed].sort((left, right) => left.serviceYearStart.localeCompare(right.serviceYearStart))
-    const [before, after] = await Promise.all([
-      this.annualLeaveServiceYearBalanceFromEvidence(validated.staff, evidence, serviceDate()),
-      this.annualLeaveServiceYearBalanceFromEvidence(validated.staff, afterEvidence, serviceDate()),
-    ])
-    return { staffId: validated.staff.id, staffName: validated.staff.name, staffNumber: validated.staff.number, joinDate: validated.staff.joinDate, effectiveDate: validated.effectiveDate, carryForward: validated.carryForward, evidenceServiceYearStart: validated.evidencePeriod.start, evidenceServiceYearEnd: validated.evidencePeriod.end, entitlementAvailabilityDate: validated.effectiveDate, before, after }
-  }
-
-  async saveAnnualLeaveCarryForward(input: AnnualLeaveCarryForwardWrite, approver: AuthPrincipal): Promise<AnnualLeaveCarryForwardPreview> {
-    if (input.confirmation !== 'CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD') throw new Error('Explicit manager confirmation is required before saving Carry Forward.')
-    const preview = await this.previewAnnualLeaveCarryForward(input)
-    const validated = await this.validatedAnnualLeaveCarryForward(input)
-    await this.database.transaction(async transaction => {
-      const existing = (await transaction.query<any>('select * from staff_annual_leave_service_years where staff_id=$1 and service_year_start=$2', [validated.staff.id, validated.evidencePeriod.start])).rows[0] || null
-      const id = existing?.id || randomUUID()
-      const saved = (await transaction.query<any>(`insert into staff_annual_leave_service_years (id,staff_id,service_year_start,service_year_end,available_from,entitled_units,accrual_units_per_completed_month,approved_opening_carry_units,opening_carry_effective_date,opening_carry_reason,approved_by_user_id,approved_by_name_snapshot) values ($1,$2,$3,$4,$5,30,2.5,$6,$5,$7,$8,$9) on conflict (staff_id,service_year_start) do update set service_year_end=excluded.service_year_end,available_from=excluded.available_from,entitled_units=excluded.entitled_units,accrual_units_per_completed_month=excluded.accrual_units_per_completed_month,approved_opening_carry_units=excluded.approved_opening_carry_units,opening_carry_effective_date=excluded.opening_carry_effective_date,opening_carry_reason=excluded.opening_carry_reason,approved_by_user_id=excluded.approved_by_user_id,approved_by_name_snapshot=excluded.approved_by_name_snapshot,updated_at=now() returning *`, [id, validated.staff.id, validated.evidencePeriod.start, validated.evidencePeriod.end, validated.effectiveDate, validated.carryForward, validated.auditReason, approver.userId, approver.displayName])).rows[0]
-      await transaction.query('insert into audit_logs(id,entity_type,entity_id,action,before_data,after_data,actor) values($1,$2,$3,$4,$5,$6,$7)', [randomUUID(), 'staff_annual_leave_service_year', id, existing ? 'carry_forward_updated' : 'carry_forward_created', existing ? JSON.stringify(existing) : null, JSON.stringify(saved), approver.displayName])
-    })
-    return preview
   }
 
   async yearlyEntitlements(staffId: string, year: number): Promise<StaffYearlyEntitlementRecord[]> {
@@ -658,7 +633,7 @@ export class StaffRepository {
     const serviceYear = await this.annualLeaveServiceYearBalance(staffId, asOf).catch(error => { if (error instanceof Error && error.message === 'SERVICE_YEAR_NOT_STARTED') return null; throw error })
     const yearlyLeave = configured.map((record): StaffYearlyEntitlementBalance['yearlyLeave'][number] => {
       const used = usage.get(record.classification) || 0
-      if (record.classification === 'annualLeave') return { ...record, entitlement: serviceYear?.availableLeave ?? null, accrualPerCompletedMonth: 2.5, eligibleFrom: serviceYear?.serviceYearStart ?? null, eligibleThrough: serviceYear?.serviceYearEnd ?? null, openingBalanceAdjustment: serviceYear?.approvedOpeningCarry ?? null, openingBalanceReason: serviceYear?.openingCarryReason ?? null, configured: serviceYear?.evidenceStatus === 'complete', accrued: serviceYear?.accruingForNextServiceYear ?? null, carriedForward: serviceYear?.approvedOpeningCarry ?? null, used: serviceYear?.used ?? used, remaining: serviceYear?.remaining ?? null, bookedFuture: serviceYear?.bookedFuture ?? 0, availableAfterBooked: serviceYear?.availableAfterBooked ?? null, ...(serviceYear ? { serviceYear } : {}) }
+      if (record.classification === 'annualLeave') return { ...record, entitlement: serviceYear?.availableLeave ?? null, accrualPerCompletedMonth: 2.5, eligibleFrom: serviceYear?.serviceYearStart ?? null, eligibleThrough: serviceYear?.serviceYearEnd ?? null, openingBalanceAdjustment: serviceYear?.approvedOpeningCarry ?? null, openingBalanceReason: serviceYear?.openingCarryReason ?? null, configured: serviceYear?.evidenceStatus === 'complete', accrued: serviceYear?.accruingForNextServiceYear ?? null, carriedForward: null, used: serviceYear?.used ?? used, remaining: serviceYear?.remaining ?? null, bookedFuture: serviceYear?.bookedFuture ?? 0, availableAfterBooked: serviceYear?.availableAfterBooked ?? null, ...(serviceYear ? { serviceYear } : {}) }
       const renewing = calculateCalendarYearBalance(record.entitlement, used)
       return { ...record, accrued: record.entitlement, carriedForward: 0, used, remaining: renewing.remaining, bookedFuture: null, availableAfterBooked: null }
     })
@@ -699,9 +674,9 @@ export class StaffRepository {
         const serviceYear = calculated.serviceYear
         const issues: string[] = []
         if (serviceYear?.preAvailabilityUsageDates.length) issues.push(`${serviceYear.preAvailabilityUsageDates.length} roster-confirmed AL day(s) occurred before verified entitlement availability and require HR review.`)
-        if (serviceYear && serviceYear.knownAvailableLeave < serviceYear.used) issues.push(`${serviceYear.used} roster-confirmed AL day(s) exceed the ${serviceYear.knownAvailableLeave}-day available entitlement; manager review of Carry Forward is required.`)
+        if (serviceYear && serviceYear.knownAvailableLeave < serviceYear.used) issues.push(`${serviceYear.used} roster-confirmed AL day(s) exceed the ${serviceYear.knownAvailableLeave}-day lifetime earned entitlement; manager review of opening evidence is required.`)
         const discrepancy = issues.some(issue => issue.includes('before verified') || issue.includes('exceed'))
-        return { classification: definition.classification, code: definition.code, label: definition.label, cadence: 'annual' as const, policyEntitlement, individualEntitlement, yearlyEntitlement: serviceYear?.availableLeave ?? null, source: serviceYear?.evidenceStatus === 'complete' ? 'service_year_hr_evidence' as const : 'unconfigured' as const, openingBalance: serviceYear?.approvedOpeningCarry ?? null, openingBalanceReason: serviceYear?.openingCarryReason ?? null, accrualPerCompletedMonth: 2.5, completedEligibleMonths: serviceYear?.completedServiceMonths ?? null, accrued: serviceYear?.accruingForNextServiceYear ?? null, carriedForward: serviceYear?.approvedOpeningCarry ?? null, used: serviceYear?.used ?? 0, remaining: serviceYear?.remaining ?? null, bookedFuture: serviceYear?.bookedFuture ?? 0, availableAfterBooked: serviceYear?.availableAfterBooked ?? null, serviceYear, evidenceStatus: !serviceYear || serviceYear.evidenceStatus === 'unconfigured' ? 'missing_hr_evidence' as const : discrepancy ? 'discrepancy' as const : 'complete' as const, issues }
+        return { classification: definition.classification, code: definition.code, label: definition.label, cadence: 'annual' as const, policyEntitlement, individualEntitlement, yearlyEntitlement: serviceYear?.availableLeave ?? null, source: serviceYear?.evidenceStatus === 'complete' ? 'service_year_hr_evidence' as const : 'unconfigured' as const, openingBalance: serviceYear?.approvedOpeningCarry ?? null, openingBalanceReason: serviceYear?.openingCarryReason ?? null, accrualPerCompletedMonth: 2.5, completedEligibleMonths: serviceYear?.completedServiceMonths ?? null, accrued: serviceYear?.accruingForNextServiceYear ?? null, carriedForward: null, used: serviceYear?.used ?? 0, remaining: serviceYear?.remaining ?? null, bookedFuture: serviceYear?.bookedFuture ?? 0, availableAfterBooked: serviceYear?.availableAfterBooked ?? null, serviceYear, evidenceStatus: !serviceYear || serviceYear.evidenceStatus === 'unconfigured' ? 'missing_hr_evidence' as const : discrepancy ? 'discrepancy' as const : 'complete' as const, issues }
       }
       const issues: string[] = []
       const comparison = individualEntitlement ?? policyEntitlement
