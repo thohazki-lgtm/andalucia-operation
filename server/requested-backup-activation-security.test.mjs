@@ -133,8 +133,8 @@ const integrationFixture = async () => {
   await writeFile(join(root, '.data', 'andalucia-store-identity.json'), JSON.stringify({ role: 'canonical', databaseDirectory: dataDirectory, storeId }))
   await writeFile(join(root, '.runtime', 'andalucia-local-ui-approval.json'), JSON.stringify({ activeSourceSha: target, previousLiveSha: previous, branch, mode: 'approved_local_reviewed_ui_checkpoint', controlCommitSha: target }))
   await writeFile(join(root, '.runtime', 'logs', 'guarded-startup.jsonl'), [
-    startupRecord('SOURCE_APPROVED', `sha=${previous};branch=${branch};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z'),
-    startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.078Z'),
+    startupRecord('SOURCE_APPROVED', `sha=${previous};branch=${branch};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.5950882Z'),
+    startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.0784484Z'),
   ].join('\n') + '\n')
   const pending = { ...request, id: `request-${target.slice(0, 8)}` }
   await writeFile(join(root, '.backups', '.db2', 'requests', `${pending.id}.json`), JSON.stringify(pending))
@@ -161,9 +161,9 @@ const prepareStopped = async (value, overrides = {}) => runRequestedBackupActiva
 // Canonical state/detail evidence rejects malformed, reordered, and incomplete lifecycles.
 {
   const cases = [
-    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous.slice(0, -1)};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z'), startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.078Z')],
-    value => [startupRecord('EXITED', 'exitCode=0', '2026-11-05T18:49:34.595Z'), startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T21:00:09.078Z')],
-    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.595Z')],
+    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous.slice(0, -1)};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.5950882Z'), startupRecord('EXITED', 'exitCode=0', '2026-11-05T21:00:09.0784484Z')],
+    value => [startupRecord('EXITED', 'exitCode=0', '2026-11-05T18:49:34.5950882Z'), startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T21:00:09.0784484Z')],
+    value => [startupRecord('SOURCE_APPROVED', `sha=${value.previous};branch=${git(value.root, 'branch', '--show-current')};mode=approved_local_reviewed_ui_checkpoint`, '2026-11-05T18:49:34.5950882Z')],
   ]
   for (const records of cases) {
     const value = await integrationFixture()
