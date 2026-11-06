@@ -4,7 +4,8 @@ param(
     [string]$RepositoryRoot,
     [int]$MaximumBackupAgeHours = 24,
     [switch]$AllowReviewedNonUiPaths,
-    [switch]$AllowApprovedLocalCheckpoint
+    [switch]$AllowApprovedLocalCheckpoint,
+    [string]$MaintenanceAuthorizationId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,10 +22,14 @@ try {
     $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
     $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
     $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
+    $stoppedRuntimeMode = [bool]$MaintenanceAuthorizationId
+    $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
+    $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 
     $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
     if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $projectRoot) { Stop-Readiness 'SOURCE_NOT_AUTHORITATIVE' $projectRoot }
     $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
+    $approvedSource = $null
     $trackedChanges = @(& git -C $projectRoot status --porcelain --untracked-files=no)
     if ($trackedChanges.Count -gt 0) { Stop-Readiness 'SOURCE_TRACKED_CHANGES_PRESENT' ($trackedChanges -join '; ') }
     $headSha = (& git -C $projectRoot rev-parse HEAD 2>$null).Trim()
@@ -46,11 +51,24 @@ try {
     $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
     if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { Stop-Readiness 'CANONICAL_IDENTITY_MISMATCH' ([string]$identity.storeId) }
 
-    try { $health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5 } catch { Stop-Readiness 'RUNTIME_HEALTH_UNAVAILABLE' $_.Exception.Message }
-    if (-not $health.ok -or $health.database.status -ne 'HEALTHY') { Stop-Readiness 'DATABASE_NOT_HEALTHY' ([string]$health.database.status) }
-    if ($health.database.migrationVersion -ne '027' -or $health.database.migrationRequired -or $health.database.recoveryRequired) { Stop-Readiness 'SCHEMA_GATE_FAILED' ($health.database | ConvertTo-Json -Compress) }
-    $runtimeSha = [string]$health.application.sha
-    if (-not $runtimeSha) { Stop-Readiness 'RUNTIME_SHA_MISSING' 'The health response did not identify its source.' }
+    $health = $null
+    $evidence = $null
+    if ($stoppedRuntimeMode) {
+        if (-not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { Stop-Readiness 'STOPPED_RUNTIME_CONTROL_MISSING' $controlScript }
+        $controlOutput = & $tsxCommand $controlScript inspect-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+        if ($LASTEXITCODE -ne 0) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' ($controlOutput -join [Environment]::NewLine) }
+        try { $evidence = ($controlOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' $_.Exception.Message }
+        if ([string]$evidence.targetSha -ne $headSha -or [string]$evidence.targetSha -ne $expectedFullSha -or [string]$evidence.targetBranch -ne $branch) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_TARGET_MISMATCH' ([string]$evidence.targetSha) }
+        if ([string]$evidence.schema -ne '027' -or [string]$evidence.databaseStatus -ne 'HEALTHY' -or [bool]$evidence.migrationRequired -or [bool]$evidence.recoveryRequired) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_DATABASE_INVALID' ($evidence | ConvertTo-Json -Compress) }
+        if (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
+        $runtimeSha = [string]$evidence.previousLiveSha
+    } else {
+        try { $health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5 } catch { Stop-Readiness 'RUNTIME_HEALTH_UNAVAILABLE' $_.Exception.Message }
+        if (-not $health.ok -or $health.database.status -ne 'HEALTHY') { Stop-Readiness 'DATABASE_NOT_HEALTHY' ([string]$health.database.status) }
+        if ($health.database.migrationVersion -ne '027' -or $health.database.migrationRequired -or $health.database.recoveryRequired) { Stop-Readiness 'SCHEMA_GATE_FAILED' ($health.database | ConvertTo-Json -Compress) }
+        $runtimeSha = [string]$health.application.sha
+        if (-not $runtimeSha) { Stop-Readiness 'RUNTIME_SHA_MISSING' 'The health response did not identify its source.' }
+    }
     & git -C $projectRoot merge-base --is-ancestor $runtimeSha $headSha 2>$null
     if ($LASTEXITCODE -ne 0) { Stop-Readiness 'RUNTIME_NOT_ANCESTOR_OF_TARGET' "runtime=$runtimeSha target=$headSha" }
 
@@ -74,14 +92,18 @@ try {
     if ([IO.Path]::GetFullPath($taskWorkingDirectory) -ne $projectRoot -or $taskArguments -notlike "*$expectedLauncher*" -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { Stop-Readiness 'RUNTIME_TASK_ACTION_DRIFT' "$taskCommand $taskArguments $taskWorkingDirectory" }
     if ($allowHardTerminate -ne 'false' -or $stopOnIdleEnd -ne 'false' -or $executionTimeLimit -ne 'PT0S') { Stop-Readiness 'RUNTIME_TASK_SAFETY_DRIFT' "AllowHardTerminate=$allowHardTerminate StopOnIdleEnd=$stopOnIdleEnd ExecutionTimeLimit=$executionTimeLimit" }
 
-    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001, 5173 })
-    if (@($listeners | Where-Object LocalPort -eq 3001).Count -ne 1 -or @($listeners | Where-Object LocalPort -eq 5173).Count -ne 1) { Stop-Readiness 'RUNTIME_LISTENER_AMBIGUOUS' (($listeners | Select-Object LocalPort,OwningProcess | ConvertTo-Json -Compress)) }
-    foreach ($listener in $listeners) {
-        $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
-        if (-not $listenerProcess -or [string]$listenerProcess.CommandLine -notlike "*$projectRoot*") { Stop-Readiness 'RUNTIME_OWNER_MISMATCH' "port=$($listener.LocalPort) pid=$($listener.OwningProcess)" }
-    }
+    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001, 5173, 5174 })
     $markerPath = Join-Path $canonicalData 'postmaster.pid'
-    if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { Stop-Readiness 'ACTIVE_RUNTIME_MARKER_MISSING' $markerPath }
+    if ($stoppedRuntimeMode) {
+        if ($listeners.Count -ne 0 -or (Test-Path -LiteralPath $markerPath)) { Stop-Readiness 'STOPPED_RUNTIME_EXCLUSIVITY_NOT_VERIFIED' (($listeners | Select-Object LocalPort,OwningProcess | ConvertTo-Json -Compress)) }
+    } else {
+        if (@($listeners | Where-Object LocalPort -eq 3001).Count -ne 1 -or @($listeners | Where-Object LocalPort -eq 5173).Count -ne 1) { Stop-Readiness 'RUNTIME_LISTENER_AMBIGUOUS' (($listeners | Select-Object LocalPort,OwningProcess | ConvertTo-Json -Compress)) }
+        foreach ($listener in $listeners) {
+            $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
+            if (-not $listenerProcess -or [string]$listenerProcess.CommandLine -notlike "*$projectRoot*") { Stop-Readiness 'RUNTIME_OWNER_MISMATCH' "port=$($listener.LocalPort) pid=$($listener.OwningProcess)" }
+        }
+        if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { Stop-Readiness 'ACTIVE_RUNTIME_MARKER_MISSING' $markerPath }
+    }
 
     $backupMetadataFiles = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.backups') -Filter 'backup-metadata.json' -Recurse -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
     $latestBackup = $null
@@ -98,16 +120,17 @@ try {
         break
     }
     if (-not $latestBackup) { Stop-Readiness 'VERIFIED_BACKUP_REQUIRED' 'No verified and restore-tested backup was found.' }
+    if ($stoppedRuntimeMode -and ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne 'manual')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category)" }
     $backupAgeHours = ([DateTime]::UtcNow - [DateTime]::Parse([string]$latestBackup.createdAt).ToUniversalTime()).TotalHours
     if ($backupAgeHours -gt $MaximumBackupAgeHours) { Stop-Readiness 'VERIFIED_BACKUP_TOO_OLD' ([Math]::Round($backupAgeHours, 2).ToString()) }
 
     [ordered]@{
-        status = if ($runtimeSha -eq $headSha) { 'ALREADY_ACTIVE' } else { 'READY' }
+        status = if ($stoppedRuntimeMode) { 'READY_STOPPED_RUNTIME' } elseif ($runtimeSha -eq $headSha) { 'ALREADY_ACTIVE' } else { 'READY' }
         targetSha = $headSha
         runtimeSha = $runtimeSha
         branch = $branch
-        schema = [string]$health.database.migrationVersion
-        database = [string]$health.database.status
+        schema = if ($stoppedRuntimeMode) { [string]$evidence.schema } else { [string]$health.database.migrationVersion }
+        database = if ($stoppedRuntimeMode) { [string]$evidence.databaseStatus } else { [string]$health.database.status }
         canonicalStoreId = [string]$identity.storeId
         runtimeTaskState = [string]$runtimeTask.State
         backupId = [string]$latestBackup.backupId

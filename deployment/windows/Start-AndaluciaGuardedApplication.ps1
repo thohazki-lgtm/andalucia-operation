@@ -1,9 +1,15 @@
 [CmdletBinding()]
-param()
+param(
+  [string]$SourceRoot,
+  [string]$CanonicalProjectRoot,
+  [string]$RecoveryAuthorizationId
+)
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-$packagePath = Join-Path $projectRoot 'package.json'
+$scriptProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $scriptProjectRoot }
+$runtimeSourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { $projectRoot }
+$packagePath = Join-Path $runtimeSourceRoot 'package.json'
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
 $sourceResolver = Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'
@@ -43,18 +49,21 @@ function Wait-StartupDependencies([int]$TimeoutSeconds = 90) {
 function Get-ApprovedSourceState {
   if (-not (Test-Path -LiteralPath $sourceResolver -PathType Leaf)) { throw 'ANDALUCIA_RUNTIME_SOURCE_RESOLVER_MISSING' }
   . $sourceResolver
-  return Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
+  if ($RecoveryAuthorizationId) {
+    return Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot -CanonicalProjectRoot $projectRoot -RecoveryAuthorizationId $RecoveryAuthorizationId
+  }
+  return Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot
 }
 
 try {
-  Write-StartupLog 'STARTING' "projectRoot=$projectRoot"
+  Write-StartupLog 'STARTING' "projectRoot=$projectRoot;sourceRoot=$runtimeSourceRoot;recovery=$([bool]$RecoveryAuthorizationId)"
   Wait-StartupDependencies
-  $env:PATH = "$nodeRoot;$gitRoot;$env:SystemRoot\System32;$env:SystemRoot;$env:PATH"
+  $env:PATH = "$nodeRoot;$gitRoot;$(Join-Path $projectRoot 'node_modules\.bin');$env:SystemRoot\System32;$env:SystemRoot;$env:PATH"
   $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
   if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'ANDALUCIA_CANONICAL_IDENTITY_MISMATCH' }
   $source = Get-ApprovedSourceState
 
-  Set-Location -LiteralPath $projectRoot
+  Set-Location -LiteralPath $runtimeSourceRoot
   $env:ANDALUCIA_DATA_DIR = $canonicalData
   $env:ANDALUCIA_STORE_ROLE = 'canonical'
   $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'

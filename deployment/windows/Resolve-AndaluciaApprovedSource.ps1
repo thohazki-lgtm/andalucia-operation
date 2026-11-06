@@ -381,7 +381,9 @@ function Assert-AndaluciaReviewedBackendPaths {
 function Get-AndaluciaApprovedSourceState {
   param(
     [Parameter(Mandatory = $true)][string]$ProjectRoot,
-    [string]$ManifestPath = (Join-Path $ProjectRoot '.runtime\andalucia-local-ui-approval.json')
+    [string]$ManifestPath = (Join-Path $ProjectRoot '.runtime\andalucia-local-ui-approval.json'),
+    [string]$CanonicalProjectRoot,
+    [string]$RecoveryAuthorizationId
   )
 
   $gitRoot = (& git -C $ProjectRoot rev-parse --show-toplevel 2>$null).Trim()
@@ -391,6 +393,19 @@ function Get-AndaluciaApprovedSourceState {
 
   $branch = (& git -C $ProjectRoot branch --show-current 2>$null).Trim()
   $headSha = Resolve-AndaluciaGitRef $ProjectRoot 'HEAD'
+  if ($RecoveryAuthorizationId) {
+    if (-not $CanonicalProjectRoot) { throw 'ANDALUCIA_RECOVERY_CANONICAL_ROOT_REQUIRED' }
+    $canonicalRoot = [IO.Path]::GetFullPath($CanonicalProjectRoot)
+    if ([IO.Path]::GetFullPath($ProjectRoot) -eq $canonicalRoot) { throw 'ANDALUCIA_RECOVERY_SOURCE_MUST_BE_ISOLATED' }
+    $controlScript = Join-Path $canonicalRoot 'server\requested-backup-activation-control.ts'
+    $tsxCommand = Join-Path $canonicalRoot 'node_modules\.bin\tsx.cmd'
+    foreach ($requiredPath in @($controlScript,$tsxCommand)) { if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "ANDALUCIA_RECOVERY_CONTROL_MISSING:$requiredPath" } }
+    $controlOutput = & $tsxCommand $controlScript inspect-recovery-source --project-root $canonicalRoot --authorization-id $RecoveryAuthorizationId --source-root $ProjectRoot
+    if ($LASTEXITCODE -ne 0) { throw "ANDALUCIA_RECOVERY_SOURCE_NOT_AUTHORIZED:$($controlOutput -join [Environment]::NewLine)" }
+    try { $authorization = (($controlOutput -join [Environment]::NewLine) | ConvertFrom-Json) } catch { throw 'ANDALUCIA_RECOVERY_AUTHORIZATION_INVALID' }
+    if ([string]$authorization.state -ne 'RECOVERY_CLAIMED' -or [string]$authorization.previousLiveSha -ne $headSha) { throw 'ANDALUCIA_RECOVERY_SOURCE_BINDING_MISMATCH' }
+    return [ordered]@{ Sha=$headSha; Branch="recovery/$RecoveryAuthorizationId"; Mode='approved_journal_bound_recovery'; PreviousLiveSha=[string]$authorization.previousLiveSha; TargetSha=[string]$authorization.targetSha; AuthorizationId=$RecoveryAuthorizationId }
+  }
   $originMainSha = Resolve-AndaluciaGitRef $ProjectRoot 'refs/remotes/origin/main'
   if ($branch -eq 'main') {
     if ($headSha -ne $originMainSha) { throw "ANDALUCIA_RUNTIME_SOURCE_NOT_APPROVED_MAIN:${headSha}:${originMainSha}" }

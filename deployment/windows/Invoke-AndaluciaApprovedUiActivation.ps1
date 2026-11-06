@@ -4,7 +4,8 @@ param(
     [string]$ExpectedSha,
     [string]$RepositoryRoot,
     [switch]$AllowReviewedNonUiPaths,
-    [switch]$ManagerAuthorizedRestart
+    [switch]$ManagerAuthorizedRestart,
+    [string]$MaintenanceAuthorizationId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,6 +16,8 @@ $preflightScript = Join-Path $PSScriptRoot 'Test-AndaluciaGuardedUiActivation.ps
 $stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
 $canonicalMarker = Join-Path $projectRoot '.data\postgres\postmaster.pid'
+$controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
+$tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'APPROVED_SOURCE_RESOLVER_MISSING' }
@@ -26,6 +29,9 @@ if ($approvedSource.Sha -ne $ExpectedSha) { throw "APPROVED_SOURCE_SHA_MISMATCH:
 $preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-RepositoryRoot',$projectRoot)
 if ($AllowReviewedNonUiPaths -or $isApprovedLocalCheckpoint) { $preflightArguments += '-AllowReviewedNonUiPaths' }
 if ($isApprovedLocalCheckpoint) { $preflightArguments += '-AllowApprovedLocalCheckpoint' }
+if ($MaintenanceAuthorizationId) {
+    $preflightArguments += @('-MaintenanceAuthorizationId',$MaintenanceAuthorizationId)
+}
 $preflightOutput = & powershell.exe @preflightArguments
 if ($LASTEXITCODE -ne 0) { $preflightOutput; exit $LASTEXITCODE }
 $preflight = ($preflightOutput -join [Environment]::NewLine) | ConvertFrom-Json
@@ -39,8 +45,10 @@ if (-not $ManagerAuthorizedRestart) {
     exit 0
 }
 
-& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
-if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
+if ($preflight.status -ne 'READY_STOPPED_RUNTIME') {
+    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+    if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
+}
 
 $released = $false
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
@@ -49,6 +57,12 @@ for ($attempt = 0; $attempt -lt 60; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $released) { throw 'GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED; marker and processes were left untouched.' }
+
+if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
+    if (-not $MaintenanceAuthorizationId -or -not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }
+    $claimOutput = & $tsxCommand $controlScript claim-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+    if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_CLAIM_FAILED:$($claimOutput -join [Environment]::NewLine)" }
+}
 
 Start-ScheduledTask -TaskName $runtimeTaskName
 $healthy = $null
@@ -59,7 +73,15 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
     } catch {}
     Start-Sleep -Seconds 1
 }
-if (-not $healthy) { throw 'GUARDED_START_HEALTH_VERIFICATION_FAILED; no retry or marker cleanup was attempted.' }
+if (-not $healthy) {
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_START_HEALTH_VERIFICATION_FAILED' | Out-Null }
+    throw 'GUARDED_START_HEALTH_VERIFICATION_FAILED; guarded recovery authorization is required before any retry.'
+}
+
+if ($MaintenanceAuthorizationId) {
+    $completeOutput = & $tsxCommand $controlScript target-healthy --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+    if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_COMPLETION_FAILED:$($completeOutput -join [Environment]::NewLine)" }
+}
 
 [ordered]@{
     status = 'HEALTH_VERIFIED'
