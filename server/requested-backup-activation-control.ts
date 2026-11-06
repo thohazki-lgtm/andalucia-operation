@@ -146,6 +146,17 @@ const structuredDetail = (value: unknown): Record<string, string> => {
   return fields
 }
 
+const canonicalTimestamp = (value: unknown): string => {
+  if (typeof value !== 'string') fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const timestamp = value as string
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{1,7})Z$/.exec(timestamp) ?? fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  const [, year, month, day, hour, minute, second, fraction] = match
+  const parts = [year, month, day, hour, minute, second].map(Number)
+  const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]))
+  if (date.getUTCFullYear() !== parts[0] || date.getUTCMonth() + 1 !== parts[1] || date.getUTCDate() !== parts[2] || date.getUTCHours() !== parts[3] || date.getUTCMinutes() !== parts[4] || date.getUTCSeconds() !== parts[5]) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}.${fraction.padEnd(7, '0')}Z`
+}
+
 const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
   const logPath = paths(projectRoot).startupLog
   if (!existsSync(logPath)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_MISSING')
@@ -154,8 +165,8 @@ const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: s
   const entries = lines.map((raw, index) => {
     let item: any
     try { item = JSON.parse(raw) } catch { return fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID') }
-    if (item?.version !== 'andalucia-guarded-startup-v1' || typeof item.state !== 'string' || Number.isNaN(Date.parse(item.recordedAt))) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
-    return { raw, index, item }
+    if (item?.version !== 'andalucia-guarded-startup-v1' || typeof item.state !== 'string') fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+    return { raw, index, item, recordedAt: canonicalTimestamp(item.recordedAt) }
   })
   const approved = entries.filter(({ item }) => {
     if (item.state !== 'SOURCE_APPROVED') return false
@@ -165,7 +176,7 @@ const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: s
   }).at(-1) ?? fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
   const nextApprovalIndex = entries.find(({ index, item }) => index > approved.index && item.state === 'SOURCE_APPROVED')?.index ?? entries.length
   const terminal = entries.find(({ index, item }) => index > approved.index && index < nextApprovalIndex && (item.state === 'EXITED' || item.state === 'FAILED')) ?? fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
-  if (terminal.item.state !== 'EXITED' || Date.parse(terminal.item.recordedAt) < Date.parse(approved.item.recordedAt)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
+  if (terminal.item.state !== 'EXITED' || terminal.recordedAt < approved.recordedAt) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
   const exitDetail = structuredDetail(terminal.item.detail)
   if (Object.keys(exitDetail).length !== 1 || !/^-?\d+$/.test(exitDetail.exitCode || '') || Number(exitDetail.exitCode) !== 0) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
   git(projectRoot, 'cat-file', '-e', `${previousLiveSha}^{commit}`)
