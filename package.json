@@ -64,6 +64,7 @@
     "test:auth": "tsx server/auth-service.test.ts",
     "test:first-login-password-change": "tsx server/first-login-password-change.test.ts",
     "test:authorization": "tsx server/authorization-service.test.ts",
+    "test:offline-recovery-request-security": "tsx server/offline-recovery-request-security.test.mjs",
     "test:workforce-api-security": "tsx server/workforce-api-security.test.ts",
     "test:account-security-migration": "tsx server/account-security-migration.test.ts",
     "test:employee-account-management": "tsx server/employee-account-management.test.ts",
