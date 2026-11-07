@@ -25,6 +25,15 @@ export class LeavePlannerService {
     const [startDate, endDate] = monthRange(`${month}-01`)
     const resolved = await this.membership.resolveStaffMembershipForRange(startDate, endDate, outletScopeKey)
     if (!resolved.outlet) throw new Error('The Leave Planner outlet is unavailable.')
+    const staffMembers = (await this.staff.list()).filter(person => person.employmentStatus === 'active' && person.joinDate <= endDate && (!person.resignationDate || person.resignationDate >= startDate)).map(person => ({
+      staffId: person.id,
+      staffName: person.name,
+      staffNumber: person.number,
+      designation: person.position,
+      employmentStatus: person.employmentStatus,
+      employmentStartWithinPeriod: person.joinDate > startDate ? person.joinDate : startDate,
+      employmentEndWithinPeriod: person.resignationDate && person.resignationDate < endDate ? person.resignationDate : endDate
+    }))
     const configuration = await this.staff.configuration()
     const dutyByValue = new Map(configuration.dutyCodes.map(option => [option.value, option]))
     const rosterResult = await this.staff.getDatabase().query<any>('select staff_id,duty_date::text date,duty_code_value from duty_roster_entries where duty_date between $1 and $2 order by staff_id,duty_date', [startDate, endDate])
@@ -39,8 +48,8 @@ export class LeavePlannerService {
     const plannedForYear = plannedLeaveSupported ? await this.plannedLeave.list(resolved.outlet.id, yearStart, yearEnd, undefined, true) : []
     const rows: LeavePlannerStaffRow[] = []
 
-    for (const member of resolved.members) {
-      const roster = (rosterByStaff.get(member.staffId) || []).filter(row => row.date >= member.membershipStartWithinPeriod && row.date <= member.membershipEndWithinPeriod)
+    for (const member of staffMembers) {
+      const roster = (rosterByStaff.get(member.staffId) || []).filter(row => row.date >= member.employmentStartWithinPeriod && row.date <= member.employmentEndWithinPeriod)
       const days = roster.flatMap((entry): LeavePlannerDay[] => {
         const option = dutyByValue.get(entry.duty_code_value)
         const classification = leaveClassificationOf(option)
@@ -61,7 +70,7 @@ export class LeavePlannerService {
       const accumulatedOff = this.accumulatedOff ? await this.accumulatedOff.balance(member.staffId, resolved.outlet.id) : { staffId: member.staffId, opening: 0, earned: 0, reserved: 0, consumed: 0, available: 0, conflict: false, evaluatedThrough: null }
       rows.push({
         staffId: member.staffId, staffName: member.staffName, staffNumber: member.staffNumber, designation: member.designation, employmentStatus: member.employmentStatus,
-        membershipId: member.membershipId, membershipStart: member.membershipStartWithinPeriod, membershipEnd: member.membershipEndWithinPeriod, membershipReviewStatus: member.reviewStatus,
+        membershipId: member.staffId, membershipStart: member.employmentStartWithinPeriod, membershipEnd: member.employmentEndWithinPeriod, membershipReviewStatus: 'approved',
         days, periods: records.map(record => ({ ...record, designation: member.designation, confirmationSource: 'Duty Roster', entitlementDays: record.leaveType === 'publicHoliday' ? record.holidays : record.leaveType === 'off' ? record.offDays : record.leaveDays, sourceDutyCode: record.entries[0].dutyCode, color: days.find(day => day.date === record.fromDate)?.color || '#718492' })),
         plannedPeriods: memberPlanned, plannedDates,
         entitlement: { ...entitlement, persisted: Boolean(configured?.persisted), offAssignedInMonth: days.filter(day => day.classification === 'off').length, bookedFuture, availableAfterBooked, accumulatedOff }
@@ -71,7 +80,7 @@ export class LeavePlannerService {
     rows.sort((a, b) => a.staffName.localeCompare(b.staffName))
     const dateList = calendarDates(startDate, endDate)
     const availability = dateList.map(date => {
-      const members = resolved.members.filter(member => member.membershipStartWithinPeriod <= date && member.membershipEndWithinPeriod >= date)
+      const members = staffMembers.filter(member => member.employmentStartWithinPeriod <= date && member.employmentEndWithinPeriod >= date)
       let scheduledWorking = 0; let unavailable = 0
       for (const member of members) {
         const entry = (rosterByStaff.get(member.staffId) || []).find(item => item.date === date)
@@ -82,6 +91,6 @@ export class LeavePlannerService {
       }
       return { date, members: members.length, scheduledWorking, unavailable, unassigned: members.length - scheduledWorking - unavailable }
     })
-    return { outlet: resolved.outlet, month, startDate, endDate, membershipBlocker: resolved.blocker, rows, availability, dutyCodes: configuration.dutyCodes, plannedLeaveSupported }
+    return { outlet: resolved.outlet, month, startDate, endDate, membershipBlocker: null, rows, availability, dutyCodes: configuration.dutyCodes, plannedLeaveSupported }
   }
 }

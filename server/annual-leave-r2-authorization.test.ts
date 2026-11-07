@@ -94,8 +94,6 @@ const holidayBody = { id: holidayId, name: 'Isolated Authorization Holiday', dat
 const rosterBody = { dutyCode: annualLeaveCode.value, actor: 'Spoofed Client Actor' }
 const plannedBody = { staffId: staff.id, startDate: '2099-06-20', endDate: '2099-06-22', leaveType: 'annual_leave', managerNote: 'Authorization fixture', createdBy: 'Spoofed Client Actor' }
 const activationBody = { code: 'EL' }
-const carryForwardPreviewBody = { carryForward: 10.5 }
-const carryForwardSaveBody = { ...carryForwardPreviewBody, confirmation: 'CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD' }
 const accumulatedOffOpeningBody = { staffId: staff.id, days: 1, effectiveDate: '2026-09-05', justification: 'Verified historical authorization evidence', evidenceReference: 'AUTH-026' }
 const mutationCases = [
   { path: `/api/workforce/staff-entitlements/${staff.id}`, method: 'PUT', body: entitlementBody },
@@ -103,8 +101,6 @@ const mutationCases = [
   { path: `/api/roster/${staff.id}/2099-06-15`, method: 'PUT', body: rosterBody }
   ,{ path: '/api/workforce/planned-leave', method: 'POST', body: plannedBody }
   ,{ path: '/api/config/staff/duty-codes/activate', method: 'POST', body: activationBody }
-  ,{ path: `/api/workforce/staff-entitlements/${staff.id}/annual-leave-carry-forward/preview`, method: 'POST', body: carryForwardPreviewBody }
-  ,{ path: `/api/workforce/staff-entitlements/${staff.id}/annual-leave-carry-forward`, method: 'PUT', body: carryForwardSaveBody }
   ,{ path: '/api/workforce/accumulated-off/opening-balance', method: 'POST', body: accumulatedOffOpeningBody }
   ,{ path: '/api/workforce/accumulated-off/initialize-history', method: 'POST', body: {} }
 ] as const
@@ -149,6 +145,9 @@ try {
     assert.equal((await request(item.path, item.method, tokens.wrongOutlet, trustedOrigin, item.body)).status, 403, `${item.method} ${item.path} must reject the wrong OutletScope.`)
     assert.equal((await request(item.path, item.method, tokens.manager, 'https://untrusted.example', item.body)).status, 401, `${item.method} ${item.path} must reject an untrusted origin.`)
   }
+
+  assert.equal((await request(`/api/workforce/staff-entitlements/${staff.id}/annual-leave-carry-forward/preview`, 'POST', tokens.manager, trustedOrigin, { carryForward: 10.5 })).status, 404, 'The retired Carry Forward preview endpoint must not remain callable.')
+  assert.equal((await request(`/api/workforce/staff-entitlements/${staff.id}/annual-leave-carry-forward`, 'PUT', tokens.manager, trustedOrigin, { carryForward: 10.5, confirmation: 'CONFIRM_ANNUAL_LEAVE_CARRY_FORWARD' })).status, 404, 'The retired Carry Forward write endpoint must not remain callable.')
 
   const accumulatedOffInitialization = await request('/api/workforce/accumulated-off/initialize-history', 'POST', tokens.manager, trustedOrigin, {})
   assert.equal(accumulatedOffInitialization.status, 200)

@@ -24,13 +24,13 @@ try {
   await fixture.db.query(`insert into staff_leave_entitlement_years(id,staff_id,entitlement_year,leave_classification,entitled_units,accrual_units_per_completed_month,eligible_from,approved_by_user_id,approved_by_name_snapshot) values($1,$2,2026,'annualLeave',999,2.5,'2026-01-01',$3,$4)`, [randomUUID(), kapilId, approver.id, approver.name])
   const kapil = await repository.annualLeaveServiceYearBalance(kapilId, '2026-10-11')
   assert(kapil)
-  assert.deepEqual({ available: kapil.availableLeave, known: kapil.knownAvailableLeave, used: kapil.used, remaining: kapil.remaining, accruing: kapil.accruingForNextServiceYear, status: kapil.evidenceStatus }, { available: 30, known: 30, used: 32, remaining: -2, accruing: 15, status: 'complete' })
+  assert.deepEqual({ available: kapil.availableLeave, known: kapil.knownAvailableLeave, used: kapil.used, remaining: kapil.remaining, accruing: kapil.accruingForNextServiceYear, status: kapil.evidenceStatus }, { available: 60, known: 60, used: 32, remaining: 28, accruing: 15, status: 'complete' })
   const kapilReconciliation = await repository.entitlementReconciliation(kapilId, 2026, '2026-10-05', '2026-10-11')
   const kapilAnnual = kapilReconciliation.lines.find(line => line.classification === 'annualLeave')!
   assert.equal(kapilReconciliation.lines.length, 10)
   assert.equal(kapilAnnual.source, 'service_year_hr_evidence')
-  assert.equal(kapilAnnual.yearlyEntitlement, 30, 'Calendar-year AL must never be treated as service-year entitlement.')
-  assert(kapilAnnual.issues.some(issue => issue.includes('32 roster-confirmed') && issue.includes('30-day available')))
+  assert.equal(kapilAnnual.yearlyEntitlement, 60, 'Only completed service-year AL may be treated as currently available entitlement.')
+  assert.equal(kapilAnnual.issues.length, 0)
 
   const rahulId = await addStaff('SY-RAHUL', 'RAHUL RAI', '2025-09-21')
   await addEvidence(rahulId, '2025-09-21', '2026-09-20', '2026-09-21')
@@ -39,11 +39,14 @@ try {
   const rahul = await repository.annualLeaveServiceYearBalance(rahulId, '2026-10-11')
   assert(rahul)
   assert.equal(rahul.preAvailabilityUsageDates.length, 7)
-  assert.equal(rahul.used, 2)
-  assert.equal(rahul.remaining, 28)
+  assert.equal(rahul.used, 9)
+  assert.equal(rahul.availableLeave, 30)
+  assert.equal(rahul.accruingForNextServiceYear, 0)
+  assert.equal(rahul.remaining, 21)
   const rahulAnnual = (await repository.entitlementReconciliation(rahulId, 2026, '2026-10-05', '2026-10-11')).lines.find(line => line.classification === 'annualLeave')!
   assert.equal(rahulAnnual.evidenceStatus, 'discrepancy')
-  assert(rahulAnnual.issues.some(issue => issue.includes('before verified entitlement availability')))
+  assert.equal(rahulAnnual.issues.length, 1)
+  assert.match(rahulAnnual.issues[0], /before verified entitlement availability/)
 
   const unconfiguredId = await addStaff('SY-EMPTY', 'NO HR EVIDENCE', '2026-07-19')
   const unconfigured = await repository.annualLeaveServiceYearBalance(unconfiguredId, '2026-10-19')
@@ -58,12 +61,13 @@ try {
   const explicitZero = await repository.annualLeaveServiceYearBalance(explicitZeroId, '2026-10-11')
   assert(explicitZero)
   assert.equal(explicitZero.availableLeave, 30)
+  assert.equal(explicitZero.accruingForNextServiceYear, 22.5)
   assert.equal(explicitZero.remaining, 30)
   assert.equal(explicitZero.evidenceStatus, 'complete')
 
   await assert.rejects(repository.previewYearlyEntitlements({ staffId: kapilId, year: 2026, allowances: { annualLeave: 30 }, annualLeaveOpeningBalance: null, approvalReason: 'Calendar AL must be blocked' }), /service year/)
   assert.equal(Number((await fixture.db.query<{ count: number }>('select count(*)::int count from staff_annual_leave_service_years')).rows[0].count), 6)
-  console.log(JSON.stringify({ serviceYearReadIntegration: true, allTenReconciliationLines: true, automaticZeroBaseline: true, kapilKnownOveruseFlagged: true, rahulPreAvailabilityUsageFlagged: true, currentAccrualAutomatic: true, manualCarrySeparate: true, calendarYearAnnualLeaveRejected: true, dutyRosterAuthority: true, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ serviceYearReadIntegration: true, allTenReconciliationLines: true, lifetimeAccrual: true, historicalUsageAcrossAnniversaries: true, currentAccrualAutomatic: true, manualCarryNotDuplicated: true, calendarYearAnnualLeaveRejected: true, dutyRosterAuthority: true, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await fixture.cleanup()
 }

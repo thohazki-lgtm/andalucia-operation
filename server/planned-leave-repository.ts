@@ -41,9 +41,9 @@ export class PlannedLeaveRepository {
     if (allocatedOff > balance.available) throw new Error(`Accumulated OFF allocation exceeds the verified available balance of ${Math.max(0, balance.available)}.`)
   }
 
-  private async requireMembership(staffId: string, startDate: string, endDate: string, outletScopeId: string) {
-    const result = await this.db.query<{ count: number }>(`select count(*)::int count from staff_membership_history membership join staff on staff.id=membership.staff_id where membership.staff_id=$1 and membership.outlet_scope_id=$2 and membership.membership_dimension='regular_outlet' and membership.review_status='approved' and membership.is_current_baseline=true and membership.effective_from<=$3 and coalesce(membership.effective_to,'9999-12-31'::date)>=$4 and staff.join_date<=$3 and coalesce(staff.resignation_date,'9999-12-31'::date)>=$4`, [staffId, outletScopeId, startDate, endDate])
-    if (Number(result.rows[0]?.count || 0) !== 1) throw new Error('The booked period must remain within one approved Andalucía Team Membership.')
+  private async requireActiveStaff(staffId: string, startDate: string, endDate: string) {
+    const result = await this.db.query<{ count: number }>(`select count(*)::int count from staff where id=$1 and employment_status_key='active' and join_date<=$2 and coalesce(resignation_date,'9999-12-31'::date)>=$3`, [staffId, startDate, endDate])
+    if (Number(result.rows[0]?.count || 0) !== 1) throw new Error('The booked period must remain within the employee active employment dates.')
   }
 
   private async requireNoOverlap(staffId: string, startDate: string, endDate: string, outletScopeId: string, excludeId?: string) {
@@ -86,7 +86,7 @@ export class PlannedLeaveRepository {
 
   async create(input: PlannedLeaveWriteInput, context: Context) {
     await this.requireReady(); this.validate(input)
-    await this.requireMembership(input.staffId, input.startDate, input.endDate, context.outletScopeId)
+    await this.requireActiveStaff(input.staffId, input.startDate, input.endDate)
     await this.requireNoOverlap(input.staffId, input.startDate, input.endDate, context.outletScopeId)
     await this.requireNoConfirmedCollision(input.staffId, input.startDate, input.endDate)
     await this.requireAvailableAccumulatedOff(input, context)
@@ -108,7 +108,7 @@ export class PlannedLeaveRepository {
     if ((input.accumulatedOffDaysAllocated ?? 0) < before.accumulatedOffDaysConsumed) throw new Error('Accumulated OFF allocation cannot be reduced below confirmed roster consumption.')
     const outsideEvidence = await this.db.query<{ count: number }>('select count(*)::int count from accumulated_off_consumptions where planned_leave_period_id=$1 and (duty_date<$2 or duty_date>$3)', [id, input.startDate, input.endDate])
     if (Number(outsideEvidence.rows[0]?.count || 0) > 0) throw new Error('The edited booking range must retain every confirmed accumulated OFF roster date.')
-    await this.requireMembership(input.staffId, input.startDate, input.endDate, context.outletScopeId)
+    await this.requireActiveStaff(input.staffId, input.startDate, input.endDate)
     await this.requireNoOverlap(input.staffId, input.startDate, input.endDate, context.outletScopeId, id)
     await this.requireNoConfirmedCollision(input.staffId, input.startDate, input.endDate)
     await this.requireAvailableAccumulatedOff(input, context, id)
