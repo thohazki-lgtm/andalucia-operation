@@ -16,6 +16,7 @@ $preflightScript = Join-Path $PSScriptRoot 'Test-AndaluciaGuardedUiActivation.ps
 $stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
 $canonicalMarker = Join-Path $projectRoot '.data\postgres\postmaster.pid'
+$startupLog = Join-Path $projectRoot '.runtime\logs\guarded-startup.jsonl'
 $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
 $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 
@@ -58,13 +59,41 @@ for ($attempt = 0; $attempt -lt 60; $attempt++) {
 }
 if (-not $released) { throw 'GUARDED_SHUTDOWN_RELEASE_NOT_VERIFIED; marker and processes were left untouched.' }
 
+$runtimeTaskReady = $false
+for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    $runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
+    if ([string]$runtimeTask.State -eq 'Ready') { $runtimeTaskReady = $true; break }
+    Start-Sleep -Seconds 1
+}
+if (-not $runtimeTaskReady) { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDOWN' }
+
 if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
     if (-not $MaintenanceAuthorizationId -or -not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }
     $claimOutput = & $tsxCommand $controlScript claim-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
     if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_CLAIM_FAILED:$($claimOutput -join [Environment]::NewLine)" }
 }
 
+$launchRequestedAtUtc = [DateTime]::UtcNow
 Start-ScheduledTask -TaskName $runtimeTaskName
+$launcherStarted = $false
+for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    if (Test-Path -LiteralPath $startupLog -PathType Leaf) {
+        $recentStartupRecords = @(Get-Content -LiteralPath $startupLog -Tail 20 -ErrorAction SilentlyContinue | ForEach-Object {
+            try { $_ | ConvertFrom-Json } catch { $null }
+        })
+        $launcherStarted = @($recentStartupRecords | Where-Object {
+            if (-not $_ -or $_.state -ne 'STARTING') { return $false }
+            try { return [DateTime]::Parse([string]$_.recordedAt).ToUniversalTime() -ge $launchRequestedAtUtc } catch { return $false }
+        }).Count -gt 0
+        if ($launcherStarted) { break }
+    }
+    Start-Sleep -Seconds 1
+}
+if (-not $launcherStarted) {
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_START_NOT_OBSERVED' | Out-Null }
+    throw 'GUARDED_RUNTIME_TASK_START_NOT_OBSERVED'
+}
+
 $healthy = $null
 for ($attempt = 0; $attempt -lt 90; $attempt++) {
     try {
