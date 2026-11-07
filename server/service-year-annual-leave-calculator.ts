@@ -140,14 +140,16 @@ export const calculateServiceYearAnnualLeavePosition = (input: {
   // evidence only. Lifetime earning is derived once from Date of Joining, so
   // adding those rows again would duplicate entitlement already earned.
   void ordered
-  const accruing = decimal(2.5 * months)
+  const completedServiceYears = Math.floor(months / 12)
+  const completedMonthsInCurrentServiceYear = months % 12
+  const accruing = decimal(Math.min(30, 2.5 * completedMonthsInCurrentServiceYear))
   const openingAdjustment = resolvedOpeningAdjustment(input.joinDate, input.asOf, input.openingAdjustments || [])
-  const knownAvailableEntitlement = decimal(accruing + openingAdjustment)
+  const knownAvailableEntitlement = decimal((30 * completedServiceYears) + openingAdjustment)
   const uniqueUsage = [...new Set(input.confirmedAnnualLeaveDates)].sort()
   uniqueUsage.forEach(isoDate)
   const applicableUsage = uniqueUsage.filter(value => value >= input.joinDate && isoDate(value) <= cutoff)
-  const firstMonthlyAvailability = formatDate(addMonthsClamped(isoDate(input.joinDate), 1))
-  const preAvailabilityUsageDates = applicableUsage.filter(value => value < firstMonthlyAvailability)
+  const firstServiceYearAvailability = formatDate(addYearsClamped(isoDate(input.joinDate), 1))
+  const preAvailabilityUsageDates = applicableUsage.filter(value => value < firstServiceYearAvailability)
   const confirmedUsed = applicableUsage.length
   const knownRemaining = decimal(knownAvailableEntitlement - confirmedUsed)
   return {

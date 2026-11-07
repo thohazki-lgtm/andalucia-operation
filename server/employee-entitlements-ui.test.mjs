@@ -6,25 +6,25 @@ const styles = await readFile(new URL('../src/workforce.css', import.meta.url), 
 const corporateTheme = await readFile(new URL('../src/corporate-theme.css', import.meta.url), 'utf8')
 
 const employeeManager = workforce.match(/export function StaffEntitlementsManager[\s\S]*?\n\}/)?.[0] || ''
-for (const heading of ['Employee', 'Employee ID', 'Available', 'Used', 'Booked', 'Balance', 'Action']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
-assert.doesNotMatch(employeeManager, /<th>Accrued<\/th>|data-label="Accrued"/, 'Accrued must not appear in the main Annual Leave table.')
+for (const heading of ['Employee', 'Employee ID', 'Available AL', 'Accruing', 'Used', 'Booked', 'Remaining', 'Action']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
 assert.match(employeeManager, /className="employee-entitlement-table"/, 'Employee Entitlements must use one full-width table.')
 assert.match(employeeManager, /visible\.map\(item =>/, 'The table must render every active employee returned by the existing entitlement source.')
-assert.match(employeeManager, /serviceYear \? serviceYear\.remaining/, 'Available must use the authoritative post-usage balance.')
-assert.match(employeeManager, /serviceYear \? serviceYear\.availableAfterBooked/, 'Balance must deduct separate future bookings exactly once.')
+assert.match(employeeManager, /serviceYear \? serviceYear\.knownAvailableLeave/, 'Available AL must contain only completed service years and approved opening adjustments.')
+assert.match(employeeManager, /serviceYear\?\.accruingForNextServiceYear/, 'Current service-year accrual must remain separately visible and unavailable.')
+assert.match(employeeManager, /serviceYear \? serviceYear\.availableAfterBooked/, 'Remaining must deduct confirmed usage and separate future bookings exactly once.')
 assert.match(employeeManager, /<EntitlementInlineDetails/, 'Each employee row must expand its details inline.')
 assert.doesNotMatch(employeeManager, /EntitlementBalanceDialog|modal-backdrop|setViewing/, 'The large entitlement popup must be removed from Employee Entitlements.')
 assert.doesNotMatch(workforce, /Show inactive staff/, 'The Employee Entitlements view must not expose inactive-staff filtering.')
 assert.doesNotMatch(workforce, />Reconcile(?: Year)?</, 'The employee reconciliation action must remain removed.')
 
 assert.match(styles, /\.employee-entitlement-table-wrap\{[^}]*overflow-x:auto/, 'The desktop table must contain horizontal overflow safely.')
-assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:820px/, 'The seven-column entitlement table must remain full-width and aligned on desktop.')
-assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available<\/th><th>Used<\/th><th>Booked<\/th><th>Balance<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
-assert.match(employeeManager, /<colgroup><col className="entitlement-employee-column"\s*\/><col className="entitlement-id-column"\s*\/>(?:<col className="entitlement-metric-column"\s*\/>){4}<col className="entitlement-action-column"\s*\/><\/colgroup>/, 'The table must contain exactly seven explicit data columns with no unused spacer column.')
+assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:920px/, 'The eight-column entitlement table must remain full-width and aligned on desktop.')
+assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available AL<\/th><th>Accruing<\/th><th>Used<\/th><th>Booked<\/th><th>Remaining<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
+assert.match(employeeManager, /<colgroup><col className="entitlement-employee-column"\s*\/><col className="entitlement-id-column"\s*\/>(?:<col className="entitlement-metric-column"\s*\/>){5}<col className="entitlement-action-column"\s*\/><\/colgroup>/, 'The table must contain exactly eight explicit data columns with no unused spacer column.')
 assert.match(employeeManager, /staff-entitlements-panel entitlement-card-stack/, 'Employee Entitlements must use an unframed card stack.')
 assert.match(employeeManager, /<div className="panel-title workforce-section-title entitlement-heading-card"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES<\/p><h3>Employee Entitlements<\/h3><\/div><\/div>/, 'Employee Entitlements must be the Dahlia heading in its own card beneath the compact eyebrow.')
 assert.doesNotMatch(employeeManager, /entitlement-view-summary|employees? shown/, 'The redundant employee-count strip must be removed.')
-assert.match(employeeManager, /<footer className="entitlement-information-footer"[\s\S]*?Individual allowances override policy defaults without changing confirmed Duty Roster evidence\.[\s\S]*?Annual Leave figures use confirmed Duty Roster usage and separate future bookings\.[\s\S]*?<\/footer>/, 'Both existing explanatory lines must move unchanged into one footer after the table.')
+assert.match(employeeManager, /<footer className="entitlement-information-footer"[\s\S]*?Available AL contains completed service years and approved opening adjustments; Accruing remains unavailable until the next anniversary\.[\s\S]*?Confirmed Annual Leave usage comes only from Duty Roster; Booked\/Future remains separate until confirmed\.[\s\S]*?<\/footer>/, 'The footer must explain deferred availability and separate roster/booked usage.')
 assert.ok(employeeManager.indexOf('entitlement-information-footer') > employeeManager.indexOf('employee-entitlement-table-wrap'), 'The information footer must follow the table and expanded inline details.')
 assert.doesNotMatch(employeeManager, /Close Details/, 'Inline details must not duplicate the row-level Close action.')
 assert.match(corporateTheme, /main\.module-leave-planner \.staff-entitlements-panel\.entitlement-card-stack\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/, 'The former shared Employee Entitlements panel must not remain as a visible outer card.')
@@ -38,10 +38,10 @@ assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-identi
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*vertical-align:middle/, 'Table values must stay vertically aligned.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-table \.employee-entitlement-row\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Mobile rows must use a readable two-column layout.')
 assert.match(styles, /\.employee-entitlement-details-row>td\{[^}]*background:var\(--ao-leave-surface/, 'Inline details must remain connected to the selected employee.')
-assert.match(styles, /\.employee-entitlement-table \.entitlement-metric-column\{width:13\.75%\}/, 'The four balance columns must share the rebalanced table width.')
+assert.match(styles, /\.employee-entitlement-table \.entitlement-metric-column\{width:12%\}/, 'The five balance columns must share the rebalanced table width.')
 assert.match(styles, /\.entitlement-information-footer\{[^}]*display:flex[^}]*border:1px solid var\(--ao-leave-gold/, 'The explanatory footer must use one compact gold-framed information treatment.')
-assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table-wrap\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/, 'Employee Entitlements must retain a continuous gold outer and top table border.')
-assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-grid-gold\) !important;/, 'Employee Entitlements row and column dividers must render gold.')
+assert.match(corporateTheme, /main\.module-leave-planner :is\([\s\S]*?\.employee-entitlement-table-wrap,[\s\S]*?\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/, 'Employee Entitlements must retain a continuous gold outer and top table border.')
+assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-divider\) !important;/, 'Employee Entitlements row and column dividers must render subtle purple.')
 assert.match(corporateTheme, /html body \.app-shell main\.module-leave-planner \.employee-entitlement-table \.employee-entitlement-id b\s*\{[^}]*font-family:\s*var\(--ao-font-ui\);[^}]*font-size:\s*11\.25px;[^}]*font-weight:\s*500;/, 'The authoritative theme layer must match Planner Employee ID typography.')
 assert.match(corporateTheme, /html body \.app-shell main\.module-leave-planner \.employee-entitlement-table \.employee-entitlement-row td:not\(\.employee-entitlement-identity\):not\(\.employee-entitlement-id\):not\(\.employee-entitlement-action\) > b\s*\{[^}]*font-family:\s*var\(--ao-font-ui\);[^}]*font-size:\s*11\.5px;[^}]*font-weight:\s*400;[^}]*font-variant-numeric:\s*tabular-nums;/, 'The authoritative theme layer must preserve aligned Planner-scale balance values.')
 
@@ -80,7 +80,7 @@ assert.doesNotMatch(employeeManager, /Carry Forward|detailsDirty/, 'The retired 
 
 console.log(JSON.stringify({
   fullWidthEmployeeTable: true,
-  displayedColumns: ['Employee', 'Employee ID', 'Available', 'Used', 'Booked', 'Balance', 'Action'],
+  displayedColumns: ['Employee', 'Employee ID', 'Available AL', 'Accruing', 'Used', 'Booked', 'Remaining', 'Action'],
   responsiveEmployeeRows: true,
   unconfiguredPreserved: true,
   serviceYearCalculationPreserved: true,

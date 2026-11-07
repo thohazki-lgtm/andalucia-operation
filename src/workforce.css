@@ -213,8 +213,8 @@
 
 /* Employee Entitlements: compact table with inline detail expansion. */
 .employee-entitlement-table-wrap{margin-top:10px;overflow-x:auto;border:1px solid var(--ao-leave-gold,#c5a35a);border-top-width:2px;border-radius:12px;background:#fff;box-shadow:0 7px 18px rgba(69,23,107,.06)}
-.employee-entitlement-table{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#173e54;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
-.employee-entitlement-table .entitlement-employee-column{width:20%}.employee-entitlement-table .entitlement-id-column{width:14%}.employee-entitlement-table .entitlement-metric-column{width:13.75%}.employee-entitlement-table .entitlement-action-column{width:11%}
+.employee-entitlement-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#173e54;font-family:var(--ao-font-ui,"Good Sans","DM Sans",Arial,sans-serif)}
+.employee-entitlement-table .entitlement-employee-column{width:18%}.employee-entitlement-table .entitlement-id-column{width:12%}.employee-entitlement-table .entitlement-metric-column{width:12%}.employee-entitlement-table .entitlement-action-column{width:10%}
 .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row{display:table-row;padding:0;border:0;border-radius:0}
 .employee-entitlement-table th{height:42px;padding:8px 11px;border-right:1px solid var(--ao-leave-grid-gold,#d5bd88);border-bottom:1px solid var(--ao-leave-grid-gold,#d5bd88);background:var(--ao-leave-surface-strong,#f0ebfb);color:var(--ao-violet-hour,#45176b);font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.25;text-align:center;text-transform:uppercase;white-space:nowrap}
 .employee-entitlement-table th:first-child{text-align:left}.employee-entitlement-table th:last-child{border-right:0}

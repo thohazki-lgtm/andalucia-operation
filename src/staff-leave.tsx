@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { staffApi } from './api'
 import { LEAVE_CLASSIFICATION_LABELS, LEAVE_CLASSIFICATIONS, type ConfigOption, type LeaveClassification, type PlannedLeavePeriod, type Staff, type StaffLeaveRecord } from './domain'
 import { monthRange, serviceDate } from './service-date'
-import { ActionButton, DateControl, IconAction } from './action-system'
+import { ActionButton, IconAction } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 
 type Period = 'month' | 'year' | 'custom'
 const leaveLabels = LEAVE_CLASSIFICATION_LABELS
@@ -27,7 +28,7 @@ const groupPlannedLeaveHistory = (items: PlannedLeavePeriod[]) => {
 const PlannedLeaveCard = ({ item, historical = false }: { item: PlannedLeavePeriod; historical?: boolean }) => <article className={historical ? 'planned-history-card' : undefined}><header><div><b>{item.staffName}</b><small>{item.staffNumber} · {item.designation}</small></div><span className={`leave-type-chip booked ${item.planningState}`}>B · {item.planningState}</span></header><dl><div><dt>Start Date</dt><dd>{displayDate(item.startDate)}</dd></div><div><dt>End Date</dt><dd>{displayDate(item.endDate)}</dd></div><div><dt>Off Days</dt><dd>{item.accumulatedOffDaysAllocated}</dd></div><div><dt>Total Calendar Days</dt><dd>{item.bookedDays}</dd></div></dl></article>
 
 function PeriodControls({ period, onPeriod, start, end, onStart, onEnd }: { period: Period; onPeriod: (value: Period) => void; start: string; end: string; onStart: (value: string) => void; onEnd: (value: string) => void }) {
-  return <div className="leave-period-controls"><label>Period<select value={period} onChange={event => onPeriod(event.target.value as Period)}><option value="month">This Month</option><option value="year">This Year</option><option value="custom">Custom Period</option></select></label>{period === 'custom' && <><label>From<DateControl label="Leave history from date" value={start} onChange={event => onStart(event.target.value)} /></label><label>To<DateControl label="Leave history to date" value={end} onChange={event => onEnd(event.target.value)} /></label></>}</div>
+  return <div className="leave-period-controls"><label>Period<select value={period} onChange={event => onPeriod(event.target.value as Period)}><option value="month">This Month</option><option value="year">This Year</option><option value="custom">Custom Period</option></select></label>{period === 'custom' && <><label>From<FinancialDateControl label="Leave history from date" value={start} showFooter={false} onChange={onStart} /></label><label>To<FinancialDateControl label="Leave history to date" value={end} showFooter={false} onChange={onEnd} /></label></>}</div>
 }
 
 const useLeaveRecords = (period: Period, customStart: string, customEnd: string, staffId?: string) => {

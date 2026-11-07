@@ -411,10 +411,10 @@ export class StaffRepository {
     const decimal = (value: number) => Number(value.toFixed(4))
     return {
       serviceYearNumber: position.period.serviceYearNumber, serviceYearStart: position.period.start, serviceYearEnd: position.period.end,
-      nextEntitlementAvailabilityDate: position.period.availableFrom, availableLeave: position.availableBalance,
-      knownAvailableLeave: position.knownAvailableEntitlement, used: position.confirmedUsed, remaining: position.availableBalance,
+      nextEntitlementAvailabilityDate: position.period.availableFrom, availableLeave: position.knownAvailableEntitlement,
+      knownAvailableLeave: position.knownAvailableEntitlement, used: position.confirmedUsed, remaining: position.knownRemaining,
       accruingForNextServiceYear: position.accruingForNextServiceYear, completedServiceMonths: position.completedServiceMonths,
-      bookedFuture, availableAfterBooked: position.availableBalance === null ? null : decimal(position.availableBalance - bookedFuture),
+      bookedFuture, availableAfterBooked: decimal(position.knownRemaining - bookedFuture),
       evidenceStatus: position.evidenceStatus, approvedOpeningCarry: position.openingAdjustment || null,
       openingCarryReason: position.openingAdjustment ? appliedOpeningReasons.length === 1 ? appliedOpeningReasons[0] : 'Multiple approved opening adjustments' : null, preAvailabilityUsageDates: position.preAvailabilityUsageDates,
     }

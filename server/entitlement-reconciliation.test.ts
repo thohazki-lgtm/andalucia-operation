@@ -43,8 +43,8 @@ try {
   assert.equal(result.lines.length, 10)
   const annual = result.lines.find(line => line.classification === 'annualLeave')!
   const expectedMonths = completedServiceMonths('2023-01-01', result.asOf)
-  const expectedAccrued = expectedMonths * 2.5
-  const expectedRemaining = expectedAccrued + 5.25 - 2
+  const expectedAccrued = (expectedMonths % 12) * 2.5
+  const expectedRemaining = Math.floor(expectedMonths / 12) * 30 + 5.25 - 2
   const expectedBooked = calendarDates('2026-12-01', '2026-12-03').filter(date => date >= serviceDate()).length
   assert.deepEqual({ rate: annual.accrualPerCompletedMonth, months: annual.completedEligibleMonths, accrued: annual.accrued, carry: annual.carriedForward, opening: annual.openingBalance, used: annual.used, remaining: annual.remaining, booked: annual.bookedFuture, afterBooked: annual.availableAfterBooked }, { rate: 2.5, months: expectedMonths, accrued: expectedAccrued, carry: null, opening: 5.25, used: 2, remaining: expectedRemaining, booked: expectedBooked, afterBooked: expectedRemaining - expectedBooked })
   assert.equal(annual.openingBalanceReason, 'HR approval 2026')
@@ -78,7 +78,7 @@ try {
   assert.doesNotMatch(uiSource, /Entitlement Reconciliation Preview|function EntitlementReconciliationDialog|>Reconcile(?: Year)?</)
   const apiSource = await readFile('src/api.ts', 'utf8')
   assert.match(apiSource, /entitlementReconciliation:/, 'The shared reconciliation service must remain available after its manager-facing UI is removed.')
-  console.log(JSON.stringify({ allTenProtectedCategories: true, policyAndIndividualEvidence: true, completedMonthAccrual: true, unlimitedCarryForward: true, approvedOpeningBalance: true, rosterUsageOnly: true, bookedFutureSeparated: true, unconfiguredDistinctFromZero: true, missingEvidenceFlagged: true, discrepanciesFlagged: true, historicalSkSlSingleCount: true, nonAnnualReset: true, weeklyOffPreserved: true, authenticatedGetOnlyEndpoint: true, sharedServicePreserved: true, managerUiRemoved: true, readOnlyNoWrites: true, canonicalDatabaseTouched: false }, null, 2))
+  console.log(JSON.stringify({ allTenProtectedCategories: true, policyAndIndividualEvidence: true, currentServiceYearCompletedMonthAccrual: true, completedServiceYearAvailability: true, unlimitedCarryForward: true, approvedOpeningBalance: true, rosterUsageOnly: true, bookedFutureSeparated: true, unconfiguredDistinctFromZero: true, missingEvidenceFlagged: true, discrepanciesFlagged: true, historicalSkSlSingleCount: true, nonAnnualReset: true, weeklyOffPreserved: true, authenticatedGetOnlyEndpoint: true, sharedServicePreserved: true, managerUiRemoved: true, readOnlyNoWrites: true, canonicalDatabaseTouched: false }, null, 2))
 } finally {
   await fixture.cleanup()
 }

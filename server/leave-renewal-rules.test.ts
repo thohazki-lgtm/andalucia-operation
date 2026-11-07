@@ -58,8 +58,10 @@ try {
   const firstAnniversary = await repository.annualLeaveServiceYearBalance(staffId, '2026-03-15')
   const secondAnniversary = await repository.annualLeaveServiceYearBalance(staffId, '2027-03-15')
   assert.ok(beforeAnniversary && firstAnniversary && secondAnniversary)
-  assert.equal(beforeAnniversary.availableLeave, 27.5, 'Eleven completed service months must make 27.5 days available before the first anniversary.')
-  assert.equal(firstAnniversary.availableLeave, 30, 'Twelve completed service months must remain available at the first anniversary.')
+  assert.equal(beforeAnniversary.availableLeave, 0, 'Current service-year accrual must remain unavailable before the first anniversary.')
+  assert.equal(beforeAnniversary.accruingForNextServiceYear, 27.5)
+  assert.equal(firstAnniversary.availableLeave, 30, 'The completed first service year must become available at the first anniversary.')
+  assert.equal(firstAnniversary.accruingForNextServiceYear, 0)
   assert.equal(secondAnniversary.availableLeave, 60, 'Unused earned Annual Leave must carry automatically across anniversaries without a cap.')
   assert.deepEqual(calendarYearPeriod(2026), { start: '2026-01-01', end: '2026-12-31', endExclusive: '2027-01-01' })
 
