@@ -3,7 +3,8 @@ import { staffMembershipBaselineApi } from './api'
 import { useAuth } from './auth'
 import type { ConfigOption, Staff, StaffMembershipBaselineCandidate, StaffMembershipBaselinePreview } from './domain'
 import { serviceDate } from './service-date'
-import { ActionButton, DateControl, IconAction } from './action-system'
+import { ActionButton, IconAction } from './action-system'
+import { StaffHeaderMonthNavigation } from './staff-header-month-navigation'
 import './staff-membership-corrections.css'
 
 const FIRST_BASELINE_MONTH = '2026-09'
@@ -20,6 +21,11 @@ const dateTimeLabel = (value?: string | null) => value ? new Intl.DateTimeFormat
 const monthLabel = (value: string) => new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}-01T00:00:00Z`))
 const actorDisplayName = (value?: string | null) => value?.replace(/\s*\[[0-9a-f-]{36}\]\s*$/i, '').trim() || '—'
 const candidatesFrom = (preview: StaffMembershipBaselinePreview) => [...preview.suggestedCandidates, ...preview.availableForManualInclusion]
+const moveMonth = (value: string, delta: number) => {
+  const [year, month] = value.split('-').map(Number)
+  const next = new Date(Date.UTC(year, month - 1 + delta, 1))
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`
+}
 
 export function StaffMembershipBaselinePanel({ staff, employmentStatuses }: { staff: Staff[]; employmentStatuses: ConfigOption[] }) {
   const { canForOutlet } = useAuth()
@@ -93,7 +99,8 @@ export function StaffMembershipBaselinePanel({ staff, employmentStatuses }: { st
     await run('reopen', async () => { await staffMembershipBaselineApi.reopen(reviewId, preview.outlet.id, month, reopenReason.trim()); setReopenOpen(false); setReopenReason('') })
   }
 
-  const monthControl = <label className="membership-month-control">Membership month<DateControl type="month" label="Membership month" min={FIRST_BASELINE_MONTH} max={currentMonth < FIRST_BASELINE_MONTH ? FIRST_BASELINE_MONTH : currentMonth} value={month} disabled={Boolean(busy)} onChange={event => setMonth(event.target.value)} /></label>
+  const lastMonth = currentMonth < FIRST_BASELINE_MONTH ? FIRST_BASELINE_MONTH : currentMonth
+  const monthControl = <StaffHeaderMonthNavigation ariaLabel="Membership month" className="membership-month-nav" month={month} monthLabel={monthLabel(month)} min={FIRST_BASELINE_MONTH} max={lastMonth} customPicker pickerDisabled={Boolean(busy)} previousDisabled={Boolean(busy) || month <= FIRST_BASELINE_MONTH} nextDisabled={Boolean(busy) || month >= lastMonth} onChange={setMonth} onPrevious={() => setMonth(value => moveMonth(value, -1))} onNext={() => setMonth(value => moveMonth(value, 1))} />
 
   if (loading && !preview) return <section className="panel membership-state"><p>Loading team membership…</p></section>
   if (error && !preview) return <section className="panel membership-state error-state"><p>{error}</p><ActionButton icon="refresh" onClick={() => void refresh()}>Try again</ActionButton></section>
@@ -101,9 +108,9 @@ export function StaffMembershipBaselinePanel({ staff, employmentStatuses }: { st
 
   if (preview.status.status === 'approved') {
     return <section className="team-membership-page membership-approved-page">
-      <header className="membership-intro membership-command-header"><div><p className="eyebrow">TEAM MEMBERSHIP</p><h2>Team Membership</h2><p className="membership-header-context"><span>{preview.outlet.displayName}</span><span>{monthLabel(month)}</span></p></div><div className="membership-intro-actions">{monthControl}<span className="membership-status approved">{statusLabel}</span></div></header>
-      <section className="panel membership-approved-banner"><div className="membership-summary-title"><p className="eyebrow">APPROVAL SUMMARY</p><b>Approved monthly baseline</b></div><dl><div><dt>Approved Members</dt><dd>{preview.status.approvedMemberCount}</dd></div><div><dt>Revision</dt><dd>{preview.status.revisionNumber}</dd></div><div><dt>Approved Date / Time</dt><dd>{dateTimeLabel(preview.status.approvedAt)}</dd></div><div><dt>Approved By</dt><dd>{actorDisplayName(preview.status.approvedBy)}</dd></div></dl>{canReopen && <ActionButton icon="edit" onClick={() => setReopenOpen(true)}>Correct Membership</ActionButton>}</section>
-      <section className="panel membership-review-card"><header><div><p className="eyebrow">APPROVED MEMBERS</p><h3>Regular Andalucía Team</h3></div><span>{preview.status.approvedMemberCount} members</span></header><div className="membership-table-wrap"><table className="membership-table approved-table"><thead><tr><th>Staff</th><th>Employee Number</th><th>Designation</th></tr></thead><tbody>{preview.status.approvedMemberships.map(membership => { const person = staff.find(item => item.id === membership.staffId); return <tr key={membership.id}><td><b>{person?.name || membership.staffId}</b></td><td>{person?.number || '—'}</td><td>{person?.position || '—'}</td></tr> })}</tbody></table></div><div className="membership-mobile-list">{preview.status.approvedMemberships.map(membership => { const person = staff.find(item => item.id === membership.staffId); return <article key={membership.id}><b>{person?.name || membership.staffId}</b><small>{person?.number || 'Employee record unavailable'}</small><span>{person?.position || '—'}</span></article> })}</div></section>
+      <header className="membership-intro membership-command-header"><div><p className="eyebrow">TEAM MEMBERSHIP</p><h2>Team Membership</h2><p className="membership-header-context"><span>{preview.outlet.displayName}</span></p></div><div className="membership-intro-actions">{monthControl}</div></header>
+      <section className="panel membership-approved-banner"><div className="membership-summary-title"><p className="eyebrow">APPROVAL SUMMARY</p><div className="membership-summary-heading"><b>Approved monthly baseline</b><span className="membership-status approved">{statusLabel}</span></div></div><dl><div><dt>Approved Members</dt><dd>{preview.status.approvedMemberCount}</dd></div><div><dt>Revision</dt><dd>{preview.status.revisionNumber}</dd></div><div><dt>Approved Date / Time</dt><dd>{dateTimeLabel(preview.status.approvedAt)}</dd></div><div><dt>Approved By</dt><dd>{actorDisplayName(preview.status.approvedBy)}</dd></div></dl>{canReopen && <ActionButton icon="edit" onClick={() => setReopenOpen(true)}>Correct Membership</ActionButton>}</section>
+      <section className="panel membership-review-card"><header><div><p className="eyebrow">APPROVED MEMBERS</p><h3>Regular Andalucía Team</h3></div><span>{preview.status.approvedMemberCount} members</span></header><div className="membership-table-wrap"><table className="membership-table approved-table"><thead><tr><th>Staff</th><th>Employee Number</th><th>Designation</th></tr></thead><tbody>{preview.status.approvedMemberships.map(membership => { const person = staff.find(item => item.id === membership.staffId); return <tr key={membership.id}><td><b>{person?.name || membership.staffId}</b></td><td>{person?.number || '—'}</td><td>{person?.position || '—'}</td></tr> })}</tbody></table></div><div className="membership-mobile-list approved-member-cards">{preview.status.approvedMemberships.map(membership => { const person = staff.find(item => item.id === membership.staffId); return <article key={membership.id}><b>{person?.name || membership.staffId}</b><dl><div><dt>Employee ID</dt><dd>{person?.number || 'Employee record unavailable'}</dd></div><div><dt>Designation</dt><dd>{person?.position || '—'}</dd></div></dl></article> })}</div></section>
       <RevisionHistory preview={preview} />
       <footer className="staff-module-info"><p>Authoritative regular-team membership for this financial month.</p></footer>
       {reopenOpen && <Dialog title="Correct Approved Membership" onClose={() => setReopenOpen(false)}><p className="modal-intro">The approved revision remains preserved. A corrected revision will require a new manager approval.</p><label className="membership-reset-reason">Correction reason<textarea rows={4} required value={reopenReason} onChange={event => setReopenReason(event.target.value)} /></label>{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><ActionButton onClick={() => setReopenOpen(false)}>Cancel</ActionButton><ActionButton variant="primary" icon="restore" disabled={!reopenReason.trim() || busy === 'reopen'} onClick={() => void reopen()}>{busy === 'reopen' ? 'Opening…' : 'Start Correction'}</ActionButton></div></Dialog>}
