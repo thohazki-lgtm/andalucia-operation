@@ -65,6 +65,7 @@
     "test:first-login-password-change": "tsx server/first-login-password-change.test.ts",
     "test:authorization": "tsx server/authorization-service.test.ts",
     "test:offline-recovery-request-security": "tsx server/offline-recovery-request-security.test.mjs",
+    "test:offline-recovery-approval-binding-security": "tsx server/offline-recovery-approval-binding-security.test.mjs",
     "test:recovery-runtime-health": "tsx server/recovery-runtime-health.test.ts",
     "test:workforce-api-security": "tsx server/workforce-api-security.test.ts",
     "test:account-security-migration": "tsx server/account-security-migration.test.ts",

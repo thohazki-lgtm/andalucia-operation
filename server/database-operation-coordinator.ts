@@ -9,6 +9,7 @@ export const DATABASE_OPERATION_JOURNAL_VERSION = 'andalucia-database-operation-
 export const DATABASE_OPERATION_LEASE_VERSION = 'andalucia-database-operation-lease-v1'
 export const DATABASE_OPERATION_PERIOD_VERSION = 'andalucia-database-operation-period-v1'
 export const CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION = 'andalucia-canonical-maintenance-authorization-v1'
+export const RECOVERY_APPROVAL_BINDING_VERSION = 'andalucia-recovery-approval-binding-v1'
 export const DATABASE_OPERATION_TIMEZONE = 'Indian/Maldives'
 
 export type DatabaseOperationType =
@@ -91,8 +92,32 @@ export type CanonicalMaintenanceAuthorization = {
   requestedBy: { userId: string; displayName: string }
   historicalRuntimeEvidenceSha256?: string
   schemaEvidenceSha256?: string
+  recoveryApprovalBindingId?: string
+  recoveryApprovalBindingSha256?: string
   backupId?: string
   failure?: string
+  integritySha256: string
+}
+
+export type RecoveryApprovalBinding = {
+  version: typeof RECOVERY_APPROVAL_BINDING_VERSION
+  bindingId: string
+  state: 'REGISTERED' | 'CLAIMED'
+  createdAt: string
+  updatedAt: string
+  expiresAt: string
+  previousLiveSha: string
+  approvedControlSha: string
+  registrationSourceSha: string
+  targetBranch: 'main'
+  canonicalIdentitySha256: string
+  canonicalStoreId: string
+  schema: '027'
+  historicalRuntimeEvidenceSha256: string
+  backupId: string
+  backupEvidenceSha256: string
+  approvedBy: { userId: string; displayName: string }
+  claimedRequestId?: string
   integritySha256: string
 }
 
@@ -103,6 +128,7 @@ const stable = (value: unknown): string => {
   return JSON.stringify(value)
 }
 const maintenanceIntegrity = (record: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'>) => createHash('sha256').update(stable(record)).digest('hex')
+const recoveryApprovalBindingIntegrity = (record: Omit<RecoveryApprovalBinding, 'integritySha256'>) => createHash('sha256').update(stable(record)).digest('hex')
 const hostName = () => process.env.COMPUTERNAME || process.env.HOSTNAME || 'unknown'
 const json = async <T>(path: string) => JSON.parse(await readFile(path, 'utf8')) as T
 const replaceWithRetry = async (temporary: string, path: string) => {
@@ -220,9 +246,9 @@ export const retentionDependencyBlockers = (input: { protected: boolean; latestR
 ]
 
 export class DatabaseOperationCoordinator {
-  readonly root: string; readonly leasesRoot: string; readonly journalRoot: string; readonly periodsRoot: string; readonly temporaryRoot: string; readonly maintenanceRoot: string
+  readonly root: string; readonly leasesRoot: string; readonly journalRoot: string; readonly periodsRoot: string; readonly temporaryRoot: string; readonly maintenanceRoot: string; readonly recoveryApprovalBindingsRoot: string
   constructor(root: string, readonly options: { host?: string; pid?: number; now?: () => Date; processAlive?: (pid: number) => boolean } = {}) {
-    this.root = resolve(root); this.leasesRoot = join(this.root, 'leases'); this.journalRoot = join(this.root, 'journal'); this.periodsRoot = join(this.root, 'periods'); this.temporaryRoot = join(this.root, 'temporary'); this.maintenanceRoot = join(this.root, 'maintenance')
+    this.root = resolve(root); this.leasesRoot = join(this.root, 'leases'); this.journalRoot = join(this.root, 'journal'); this.periodsRoot = join(this.root, 'periods'); this.temporaryRoot = join(this.root, 'temporary'); this.maintenanceRoot = join(this.root, 'maintenance'); this.recoveryApprovalBindingsRoot = join(this.root, 'recovery-approval-bindings')
   }
   private now() { return (this.options.now || (() => new Date()))().toISOString() }
   private owner() { return { pid: this.options.pid || process.pid, host: this.options.host || hostName() } }
@@ -239,6 +265,12 @@ export class DatabaseOperationCoordinator {
   }
   private maintenanceRequestClaimPath(requestId: string) { return join(this.maintenanceRoot, `request-${safeName(requestId)}.claim.json`) }
   private maintenanceLockPath(authorizationId: string) { return join(this.maintenanceRoot, `${authorizationId.toLowerCase()}.lock`) }
+  recoveryApprovalBindingPath(bindingId: string) {
+    if (!/^[0-9a-f]{32}$/i.test(bindingId)) throw new Error('RECOVERY_APPROVAL_BINDING_ID_INVALID')
+    return join(this.recoveryApprovalBindingsRoot, `${bindingId.toLowerCase()}.json`)
+  }
+  private recoveryApprovalBindingLockPath(bindingId: string) { return join(this.recoveryApprovalBindingsRoot, `${bindingId.toLowerCase()}.lock`) }
+  private recoveryApprovalIncidentClaimPath(previousLiveSha: string, approvedControlSha: string) { return join(this.recoveryApprovalBindingsRoot, `incident-${safeName(`${previousLiveSha.toLowerCase()}:${approvedControlSha.toLowerCase()}`)}.claim.json`) }
   private assertMaintenanceIntegrity(record: CanonicalMaintenanceAuthorization) {
     if (record.version !== CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION) throw new Error('CANONICAL_MAINTENANCE_AUTHORIZATION_VERSION_INVALID')
     const { integritySha256, ...unsigned } = record
@@ -280,6 +312,49 @@ export class DatabaseOperationCoordinator {
       const unsigned: Omit<CanonicalMaintenanceAuthorization, 'integritySha256'> = { ...previous, ...details, state: nextState, updatedAt: this.now() }
       const next: CanonicalMaintenanceAuthorization = { ...unsigned, integritySha256: maintenanceIntegrity(unsigned) }
       await durableJson(this.maintenancePath(authorizationId), next)
+      return next
+    } finally {
+      await lock.close()
+      await unlink(lockPath).catch(() => undefined)
+    }
+  }
+  async createRecoveryApprovalBinding(input: Omit<RecoveryApprovalBinding, 'version' | 'bindingId' | 'state' | 'createdAt' | 'updatedAt' | 'integritySha256'>) {
+    await mkdir(this.recoveryApprovalBindingsRoot, { recursive: true })
+    const incidentClaimPath = this.recoveryApprovalIncidentClaimPath(input.previousLiveSha, input.approvedControlSha)
+    let incidentClaim
+    try { incidentClaim = await open(incidentClaimPath, 'wx') } catch { throw new Error('RECOVERY_APPROVAL_BINDING_INCIDENT_ALREADY_REGISTERED') }
+    const bindingId = randomUUID().replaceAll('-', '')
+    const now = this.now()
+    const unsigned: Omit<RecoveryApprovalBinding, 'integritySha256'> = { version: RECOVERY_APPROVAL_BINDING_VERSION, bindingId, state: 'REGISTERED', createdAt: now, updatedAt: now, ...input }
+    const record: RecoveryApprovalBinding = { ...unsigned, integritySha256: recoveryApprovalBindingIntegrity(unsigned) }
+    try {
+      const handle = await open(this.recoveryApprovalBindingPath(bindingId), 'wx')
+      try { await handle.writeFile(`${JSON.stringify(record, null, 2)}\n`, 'utf8'); await handle.sync() } finally { await handle.close() }
+      await incidentClaim.writeFile(`${JSON.stringify({ version: RECOVERY_APPROVAL_BINDING_VERSION, bindingId, previousLiveSha: input.previousLiveSha, approvedControlSha: input.approvedControlSha, createdAt: now })}\n`, 'utf8')
+      await incidentClaim.sync()
+    } finally { await incidentClaim.close() }
+    return record
+  }
+  async readRecoveryApprovalBinding(bindingId: string) {
+    const record = await json<RecoveryApprovalBinding>(this.recoveryApprovalBindingPath(bindingId)).catch(() => { throw new Error('RECOVERY_APPROVAL_BINDING_MISSING') })
+    if (record.version !== RECOVERY_APPROVAL_BINDING_VERSION) throw new Error('RECOVERY_APPROVAL_BINDING_VERSION_INVALID')
+    const { integritySha256, ...unsigned } = record
+    if (integritySha256 !== recoveryApprovalBindingIntegrity(unsigned)) throw new Error('RECOVERY_APPROVAL_BINDING_TAMPERED')
+    return record
+  }
+  async claimRecoveryApprovalBinding(bindingId: string, requestId: string) {
+    await mkdir(this.recoveryApprovalBindingsRoot, { recursive: true })
+    const lockPath = this.recoveryApprovalBindingLockPath(bindingId)
+    let lock
+    try { lock = await open(lockPath, 'wx') } catch { throw new Error('RECOVERY_APPROVAL_BINDING_CONCURRENT_CLAIM') }
+    try {
+      const current = await this.readRecoveryApprovalBinding(bindingId)
+      if (Date.parse(current.expiresAt) <= Date.parse(this.now())) throw new Error('RECOVERY_APPROVAL_BINDING_EXPIRED')
+      if (current.state !== 'REGISTERED' || current.claimedRequestId) throw new Error('RECOVERY_APPROVAL_BINDING_REPLAYED')
+      const { integritySha256: _integrity, ...previous } = current
+      const unsigned: Omit<RecoveryApprovalBinding, 'integritySha256'> = { ...previous, state: 'CLAIMED', claimedRequestId: requestId, updatedAt: this.now() }
+      const next: RecoveryApprovalBinding = { ...unsigned, integritySha256: recoveryApprovalBindingIntegrity(unsigned) }
+      await durableJson(this.recoveryApprovalBindingPath(bindingId), next)
       return next
     } finally {
       await lock.close()
