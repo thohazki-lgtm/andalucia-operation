@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseOperationCoordinator } from './database-operation-coordinator.ts'
 import { registerStoppedRuntimeRecoveryApproval } from './offline-recovery-approval-binding-control.ts'
+import { issueOfflineRecoveryRequest } from './offline-recovery-request-control.ts'
 import { runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
 
 const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
@@ -143,8 +144,53 @@ async function register(value, overrides = {}) {
   await assert.rejects(() => runRequestedBackupActivationControl('prepare-stopped-recovery', ['node', 'control', '--project-root', value.root, '--request-id', request.id, '--approval-binding-id', binding.bindingId], { portsClosed: async () => true }), /CANONICAL_MAINTENANCE_REQUEST_ALREADY_AUTHORIZED/)
 }
 
+// The complete authenticated issuer path creates, validates and single-use claims an authorization.
+{
+  const value = await fixture()
+  const binding = await register(value, { now: () => new Date() })
+  const authorization = await issueOfflineRecoveryRequest({ projectRoot: value.root, previousHealthySha: value.previous, approvalBindingId: binding.bindingId, identifier: 'synthetic.owner', password: 'synthetic-private' }, {
+    portsClosed: async () => true,
+    authenticate: async () => ({ userId: 'synthetic-owner', displayName: 'Synthetic Owner' }),
+    openDatabase: value.fakeDatabase(),
+  })
+  const inspected = await runRequestedBackupActivationControl('inspect', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId])
+  assert.equal(inspected.state, 'RECOVERY_AUTHORIZED')
+  const claimed = await runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId])
+  assert.equal(claimed.state, 'RECOVERY_CLAIMED')
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /CANONICAL_MAINTENANCE_STATE_INVALID/)
+}
+
+// HEAD substitution after authorization invalidates every later inspection and recovery claim.
+{
+  const value = await fixture()
+  const binding = await register(value, { now: () => new Date() })
+  const authorization = await issueOfflineRecoveryRequest({ projectRoot: value.root, previousHealthySha: value.previous, approvalBindingId: binding.bindingId, identifier: 'synthetic.owner', password: 'synthetic-private' }, {
+    portsClosed: async () => true,
+    authenticate: async () => ({ userId: 'synthetic-owner', displayName: 'Synthetic Owner' }),
+    openDatabase: value.fakeDatabase(),
+  })
+  await writeFile(join(value.root, 'deployment', 'windows', 'Register-AndaluciaStoppedRuntimeRecoveryApproval.ps1'), '# unauthorized source substitution')
+  git(value.root, 'add', '.'); git(value.root, 'commit', '-m', 'unauthorized source substitution')
+  await assert.rejects(() => runRequestedBackupActivationControl('inspect', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /RECOVERY_APPROVAL_REGISTRATION_SOURCE_MISMATCH/)
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /RECOVERY_APPROVAL_REGISTRATION_SOURCE_MISMATCH/)
+}
+
+// Branch substitution after authorization invalidates every later inspection and recovery claim.
+{
+  const value = await fixture()
+  const binding = await register(value, { now: () => new Date() })
+  const authorization = await issueOfflineRecoveryRequest({ projectRoot: value.root, previousHealthySha: value.previous, approvalBindingId: binding.bindingId, identifier: 'synthetic.owner', password: 'synthetic-private' }, {
+    portsClosed: async () => true,
+    authenticate: async () => ({ userId: 'synthetic-owner', displayName: 'Synthetic Owner' }),
+    openDatabase: value.fakeDatabase(),
+  })
+  git(value.root, 'checkout', '-b', 'unauthorized-recovery-source')
+  await assert.rejects(() => runRequestedBackupActivationControl('inspect', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /RECOVERY_APPROVAL_REGISTRATION_SOURCE_MISMATCH/)
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-recovery', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId]), /RECOVERY_APPROVAL_REGISTRATION_SOURCE_MISMATCH/)
+}
+
 const registrationScript = await readFile('deployment/windows/Register-AndaluciaStoppedRuntimeRecoveryApproval.ps1', 'utf8')
 assert.match(registrationScript, /Read-Host 'Manager password' -AsSecureString/)
 assert.doesNotMatch(registrationScript.match(/^param\([\s\S]*?^\)/m)?.[0] || '', /Password/)
 assert.match(registrationScript, /ZeroFreeBSTR/)
-console.log(JSON.stringify({ status: 'PASS', validRegistration: true, invalidShaRejected: true, expiredRejected: true, wrongStoreRejected: true, wrongSchemaRejected: true, missingBackupRejected: true, malformedHistoricalEvidenceRejected: true, replayRejected: true, concurrentClaimRejected: true, tamperingRejected: true, stoppedRecoveryBindingIntegrated: true, manifestRewritten: false, canonicalDataTouched: false }, null, 2))
+console.log(JSON.stringify({ status: 'PASS', validRegistration: true, invalidShaRejected: true, expiredRejected: true, wrongStoreRejected: true, wrongSchemaRejected: true, missingBackupRejected: true, malformedHistoricalEvidenceRejected: true, replayRejected: true, concurrentClaimRejected: true, tamperingRejected: true, authenticatedOfflineIssuanceEndToEnd: true, postAuthorizationHeadSubstitutionRejected: true, postAuthorizationBranchSubstitutionRejected: true, stoppedRecoveryBindingIntegrated: true, manifestRewritten: false, canonicalDataTouched: false }, null, 2))

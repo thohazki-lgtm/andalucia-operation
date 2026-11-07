@@ -44,6 +44,7 @@ export async function authenticateOfflineManager(db: PGlite, identifier: string,
 export async function issueOfflineRecoveryRequest(input: OfflineIssuerInput, dependencies: {
   portsClosed?: () => Promise<boolean>
   authenticate?: (db: PGlite, identifier: string, password: string) => Promise<OfflineManager>
+  openDatabase?: typeof openVerifiedDatabase
 } = {}): Promise<OfflineIssuerResult> {
   const projectRoot = resolve(input.projectRoot)
   const previousHealthySha = input.previousHealthySha.toLowerCase()
@@ -54,7 +55,6 @@ export async function issueOfflineRecoveryRequest(input: OfflineIssuerInput, dep
   const backupRoot = join(projectRoot, '.backups')
   const operationsRoot = join(backupRoot, '.db2', 'operations')
   const issueLock = join(operationsRoot, 'offline-recovery-request.lock')
-  const approval = JSON.parse(await readFile(approvalPath, 'utf8')) as { previousLiveSha?: string; activeSourceSha?: string }
   const identity = JSON.parse(await readFile(identityPath, 'utf8')) as { role?: string; storeId?: string; databaseDirectory?: string }
   const identitySha256 = sha256(await readFile(identityPath))
   const databaseDirectory = String(identity.databaseDirectory || '')
@@ -63,18 +63,22 @@ export async function issueOfflineRecoveryRequest(input: OfflineIssuerInput, dep
   if (input.approvalBindingId) {
     protectedBinding = await coordinator.readRecoveryApprovalBinding(input.approvalBindingId)
     if (protectedBinding.state !== 'REGISTERED' || protectedBinding.previousLiveSha !== previousHealthySha || protectedBinding.canonicalIdentitySha256 !== identitySha256 || protectedBinding.canonicalStoreId !== identity.storeId || protectedBinding.schema !== '027' || protectedBinding.targetBranch !== 'main') fail('OFFLINE_RECOVERY_APPROVAL_BINDING_INVALID')
-  } else if (approval.previousLiveSha?.toLowerCase() !== previousHealthySha || !SHA.test(String(approval.activeSourceSha || ''))) fail('OFFLINE_RECOVERY_APPROVAL_BINDING_INVALID')
+  } else {
+    const approval = JSON.parse(await readFile(approvalPath, 'utf8')) as { previousLiveSha?: string; activeSourceSha?: string }
+    if (approval.previousLiveSha?.toLowerCase() !== previousHealthySha || !SHA.test(String(approval.activeSourceSha || ''))) fail('OFFLINE_RECOVERY_APPROVAL_BINDING_INVALID')
+  }
   if (identity.role !== 'canonical' || identity.storeId !== 'andalucia-canonical-live' || !databaseDirectory) fail('OFFLINE_RECOVERY_CANONICAL_IDENTITY_INVALID')
   if (existsSync(ownerMarker) || !await (dependencies.portsClosed || (async () => !(await portOpen(3001)) && !(await portOpen(5173))))()) fail('OFFLINE_RECOVERY_RUNTIME_NOT_EXCLUSIVE')
   const branch = execFileSync('git', ['-C', projectRoot, 'branch', '--show-current'], { encoding: 'utf8' }).trim()
   const dirty = execFileSync('git', ['-C', projectRoot, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim()
   const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
-  if (branch !== 'main' || dirty || (protectedBinding && protectedBinding.registrationSourceSha !== head)) fail('OFFLINE_RECOVERY_CONTROL_SOURCE_INVALID')
+  const remoteMain = execFileSync('git', ['-C', projectRoot, 'rev-parse', 'refs/remotes/origin/main'], { encoding: 'utf8' }).trim().toLowerCase()
+  if (branch !== 'main' || dirty || (protectedBinding && (protectedBinding.registrationSourceSha !== head || head !== remoteMain))) fail('OFFLINE_RECOVERY_CONTROL_SOURCE_INVALID')
   await mkdir(operationsRoot, { recursive: true })
   const acquireLock = async () => { try { return await open(issueLock, 'wx') } catch { return fail('OFFLINE_RECOVERY_REQUEST_CONCURRENT') } }
   const lock = await acquireLock()
   try {
-    const guarded = await openVerifiedDatabase({ dataDirectory: databaseDirectory, role: 'canonical', requiredVersion: '027', backupRoot })
+    const guarded = await (dependencies.openDatabase || openVerifiedDatabase)({ dataDirectory: databaseDirectory, role: 'canonical', requiredVersion: '027', backupRoot })
     let actor: OfflineManager
     try {
       if (guarded.identity.storeId !== identity.storeId || guarded.health.migrationVersion !== '027' || guarded.health.migrationRequired || guarded.health.recoveryRequired) fail('OFFLINE_RECOVERY_DATABASE_EVIDENCE_INVALID')

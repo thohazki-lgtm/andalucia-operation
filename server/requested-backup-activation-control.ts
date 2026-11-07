@@ -14,6 +14,22 @@ const git = (root: string, ...args: string[]) => execFileSync('git', ['-C', root
 const requestBinding = (request: any) => sha256(JSON.stringify({ id: request.id, category: request.category, requestedAt: request.requestedAt, requestedBy: request.requestedBy, instruction: request.instruction }))
 const fail = (code: string): never => { throw new Error(code) }
 
+const assertRecoveryRegistrationSource = (projectRoot: string, binding: RecoveryApprovalBinding) => {
+  let branch: string
+  let head: string
+  let remoteMain: string
+  let dirty: string
+  try {
+    branch = git(projectRoot, 'branch', '--show-current')
+    head = git(projectRoot, 'rev-parse', 'HEAD').toLowerCase()
+    remoteMain = git(projectRoot, 'rev-parse', 'refs/remotes/origin/main').toLowerCase()
+    dirty = git(projectRoot, 'status', '--porcelain', '--untracked-files=no')
+  } catch {
+    return fail('RECOVERY_APPROVAL_REGISTRATION_SOURCE_UNVERIFIABLE')
+  }
+  if (branch !== binding.targetBranch || dirty || head !== binding.registrationSourceSha || remoteMain !== binding.registrationSourceSha) fail('RECOVERY_APPROVAL_REGISTRATION_SOURCE_MISMATCH')
+}
+
 export class RequestedBackupActivationControl {
   constructor(readonly coordinator: DatabaseOperationCoordinator, readonly now = () => new Date()) {}
 
@@ -116,6 +132,7 @@ const assertBindings = async (projectRoot: string, record: CanonicalMaintenanceA
   if (record.recoveryApprovalBindingId) {
     const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
     const binding = await coordinator.readRecoveryApprovalBinding(record.recoveryApprovalBindingId)
+    assertRecoveryRegistrationSource(projectRoot, binding)
     const bindingSha = await fileSha256(coordinator.recoveryApprovalBindingPath(binding.bindingId))
     const identity = await json<StoreIdentity>(paths(projectRoot).identity)
     const identitySha = await fileSha256(paths(projectRoot).identity)
@@ -235,6 +252,7 @@ export async function runRequestedBackupActivationControl(command: string, argv 
     let identitySha: string
     if (bindingId) {
       recoveryBinding = await coordinator.readRecoveryApprovalBinding(bindingId)
+      assertRecoveryRegistrationSource(projectRoot, recoveryBinding)
       if (recoveryBinding.state !== 'CLAIMED' || Date.parse(recoveryBinding.expiresAt) <= Date.now()) fail('RECOVERY_APPROVAL_BINDING_NOT_READY')
       previousLiveSha = recoveryBinding.previousLiveSha
       targetSha = recoveryBinding.approvedControlSha
