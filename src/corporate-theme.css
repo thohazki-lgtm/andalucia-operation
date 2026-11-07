@@ -234,6 +234,10 @@ body,
   --ao-leave-row-alt: color-mix(in srgb, var(--ao-lilac-calm) 19%, white);
   --ao-leave-scrollbar: color-mix(in srgb, var(--ao-violet-hour) 55%, white);
   --ao-leave-scrollbar-track: color-mix(in srgb, var(--ao-lilac-calm) 14%, white);
+  --ao-leave-header-start: #45176b;
+  --ao-leave-header-end: #80539a;
+  --ao-leave-header-text: #fff;
+  --ao-leave-header-muted: #eadff1;
   --ao-leave-summary-value-size: 20px;
   --ao-leave-history-gap: 7px;
 }
