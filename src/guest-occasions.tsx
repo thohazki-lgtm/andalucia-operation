@@ -34,14 +34,18 @@ export function GuestOccasionsPage({ staff, configuration, onToast }: { staff: S
   const save = async (record: GuestOccasionRecord) => { const saved = records.some(item => item.id === record.id) ? await guestOccasionApi.update(record) : await guestOccasionApi.create(record); await load(); setViewing(current => current?.id === saved.id ? saved : current) }
   const quickStatus = async (record: GuestOccasionRecord, nextStatus: string) => { try { await save({ ...record, status: nextStatus }) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to update occasion status.') } }
   return <>
-    <section className="occasion-toolbar">
+    <section className="occasion-toolbar occasion-calendar-header" aria-label="Guest Occasions calendar controls">
+<div className="occasion-calendar-title-row">
+<h2>Guest Occasions</h2>
+</div>
+<div className="occasion-calendar-controls-row">
+<div className="occasion-date-navigation">
 <div className="occasion-date-controls">
 <IconAction className="occasion-date-previous" icon="chevron-left" label="Previous guest occasion date" onClick={() => setDate(value => addCalendarDays(value, -1))} />
 <div className="occasion-date-picker"><DateControl label="Guest occasion date" value={date} onChange={event => setDate(event.target.value)} /></div>
 <IconAction className="occasion-date-next" icon="chevron-right" label="Next guest occasion date" onClick={() => setDate(value => addCalendarDays(value, 1))} />
-<ActionButton className="occasion-date-today" icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
-<div className="occasion-date-summary">
+</div>
 <ActionButton variant="primary" className="occasion-add-manual" icon="add" onClick={() => setEditing('new')}>Add Manual Occasion</ActionButton>
 </div>
 </section>
@@ -163,9 +167,8 @@ function GuestOccasionForm({ record, date, bookings, staff, configuration, onClo
 </label>
 <label>Status<select value={form.status} onChange={event => update('status', event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === form.status).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
 </label>
-</div>{form.bookingId && <p className="linked-booking-note">Guest, room, date, time, table and waiter stay synchronized with the linked booking.</p>}</section><section className="occasion-form-section"><h3>Notes</h3>{record?.source.startsWith('automatic') && <label>Detection evidence<textarea readOnly rows={3} value={form.sourceText} />
-</label>}<label>Manager notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} />
-</label></section>{error && <p className="save-error">{error}</p>}<div className="form-actions">
+</div>{form.bookingId && <p className="linked-booking-note">Guest, room, date, time, table and waiter stay synchronized with the linked booking.</p>}</section>{!record && <section className="occasion-form-section occasion-form-notes"><h3>Notes</h3><label>Manager notes<textarea rows={3} value={form.notes} onChange={event => update('notes', event.target.value)} />
+</label></section>}{error && <p className="save-error">{error}</p>}<div className="form-actions">
 <ActionButton onClick={requestClose}>Cancel</ActionButton>
 <ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Saving…' : 'Save occasion'}</ActionButton>
 </div>

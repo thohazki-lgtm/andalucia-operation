@@ -1,0 +1,345 @@
+/* Customization Center premium shell.
+   This file is intentionally loaded after the shared corporate theme so the
+   six configuration areas can share one coherent blue system without
+   changing their existing components or operational behaviour. */
+.module-customization-center {
+  --custom-navy: #1c2e4c;
+  --custom-blue: #285f8f;
+  --custom-sky: #6cd0ff;
+  --custom-gold: #c5a35a;
+  --custom-line: #7aa9c7;
+  --custom-ice: #eaf7ff;
+  --custom-ivory: #fffdf6;
+  --custom-header: #d8effc;
+  --ao-module-accent: var(--custom-sky);
+  --ao-module-accent-ink: var(--custom-navy);
+  --ao-module-accent-soft: var(--custom-ice);
+  --ao-module-canvas-primary: var(--custom-sky);
+  --ao-module-canvas-secondary: var(--custom-navy);
+  color: var(--custom-navy);
+}
+
+.app-shell:has(> main.module-customization-center) {
+  --ao-shell-accent: var(--custom-navy);
+  --ao-shell-highlight: var(--custom-gold);
+  --ao-page-canvas-top: var(--custom-navy);
+  --ao-page-canvas-tint: var(--custom-sky);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--custom-sky);
+  background-image: linear-gradient(to bottom, #1c2e4c 0%, #285f8f 32%, #429bc7 66%, #6cd0ff 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+html:has(.app-shell > main.module-customization-center),
+body:has(.app-shell > main.module-customization-center) {
+  background: var(--custom-sky);
+}
+
+html body main.module-customization-center > .page-header {
+  min-height: 0;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html body main.module-customization-center > .page-header::before { content: none; }
+
+html body main.module-customization-center > .page-header h1 {
+  color: #fff;
+  font: 500 clamp(26px, 3vw, 36px)/1.05 var(--ao-font-display);
+  text-shadow: 0 2px 10px rgb(10 31 56 / 25%);
+}
+
+html body main.module-customization-center > .page-header .eyebrow {
+  color: #fff;
+  font: 650 11px/1.2 var(--ao-font-ui);
+  letter-spacing: .14em;
+}
+
+html body main.module-customization-center > .page-header .avatar {
+  border-color: var(--custom-gold);
+  background: var(--custom-navy);
+  color: #fff;
+}
+
+main.module-customization-center .customization-center {
+  gap: 14px;
+  color: var(--custom-navy);
+}
+
+main.module-customization-center .customization-category-nav {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+main.module-customization-center .customization-category-nav button {
+  min-height: 44px;
+  border: 1px solid var(--custom-gold);
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--custom-ivory), #e8f5fc);
+  color: var(--custom-navy);
+  font: 650 11px/1.2 var(--ao-font-ui);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+main.module-customization-center .customization-category-nav button:is(:hover, :focus-visible) {
+  border-color: #e1c77e;
+  background: #d9f1ff;
+  color: var(--custom-navy);
+}
+
+main.module-customization-center .customization-category-nav button.selected {
+  border-color: var(--custom-gold);
+  background: var(--custom-navy);
+  color: #fff;
+  box-shadow: inset 0 -3px var(--custom-gold);
+}
+
+main.module-customization-center .customization-category-panel {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+main.module-customization-center :is(
+  .booking-config-section,
+  .training-custom-card,
+  .occasion-config-card,
+  .chargeable-config-card,
+  .maintenance-config-card,
+  .database-health-heading,
+  .database-health-cards article,
+  .database-health-warnings,
+  .backup-history,
+  .recovery-incident,
+  .recovery-history
+) {
+  min-height: 0;
+  border: 1px solid var(--custom-gold);
+  border-top: 3px solid var(--custom-gold);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgb(255 253 246 / 98%), rgb(234 247 255 / 97%));
+  color: var(--custom-navy);
+  box-shadow: 0 10px 24px rgb(13 40 71 / 10%);
+}
+
+main.module-customization-center :is(.booking-config-r2, .training-customization-r1, .occasion-config-grid, .chargeable-config-grid, .maintenance-config-grid) {
+  align-items: start;
+  gap: 14px;
+}
+
+main.module-customization-center :is(.chargeable-config, .maintenance-config, .occasion-config) {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+main.module-customization-center :is(.chargeable-config-hero, .maintenance-config-hero, .occasion-config > .panel-title) {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--custom-gold);
+  border-top: 3px solid var(--custom-gold);
+  border-radius: 12px;
+  background: linear-gradient(110deg, var(--custom-navy), var(--custom-blue));
+}
+
+main.module-customization-center :is(.chargeable-config-hero, .maintenance-config-hero, .occasion-config > .panel-title) :is(h3, h4, .eyebrow, p) {
+  color: #fff;
+}
+
+main.module-customization-center :is(.panel-title, .config-heading, .maintenance-config-heading, .occasion-config-heading) {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--custom-line);
+  border-radius: 8px;
+  background: linear-gradient(110deg, #d7effc, #c7e6f7);
+}
+
+main.module-customization-center :is(.panel-title, .config-heading, .maintenance-config-heading, .occasion-config-heading) :is(h3, h4) {
+  color: var(--custom-navy);
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+main.module-customization-center :is(.panel-title, .config-heading, .maintenance-config-heading, .occasion-config-heading) .eyebrow {
+  color: #315f82;
+}
+
+main.module-customization-center :is(
+  .booking-status-config-row,
+  .table-range-row,
+  .walk-in-field-row,
+  .training-category-row,
+  .training-workflow-rows label,
+  .occasion-config-row,
+  .chargeable-config-row,
+  .maintenance-config-row
+) {
+  border-color: var(--custom-line);
+}
+
+main.module-customization-center :is(
+  .booking-status-config-row,
+  .table-range-row,
+  .walk-in-field-row,
+  .training-category-row,
+  .occasion-config-row,
+  .chargeable-config-row,
+  .maintenance-config-row
+):nth-child(even) {
+  background: rgb(210 237 251 / 42%);
+}
+
+main.module-customization-center :is(input, select, textarea, .field-mode-control, .training-target-values > div, .chargeable-catalog-empty) {
+  border-color: var(--custom-gold);
+  background: var(--custom-ivory);
+  color: var(--custom-navy);
+}
+
+main.module-customization-center :is(.primary, .ao-action--primary) {
+  border-color: var(--custom-gold);
+  background: var(--custom-navy);
+  color: #fff;
+}
+
+main.module-customization-center :is(.secondary, .ao-action--secondary, .link, .ao-icon-action, .icon-button) {
+  border-color: var(--custom-gold);
+  background: var(--custom-ivory);
+  color: var(--custom-navy);
+}
+
+main.module-customization-center :is(.training-policy-note, .maintenance-protection-note, .config-protected-note, .protected-config-note) {
+  border-color: var(--custom-gold);
+  background: #e5f4fd;
+  color: #3b5870;
+}
+
+main.module-customization-center .database-health-admin {
+  color: var(--custom-navy);
+  font-family: var(--ao-font-ui);
+}
+
+main.module-customization-center .database-health-admin :is(.backup-history, .recovery-history) > header {
+  border-bottom-color: var(--custom-line);
+  background: var(--custom-header);
+}
+
+main.module-customization-center .database-health-admin :is(.backup-history, .recovery-history) th {
+  border-color: var(--custom-line);
+  background: #c8e6f7;
+  color: var(--custom-navy);
+}
+
+main.module-customization-center .database-health-admin :is(.backup-history, .recovery-history) td {
+  border-color: var(--custom-line);
+}
+
+main.module-customization-center .database-health-admin :is(.backup-history, .recovery-history) tbody tr:nth-child(even) {
+  background: #eaf7ff;
+}
+
+main.module-customization-center .backup-pagination {
+  border-color: var(--custom-line);
+  background: #dff2fc;
+}
+
+body:has(main.module-customization-center) .modal-backdrop {
+  background: rgb(12 31 57 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+body:has(main.module-customization-center) .modal {
+  border: 1px solid var(--custom-gold);
+  border-top: 3px solid var(--custom-gold);
+  border-radius: 13px;
+  background: var(--custom-ivory);
+  color: var(--custom-navy);
+  box-shadow: 0 24px 62px rgb(9 34 65 / 32%);
+}
+
+body:has(main.module-customization-center) .modal :is(h2, .modal-title, .modal-title h3) {
+  color: #fff;
+  font-family: var(--ao-font-display);
+  font-weight: 500;
+}
+
+body:has(main.module-customization-center) .modal > h2,
+body:has(main.module-customization-center) .modal > .modal-title {
+  margin: 0;
+  padding: 14px 52px 12px 16px;
+  border-bottom: 1px solid var(--custom-gold);
+  background: linear-gradient(110deg, var(--custom-navy), var(--custom-blue));
+}
+
+body:has(main.module-customization-center) .modal > .close {
+  border: 1px solid var(--custom-gold);
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+
+body:has(main.module-customization-center) .modal :is(form, .modal-body) {
+  background: linear-gradient(180deg, var(--custom-ivory), var(--custom-ice));
+}
+
+body:has(main.module-customization-center) .modal :is(input, select, textarea) {
+  border-color: var(--custom-gold);
+  background: #fffef9;
+  color: var(--custom-navy);
+}
+
+body:has(main.module-customization-center) .modal .form-actions {
+  border-top-color: var(--custom-gold);
+  background: #e4f4fc;
+}
+
+body:has(main.module-customization-center) .modal .primary,
+body:has(main.module-customization-center) .modal .ao-action--primary {
+  border-color: var(--custom-gold);
+  background: var(--custom-navy);
+  color: #fff;
+}
+
+body:has(main.module-customization-center) .modal .secondary,
+body:has(main.module-customization-center) .modal .ao-action--secondary {
+  border-color: var(--custom-gold);
+  background: var(--custom-ivory);
+  color: var(--custom-navy);
+}
+
+@media (max-width: 1100px) {
+  main.module-customization-center .customization-category-nav,
+  main.module-customization-center .customization-category-nav.seven-categories {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  html body main.module-customization-center > .page-header { margin-bottom: 10px; }
+  html body main.module-customization-center > .page-header h1 { font-size: 27px; }
+  main.module-customization-center .customization-center { gap: 10px; }
+  main.module-customization-center .customization-category-nav,
+  main.module-customization-center .customization-category-nav.seven-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  main.module-customization-center .customization-category-nav button { min-height: 44px; font-size: 10px; }
+  main.module-customization-center :is(.booking-config-r2, .training-customization-r1, .occasion-config-grid, .chargeable-config-grid, .maintenance-config-grid) { gap: 10px; }
+  main.module-customization-center :is(.booking-config-section, .training-custom-card, .occasion-config-card, .chargeable-config-card, .maintenance-config-card) { padding: 10px; }
+  body:has(main.module-customization-center) .modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+}
