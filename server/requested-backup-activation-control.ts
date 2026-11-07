@@ -5,7 +5,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { createConnection } from 'node:net'
 import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DatabaseOperationCoordinator, type CanonicalMaintenanceAuthorization, type CanonicalMaintenanceState } from './database-operation-coordinator.js'
+import { DatabaseOperationCoordinator, type CanonicalMaintenanceAuthorization, type CanonicalMaintenanceState, type RecoveryApprovalBinding } from './database-operation-coordinator.js'
 
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
 const fileSha256 = async (path: string) => sha256(await readFile(path))
@@ -37,6 +37,7 @@ export class RequestedBackupActivationControl {
     previousLiveSha: string; targetSha: string; targetBranch: string; approvalManifestSha256: string
     canonicalIdentitySha256: string; canonicalStoreId: string; request: any; requestAuditVerified: boolean
     historicalRuntimeEvidenceSha256: string; schemaEvidenceSha256: string
+    recoveryApprovalBindingId?: string; recoveryApprovalBindingSha256?: string
   }) {
     if (!input.requestAuditVerified || input.request?.state !== 'pending' || input.request?.category !== 'manual' || !input.request?.requestedBy?.userId || !input.request?.requestedBy?.displayName) fail('REQUESTED_BACKUP_AUTHENTICATED_REQUEST_INVALID')
     if (!/^[0-9a-f]{40}$/i.test(input.previousLiveSha) || !/^[0-9a-f]{40}$/i.test(input.targetSha)) fail('REQUESTED_BACKUP_SOURCE_SHA_INVALID')
@@ -48,6 +49,7 @@ export class RequestedBackupActivationControl {
       schema: '027', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false,
       requestId: input.request.id, requestSha256: requestBinding(input.request), requestedBy: input.request.requestedBy,
       historicalRuntimeEvidenceSha256: input.historicalRuntimeEvidenceSha256, schemaEvidenceSha256: input.schemaEvidenceSha256,
+      ...(input.recoveryApprovalBindingId && input.recoveryApprovalBindingSha256 ? { recoveryApprovalBindingId: input.recoveryApprovalBindingId, recoveryApprovalBindingSha256: input.recoveryApprovalBindingSha256 } : {}),
       expiresAt: new Date(this.now().getTime() + 15 * 60_000).toISOString(),
     }, 'RECOVERY_AUTHORIZED')
   }
@@ -111,12 +113,21 @@ const currentBindings = async (projectRoot: string) => {
 }
 
 const assertBindings = async (projectRoot: string, record: CanonicalMaintenanceAuthorization) => {
+  if (record.recoveryApprovalBindingId) {
+    const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
+    const binding = await coordinator.readRecoveryApprovalBinding(record.recoveryApprovalBindingId)
+    const bindingSha = await fileSha256(coordinator.recoveryApprovalBindingPath(binding.bindingId))
+    const identity = await json<StoreIdentity>(paths(projectRoot).identity)
+    const identitySha = await fileSha256(paths(projectRoot).identity)
+    if (binding.state !== 'CLAIMED' || binding.claimedRequestId !== record.requestId || bindingSha !== record.recoveryApprovalBindingSha256 || binding.previousLiveSha !== record.previousLiveSha || binding.approvedControlSha !== record.targetSha || binding.targetBranch !== record.targetBranch || identitySha !== record.canonicalIdentitySha256 || identitySha !== binding.canonicalIdentitySha256 || identity.storeId !== record.canonicalStoreId || identity.storeId !== binding.canonicalStoreId || binding.schema !== '027') fail('REQUESTED_BACKUP_PROTECTED_BINDING_MISMATCH')
+    return { binding, identity, identitySha }
+  }
   const bindings = await currentBindings(projectRoot)
   if (bindings.approvalSha !== record.approvalManifestSha256 || bindings.identitySha !== record.canonicalIdentitySha256 || bindings.identity.storeId !== record.canonicalStoreId || bindings.approval.activeSourceSha !== record.targetSha || bindings.approval.previousLiveSha !== record.previousLiveSha) fail('REQUESTED_BACKUP_PROTECTED_BINDING_MISMATCH')
   return bindings
 }
 
-const latestVerifiedSchemaEvidence = async (projectRoot: string): Promise<string> => {
+export const latestVerifiedSchemaEvidence = async (projectRoot: string): Promise<{ backupId: string; sha256: string }> => {
   const backupRoot = join(projectRoot, '.backups')
   const names = existsSync(backupRoot) ? await readdir(backupRoot) : []
   for (const name of names.sort().reverse()) {
@@ -125,7 +136,7 @@ const latestVerifiedSchemaEvidence = async (projectRoot: string): Promise<string
       const metadataPath = join(folder, 'backup-metadata.json'); const restorePath = join(folder, 'restore-test.json')
       const metadata = await json<any>(metadataPath); const restore = await json<any>(restorePath)
       if (metadata.schemaVersion === '027' && metadata.verificationStatus === 'VERIFIED' && metadata.openTestStatus === 'PASS' && metadata.preflightStatus === 'READY' && restore.status === 'RESTORE_TEST_PASSED' && restore.manifestMatch && restore.fingerprintMatch && restore.migrationMatch && restore.preflightStatus === 'READY') {
-        return sha256(`${await fileSha256(metadataPath)}:${await fileSha256(restorePath)}`)
+        return { backupId: String(metadata.backupId || name), sha256: sha256(`${await fileSha256(metadataPath)}:${await fileSha256(restorePath)}`) }
       }
     } catch { /* not a verified backup folder */ }
   }
@@ -157,7 +168,7 @@ const canonicalTimestamp = (value: unknown): string => {
   return `${year}-${month}-${day}T${hour}:${minute}:${second}.${fraction.padEnd(7, '0')}Z`
 }
 
-const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
+export const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
   const logPath = paths(projectRoot).startupLog
   if (!existsSync(logPath)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_MISSING')
   if (!expectedBranch || !expectedMode) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
@@ -213,13 +224,41 @@ export async function runRequestedBackupActivationControl(command: string, argv 
     return control.prepare({ previousLiveSha: health.application.sha, targetSha: expectedSha, targetBranch: branch, approvalManifestSha256: bindings.approvalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, request, requestAuditVerified: await requestAuditVerified(projectRoot, request) })
   }
   if (command === 'prepare-stopped-recovery') {
-    const bindings = await currentBindings(projectRoot)
-    const previousLiveSha = bindings.approval.previousLiveSha.toLowerCase()
+    const bindingId = arg('--approval-binding-id')
+    const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
+    let recoveryBinding: RecoveryApprovalBinding | undefined
+    let previousLiveSha: string
+    let targetSha: string
+    let targetBranch: string
+    let approvalSha: string
+    let identity: StoreIdentity
+    let identitySha: string
+    if (bindingId) {
+      recoveryBinding = await coordinator.readRecoveryApprovalBinding(bindingId)
+      if (recoveryBinding.state !== 'CLAIMED' || Date.parse(recoveryBinding.expiresAt) <= Date.now()) fail('RECOVERY_APPROVAL_BINDING_NOT_READY')
+      previousLiveSha = recoveryBinding.previousLiveSha
+      targetSha = recoveryBinding.approvedControlSha
+      targetBranch = recoveryBinding.targetBranch
+      approvalSha = await fileSha256(coordinator.recoveryApprovalBindingPath(bindingId))
+      identity = await json<StoreIdentity>(paths(projectRoot).identity)
+      identitySha = await fileSha256(paths(projectRoot).identity)
+      if (identitySha !== recoveryBinding.canonicalIdentitySha256 || identity.storeId !== recoveryBinding.canonicalStoreId || recoveryBinding.schema !== '027') fail('RECOVERY_APPROVAL_BINDING_CANONICAL_IDENTITY_MISMATCH')
+    } else {
+      const bindings = await currentBindings(projectRoot)
+      previousLiveSha = bindings.approval.previousLiveSha.toLowerCase()
+      targetSha = bindings.approval.activeSourceSha.toLowerCase()
+      targetBranch = bindings.approval.branch
+      approvalSha = bindings.approvalSha
+      identity = bindings.identity
+      identitySha = bindings.identitySha
+    }
     if (!await (dependencies.portsClosed || portsClosed)() || existsSync(paths(projectRoot).ownerMarker)) fail('REQUESTED_BACKUP_STOPPED_RUNTIME_NOT_EXCLUSIVE')
     const request = await requestById(projectRoot, arg('--request-id'))
-    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, previousLiveSha, bindings.approval.branch, String(bindings.approval.mode || ''))
+    if (recoveryBinding && recoveryBinding.claimedRequestId !== request.id) fail('RECOVERY_APPROVAL_BINDING_REQUEST_MISMATCH')
+    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, previousLiveSha, targetBranch, recoveryBinding ? 'verified_main' : String((await currentBindings(projectRoot)).approval.mode || ''))
     const schemaEvidence = await latestVerifiedSchemaEvidence(projectRoot)
-    return control.prepareStoppedRecovery({ previousLiveSha, targetSha: bindings.approval.activeSourceSha.toLowerCase(), targetBranch: bindings.approval.branch, approvalManifestSha256: bindings.approvalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, request, requestAuditVerified: await requestAuditVerified(projectRoot, request), historicalRuntimeEvidenceSha256: runtimeEvidence, schemaEvidenceSha256: schemaEvidence })
+    if (recoveryBinding && (runtimeEvidence !== recoveryBinding.historicalRuntimeEvidenceSha256 || schemaEvidence.sha256 !== recoveryBinding.backupEvidenceSha256 || schemaEvidence.backupId !== recoveryBinding.backupId)) fail('RECOVERY_APPROVAL_BINDING_EVIDENCE_MISMATCH')
+    return control.prepareStoppedRecovery({ previousLiveSha, targetSha, targetBranch, approvalManifestSha256: approvalSha, canonicalIdentitySha256: identitySha, canonicalStoreId: identity.storeId, request, requestAuditVerified: await requestAuditVerified(projectRoot, request), historicalRuntimeEvidenceSha256: runtimeEvidence, schemaEvidenceSha256: schemaEvidence.sha256, recoveryApprovalBindingId: recoveryBinding?.bindingId, recoveryApprovalBindingSha256: recoveryBinding ? approvalSha : undefined })
   }
   const authorizationId = required('--authorization-id')
   const record = await control.read(authorizationId)
