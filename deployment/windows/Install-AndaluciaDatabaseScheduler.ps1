@@ -7,12 +7,11 @@ $jobScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Invoke-AndaluciaDa
 $runtimeScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-AndaluciaGuardedApplication.ps1'))
 $shutdownScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Stop-AndaluciaGuardedApplication.ps1'))
 $shutdownSignalScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Signal-AndaluciaWindowsShutdown.cmd'))
-$shutdownWatcherScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Watch-AndaluciaWindowsShutdown.ps1'))
+$shutdownServiceInstaller = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Install-AndaluciaWindowsShutdownService.ps1'))
 $sourceResolver = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'))
 $exportRoot = Join-Path $projectRoot '.backups\.db2\scheduler\task-exports'
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $runtimeName = 'ANDALUCIA OPERATION - Guarded Application'
-$shutdownName = 'ANDALUCIA OPERATION - Graceful Windows Shutdown'
 $dailyName = 'ANDALUCIA OPERATION - Daily Verified Backup'
 $rehearsalName = 'ANDALUCIA OPERATION - Weekly Restore Rehearsal'
 
@@ -36,31 +35,6 @@ function Assert-RuntimeTaskSafety {
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'RUNTIME_TASK_SAFETY_DRIFT:WorkingDirectory' }
 }
 
-function Register-GracefulShutdownTask {
-  $action = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File `"{0}`" -ProjectRoot `"{1}`"" -f $shutdownWatcherScript, $projectRoot) -WorkingDirectory $projectRoot
-  $trigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
-  $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -DisallowHardTerminate -ExecutionTimeLimit ([TimeSpan]::Zero)
-  Register-ScheduledTask -TaskName $shutdownName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Runs before shutdown as an already-active limited-user watcher and requests guarded PGlite closure.' -Force | Out-Null
-}
-
-function Assert-ShutdownTaskSafety {
-  [xml]$definition = Export-ScheduledTask -TaskName $shutdownName
-  $namespace = [Xml.XmlNamespaceManager]::new($definition.NameTable)
-  $namespace.AddNamespace('t', 'http://schemas.microsoft.com/windows/2004/02/mit/task')
-  $command = $definition.SelectSingleNode('//t:Actions/t:Exec/t:Command', $namespace).InnerText
-  $arguments = $definition.SelectSingleNode('//t:Actions/t:Exec/t:Arguments', $namespace).InnerText
-  $workingDirectory = $definition.SelectSingleNode('//t:Actions/t:Exec/t:WorkingDirectory', $namespace).InnerText
-  $allowHardTerminate = $definition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $namespace).InnerText
-  $logonType = $definition.SelectSingleNode('//t:Principals/t:Principal/t:LogonType', $namespace).InnerText
-  $triggerType = $definition.SelectSingleNode('//t:Triggers/*', $namespace).LocalName
-  if ($triggerType -ne 'LogonTrigger') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WatcherTrigger' }
-  if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath($powerShell)) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Command' }
-  if ($arguments -notlike "*$shutdownWatcherScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WatcherScript' }
-  if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WorkingDirectory' }
-  if ($allowHardTerminate -ne 'false') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:AllowHardTerminate' }
-  if ($logonType -ne 'InteractiveToken') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:LogonType' }
-}
-
 function Set-RuntimeTaskHardTerminateProtection {
   # On this Windows Task Scheduler provider, New-ScheduledTaskSettingsSet
   # accepts -DisallowHardTerminate but does not serialize the setting. The
@@ -76,7 +50,7 @@ function Set-RuntimeTaskHardTerminateProtection {
   $folder.RegisterTaskDefinition($runtimeName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonInteractiveToken, $null) | Out-Null
 }
 
-foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $shutdownWatcherScript, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
+foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $shutdownServiceInstaller, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
 $approvedSource = Assert-ApprovedCheckout
 
@@ -98,13 +72,12 @@ Register-ScheduledTask -TaskName $dailyName -Action $dailyAction -Trigger $daily
 Register-ScheduledTask -TaskName $rehearsalName -Action $rehearsalAction -Trigger $rehearsalTrigger -Principal $principal -Settings $commonSettings -Description 'Runs the DB-2 restore rehearsal against the latest suitable verified backup without promotion.' -Force | Out-Null
 Set-RuntimeTaskHardTerminateProtection
 Assert-RuntimeTaskSafety
-Register-GracefulShutdownTask
-Assert-ShutdownTaskSafety
+& $shutdownServiceInstaller -ProjectRoot $projectRoot
 
 New-Item -ItemType Directory -Path $exportRoot -Force | Out-Null
-foreach ($name in @($runtimeName, $shutdownName, $dailyName, $rehearsalName)) {
+foreach ($name in @($runtimeName,$dailyName,$rehearsalName)) {
   $safeName = ($name -replace '[^A-Za-z0-9.-]', '_') + '.xml'
   Export-ScheduledTask -TaskName $name | Set-Content -LiteralPath (Join-Path $exportRoot $safeName) -Encoding Unicode
 }
 
-Get-ScheduledTask -TaskName $runtimeName,$shutdownName,$dailyName,$rehearsalName | Select-Object TaskName,State,TaskPath
+Get-ScheduledTask -TaskName $runtimeName,$dailyName,$rehearsalName | Select-Object TaskName,State,TaskPath
