@@ -41,6 +41,7 @@
     "test:database-scheduler": "tsx server/database-scheduler.test.ts",
     "test:database-safe-shutdown": "tsx server/database-safe-shutdown.test.ts",
     "test:database-stale-marker-recovery": "tsx server/database-stale-marker-recovery-security.test.mjs",
+    "test:db3-native-invocation": "node server/db3-native-invocation-security.test.mjs",
     "test:startup-reliability-observability": "tsx server/startup-reliability-observability.test.mjs",
     "test:runtime-source-version": "tsx server/runtime-source-version.test.ts",
     "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
