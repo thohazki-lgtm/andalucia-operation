@@ -25,6 +25,7 @@ try {
     $stoppedRuntimeMode = [bool]$MaintenanceAuthorizationId
     $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
     $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
+    $listenerEvidenceModule = Join-Path $PSScriptRoot 'AndaluciaRuntimeListenerEvidence.psm1'
 
     $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
     if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $projectRoot) { Stop-Readiness 'SOURCE_NOT_AUTHORITATIVE' $projectRoot }
@@ -92,12 +93,16 @@ try {
     if ([IO.Path]::GetFullPath($taskWorkingDirectory) -ne $projectRoot -or $taskArguments -notlike "*$expectedLauncher*" -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { Stop-Readiness 'RUNTIME_TASK_ACTION_DRIFT' "$taskCommand $taskArguments $taskWorkingDirectory" }
     if ($allowHardTerminate -ne 'false' -or $stopOnIdleEnd -ne 'false' -or $executionTimeLimit -ne 'PT0S') { Stop-Readiness 'RUNTIME_TASK_SAFETY_DRIFT' "AllowHardTerminate=$allowHardTerminate StopOnIdleEnd=$stopOnIdleEnd ExecutionTimeLimit=$executionTimeLimit" }
 
-    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001, 5173, 5174 })
+    if (-not (Test-Path -LiteralPath $listenerEvidenceModule -PathType Leaf)) { Stop-Readiness 'RUNTIME_LISTENER_EVIDENCE_CONTROL_MISSING' $listenerEvidenceModule }
+    Import-Module $listenerEvidenceModule -Force
     $markerPath = Join-Path $canonicalData 'postmaster.pid'
     if ($stoppedRuntimeMode) {
+        $listenerEvidence = Get-AndaluciaStableRuntimeListeners -RequiredPorts @() -ForbiddenPorts @(3001, 5173, 5174)
+        $listeners = @($listenerEvidence.Listeners)
         if ($listeners.Count -ne 0 -or (Test-Path -LiteralPath $markerPath)) { Stop-Readiness 'STOPPED_RUNTIME_EXCLUSIVITY_NOT_VERIFIED' (($listeners | Select-Object LocalPort,OwningProcess | ConvertTo-Json -Compress)) }
     } else {
-        if (@($listeners | Where-Object LocalPort -eq 3001).Count -ne 1 -or @($listeners | Where-Object LocalPort -eq 5173).Count -ne 1) { Stop-Readiness 'RUNTIME_LISTENER_AMBIGUOUS' (($listeners | Select-Object LocalPort,OwningProcess | ConvertTo-Json -Compress)) }
+        $listenerEvidence = Get-AndaluciaStableRuntimeListeners
+        $listeners = @($listenerEvidence.Listeners)
         foreach ($listener in $listeners) {
             $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
             if (-not $listenerProcess -or [string]$listenerProcess.CommandLine -notlike "*$projectRoot*") { Stop-Readiness 'RUNTIME_OWNER_MISMATCH' "port=$($listener.LocalPort) pid=$($listener.OwningProcess)" }
