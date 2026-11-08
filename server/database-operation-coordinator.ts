@@ -15,6 +15,7 @@ export type DatabaseOperationType =
   | 'scheduled_backup' | 'manual_backup' | 'verification' | 'restore_rehearsal'
   | 'protection_change' | 'encrypted_export' | 'upload' | 'remote_verification'
   | 'local_retention' | 'cloud_retention' | 'migration' | 'recovery' | 'canonical_maintenance'
+  | 'stale_marker_recovery'
 export type DatabaseOperationState = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'INTERRUPTED'
 export type DatabaseOperationFailureClass = 'RETRYABLE' | 'NON_RETRYABLE' | 'REQUIRES_REVIEW' | null
 export type DatabaseOperationResource = { kind: 'canonical' | 'backup' | 'artifact' | 'period'; id: string }
@@ -75,7 +76,7 @@ export type CanonicalMaintenanceAuthorization = {
   createdAt: string
   updatedAt: string
   expiresAt: string
-  authorizationMode: 'live_requested_backup' | 'stopped_runtime_recovery'
+  authorizationMode: 'live_requested_backup' | 'stopped_runtime_recovery' | 'stale_marker_recovery'
   previousLiveSha: string
   targetSha: string
   targetBranch: string
