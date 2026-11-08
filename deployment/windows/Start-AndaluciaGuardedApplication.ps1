@@ -15,6 +15,7 @@ $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-i
 $sourceResolver = Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'
 $startupLogRoot = Join-Path $projectRoot '.runtime\logs'
 $startupLog = Join-Path $startupLogRoot 'guarded-startup.jsonl'
+$runtimeOutputLog = Join-Path $startupLogRoot ("guarded-runtime-{0}.log" -f ([DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')))
 $nodeRoot = Join-Path $env:ProgramFiles 'nodejs'
 $gitRoot = Join-Path $env:ProgramFiles 'Git\cmd'
 $npmCommand = Join-Path $nodeRoot 'npm.cmd'
@@ -28,6 +29,15 @@ function Write-StartupLog([string]$State, [string]$Detail) {
   New-Item -ItemType Directory -Path $startupLogRoot -Force | Out-Null
   $entry = [ordered]@{ version='andalucia-guarded-startup-v1'; recordedAt=[DateTime]::UtcNow.ToString('o'); state=$State; detail=$Detail }
   Add-Content -LiteralPath $startupLog -Value ($entry | ConvertTo-Json -Compress) -Encoding UTF8
+}
+
+function Get-FirstFatalRuntimeLine([string]$Path) {
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return 'runtime exited without captured output' }
+  $lines = @(Get-Content -LiteralPath $Path -ErrorAction SilentlyContinue | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+  $fatal = $lines | Where-Object { [string]$_ -match '(?i)(fatal|exception|error|failed|mismatch|denied|refused|cannot|unable)' } | Select-Object -First 1
+  if (-not $fatal) { $fatal = $lines | Select-Object -Last 1 }
+  if (-not $fatal) { return 'runtime exited without captured output' }
+  return (([string]$fatal) -replace '[\r\n;]+', ' ').Trim()
 }
 
 function Wait-StartupDependencies([int]$TimeoutSeconds = 90) {
@@ -60,7 +70,7 @@ function Get-ApprovedSourceState {
 }
 
 try {
-  Write-StartupLog 'STARTING' "projectRoot=$projectRoot;sourceRoot=$runtimeSourceRoot;recovery=$([bool]$RecoveryAuthorizationId)"
+  Write-StartupLog 'STARTING' "projectRoot=$projectRoot;sourceRoot=$runtimeSourceRoot;recovery=$([bool]$RecoveryAuthorizationId);outputLog=$runtimeOutputLog"
   Wait-StartupDependencies
   $env:PATH = "$nodeRoot;$gitRoot;$(Join-Path $projectRoot 'node_modules\.bin');$env:SystemRoot\System32;$env:SystemRoot;$env:PATH"
   $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
@@ -73,6 +83,7 @@ try {
   $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
   $env:ANDALUCIA_ACTIVE_SOURCE_SHA = $source.Sha
   $env:ANDALUCIA_ACTIVE_SOURCE_BRANCH = $source.Branch
+  $env:ANDALUCIA_GUARDED_STARTUP_LOG = $startupLog
   if ($RecoveryAuthorizationId) {
     $env:ANDALUCIA_RECOVERY_AUTHORIZATION_ID = $RecoveryAuthorizationId
     $env:ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR = $canonicalData
@@ -96,9 +107,9 @@ try {
     }
     $apiCommand = "`"$tsxCommand`" `"$recoveryBootstrap`" --source-root `"$runtimeSourceRoot`" --canonical-root `"$projectRoot`" --authorization-id `"$RecoveryAuthorizationId`""
     $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$runtimeSourceRoot`""
-    & $concurrentlyCommand -k -n api,client -c blue,cyan $apiCommand $clientCommand
+    & $concurrentlyCommand -k -n api,client -c blue,cyan $apiCommand $clientCommand 2>&1 | Tee-Object -FilePath $runtimeOutputLog -Append
   } else {
-    & $npmCommand run dev:canonical
+    & $npmCommand run dev:canonical 2>&1 | Tee-Object -FilePath $runtimeOutputLog -Append
   }
   $runtimeExit = $LASTEXITCODE
   if ($runtimeExit -ne 0) {
@@ -107,6 +118,10 @@ try {
       try { Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json } catch { $null }
     } | Where-Object { $_.state -eq 'completed' -and [DateTime]::Parse([string]$_.completedAt).ToUniversalTime() -ge $startedAtUtc } | Select-Object -First 1
     if ($gracefulSchedulerStop) { $runtimeExit = 0 }
+  }
+  if ($runtimeExit -ne 0) {
+    $firstFatal = Get-FirstFatalRuntimeLine $runtimeOutputLog
+    Write-StartupLog 'FAILED' "exitCode=$runtimeExit;firstFatal=$firstFatal;outputLog=$runtimeOutputLog"
   }
   Write-StartupLog 'EXITED' "exitCode=$runtimeExit"
   exit $runtimeExit
