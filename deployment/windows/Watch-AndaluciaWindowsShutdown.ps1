@@ -2,6 +2,8 @@
 param(
   [string]$ProjectRoot,
   [string]$SimulationEventPath,
+  [switch]$PreshutdownOnce,
+  [string]$ScmValidatedSourceSha,
   [int]$TimeoutSeconds = 45
 )
 
@@ -27,10 +29,15 @@ if ($SimulationEventPath) {
   if ($identity.role -notin @('test','development','disposable')) { throw 'SHUTDOWN_WATCHER_SIMULATION_CANONICAL_FORBIDDEN' }
 } else {
   if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'SHUTDOWN_WATCHER_CANONICAL_IDENTITY_MISMATCH' }
-  if (-not (Test-Path -LiteralPath $resolver -PathType Leaf)) { throw 'SHUTDOWN_WATCHER_SOURCE_RESOLVER_MISSING' }
-  . $resolver
-  $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $root
-  Write-WatcherLog 'ARMED' "sha=$($approvedSource.Sha);branch=$($approvedSource.Branch)"
+  if ($PreshutdownOnce) {
+    if ($ScmValidatedSourceSha -notmatch '^[0-9a-f]{40}$') { throw 'SHUTDOWN_WATCHER_SCM_SOURCE_BINDING_MISSING' }
+    Write-WatcherLog 'ARMED' "sha=$ScmValidatedSourceSha;source=SCM_VALIDATED_MAIN"
+  } else {
+    if (-not (Test-Path -LiteralPath $resolver -PathType Leaf)) { throw 'SHUTDOWN_WATCHER_SOURCE_RESOLVER_MISSING' }
+    . $resolver
+    $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $root
+    Write-WatcherLog 'ARMED' "sha=$($approvedSource.Sha);branch=$($approvedSource.Branch)"
+  }
 }
 
 function Invoke-GuardedShutdownSignal([string]$Reason) {
@@ -61,15 +68,5 @@ if ($SimulationEventPath) {
   exit 0
 }
 
-$sourceIdentifier = 'AndaluciaWindowsSessionEnding'
-$subscription = Register-ObjectEvent -InputObject ([Microsoft.Win32.SystemEvents]) -EventName SessionEnding -SourceIdentifier $sourceIdentifier
-try {
-  while ($true) {
-    $event = Wait-Event -SourceIdentifier $sourceIdentifier
-    Remove-Event -EventIdentifier $event.EventIdentifier -ErrorAction SilentlyContinue
-    Invoke-GuardedShutdownSignal "WINDOWS_SESSION_ENDING:$($event.SourceEventArgs.Reason)"
-  }
-} finally {
-  Unregister-Event -SourceIdentifier $sourceIdentifier -ErrorAction SilentlyContinue
-  Remove-Job -Id $subscription.Id -Force -ErrorAction SilentlyContinue
-}
+if (-not $PreshutdownOnce) { throw 'SHUTDOWN_WATCHER_SCM_PRESHUTDOWN_REQUIRED' }
+Invoke-GuardedShutdownSignal 'WINDOWS_SCM_PRESHUTDOWN'
