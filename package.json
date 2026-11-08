@@ -42,6 +42,7 @@
     "test:database-safe-shutdown": "tsx server/database-safe-shutdown.test.ts",
     "test:database-stale-marker-recovery": "tsx server/database-stale-marker-recovery-security.test.mjs",
     "test:startup-reliability-observability": "tsx server/startup-reliability-observability.test.mjs",
+    "test:windows-shutdown-watcher": "node server/windows-shutdown-watcher-security.test.mjs",
     "test:runtime-source-version": "tsx server/runtime-source-version.test.ts",
     "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
     "test:secure-cloud-upload": "tsx server/secure-cloud-upload.test.ts",

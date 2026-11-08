@@ -7,6 +7,7 @@ $jobScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Invoke-AndaluciaDa
 $runtimeScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-AndaluciaGuardedApplication.ps1'))
 $shutdownScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Stop-AndaluciaGuardedApplication.ps1'))
 $shutdownSignalScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Signal-AndaluciaWindowsShutdown.cmd'))
+$shutdownWatcherScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Watch-AndaluciaWindowsShutdown.ps1'))
 $sourceResolver = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'))
 $exportRoot = Join-Path $projectRoot '.backups\.db2\scheduler\task-exports'
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -35,60 +36,29 @@ function Assert-RuntimeTaskSafety {
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'RUNTIME_TASK_SAFETY_DRIFT:WorkingDirectory' }
 }
 
-function Register-GracefulShutdownTask([string]$CommandPath) {
-  $service = New-Object -ComObject 'Schedule.Service'
-  $service.Connect()
-  $folder = $service.GetFolder('\')
-  $definition = $service.NewTask(0)
-  $definition.RegistrationInfo.Description = 'Gracefully releases the Andalucía canonical PGlite owner before a Windows shutdown or restart.'
-  $definition.Principal.UserId = $currentUser
-  # The User32 1074 event is raised while Windows is already tearing down the
-  # interactive desktop session. An InteractiveToken task can therefore fail
-  # before PowerShell initializes (NTSTATUS 0xC0000142), leaving PGlite's
-  # ownership marker behind. S4U keeps the same limited user identity but lets
-  # Task Scheduler launch the local shutdown handshake independently of the
-  # closing interactive session; no password is stored and no elevation is used.
-  $definition.Principal.LogonType = 2
-  $definition.Principal.RunLevel = 0
-  $definition.Settings.Enabled = $true
-  $definition.Settings.StartWhenAvailable = $true
-  $definition.Settings.MultipleInstances = 2
-  $definition.Settings.DisallowStartIfOnBatteries = $false
-  $definition.Settings.StopIfGoingOnBatteries = $false
-  $definition.Settings.ExecutionTimeLimit = 'PT2M'
-  $definition.Settings.AllowHardTerminate = $false
-  $trigger = $definition.Triggers.Create(0)
-  $trigger.Enabled = $true
-  $trigger.Subscription = "<QueryList><Query Id='0' Path='System'><Select Path='System'>*[System[Provider[@Name='User32'] and EventID=1074]]</Select></Query></QueryList>"
-  $action = $definition.Actions.Create(0)
-  # The event is delivered while Windows is already tearing down the session.
-  # Keep the scheduled action to one atomic file signal; the already-running
-  # API owns and performs the guarded PGlite shutdown. This avoids starting a
-  # full PowerShell host after teardown has begun.
-  $action.Path = $CommandPath
-  $action.Arguments = ("/D /Q /C call `"{0}`"" -f $shutdownSignalScript)
-  $action.WorkingDirectory = $projectRoot
-  $taskCreateOrUpdate = 6
-  $taskLogonS4U = 2
-  $folder.RegisterTaskDefinition($shutdownName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonS4U, $null) | Out-Null
+function Register-GracefulShutdownTask {
+  $action = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File `"{0}`" -ProjectRoot `"{1}`"" -f $shutdownWatcherScript, $projectRoot) -WorkingDirectory $projectRoot
+  $trigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
+  $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -DisallowHardTerminate -ExecutionTimeLimit ([TimeSpan]::Zero)
+  Register-ScheduledTask -TaskName $shutdownName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Runs before shutdown as an already-active limited-user watcher and requests guarded PGlite closure.' -Force | Out-Null
 }
 
 function Assert-ShutdownTaskSafety {
   [xml]$definition = Export-ScheduledTask -TaskName $shutdownName
   $namespace = [Xml.XmlNamespaceManager]::new($definition.NameTable)
   $namespace.AddNamespace('t', 'http://schemas.microsoft.com/windows/2004/02/mit/task')
-  $subscription = $definition.SelectSingleNode('//t:Triggers/t:EventTrigger/t:Subscription', $namespace).InnerText
   $command = $definition.SelectSingleNode('//t:Actions/t:Exec/t:Command', $namespace).InnerText
   $arguments = $definition.SelectSingleNode('//t:Actions/t:Exec/t:Arguments', $namespace).InnerText
   $workingDirectory = $definition.SelectSingleNode('//t:Actions/t:Exec/t:WorkingDirectory', $namespace).InnerText
   $allowHardTerminate = $definition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $namespace).InnerText
   $logonType = $definition.SelectSingleNode('//t:Principals/t:Principal/t:LogonType', $namespace).InnerText
-  if ($subscription -notmatch 'EventID=1074' -or $subscription -notmatch "Provider\[@Name='User32'\]") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:EventTrigger' }
-  if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath((Join-Path $env:SystemRoot 'System32\cmd.exe'))) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Command' }
-  if ($arguments -notlike "*$shutdownSignalScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:SignalScript' }
+  $triggerType = $definition.SelectSingleNode('//t:Triggers/*', $namespace).LocalName
+  if ($triggerType -ne 'LogonTrigger') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WatcherTrigger' }
+  if ([IO.Path]::GetFullPath($command) -ne [IO.Path]::GetFullPath($powerShell)) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:Command' }
+  if ($arguments -notlike "*$shutdownWatcherScript*") { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WatcherScript' }
   if ([IO.Path]::GetFullPath($workingDirectory) -ne $projectRoot) { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:WorkingDirectory' }
   if ($allowHardTerminate -ne 'false') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:AllowHardTerminate' }
-  if ($logonType -ne 'S4U') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:LogonType' }
+  if ($logonType -ne 'InteractiveToken') { throw 'SHUTDOWN_TASK_SAFETY_DRIFT:LogonType' }
 }
 
 function Set-RuntimeTaskHardTerminateProtection {
@@ -106,7 +76,7 @@ function Set-RuntimeTaskHardTerminateProtection {
   $folder.RegisterTaskDefinition($runtimeName, $definition, $taskCreateOrUpdate, $currentUser, $null, $taskLogonInteractiveToken, $null) | Out-Null
 }
 
-foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
+foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $shutdownWatcherScript, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
 $approvedSource = Assert-ApprovedCheckout
 
@@ -128,7 +98,7 @@ Register-ScheduledTask -TaskName $dailyName -Action $dailyAction -Trigger $daily
 Register-ScheduledTask -TaskName $rehearsalName -Action $rehearsalAction -Trigger $rehearsalTrigger -Principal $principal -Settings $commonSettings -Description 'Runs the DB-2 restore rehearsal against the latest suitable verified backup without promotion.' -Force | Out-Null
 Set-RuntimeTaskHardTerminateProtection
 Assert-RuntimeTaskSafety
-Register-GracefulShutdownTask $commandPrompt
+Register-GracefulShutdownTask
 Assert-ShutdownTaskSafety
 
 New-Item -ItemType Directory -Path $exportRoot -Force | Out-Null
