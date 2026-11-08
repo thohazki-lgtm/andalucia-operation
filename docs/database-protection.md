@@ -106,6 +106,14 @@ Migrations 001–018 are the reviewed set. Migration 009 remains the code-backed
 
 Stop. Preserve the complete store and runtime markers. Do not retry in a loop, run migrations, delete `postmaster.pid`, edit `pg_control`, remove WAL, initialize an empty database, or promote a backup automatically. Begin a separately authorized copy-only recovery assessment.
 
+## DB3 stale PGlite marker review
+
+When guarded startup reports `ANDALUCIA_STARTUP_DATABASE_MARKER_PRESENT_REQUIRES_DB3_REVIEW`, keep the application stopped and preserve `postmaster.pid`. The protected DB3 command is `npm run db:stale-marker:recover -- -ProjectRoot <authoritative-main-root>`. It prompts locally for an authenticated Owner account; credentials are never accepted as command-line arguments.
+
+The command fails closed unless the authoritative source is tracked-clean `main` at `origin/main`, the canonical identity is exact, the marker is the PGlite `-42` sentinel, no process/handle/listener/Andalucía scheduled task or database-operation lease owns the store, and a Schema 027 VERIFIED restore-ready backup exists. It creates a single-use, expiring journal authorization, atomically claims the canonical database operation, and copies the unchanged marker plus its hash and incident binding into protected DB3 evidence before recovery.
+
+The command never deletes, renames, or overwrites `postmaster.pid`. PGlite/PostgreSQL performs its supported stale-lock recovery when the database is opened. The command verifies Schema 027, Owner and Andalucía outlet foundations, closes PGlite normally, and requires the marker to be naturally released before recording success. Changed or ambiguous evidence, concurrent work, failed open, or interrupted recovery remains terminal and requires review; do not retry automatically.
+
 ## DATABASE RECOVERY REQUIRED — WHAT TO DO
 
 1. Keep the application and scheduled database jobs stopped. Open Owner **Customization Center → Platform → Database Health** from a known-good administration runtime, or use the offline recovery CLI to inspect the incident.
