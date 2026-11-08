@@ -12,12 +12,14 @@ $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword
 try {
   $plainPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
   $payload = @{ identifier = $LoginIdentifier; password = $plainPassword } | ConvertTo-Json -Compress
-  $tsx = Join-Path $root 'node_modules\.bin\tsx.cmd'
+  $nativeControl = Join-Path $PSScriptRoot 'Invoke-AndaluciaNativeJsonControl.ps1'
+  $node = (Get-Command node.exe -ErrorAction Stop).Source
+  $tsx = Join-Path $root 'node_modules\tsx\dist\cli.mjs'
   $control = Join-Path $root 'server\database-stale-marker-recovery.ts'
-  if (-not (Test-Path -LiteralPath $tsx -PathType Leaf) -or -not (Test-Path -LiteralPath $control -PathType Leaf)) { throw 'DB3_STALE_MARKER_CONTROL_UNAVAILABLE' }
-  $output = $payload | & $tsx $control --project-root $root 2>&1
-  if ($LASTEXITCODE -ne 0) { throw ($output -join [Environment]::NewLine) }
-  $result = ($output -join [Environment]::NewLine) | ConvertFrom-Json
+  if (-not (Test-Path -LiteralPath $nativeControl -PathType Leaf) -or -not (Test-Path -LiteralPath $tsx -PathType Leaf) -or -not (Test-Path -LiteralPath $control -PathType Leaf)) { throw 'DB3_STALE_MARKER_CONTROL_UNAVAILABLE' }
+  . $nativeControl
+  $output = Invoke-AndaluciaNativeJsonControl -ExecutablePath $node -ArgumentList @($tsx, $control, '--project-root', $root) -Payload $payload
+  $result = $output | ConvertFrom-Json
   if ($result.state -ne 'RECOVERY_HEALTHY' -or $result.schema -ne '027') { throw 'DB3_STALE_MARKER_RECOVERY_NOT_HEALTHY' }
   [pscustomobject]@{ AuthorizationId=$result.authorizationId; State=$result.state; SourceSha=$result.sourceSha; BackupId=$result.backupId; Schema=$result.schema }
 } finally {
