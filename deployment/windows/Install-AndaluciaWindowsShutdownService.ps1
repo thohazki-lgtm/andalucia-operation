@@ -13,6 +13,33 @@ $handshakeSource = Join-Path $PSScriptRoot 'Watch-AndaluciaWindowsShutdown.ps1'
 $handshakeInstalled = Join-Path $serviceRoot 'Watch-AndaluciaWindowsShutdown.ps1'
 $controlRoot = Join-Path $root '.backups\.db2\scheduler\control'
 $logRoot = Join-Path $root '.runtime\logs'
+$scExecutable = Join-Path $env:SystemRoot 'System32\sc.exe'
+
+function Invoke-AndaluciaScCommand {
+  param(
+    [Parameter(Mandatory)][string]$FailureCode,
+    [Parameter(Mandatory)][string[]]$Arguments
+  )
+
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    # Windows PowerShell converts native stderr into ErrorRecord objects. Keep it
+    # non-terminating long enough to preserve the complete SCM diagnostic.
+    $ErrorActionPreference = 'Continue'
+    $nativeOutput = @(& $scExecutable @Arguments 2>&1)
+    $nativeExitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+
+  if ($nativeExitCode -ne 0) {
+    $nativeDetail = (($nativeOutput | ForEach-Object { $_.ToString().Trim() }) | Where-Object { $_ }) -join ' | '
+    if (-not $nativeDetail) { $nativeDetail = 'No diagnostic text was returned by sc.exe.' }
+    throw ('{0}:WIN32_EXIT_{1}:{2}' -f $FailureCode, $nativeExitCode, $nativeDetail)
+  }
+
+  return $nativeOutput
+}
 
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $handshakeSource -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_HANDSHAKE_SOURCE_MISSING' }
@@ -44,15 +71,12 @@ Copy-Item -LiteralPath $handshakeSource -Destination $handshakeInstalled -Force
 $handshakeSha256 = (Get-FileHash -LiteralPath $handshakeInstalled -Algorithm SHA256).Hash.ToLowerInvariant()
 $binaryPath = ('"{0}" --project-root "{1}" --expected-sha {2} --git-path "{3}" --handshake-sha256 {4} --timeout-seconds 45' -f $serviceExe, $root, $approved.Sha, $git, $handshakeSha256)
 if ($existingService) {
-  & sc.exe config $serviceName binPath= $binaryPath start= auto obj= 'NT AUTHORITY\LocalService' DisplayName= 'ANDALUCIA OPERATION - Graceful Shutdown Guard' | Out-Null
+  Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
 } else {
-  & sc.exe create $serviceName binPath= $binaryPath start= auto obj= 'NT AUTHORITY\LocalService' DisplayName= 'ANDALUCIA OPERATION - Graceful Shutdown Guard' | Out-Null
+  Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CREATE_FAILED' -Arguments @('create',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
 }
-if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_CREATE_FAILED' }
-& sc.exe sidtype $serviceName restricted | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED' }
-& sc.exe preshutdown $serviceName 60000 | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED' }
+Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED' -Arguments @('sidtype',$serviceName,'restricted') | Out-Null
+Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED' -Arguments @('preshutdown',$serviceName,'60000') | Out-Null
 
 # Grant the service only traversal/read access needed to validate identity and marker state,
 # plus modify access to its guarded control and durable log directories.
