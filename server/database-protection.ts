@@ -226,4 +226,4 @@ export const openVerifiedDatabase = async (options: { dataDirectory: string; rol
   }
 }
 
-export const publicDatabaseHealth = (health: DatabaseHealth) => ({ status: health.status, migrationVersion: health.migrationVersion, migrationRequired: health.migrationRequired, recoveryRequired: health.recoveryRequired })
+export const publicDatabaseHealth = (health: DatabaseHealth) => ({ storeId: health.storeId, status: health.status, migrationVersion: health.migrationVersion, migrationRequired: health.migrationRequired, recoveryRequired: health.recoveryRequired })

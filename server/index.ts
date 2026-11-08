@@ -38,6 +38,7 @@ import { rosterWeekRange, serviceDate, weekRange } from '../src/service-date.js'
 import { defaultBackupRoot, openVerifiedDatabase, operationMarkerPaths, publicDatabaseHealth, resolveApplicationRuntimeStore } from './database-protection.js'
 import { startSchedulerShutdownControl } from './database-scheduler.js'
 import { createDatabaseSafeShutdown } from './database-safe-shutdown.js'
+import { acknowledgeGuardedStartupHealth } from './guarded-startup-observability.js'
 import { DatabaseBackupAdminService } from './database-backup-admin.js'
 import { createOperationalFingerprint } from './database-backup.js'
 import { DatabaseRecoveryService } from './database-recovery.js'
@@ -486,7 +487,14 @@ const server = createServer(async (request, response) => {
   } catch (error) { if (error instanceof AuthError || error instanceof AuthorizationError || error instanceof TimesheetError) return send(response, error.status, { code: error.code, message: error.message }, { 'Cache-Control': 'no-store' }); const expectedStatus = expectedErrorStatus(error); if (!expectedStatus) console.error(error); return send(response, expectedStatus || 500, { message: error instanceof Error ? error.message : 'Unexpected server error.' }) }
 })
 
-server.listen(Number(process.env.API_PORT || 3001), '127.0.0.1', () => console.log(`Operations API listening on http://127.0.0.1:${process.env.API_PORT || 3001}`))
+server.listen(Number(process.env.API_PORT || 3001), '127.0.0.1', () => {
+  console.log(`Operations API listening on http://127.0.0.1:${process.env.API_PORT || 3001}`)
+  try {
+    acknowledgeGuardedStartupHealth({ sha: activeSource.sha, branch: activeSource.branch, storeId: databaseHealth.storeId, schema: databaseHealth.migrationVersion, databaseStatus: databaseHealth.status })
+  } catch (error) {
+    console.error('Guarded startup health acknowledgement failed.', error)
+  }
+})
 let stopShutdownControl: () => void = () => undefined
 const databaseSafeShutdown = createDatabaseSafeShutdown({
   closeHttpServer: () => new Promise<void>((resolveShutdown, rejectShutdown) => server.close(error => error ? rejectShutdown(error) : resolveShutdown())),
