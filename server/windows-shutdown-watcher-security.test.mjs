@@ -62,7 +62,10 @@ try {
   assert.match(serviceText, /WaitForExit\(\(timeoutSeconds \+ 5\) \* 1000\)/)
   assert.match(installerText, /'obj=',\s*'NT AUTHORITY\\LocalService'/)
   assert.match(installerText, /SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED[^\n]+sidtype[^\n]+restricted/)
-  assert.match(installerText, /SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED[^\n]+preshutdown[^\n]+60000/)
+  assert.doesNotMatch(installerText, /-Arguments\s+@\('preshutdown'/, 'installer must not call the unsupported sc.exe preshutdown command')
+  assert.match(installerText, /Set-AndaluciaPreshutdownTimeout[^\n]+-TimeoutMs 60000/)
+  assert.match(installerText, /New-ItemProperty[^\n]+PreshutdownTimeout[^\n]+PropertyType DWord/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_MISMATCH/)
   assert.match(installerText, /System32\\sc\.exe/)
   assert.match(installerText, /\$nativeOutput = @\(& \$scExecutable @Arguments 2>&1\)/)
   assert.match(installerText, /WIN32_EXIT_\{1\}/)
@@ -122,6 +125,27 @@ try {
   assert.match(serializedArguments[0], /^"C:\\Program Files\\ANDALUCIA OPERATION\\ShutdownGuard\\AndaluciaWindowsShutdownService\.exe"/)
   assert.match(serializedArguments[0], /--project-root "C:\\Users\\Disposable SCM Fixture"/)
   assert.match(serializedArguments[0], /--git-path "C:\\Program Files\\Git\\cmd\\git\.exe"/)
+
+  const timeoutRegistryFixture = `
+    $ErrorActionPreference = 'Stop'
+    $installerPath = '${serviceInstaller.replaceAll("'", "''")}'
+    $tokens = $null
+    $errors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($installerPath,[ref]$tokens,[ref]$errors)
+    if ($errors.Count -ne 0) { throw 'INSTALLER_PARSE_FAILED' }
+    $function = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Set-AndaluciaPreshutdownTimeout' }, $true)
+    if (-not $function) { throw 'PRESHUTDOWN_TIMEOUT_FUNCTION_MISSING' }
+    . ([scriptblock]::Create($function.Extent.Text))
+    $script:captured = $null
+    function New-ItemProperty {
+      param([string]$LiteralPath,[string]$Name,[string]$PropertyType,[int]$Value,[switch]$Force)
+      $script:captured = [pscustomobject]@{ LiteralPath=$LiteralPath; Name=$Name; PropertyType=$PropertyType; Value=$Value; Force=[bool]$Force }
+    }
+    function Get-ItemPropertyValue { param([string]$LiteralPath,[string]$Name); return 60000 }
+    Set-AndaluciaPreshutdownTimeout -RegistryPath 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Disposable' -TimeoutMs 60000
+    if ($script:captured.LiteralPath -ne 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Disposable' -or $script:captured.Name -ne 'PreshutdownTimeout' -or $script:captured.PropertyType -ne 'DWord' -or $script:captured.Value -ne 60000 -or -not $script:captured.Force) { throw 'PRESHUTDOWN_TIMEOUT_DISPOSABLE_VALIDATION_FAILED' }
+  `
+  await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(timeoutRegistryFixture, 'utf16le').toString('base64')], { timeout: 30000 })
 
   const good = await fixture('disposable')
   const exe = await compile(good.root)

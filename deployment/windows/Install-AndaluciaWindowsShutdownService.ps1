@@ -41,6 +41,21 @@ function Invoke-AndaluciaScCommand {
   return $nativeOutput
 }
 
+function Set-AndaluciaPreshutdownTimeout {
+  param(
+    [Parameter(Mandatory)][string]$RegistryPath,
+    [Parameter(Mandatory)][ValidateRange(1000,180000)][int]$TimeoutMs
+  )
+
+  try {
+    New-ItemProperty -LiteralPath $RegistryPath -Name 'PreshutdownTimeout' -PropertyType DWord -Value $TimeoutMs -Force | Out-Null
+    $configuredTimeout = [int](Get-ItemPropertyValue -LiteralPath $RegistryPath -Name 'PreshutdownTimeout')
+  } catch {
+    throw "SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED:$($_.Exception.Message)"
+  }
+  if ($configuredTimeout -ne $TimeoutMs) { throw 'SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_MISMATCH' }
+}
+
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $handshakeSource -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_HANDSHAKE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $resolver -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_RESOLVER_MISSING' }
@@ -76,7 +91,8 @@ if ($existingService) {
   Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CREATE_FAILED' -Arguments @('create',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
 }
 Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED' -Arguments @('sidtype',$serviceName,'restricted') | Out-Null
-Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED' -Arguments @('preshutdown',$serviceName,'60000') | Out-Null
+$serviceRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName"
+Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60000
 
 # Grant the service only traversal/read access needed to validate identity and marker state,
 # plus modify access to its guarded control and durable log directories.
