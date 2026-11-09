@@ -96,6 +96,33 @@ try {
   const nativeDiagnostic = await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(nativeDiagnosticFixture, 'utf16le').toString('base64')], { timeout: 30000 })
   assert.match(nativeDiagnostic.stdout, /WIN32_EXIT_1060/)
 
+  const argvRoot = await mkdtemp(join(tmpdir(), 'andalucia-scm-argv-')); roots.push(argvRoot)
+  const argvProbe = join(argvRoot, 'argv-probe.mjs')
+  await writeFile(argvProbe, 'process.stdout.write(JSON.stringify(process.argv.slice(2)))')
+  const nativeArgumentFixture = String.raw`
+    $ErrorActionPreference = 'Stop'
+    $installerPath = '${serviceInstaller.replaceAll("'", "''")}'
+    $tokens = $null
+    $errors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($installerPath,[ref]$tokens,[ref]$errors)
+    if ($errors.Count -ne 0) { throw 'INSTALLER_PARSE_FAILED' }
+    $assignment = $ast.Find({ param($node) $node -is [Management.Automation.Language.AssignmentStatementAst] -and $node.Left -is [Management.Automation.Language.VariableExpressionAst] -and $node.Left.VariablePath.UserPath -eq 'binaryPath' }, $true)
+    if (-not $assignment) { throw 'SC_BINARY_PATH_ASSIGNMENT_MISSING' }
+    $serviceExe = 'C:\Program Files\ANDALUCIA OPERATION\ShutdownGuard\AndaluciaWindowsShutdownService.exe'
+    $root = 'C:\Users\Disposable SCM Fixture'
+    $approved = [pscustomobject]@{ Sha = '${'1'.repeat(40)}' }
+    $git = 'C:\Program Files\Git\cmd\git.exe'
+    $handshakeSha256 = '${'a'.repeat(64)}'
+    . ([scriptblock]::Create($assignment.Extent.Text))
+    & '${process.execPath.replaceAll("'", "''")}' '${argvProbe.replaceAll("'", "''")}' $binaryPath
+  `
+  const nativeArgument = await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(nativeArgumentFixture, 'utf16le').toString('base64')], { timeout: 30000 })
+  const serializedArguments = JSON.parse(nativeArgument.stdout)
+  assert.equal(serializedArguments.length, 1, 'Windows PowerShell 5.1 must pass binPath as one native argument')
+  assert.match(serializedArguments[0], /^"C:\\Program Files\\ANDALUCIA OPERATION\\ShutdownGuard\\AndaluciaWindowsShutdownService\.exe"/)
+  assert.match(serializedArguments[0], /--project-root "C:\\Users\\Disposable SCM Fixture"/)
+  assert.match(serializedArguments[0], /--git-path "C:\\Program Files\\Git\\cmd\\git\.exe"/)
+
   const good = await fixture('disposable')
   const exe = await compile(good.root)
   const architecture = await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-Command',`[Reflection.AssemblyName]::GetAssemblyName('${exe.replaceAll("'", "''")}').ProcessorArchitecture`])
