@@ -65,7 +65,7 @@ try {
         $runtimeSha = [string]$evidence.previousLiveSha
     } else {
         try { $health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5 } catch { Stop-Readiness 'RUNTIME_HEALTH_UNAVAILABLE' $_.Exception.Message }
-        if (-not $health.ok -or $health.database.status -ne 'HEALTHY') { Stop-Readiness 'DATABASE_NOT_HEALTHY' ([string]$health.database.status) }
+        if (-not $health.ok -or $health.database.status -notin @('HEALTHY','BACKUP_RECOMMENDED')) { Stop-Readiness 'DATABASE_NOT_HEALTHY' ([string]$health.database.status) }
         if ($health.database.migrationVersion -ne '027' -or $health.database.migrationRequired -or $health.database.recoveryRequired) { Stop-Readiness 'SCHEMA_GATE_FAILED' ($health.database | ConvertTo-Json -Compress) }
         $runtimeSha = [string]$health.application.sha
         if (-not $runtimeSha) { Stop-Readiness 'RUNTIME_SHA_MISSING' 'The health response did not identify its source.' }
