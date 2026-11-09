@@ -69,7 +69,7 @@ if ($existingService -and $existingService.Status -ne 'Stopped') {
 Move-Item -LiteralPath $serviceExeCandidate -Destination $serviceExe -Force
 Copy-Item -LiteralPath $handshakeSource -Destination $handshakeInstalled -Force
 $handshakeSha256 = (Get-FileHash -LiteralPath $handshakeInstalled -Algorithm SHA256).Hash.ToLowerInvariant()
-$binaryPath = ('"{0}" --project-root "{1}" --expected-sha {2} --git-path "{3}" --handshake-sha256 {4} --timeout-seconds 45' -f $serviceExe, $root, $approved.Sha, $git, $handshakeSha256)
+$binaryPath = ('\"{0}\" --project-root \"{1}\" --expected-sha {2} --git-path \"{3}\" --handshake-sha256 {4} --timeout-seconds 45' -f $serviceExe, $root, $approved.Sha, $git, $handshakeSha256)
 if ($existingService) {
   Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
 } else {
