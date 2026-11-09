@@ -27,8 +27,8 @@ const fixture = async role => {
 
 const compile = async root => {
   const output = join(root, 'AndaluciaWindowsShutdownService.exe')
-  const command = `$ErrorActionPreference='Stop'; Add-Type -Path '${serviceSource.replaceAll("'", "''")}' -OutputAssembly '${output.replaceAll("'", "''")}' -OutputType ConsoleApplication`
-  await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(command, 'utf16le').toString('base64')], { timeout: 30000 })
+  const csc = join(process.env.WINDIR, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe')
+  await exec(csc, ['/nologo','/target:exe','/platform:anycpu',`/out:${output}`,serviceSource], { timeout: 30000 })
   await writeFile(join(root, 'Watch-AndaluciaWindowsShutdown.ps1'), await readFile(watcher))
   return output
 }
@@ -67,6 +67,10 @@ try {
   assert.match(installerText, /New-ItemProperty[^\n]+PreshutdownTimeout[^\n]+PropertyType DWord/)
   assert.match(installerText, /SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_MISMATCH/)
   assert.match(installerText, /Get-Item -LiteralPath \$gitMetadata -Force/, 'hidden authoritative .git metadata must remain discoverable')
+  assert.match(installerText, /Framework64\\v4\.0\.30319\\csc\.exe/)
+  assert.match(installerText, /\/target:exe \/platform:anycpu/)
+  assert.doesNotMatch(installerText, /Add-Type -TypeDefinition[^\n]+OutputType ConsoleApplication/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_ARM64_COMPILE_FAILED/)
   assert.match(installerText, /System32\\sc\.exe/)
   assert.match(installerText, /\$nativeOutput = @\(& \$scExecutable @Arguments 2>&1\)/)
   assert.match(installerText, /WIN32_EXIT_\{1\}/)

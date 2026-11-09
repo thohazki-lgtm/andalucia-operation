@@ -71,9 +71,22 @@ if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.
 $administrator = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $administrator) { throw 'SHUTDOWN_SERVICE_ADMINISTRATOR_INSTALL_REQUIRED' }
 New-Item -ItemType Directory -Path $serviceRoot,$controlRoot,$logRoot -Force | Out-Null
-$typeDefinition = Get-Content -LiteralPath $source -Raw
 if (Test-Path -LiteralPath $serviceExeCandidate) { Remove-Item -LiteralPath $serviceExeCandidate -Force }
-Add-Type -TypeDefinition $typeDefinition -OutputAssembly $serviceExeCandidate -OutputType ConsoleApplication
+$cscExecutable = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+if (-not (Test-Path -LiteralPath $cscExecutable -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_ARM64_COMPILER_MISSING' }
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+  $ErrorActionPreference = 'Continue'
+  $compilerOutput = @(& $cscExecutable /nologo /target:exe /platform:anycpu "/out:$serviceExeCandidate" $source 2>&1)
+  $compilerExitCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $previousErrorActionPreference
+}
+if ($compilerExitCode -ne 0 -or -not (Test-Path -LiteralPath $serviceExeCandidate -PathType Leaf)) {
+  $compilerDetail = (($compilerOutput | ForEach-Object { $_.ToString().Trim() }) | Where-Object { $_ }) -join ' | '
+  if (-not $compilerDetail) { $compilerDetail = 'The AnyCPU service image was not produced.' }
+  throw "SHUTDOWN_SERVICE_ARM64_COMPILE_FAILED:WIN32_EXIT_${compilerExitCode}:$compilerDetail"
+}
 
 $serviceIdentity = "NT SERVICE\$serviceName"
 $existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
