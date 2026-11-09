@@ -60,14 +60,41 @@ try {
   assert.match(serviceText, /-PreshutdownOnce/)
   assert.match(serviceText, /SHUTDOWN_SERVICE_HANDSHAKE_INTEGRITY_MISMATCH/)
   assert.match(serviceText, /WaitForExit\(\(timeoutSeconds \+ 5\) \* 1000\)/)
-  assert.match(installerText, /obj= 'NT AUTHORITY\\LocalService'/)
-  assert.match(installerText, /sidtype \$serviceName restricted/)
-  assert.match(installerText, /preshutdown \$serviceName 60000/)
+  assert.match(installerText, /'obj=',\s*'NT AUTHORITY\\LocalService'/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED[^\n]+sidtype[^\n]+restricted/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_FAILED[^\n]+preshutdown[^\n]+60000/)
+  assert.match(installerText, /System32\\sc\.exe/)
+  assert.match(installerText, /\$nativeOutput = @\(& \$scExecutable @Arguments 2>&1\)/)
+  assert.match(installerText, /WIN32_EXIT_\{1\}/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_CREATE_FAILED/)
+  assert.doesNotMatch(installerText, /sc\.exe create[^\n]+\| Out-Null/)
   assert.match(installerText, /ProgramFiles[^\n]+ShutdownGuard/)
   assert.match(installerText, /inheritance:r[^\n]+SYSTEM:\(OI\)\(CI\)\(F\)[^\n]+Administrators:\(OI\)\(CI\)\(F\)[^\n]+\(OI\)\(CI\)\(RX\)/)
   assert.doesNotMatch(installerText, /LocalSystem|SYSTEM_ACCOUNT/i)
   assert.match(schedulerText, /Install-AndaluciaWindowsShutdownService\.ps1/)
   assert.doesNotMatch(schedulerText, /Register-GracefulShutdownTask|New-ScheduledTaskTrigger -AtLogOn[^\n]+shutdown/i)
+
+  const nativeDiagnosticFixture = `
+    $ErrorActionPreference = 'Stop'
+    $installerPath = '${serviceInstaller.replaceAll("'", "''")}'
+    $tokens = $null
+    $errors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($installerPath,[ref]$tokens,[ref]$errors)
+    if ($errors.Count -ne 0) { throw 'INSTALLER_PARSE_FAILED' }
+    $definition = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-AndaluciaScCommand' }, $true)
+    if (-not $definition) { throw 'SC_DIAGNOSTIC_FUNCTION_MISSING' }
+    . ([scriptblock]::Create($definition.Extent.Text))
+    $scExecutable = Join-Path $env:SystemRoot 'System32\\sc.exe'
+    try {
+      Invoke-AndaluciaScCommand -FailureCode 'DISPOSABLE_SERVICE_QUERY_FAILED' -Arguments @('query','AndaluciaDisposableServiceThatMustNotExist') | Out-Null
+      throw 'EXPECTED_NATIVE_FAILURE_MISSING'
+    } catch {
+      if ($_.Exception.Message -notmatch 'DISPOSABLE_SERVICE_QUERY_FAILED:WIN32_EXIT_1060:' -or $_.Exception.Message -notmatch 'does not exist') { throw }
+      Write-Output $_.Exception.Message
+    }
+  `
+  const nativeDiagnostic = await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(nativeDiagnosticFixture, 'utf16le').toString('base64')], { timeout: 30000 })
+  assert.match(nativeDiagnostic.stdout, /WIN32_EXIT_1060/)
 
   const good = await fixture('disposable')
   const exe = await compile(good.root)
