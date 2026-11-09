@@ -66,6 +66,7 @@ try {
   assert.match(installerText, /Set-AndaluciaPreshutdownTimeout[^\n]+-TimeoutMs 60000/)
   assert.match(installerText, /New-ItemProperty[^\n]+PreshutdownTimeout[^\n]+PropertyType DWord/)
   assert.match(installerText, /SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_MISMATCH/)
+  assert.match(installerText, /Get-Item -LiteralPath \$gitMetadata -Force/, 'hidden authoritative .git metadata must remain discoverable')
   assert.match(installerText, /System32\\sc\.exe/)
   assert.match(installerText, /\$nativeOutput = @\(& \$scExecutable @Arguments 2>&1\)/)
   assert.match(installerText, /WIN32_EXIT_\{1\}/)

@@ -100,7 +100,7 @@ Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_BINARY_ACL_FAILED' }
 foreach ($path in @($root,(Join-Path $root '.data'),$canonicalData,(Join-Path $root '.backups'),(Join-Path $root '.backups\.db2'),(Join-Path $root '.backups\.db2\scheduler'),(Join-Path $root '.runtime'))) { & icacls.exe $path /grant "${serviceIdentity}:(RX)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_ACL_FAILED:$path" } }
 $gitMetadata = Join-Path $root '.git'
-if ((Get-Item -LiteralPath $gitMetadata).PSIsContainer) { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null } else { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(R)" | Out-Null }
+if ((Get-Item -LiteralPath $gitMetadata -Force).PSIsContainer) { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null } else { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(R)" | Out-Null }
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_GIT_METADATA_ACL_FAILED' }
 & icacls.exe $identityPath /grant "${serviceIdentity}:(R)" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_IDENTITY_ACL_FAILED' }
