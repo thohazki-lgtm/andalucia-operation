@@ -8,7 +8,7 @@
 .auth-location{margin:28px 0 0;color:rgb(251 242 225 / 76%);font-size:10px;font-weight:500;letter-spacing:.08em;text-align:center}
 .auth-access-panel{display:grid;min-width:0;place-items:center;padding:clamp(32px,7vw,96px);background:linear-gradient(145deg,#946b42 0%,#a98054 52%,#bc986c 100%)}
 .auth-access-shell{display:grid;width:min(450px,100%);place-items:center}
-.auth-card{width:100%;padding:36px;border:1.5px solid #0b4745;border-radius:20px;background:#d2b48c;color:#0b4745;box-shadow:0 20px 52px rgb(11 71 69 / 18%),0 5px 16px rgb(11 71 69 / 10%)}
+.auth-card{width:100%;padding:36px;border:1.5px solid #0b4745;border-radius:20px;background:#fbf2e1;color:#0b4745;box-shadow:0 20px 52px rgb(11 71 69 / 18%),0 5px 16px rgb(11 71 69 / 10%)}
 .auth-card .eyebrow{color:#0b4745}
 .auth-card h1{margin:5px 0 10px;color:#0b4745;font:500 34px/1.15 var(--ao-font-display)}
 .auth-card>p:not(.eyebrow){margin:0 0 24px;color:rgb(11 71 69 / 86%);font-size:12px;line-height:1.6}
