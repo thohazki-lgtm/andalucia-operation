@@ -3732,6 +3732,7 @@ main.module-staff-management .staff-directory-page .staff-table-wrap {
 }
 
 main.module-staff-management .staff-directory-page .staff-table {
+  width: 100%;
   min-width: 920px;
   table-layout: fixed;
   border-collapse: separate;
@@ -3923,8 +3924,8 @@ main.module-staff-management .staff-profile-drawer {
 }
 
 main.module-staff-management .staff-profile-drawer > .staff-profile-header {
-  border-bottom-color: var(--ao-staff-line-strong);
-  background: linear-gradient(135deg, var(--ao-staff-surface-strong) 0%, #ffffff 78%);
+  border-bottom-color: var(--ao-staff-gold);
+  background: linear-gradient(135deg, var(--ao-staff-emerald-deep) 0%, #18584e 100%);
 }
 
 main.module-staff-management .staff-profile-heading .eyebrow,
@@ -3938,6 +3939,16 @@ main.module-staff-management .staff-profile-drawer .staff-training-history h3 {
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-display);
   font-weight: 500;
+}
+
+main.module-staff-management .staff-profile-drawer > .staff-profile-header .staff-profile-heading :is(.eyebrow, h2),
+main.module-staff-management .staff-profile-drawer > .staff-profile-header .staff-profile-meta,
+main.module-staff-management .staff-profile-drawer > .staff-profile-header .staff-profile-meta span + span {
+  color: #ffffff;
+}
+
+main.module-staff-management .staff-profile-drawer > .staff-profile-header .staff-profile-meta span + span {
+  border-left-color: color-mix(in srgb, var(--ao-staff-gold) 75%, white);
 }
 
 main.module-staff-management .staff-profile-scroll > section,
