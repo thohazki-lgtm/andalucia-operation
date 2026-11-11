@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { TimesheetError, TimesheetService } from './timesheet-service.js'
 import { createDisposableStoreThrough } from './test-store-fixture.js'
-import { activeTimesheetEditingWindow, calculatedShiftMinutes, officialTimesheetExportAvailable, timesheetReopenAvailable, timesheetShiftPresentation } from '../src/manager-timesheets.js'
-import { timesheetConfirmationPresentation } from '../src/timesheet-presentation.js'
+import { activeTimesheetEditingWindow, calculatedShiftMinutes, officialTimesheetExportAvailable, timesheetReopenAvailable } from '../src/manager-timesheet-logic.js'
+import { timesheetConfirmationPresentation, timesheetShiftPresentation } from '../src/timesheet-presentation.js'
 
 const fixture = await createDisposableStoreThrough('manager-timesheet-interface', '027')
 try {
@@ -84,8 +84,9 @@ try {
   assert.doesNotMatch(ui, /disabled=\{detail\.locked\}/)
   assert.match(css, /manager-editing-window/)
   assert.match(css, /manager-reapproval-required/)
-  assert.match(ui, /Generate Official Timesheet/); assert.match(ui, /Available after manager approval\./); assert.match(ui, /official-timesheet-export-help/)
-  assert.match(css, /official-timesheet-export-action/); assert.match(css, /@media\(max-width:390px\)[\s\S]*official-timesheet-export-action button\{width:100%\}/)
+  assert.match(ui, /className="official-timesheet-export-help" id="official-timesheet-export-help">Available after manager approval\.<\/small>[^]*?<ActionButton icon="download"/)
+  assert.match(css, /official-timesheet-export-help\{[^}]*margin-right:auto[^}]*text-align:left/); assert.match(css, /@media\(max-width:700px\)[\s\S]*official-timesheet-export-help\{flex:1 1 100%;max-width:none\}/)
+  assert.match(css, /manager-correction-form input,[^}]*font:500 12px\/1\.2 Arial,sans-serif;[^}]*font-feature-settings:normal;[^}]*font-variant-numeric:normal/)
   assert.match(ui, /timesheetConfirmationPresentation/); assert.match(presentation, /label: 'Not started'/); assert.match(presentation, /label: 'Incomplete'/); assert.match(presentation, /label: 'Confirmed'/); assert.doesNotMatch(presentation, /label: day\.scheduledDuty\.code/)
   assert.match(ui, /Calculated working hours/); assert.match(ui, /24-hour time/); assert.match(ui, /pattern="\(\?:\[01\]\[0-9\]\|2\[0-3\]\):\[0-5\]\[0-9\]"/)
   assert.doesNotMatch(ui, /Exceptions requiring review/); assert.doesNotMatch(css, /manager-exceptions/); assert.doesNotMatch(ui, /className="modal-close"/)
@@ -99,7 +100,16 @@ try {
   assert.match(css, /manager-timesheet-modal\.wide\{width:min\(940px,calc\(100vw - 28px\)\)\}/)
   assert.match(css, /manager-detail-table table\{min-width:860px;table-layout:fixed\}/)
   assert.match(css, /manager-detail-table th,.manager-detail-table td\{padding:7px 6px\}/)
-  assert.match(css, /manager-detail-table th:nth-child\(1\)\{width:10%;text-align:left\}\.manager-detail-table th:nth-child\(2\)\{width:22%;text-align:left\}/); assert.match(css, /manager-detail-table th:nth-child\(6\)\{width:18%\}/); assert.match(css, /manager-detail-table th:last-child[^}]*width:52px/)
+  assert.match(ui, /<colgroup><col className="manager-detail-date"\/><col className="manager-detail-duty"\/><col className="manager-detail-shift"\/><col className="manager-detail-shift"\/><col className="manager-detail-total"\/><col className="manager-detail-ot"\/><col className="manager-detail-confirmation"\/><col className="manager-detail-action"\/><\/colgroup>/)
+  assert.match(ui, /<colgroup><col className="staff-column"\/><col className="working-column"\/><col className="leave-column"\/><col className="hours-column"\/><col className="confirmed-column"\/><col className="missing-column"\/><col className="exceptions-column"\/><col className="status-column"\/><col className="action-column"\/><\/colgroup>/)
+  assert.match(css, /manager-detail-date\{width:12%\}/); assert.match(css, /manager-detail-ot\{width:9%\}/); assert.doesNotMatch(css, /manager-detail-table th:nth-child\(6\)\{width:18%\}/)
+  assert.match(css, /manager-month-nav\{[^}]*border:1\.5px solid var\(--ao-staff-gold\)/); assert.match(css, /manager-month-nav>\.ao-icon-action\{[^}]*border:1\.5px solid var\(--ao-staff-gold\)/)
+  assert.match(css, /manager-timesheet-modal>header\{[^}]*linear-gradient\(100deg,#0b4745 0%,#174f4a 58%,#287a69 100%\)/)
+  assert.match(css, /manager-overtime-totals\{[^}]*justify-content:flex-start[^}]*text-align:left/)
+  assert.match(css, /manager-timesheet-table th,.manager-timesheet-table td,.manager-detail-table th,.manager-detail-table td\{[^}]*font-family:var\(--ao-font-ui\);font-feature-settings:normal;font-variant-numeric:normal/)
+  assert.match(css, /manager-detail-actions,.manager-correction-form>footer,.manager-reopen-form>footer\{[^}]*align-items:center/)
+  assert.match(css, /\.manager-detail-actions\{width:100%\}/)
+  assert.doesNotMatch(css, /manager-detail-actions,.manager-correction-form>footer,.manager-reopen-form>footer\{[^}]*width:100%/)
   assert.match(ui, /<th>OT<\/th>/); assert.match(ui, /manager-overtime-cell/); assert.match(ui, /reviewOvertime/)
 
   console.log(JSON.stringify({ twelveEmployeeOverview:true, onePrimaryExceptionPerDate:true, independentNonWorkingDutyException:true, offAndLeaveShiftLabels:true, recordedNonWorkingHoursPreserved:true, rosterConflictFlag:true, confirmationSeparatedFromRosterDuty:true, exceptionsPanelRemoved:true, exceptionsSummaryCardRemoved:true, footerCloseRemoved:true, threeEqualSummaryCards:true, compactMonthlyDetailDensity:true, compactMonthlyDetailWidth:true, topmostModalDismissal:true, unassignedDaysExcludedFromMissingTotals:true, workingMissingIncompleteConfirmedLabels:true, dutyRosterReadOnlyIntegration:true, managerCorrectionContext:true, managerCorrectionAudit:true, submittedApprovedLocked:true, workflowAuditHistory:true, managerPermissionGate:true, trustedOriginMutations:true, mobile390And760Layouts:true, canonicalDatabaseUsed:false }, null, 2))
