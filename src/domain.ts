@@ -165,6 +165,11 @@ export interface StaffEntitlementReconciliation {
 export interface PublicHoliday { id: string; name: string; date: string; days: number; active: boolean; createdAt?: string; updatedAt?: string; createdBy?: string; updatedBy?: string }
 export interface RosterEntry { staffId: string; date: string; dutyCode: string; updatedAt: string; updatedBy: string }
 export interface RosterBatchChange { staffId: string; date: string; dutyCode: string; expectedUpdatedAt: string | null }
+export type RosterMonthStatus = 'open' | 'locked' | 'reopened'
+export interface RosterMonthState {
+  month: string; status: RosterMonthStatus; locked: boolean; automatic: boolean
+  lockedAt: string | null; lockedBy: string | null; reopenedAt: string | null; reopenedBy: string | null
+}
 export interface StaffLeaveDay { staffId: string; staffName: string; staffNumber: string; employmentStatus: string; date: string; dutyCode: string; dutyLabel: string; classification: LeaveClassification }
 export interface StaffLeaveRecord { id: string; staffId: string; staffName: string; staffNumber: string; employmentStatus: string; leaveType: LeaveClassification; fromDate: string; toDate: string; leaveDays: number; holidays: number; offDays: number; totalDays: number; entries: StaffLeaveDay[] }
 export interface LeavePlannerDay extends StaffLeaveDay { color: string; dutyCodeValue: string; dutyCodeActive: boolean }
