@@ -78,7 +78,7 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3021', APP_ORIGIN: 'http://127.0.0.1:5191' }, stdio: 'ignore' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028', API_PORT: '3021', APP_ORIGIN: 'http://127.0.0.1:5191' }, stdio: 'ignore' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5191', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3021' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3021/api/health'), waitFor('http://127.0.0.1:5191/')])
 
@@ -116,6 +116,20 @@ try {
     await sleep(100)
   }
   assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.roster-weekly tbody tr')`), true, 'The disposable roster fixture did not render its approved staff row.')
+
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 1000, deviceScaleFactor: 1, mobile: false })
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.roster-bottom-actions button')).find(item=>item.textContent?.trim()==='Lock Month');if(!button)return false;button.click();return true})()`), true, 'The manager Lock Month action was not visible beside the roster actions.')
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (await cdp.evaluate<boolean>(`Array.from(document.querySelectorAll('.roster-bottom-actions button')).some(item=>item.textContent?.trim()==='Reopen Month')`)) break
+    await sleep(100)
+  }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const triggers=Array.from(document.querySelectorAll('.roster-weekly tbody .duty-code-trigger'));return triggers.length>0&&triggers.every(trigger=>trigger.disabled)&&document.querySelector('.roster-bottom-actions .unsaved-count')?.textContent?.includes('locked')})()`), true, 'Lock Month must switch to Reopen Month and disable roster editing.')
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=Array.from(document.querySelectorAll('.roster-bottom-actions button')).find(item=>item.textContent?.trim()==='Reopen Month');if(!button)return false;button.click();return true})()`), true)
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (await cdp.evaluate<boolean>(`Array.from(document.querySelectorAll('.roster-bottom-actions button')).some(item=>item.textContent?.trim()==='Lock Month')`)) break
+    await sleep(100)
+  }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const triggers=Array.from(document.querySelectorAll('.roster-weekly tbody .duty-code-trigger'));return triggers.some(trigger=>!trigger.disabled)})()`), true, 'Reopen Month must restore roster editing without an expiry workflow.')
 
   const results: Record<string, unknown> = {}
   for (const width of [1440, 1024, 390]) {

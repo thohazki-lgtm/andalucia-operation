@@ -382,6 +382,14 @@ html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-cus
   color: var(--roster-teal-dark);
 }
 
+.duty-roster-page .roster-month-lock {
+  border-color: var(--roster-gold);
+  background: var(--roster-teal-dark);
+  color: #fff;
+}
+
+.duty-roster-page .roster-month-lock:hover:not(:disabled) { background: var(--roster-teal); }
+
 .duty-roster-page .roster-save:not(:disabled) {
   border-color: var(--roster-teal);
   background: var(--roster-teal);

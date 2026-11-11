@@ -8,7 +8,7 @@ const fixture = await createDisposableDevelopmentStore('duty-roster-batch')
 try {
   const staffRepository = new StaffRepository(fixture.store, fixture.db)
   await staffRepository.initialize()
-  const operations = new OperationsRepository(fixture.db)
+  const operations = new OperationsRepository(fixture.db, undefined, () => new Date('2026-10-20T07:00:00.000Z'))
   await operations.initialize()
   const staff = (await staffRepository.list()).filter(person => person.assignmentEligible).slice(0, 2)
   assert.equal(staff.length, 2)

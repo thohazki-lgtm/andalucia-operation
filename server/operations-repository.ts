@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { PGlite } from '@electric-sql/pglite'
-import type { AttendanceRecord, ConfigOption, RosterBatchChange, RosterEntry, Staff } from '../src/domain.js'
+import type { AttendanceRecord, ConfigOption, RosterBatchChange, RosterEntry, RosterMonthState, Staff } from '../src/domain.js'
+import { addCalendarMonths, serviceDate } from '../src/service-date.js'
+import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
 
 const attendanceStatuses: ConfigOption[] = [
   { id: 'worked-as-scheduled', value: 'worked_as_scheduled', label: 'Worked as scheduled', color: '#1b6288', active: true, metadata: { description: 'Completed the scheduled duty.', countsAsException: false } },
@@ -11,13 +13,59 @@ const attendanceStatuses: ConfigOption[] = [
 ]
 
 export class OperationsRepository {
-  constructor(private readonly db: PGlite, private readonly rosterSaved?: (changes: RosterBatchChange[], actor: string) => Promise<void>) {}
+  constructor(private readonly db: PGlite, private readonly rosterSaved?: (changes: RosterBatchChange[], actor: string) => Promise<void>, private readonly now = () => new Date()) {}
   async initialize() {
     const options = await this.db.query<{ count: number }>("select count(*)::int as count from configuration_options where group_key = 'attendance_statuses'")
     if (options.rows[0].count === 0) for (let index = 0; index < attendanceStatuses.length; index++) { const item = attendanceStatuses[index]; await this.db.query('insert into configuration_options (id, group_key, value, label, color, metadata, active, sort_order) values ($1,$2,$3,$4,$5,$6,$7,$8)', [randomUUID(), 'attendance_statuses', item.value, item.label, item.color || null, JSON.stringify(item.metadata || {}), item.active, index]) }
     for (const item of attendanceStatuses) await this.db.query("update configuration_options set metadata = metadata || $1::jsonb where group_key='attendance_statuses' and value=$2", [JSON.stringify(item.metadata || {}), item.value])
   }
   async roster(start: string, end: string): Promise<RosterEntry[]> { const result = await this.db.query<{ staff_id: string; duty_date: string; duty_code_value: string; updated_at: string }>('select staff_id, duty_date::text, duty_code_value, updated_at::text from duty_roster_entries where duty_date between $1 and $2', [start, end]); return result.rows.map(row => ({ staffId: row.staff_id, date: row.duty_date, dutyCode: row.duty_code_value, updatedAt: row.updated_at, updatedBy: 'Venue Manager' })) }
+  private validMonth(month: string) { if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('A valid Duty Roster month is required.'); return month }
+  private months(start: string, end: string) { const first = this.validMonth(start.slice(0, 7)); const last = this.validMonth(end.slice(0, 7)); const months: string[] = []; for (let month = first; month <= last; month = addCalendarMonths(`${month}-01`, 1).slice(0, 7)) months.push(month); return months }
+  private async lockSchemaAvailable(executor: Pick<PGlite, 'query'>) { return Boolean((await executor.query<{ available: boolean }>("select to_regclass('public.duty_roster_month_states') is not null available")).rows[0]?.available) }
+  private automaticLockAt(month: string) { return `${addCalendarMonths(`${month}-01`, 1)}T00:00:00+05:00` }
+  private monthStateView(row: any): RosterMonthState { const month = row.month_start instanceof Date ? row.month_start.toISOString().slice(0, 7) : String(row.month_start).slice(0, 7); return { month, status: row.status, locked: row.status === 'locked', automatic: row.status === 'locked' && !row.locked_by_user_id, lockedAt: row.locked_at ? new Date(row.locked_at).toISOString() : null, lockedBy: row.locked_by_name_snapshot || null, reopenedAt: row.reopened_at ? new Date(row.reopened_at).toISOString() : null, reopenedBy: row.reopened_by_name_snapshot || null } }
+  private async ensureMonthState(executor: Pick<PGlite, 'query'>, month: string) {
+    this.validMonth(month)
+    const automatic = month < serviceDate(this.now()).slice(0, 7)
+    const initialStatus = automatic ? 'locked' : 'open'
+    const id = randomUUID()
+    const inserted = await executor.query<any>(`insert into duty_roster_month_states(id,outlet_scope_id,month_start,status,locked_at,locked_by_name_snapshot)
+      values($1,$2,$3,$4,$5,$6) on conflict(outlet_scope_id,month_start) do nothing returning *`, [id, ANDALUCIA_SCOPE_ID, `${month}-01`, initialStatus, automatic ? this.automaticLockAt(month) : null, automatic ? 'Automatic month-end lock' : null])
+    if (inserted.rows[0] && automatic) await executor.query('insert into duty_roster_month_audits(id,month_state_id,action,previous_status,new_status,actor_name_snapshot,created_at) values($1,$2,\'automatic_lock\',\'open\',\'locked\',\'Automatic month-end lock\',$3)', [randomUUID(), id, this.automaticLockAt(month)])
+    let row = (await executor.query<any>('select * from duty_roster_month_states where outlet_scope_id=$1 and month_start=$2 for update', [ANDALUCIA_SCOPE_ID, `${month}-01`])).rows[0]
+    if (automatic && row.status === 'open') {
+      const lockedAt = this.automaticLockAt(month)
+      row = (await executor.query<any>("update duty_roster_month_states set status='locked',locked_at=$3,locked_by_user_id=null,locked_by_name_snapshot='Automatic month-end lock',updated_at=now() where outlet_scope_id=$1 and month_start=$2 returning *", [ANDALUCIA_SCOPE_ID, `${month}-01`, lockedAt])).rows[0]
+      await executor.query("insert into duty_roster_month_audits(id,month_state_id,action,previous_status,new_status,actor_name_snapshot,created_at) values($1,$2,'automatic_lock','open','locked','Automatic month-end lock',$3)", [randomUUID(), row.id, lockedAt])
+    }
+    return row
+  }
+  async rosterMonthStates(start: string, end: string): Promise<RosterMonthState[]> {
+    const months = this.months(start, end)
+    if (!await this.lockSchemaAvailable(this.db)) throw new Error('Duty Roster month locking requires Schema 028.')
+    return this.db.transaction(async transaction => { const states: RosterMonthState[] = []; for (const month of months) states.push(this.monthStateView(await this.ensureMonthState(transaction as any, month))); return states })
+  }
+  async lockRosterMonth(month: string, actor: { userId: string; displayName: string }): Promise<RosterMonthState> {
+    if (!await this.lockSchemaAvailable(this.db)) throw new Error('Duty Roster month locking requires Schema 028.')
+    return this.db.transaction(async transaction => {
+      const row = await this.ensureMonthState(transaction as any, this.validMonth(month))
+      if (row.status === 'locked') return this.monthStateView(row)
+      const updated = (await transaction.query<any>("update duty_roster_month_states set status='locked',locked_at=now(),locked_by_user_id=$3,locked_by_name_snapshot=$4,updated_at=now() where outlet_scope_id=$1 and month_start=$2 returning *", [ANDALUCIA_SCOPE_ID, `${month}-01`, actor.userId, actor.displayName])).rows[0]
+      await transaction.query("insert into duty_roster_month_audits(id,month_state_id,action,previous_status,new_status,actor_user_id,actor_name_snapshot) values($1,$2,'manual_lock',$3,'locked',$4,$5)", [randomUUID(), updated.id, row.status, actor.userId, actor.displayName])
+      return this.monthStateView(updated)
+    })
+  }
+  async reopenRosterMonth(month: string, actor: { userId: string; displayName: string }): Promise<RosterMonthState> {
+    if (!await this.lockSchemaAvailable(this.db)) throw new Error('Duty Roster month locking requires Schema 028.')
+    return this.db.transaction(async transaction => {
+      const row = await this.ensureMonthState(transaction as any, this.validMonth(month))
+      if (row.status !== 'locked') throw new Error('The Duty Roster month is already open for editing.')
+      const updated = (await transaction.query<any>("update duty_roster_month_states set status='reopened',reopened_at=now(),reopened_by_user_id=$3,reopened_by_name_snapshot=$4,updated_at=now() where outlet_scope_id=$1 and month_start=$2 returning *", [ANDALUCIA_SCOPE_ID, `${month}-01`, actor.userId, actor.displayName])).rows[0]
+      await transaction.query("insert into duty_roster_month_audits(id,month_state_id,action,previous_status,new_status,actor_user_id,actor_name_snapshot) values($1,$2,'reopen','locked','reopened',$3,$4)", [randomUUID(), updated.id, actor.userId, actor.displayName])
+      return this.monthStateView(updated)
+    })
+  }
   async updateRoster(staffId: string, date: string, dutyCode: string, actor = 'Venue Manager') {
     const existing = await this.db.query<{ updated_at: string }>('select updated_at::text from duty_roster_entries where staff_id=$1 and duty_date=$2', [staffId, date])
     await this.updateRosterBatch([{ staffId, date, dutyCode, expectedUpdatedAt: existing.rows[0]?.updated_at || null }], actor)
@@ -28,6 +76,10 @@ export class OperationsRepository {
     if (new Set(keys).size !== keys.length) throw new Error('Each staff member and date may appear only once in a Duty Roster batch.')
     if (changes.some(change => !/^\d{4}-\d{2}-\d{2}$/.test(change.date) || typeof change.dutyCode !== 'string' || change.expectedUpdatedAt !== null && typeof change.expectedUpdatedAt !== 'string')) throw new Error('Duty Roster batch contains an invalid assignment.')
     await this.db.transaction(async transaction => {
+      if (await this.lockSchemaAvailable(transaction as any)) for (const month of [...new Set(changes.map(change => change.date.slice(0, 7)))].sort()) {
+        const state = await this.ensureMonthState(transaction as any, month)
+        if (state.status === 'locked') throw new Error(`DUTY_ROSTER_MONTH_LOCKED: ${month} is locked. An Owner or Outlet Manager must reopen it before changes can be saved.`)
+      }
       const prepared: Array<{ change: RosterBatchChange; existing: { id: string; duty_code_value: string; updated_at: string } | undefined }> = []
       for (const change of changes) {
         const staff = await transaction.query<{ eligible: boolean }>("select coalesce((select (c.metadata->>'eligibleForAssignments')::boolean from configuration_options c where c.group_key='employment_statuses' and c.value=s.employment_status_key),s.employment_status_key='active') eligible from staff s where s.id=$1", [change.staffId])

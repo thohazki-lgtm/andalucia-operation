@@ -36,7 +36,7 @@ try {
   await membership.createMembership(history)
   const controlledNow = new Date('2026-10-21T07:00:00.000Z')
   const accumulated = new AccumulatedOffService(db, () => controlledNow)
-  const operations = new OperationsRepository(db, (changes, label) => accumulated.recalculateAffected(changes, label)); await operations.initialize()
+  const operations = new OperationsRepository(db, (changes, label) => accumulated.recalculateAffected(changes, label), () => new Date('2026-09-20T07:00:00.000Z')); await operations.initialize()
   const configuration = await staffRepository.configuration()
   const working = configuration.dutyCodes.find(item => item.metadata?.countsAsWorking === true)!
   const off = configuration.dutyCodes.find(item => item.metadata?.countsAsOffDay === true || item.metadata?.dutyClassification === 'off')!

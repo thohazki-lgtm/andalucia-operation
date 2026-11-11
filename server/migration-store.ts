@@ -206,7 +206,8 @@ const migrations: Migration[] = [
   { version: '024', name: 'Employee timesheet foundation', sqlFile: '024_employee_timesheet_foundation.sql' },
   { version: '025', name: 'Manager timesheet workflow foundation', sqlFile: '025_manager_timesheet_workflow.sql' },
   { version: '026', name: 'Accumulated OFF tracking and future leave allocation', sqlFile: '026_accumulated_off_tracking.sql' },
-  { version: '027', name: 'Manual overtime approval workflow', sqlFile: '027_manual_overtime.sql' }
+  { version: '027', name: 'Manual overtime approval workflow', sqlFile: '027_manual_overtime.sql' },
+  { version: '028', name: 'Duty Roster monthly lock and reopen workflow', sqlFile: '028_duty_roster_month_lock.sql' }
 ]
 const migrationSource = async (migration: Migration) => migration.sqlFile ? await readFile(join(migrationsDirectory, migration.sqlFile), 'utf8') : jsonStable({ roleDefinitions: foundationRoleDefinitionsV009, permissionDefinitions: foundationPermissionDefinitionsV009, initialRolePermissions: foundationRolePermissionsV009, outlet: { id: ANDALUCIA_SCOPE_ID, key: ANDALUCIA_SCOPE_KEY } })
 export const reviewedMigrationSet = async () => {
