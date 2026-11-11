@@ -192,6 +192,7 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
  const workingToday = new Set(operationalStaff.filter(person => dutyOptionFor(person)?.metadata?.countsAsWorking).map(person => person.id)).size
  const offToday = new Set(operationalStaff.filter(person => ['off', 'publicHoliday'].includes(dutyOptionFor(person)?.metadata?.dutyClassification || '')).map(person => person.id)).size
  const onLeave = new Set(operationalStaff.filter(person => { const classification = dutyOptionFor(person)?.metadata?.dutyClassification; return isLeaveClassification(classification) && classification !== 'off' }).map(person => person.id)).size
+ const summaryFigure = (value: number) => <strong aria-label={String(value)}>{String(value).split('').map((digit, index) => digit === '0' ? <span className="staff-summary-zero" aria-hidden="true" key={index}>0</span> : digit)}</strong>
  const archive = async (person: Staff) => { setArchiving(true); try { await onSave({ ...person, employmentStatus: 'inactive', resignationDate: person.resignationDate || serviceDate() }); setArchiveCandidate(null); setViewer(null); onToast(`${person.name} was archived. Historical operational records were preserved.`) } catch (saveError) { onToast(saveError instanceof Error ? saveError.message : 'Unable to archive staff member.') } finally { setArchiving(false) } }
  const moveStaff = (id: string, targetId: string, after: boolean) => { const current = directoryOrderRef.current; const source = current.find(item => item.id === id); if (!source || id === targetId) return current; const without = current.filter(item => item.id !== id); const target = without.findIndex(item => item.id === targetId); if (target < 0) return current; const next = [...without]; next.splice(target + (after ? 1 : 0), 0, source); directoryOrderRef.current = next; setDirectoryOrder(next); return next }
  const persistStaffOrder = async (next: Staff[]) => { if (savingOrder || next.map(item => item.id).join('|') === staff.map(item => item.id).join('|')) return; setSavingOrder(true); try { await onReorder(next.map(person => person.id)) } catch (saveError) { directoryOrderRef.current = staff; setDirectoryOrder(staff); const detail = saveError instanceof Error ? saveError.message : 'Unable to save the new staff order.'; onToast(`${detail} The previous staff order was restored.`) } finally { setSavingOrder(false) } }
@@ -211,10 +212,10 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
 <div className="staff-section-bar"><nav className="staff-section-tabs" aria-label="Staff Management sections"><button className={section === 'directory' ? 'selected' : ''} aria-pressed={section === 'directory'} onClick={() => setSection('directory')}>Team Directory</button>{canManageTimesheets && <button className={section === 'timesheets' ? 'selected' : ''} aria-pressed={section === 'timesheets'} onClick={() => setSection('timesheets')}>Timesheets</button>}<button className={section === 'membership' ? 'selected' : ''} aria-pressed={section === 'membership'} onClick={() => setSection('membership')}>Team Membership</button>{canManageAccounts && <button className={section === 'accounts' ? 'selected' : ''} aria-pressed={section === 'accounts'} onClick={() => setSection('accounts')}>Account Management</button>}</nav>{section === 'directory' && <ActionButton variant="primary" icon="add" className="staff-section-add" onClick={onAddStaff}>Add Staff Member</ActionButton>}</div>
 {section === 'directory' && <div className="staff-directory-page">
 <section className="staff-summary">
-<article className="panel"><span>Total Staff</span><strong>{staff.length}</strong></article>
-<article className="panel"><span>Working Today</span><strong>{workingToday}</strong></article>
-<article className="panel"><span>Off Today</span><strong>{offToday}</strong></article>
-<article className="panel"><span>On Leave</span><strong>{onLeave}</strong></article>
+<article className="panel"><span>Total Staff</span>{summaryFigure(staff.length)}</article>
+<article className="panel"><span>Working Today</span>{summaryFigure(workingToday)}</article>
+<article className="panel"><span>Off Today</span>{summaryFigure(offToday)}</article>
+<article className="panel"><span>On Leave</span>{summaryFigure(onLeave)}</article>
 </section>
 <section className="panel staff-panel">
 <div className="staff-tools">
@@ -229,6 +230,15 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
 </div>
 <div className="staff-table-wrap" tabIndex={0} aria-label="Staff records table">
 <table className="staff-table">
+<colgroup>
+<col className="staff-col-name" />
+<col className="staff-col-number" />
+<col className="staff-col-designation" />
+<col className="staff-col-status" />
+<col className="staff-col-today" />
+<col className="staff-col-joined" />
+<col className="staff-col-actions" />
+</colgroup>
 <thead>
 <tr>
 <th>Staff</th>
@@ -241,9 +251,7 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
 </tr>
 </thead>
 <tbody>{visibleStaff.map(person => <tr key={person.id} data-staff-row-id={person.id} className={`${draggingStaffId === person.id ? 'is-dragging ' : ''}${staffDropTarget?.id === person.id ? staffDropTarget.after ? 'drop-after' : 'drop-before' : ''}`.trim() || undefined}>
-  <td className="staff-name-cell">
-    <div className="staff-table-identity">{staffDragHandle(person)}<b>{person.name}</b></div>
-  </td>
+<td className="staff-name-cell"><div className="staff-table-identity">{staffDragHandle(person)}<b>{person.name}</b></div></td>
 <td>{person.number}</td>
 <td className="staff-designation">{positionLabel(person)}</td>
 <td>
@@ -251,7 +259,7 @@ function StaffManagement({ staff, configuration, loading, error, onRetry, onSave
 </td>
 <td><span className={`today-duty${dutyOptionFor(person) ? '' : ' unassigned'}`} style={dutyOptionFor(person) ? { backgroundColor: dutyOptionFor(person)?.color, borderColor: dutyOptionFor(person)?.color, color: readableDutyText(dutyOptionFor(person)?.color) } : undefined} title={dutyOptionFor(person) ? `${dutyDisplayCode(dutyOptionFor(person))} · ${dutyOptionFor(person)?.label}` : 'No duty assigned'}>{dutyOptionFor(person) ? dutyDisplayCode(dutyOptionFor(person)) : 'Unassigned'}</span></td>
 <td>{formatDate(person.joinDate)}</td>
-<td className="row-actions staff-row-actions-cell">
+<td className="staff-row-actions-cell">
 <div className="staff-row-icon-actions"><IconAction icon="user" label={`View profile for ${person.name}`} data-staff-action="view" onClick={() => setViewer(person)} /></div>
 </td>
 </tr>)}</tbody>

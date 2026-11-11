@@ -3675,6 +3675,12 @@ main[class*='module-'].module-staff-management .staff-directory-page .staff-summ
   border-radius: 10px;
   background: var(--ao-staff-surface);
   box-shadow: 0 6px 16px rgb(16 62 56 / 9%);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-items: stretch;
+  align-content: stretch;
+  justify-content: stretch;
+  text-align: left;
 }
 
 main.module-staff-management .staff-directory-page .staff-summary span {
@@ -3684,15 +3690,27 @@ main.module-staff-management .staff-directory-page .staff-summary span {
 }
 
 main.module-staff-management .staff-directory-page .staff-summary strong {
-  margin-top: 3px;
+  align-self: center;
+  width: 100%;
+  margin-top: 4px;
   color: var(--ao-staff-emerald-deep);
-  font-family: var(--ao-font-ui);
+  font-family: 'Good Sans', var(--ao-font-ui);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'zero' 0, 'lnum' 1, 'tnum' 1;
   text-align: center;
+}
+
+main.module-staff-management .staff-directory-page .staff-summary strong .staff-summary-zero {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  font-family: Arial, sans-serif;
+  letter-spacing: inherit;
+  text-transform: none;
 }
 
 main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(2),
@@ -3732,6 +3750,7 @@ main.module-staff-management .staff-directory-page .staff-table-wrap {
   border: 1px solid var(--ao-staff-gold) !important;
   border-top-width: 2px !important;
   border-radius: 9px;
+  scrollbar-gutter: auto;
 }
 
 main.module-staff-management .staff-directory-page .staff-table {
@@ -3771,10 +3790,7 @@ html body .app-shell main.module-staff-management .staff-directory-page .staff-t
 }
 
 html body .app-shell main.module-staff-management .staff-directory-page .staff-table th:last-child {
-  box-shadow:
-    inset 1px 0 0 var(--ao-staff-line-strong),
-    inset 0 -1px 0 var(--ao-staff-line);
-  background: color-mix(in srgb, var(--ao-staff-gold) 32%, #c7e0cd);
+  box-shadow: inset 0 -1px 0 var(--ao-staff-line);
 }
 
 html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
@@ -3792,17 +3808,6 @@ html body .app-shell main.module-staff-management .staff-directory-page .staff-t
     inset 0 -1px 0 var(--ao-staff-line);
 }
 
-html body .app-shell main.module-staff-management .staff-directory-page .staff-table td:last-child {
-  box-shadow: inset 1px 0 0 var(--ao-staff-line-strong);
-  background: color-mix(in srgb, var(--ao-staff-surface-strong) 78%, white);
-}
-
-html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:not(:last-child) td:last-child {
-  box-shadow:
-    inset 1px 0 0 var(--ao-staff-line-strong),
-    inset 0 -1px 0 var(--ao-staff-line);
-}
-
 main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(odd) {
   background: #ffffff;
 }
@@ -3815,13 +3820,17 @@ main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
   background: #e0f0e5;
 }
 
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(1) { width: 22%; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(2) { width: 11%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(3) { width: 18%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(4) { width: 11%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(5) { width: 11%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(6) { width: 14%; text-align: center; }
-main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(7) { width: 150px; text-align: center; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-name { width: 24%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-number { width: 11%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-designation { width: 18%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-status { width: 11%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-today { width: 11%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-joined { width: 15%; }
+main.module-staff-management .staff-directory-page .staff-table .staff-col-actions { width: 10%; }
+
+main.module-staff-management .staff-directory-page .staff-table :is(th, td):nth-child(n + 2) {
+  text-align: center;
+}
 
 main.module-staff-management .staff-directory-page .staff-table td:nth-child(2),
 main.module-staff-management .staff-directory-page .staff-table td:nth-child(3),
@@ -3831,18 +3840,18 @@ main.module-staff-management .staff-directory-page .staff-table td:nth-child(6) 
 }
 
 main.module-staff-management .staff-table-identity {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 
 main.module-staff-management .staff-table-identity .direct-staff-drag-handle {
-  justify-self: center;
+  flex: 0 0 38px;
 }
 
 main.module-staff-management .staff-table-identity b {
+  display: block;
   min-width: 0;
   overflow: hidden;
   color: var(--ao-staff-emerald-deep);
@@ -3864,6 +3873,7 @@ main.module-staff-management .staff-directory-page .staff-row-actions-cell {
 main.module-staff-management .staff-directory-page .staff-row-icon-actions {
   display: grid;
   width: 100%;
+  justify-content: center;
   place-items: center;
 }
 
@@ -4017,8 +4027,29 @@ main.module-staff-management .staff-profile-drawer > footer {
 }
 
 main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staff-profile-archive) {
-  border-color: var(--ao-lagoon-teal);
-  color: var(--ao-lagoon-teal);
+  border-color: var(--ao-staff-emerald-deep);
+  background: var(--ao-staff-emerald-deep);
+  color: #fff;
+}
+
+main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staff-profile-archive):hover:not(:disabled),
+main.module-staff-management .staff-profile-drawer > footer .ao-action:not(.staff-profile-archive):focus-visible {
+  border-color: var(--ao-staff-gold);
+  background: var(--ao-staff-emerald);
+  color: #fff;
+}
+
+main.module-staff-management .staff-profile-drawer > footer .staff-profile-archive {
+  border-color: #9b3e38;
+  background: #9b3e38;
+  color: #fff;
+}
+
+main.module-staff-management .staff-profile-drawer > footer .staff-profile-archive:hover:not(:disabled),
+main.module-staff-management .staff-profile-drawer > footer .staff-profile-archive:focus-visible {
+  border-color: #7f302c;
+  background: #7f302c;
+  color: #fff;
 }
 
 /* Bind every Staff Management subview to one structural palette. Semantic
@@ -4039,8 +4070,7 @@ html body .app-shell main.module-staff-management :is(
 main.module-staff-management :is(
   .membership-command-header,
   .staff-account-header,
-  .staff-account-guidance,
-  .manager-timesheet-modal > header
+  .staff-account-guidance
 ) {
   border-color: var(--ao-staff-line);
   background: var(--ao-staff-surface-strong);
@@ -4051,8 +4081,8 @@ main.module-staff-management :is(
   .manager-timesheet-modal h2
 ) {
   color: var(--ao-premium-navy);
-  font-family: var(--ao-font-display);
-  font-weight: 500;
+  font-family: 'Good Sans', var(--ao-font-ui);
+  font-weight: 600;
 }
 
 /* Staff Management display titles use the same Dahlia hierarchy as the page
@@ -4069,21 +4099,11 @@ html body .app-shell main.module-staff-management :is(
   line-height: 1.15;
 }
 
-/* Staff Management operational figures use the UI stack's non-slashed-zero
-   fallback explicitly. AO Good Sans intentionally draws a slashed zero, so it
-   is unsuitable for dense operational figures and employee identifiers. */
+/* Dense operational identifiers use a non-slashed-zero fallback. Summary
+   figures retain the approved Good Sans module typography above. */
 html body .app-shell main.module-staff-management :is(
-  .staff-directory-page .staff-summary strong,
   .staff-directory-page .staff-table td,
   .staff-directory-page .staff-mobile-card dd,
-  .manager-timesheet-kpis b,
-  .manager-timesheet-table td,
-  .manager-timesheet-card dd,
-  .manager-detail-summary b,
-  .manager-detail-table td,
-  .manager-overtime-totals b,
-  .manager-overtime-cell > b,
-  .manager-calculated-hours b,
   .membership-status-card dd,
   .membership-approved-banner dd,
   .membership-approval-card dd,
@@ -4355,10 +4375,11 @@ html body main.module-staff-management .manager-timesheet-kpis article {
 main.module-staff-management .manager-timesheet-kpis b {
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-ui);
+  font-feature-settings: normal;
   font-size: 18px;
   font-weight: 500;
   letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: normal;
 }
 
 main.module-staff-management :is(
@@ -4431,7 +4452,7 @@ html body .app-shell main.module-staff-management .staff-account-modal :is(
 /* Timesheets and Team Membership share one compact header-month treatment.
    The month remains the native functional value, while its picker is exposed
    from a small, themed popover instead of a large mint navigation box. */
-html body .app-shell main.module-staff-management .staff-header-month-navigation {
+html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) {
   position: relative;
   display: grid;
   grid-template-columns: 40px minmax(180px, 300px) 40px;
@@ -4447,7 +4468,7 @@ html body .app-shell main.module-staff-management .staff-header-month-navigation
   overflow: visible;
 }
 
-html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action {
+html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) > .ao-icon-action {
   width: 40px;
   min-width: 40px;
   height: 40px;
@@ -4460,8 +4481,8 @@ html body .app-shell main.module-staff-management .staff-header-month-navigation
   box-shadow: none;
 }
 
-html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action:hover:not(:disabled),
-html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action:focus-visible {
+html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) > .ao-icon-action:hover:not(:disabled),
+html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) > .ao-icon-action:focus-visible {
   background: rgb(213 235 217 / 12%);
   border-color: color-mix(in srgb, var(--ao-staff-gold) 82%, white);
 }
@@ -4681,14 +4702,24 @@ html body .app-shell main.module-staff-management .membership-command-header .me
   justify-content: flex-end;
 }
 
+html body .app-shell main.module-staff-management .membership-command-header {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page:has(.staff-header-custom-month-picker.is-open) {
+  overflow: visible;
+}
+
 @media (max-width: 800px) {
-  html body .app-shell main.module-staff-management .staff-header-month-navigation {
+  html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
     width: 100%;
     gap: 7px;
   }
 
-  html body .app-shell main.module-staff-management .staff-header-month-navigation > .ao-icon-action {
+  html body .app-shell main.module-staff-management .staff-header-month-navigation:not(.manager-month-nav) > .ao-icon-action {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -4762,7 +4793,6 @@ main.module-staff-management .manager-timesheet-card {
 }
 
 main.module-staff-management :is(
-  .manager-timesheet-modal > header,
   .manager-detail-actions,
   .manager-correction-form > footer,
   .manager-reopen-form > footer,
@@ -4772,8 +4802,17 @@ main.module-staff-management :is(
   background: var(--ao-staff-surface-strong);
 }
 
+main.module-staff-management .manager-timesheet-modal > header {
+  border-color: var(--ao-staff-line-strong);
+  background: linear-gradient(100deg, #0b4745 0%, #174f4a 58%, #287a69 100%);
+}
+
+main.module-staff-management .manager-timesheet-modal > header :is(.eyebrow, h2) {
+  color: #fff;
+  font-family: var(--ao-font-ui);
+}
+
 main.module-staff-management :is(
-  .manager-timesheet-modal > header h2,
   .manager-correction-context small,
   .manager-shift-grid legend,
   .manager-calculated-hours span,
@@ -6063,6 +6102,22 @@ html body .app-shell main.module-staff-management .membership-command-header .me
   width: 100%;
 }
 
+html body .app-shell main.module-staff-management .membership-command-header .membership-month-nav {
+  position: relative;
+  grid-template-columns: 44px minmax(190px, 1fr) 44px;
+  gap: 4px;
+  width: min(520px, 100%);
+  padding: 4px;
+  border: 1.5px solid var(--ao-staff-gold);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ao-staff-emerald-deep) 82%, transparent);
+  overflow: visible;
+}
+
+html body .app-shell main.module-staff-management .membership-command-header .membership-month-nav > .ao-icon-action {
+  border-width: 1.5px;
+}
+
 html body .app-shell main.module-staff-management .membership-approved-page > :is(.membership-approved-banner, .membership-review-card) {
   margin: 0;
   border: 1px solid var(--ao-staff-gold);
@@ -6080,6 +6135,19 @@ html body .app-shell main.module-staff-management .membership-approved-page > .m
   padding: 14px 16px;
 }
 
+html body .app-shell main.module-staff-management .membership-approved-page > .membership-approved-banner > .ao-action {
+  border-color: var(--ao-staff-emerald-deep);
+  background: var(--ao-staff-emerald-deep);
+  color: #fff;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page > .membership-approved-banner > .ao-action:hover:not(:disabled),
+html body .app-shell main.module-staff-management .membership-approved-page > .membership-approved-banner > .ao-action:focus-visible {
+  border-color: var(--ao-staff-gold);
+  background: var(--ao-staff-emerald);
+  color: #fff;
+}
+
 html body .app-shell main.module-staff-management .membership-summary-heading {
   display: flex;
   align-items: center;
@@ -6095,6 +6163,12 @@ html body .app-shell main.module-staff-management .membership-approved-page > .m
   padding: 9px 14px 7px;
   border-bottom: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table.approved-table td:nth-child(2),
+html body .app-shell main.module-staff-management .membership-approved-page .approved-member-cards dl > div:first-child dd {
+  color: var(--ao-staff-emerald-deep);
+  font-weight: 700;
 }
 
 html body .app-shell main.module-staff-management .membership-approved-page > .membership-history {
@@ -6275,6 +6349,7 @@ html body .app-shell main.module-staff-management .staff-account-directory-headi
   padding: 7px 14px 5px;
   border-bottom: 1px solid var(--ao-staff-gold);
   background: var(--ao-staff-surface-strong);
+  margin: 0;
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-heading h3 {
@@ -6296,6 +6371,38 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
   margin: 0;
   overflow-x: auto;
   background: #fff;
+  scrollbar-gutter: auto;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table :is(th, td),
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table td:first-child b {
+  color: var(--ao-staff-emerald-deep);
+  font-weight: 700;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-actions button {
+  font-weight: 700;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table :is(th, td):last-child {
+  text-align: center;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-actions {
+  justify-content: center;
+}
+
+html body .app-shell main.module-staff-management :is(.staff-account-create-modal, .staff-account-manage-modal) > :is(.staff-account-create-header, .staff-account-manage-header) {
+  display: block;
+  margin: -24px -24px 18px;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid var(--ao-staff-line-strong);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(100deg, #0b4745 0%, #174f4a 58%, #287a69 100%);
+}
+
+html body .app-shell main.module-staff-management :is(.staff-account-create-modal, .staff-account-manage-modal) > :is(.staff-account-create-header, .staff-account-manage-header) :is(.section-label, h2) {
+  color: #fff;
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-guidance {
@@ -6347,6 +6454,11 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
 
   html body .app-shell main.module-staff-management .staff-account-directory-panel > .staff-account-cards {
     display: grid;
+  }
+
+  html body .app-shell main.module-staff-management :is(.staff-account-create-modal, .staff-account-manage-modal) > :is(.staff-account-create-header, .staff-account-manage-header) {
+    margin: -22px -16px 18px;
+    padding: 16px;
   }
 }
 
