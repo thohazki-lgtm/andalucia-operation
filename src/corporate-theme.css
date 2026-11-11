@@ -3690,6 +3690,7 @@ main.module-staff-management .staff-directory-page .staff-summary strong {
   line-height: 1.1;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 main.module-staff-management .staff-directory-page .staff-summary .panel:nth-child(2),
@@ -3758,7 +3759,7 @@ html body .app-shell main.module-staff-management .staff-directory-page .staff-t
   color: var(--ao-staff-emerald-deep);
   font-family: var(--ao-font-ui);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: .035em;
 }
 
@@ -3820,8 +3821,20 @@ main.module-staff-management .staff-table-identity {
 main.module-staff-management .staff-table-identity b {
   min-width: 0;
   overflow: hidden;
+  color: var(--ao-staff-emerald-deep);
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+main.module-staff-management .staff-mobile-identity b {
+  color: var(--ao-staff-emerald-deep);
+  font-weight: 800;
+}
+
+main.module-staff-management .staff-directory-page .staff-row-actions-cell {
+  padding: 7px 9px;
+  text-align: center;
 }
 
 main.module-staff-management .staff-directory-page .staff-row-icon-actions {
@@ -3832,8 +3845,8 @@ main.module-staff-management .staff-directory-page .staff-row-icon-actions {
 }
 
 main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-icon-action {
-  width: 36px;
-  min-width: 36px;
+  width: 100%;
+  min-width: 0;
   height: 36px;
   min-height: 36px;
 }
@@ -3854,8 +3867,12 @@ main.module-staff-management .staff-directory-page .staff-row-icon-actions .ao-i
 }
 
 .staff-archive-confirm-modal > h2 {
-  margin: 0 0 8px;
-  color: var(--ao-premium-navy);
+  margin: -22px -22px 14px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--ao-staff-gold);
+  border-radius: 13px 13px 0 0;
+  background: linear-gradient(105deg, #082f2b 0%, var(--ao-staff-emerald-deep) 52%, #18584e 100%);
+  color: #fff;
   font: 500 24px/1.15 var(--ao-font-display);
 }
 
@@ -3926,7 +3943,7 @@ main.module-staff-management .staff-profile-drawer {
 
 main.module-staff-management .staff-profile-drawer > .staff-profile-header {
   border-bottom-color: var(--ao-staff-gold);
-  background: linear-gradient(135deg, var(--ao-staff-emerald-deep) 0%, #18584e 100%);
+  background: linear-gradient(105deg, #082f2b 0%, var(--ao-staff-emerald-deep) 52%, #18584e 100%);
 }
 
 main.module-staff-management .staff-profile-heading .eyebrow,
@@ -4892,14 +4909,18 @@ main.module-my-timesheet .ao-action--primary {
 
 .staff-edit-modal > h2,
 .staff-edit-modal .staff-edit-intro {
-  border-color: var(--ao-staff-line-strong);
-  background: linear-gradient(135deg, var(--ao-staff-surface-strong) 0%, #ffffff 78%);
+  border-color: var(--ao-staff-gold);
+  background: linear-gradient(105deg, #082f2b 0%, var(--ao-staff-emerald-deep) 52%, #18584e 100%);
 }
 
 .staff-edit-modal > h2 {
-  color: var(--ao-premium-navy);
+  color: #fff;
   font-family: var(--ao-font-display);
   font-weight: 500;
+}
+
+.staff-edit-modal .staff-edit-intro {
+  color: color-mix(in srgb, #fff 82%, var(--ao-staff-gold));
 }
 
 .staff-edit-modal .staff-edit-section {
@@ -5047,6 +5068,11 @@ main.module-staff-management .staff-training-controls .ao-action {
 
   .staff-archive-confirm-modal {
     padding: 18px;
+  }
+
+  .staff-archive-confirm-modal > h2 {
+    margin: -18px -18px 14px;
+    padding: 16px 18px 14px;
   }
 
   .staff-archive-confirm-copy dl {

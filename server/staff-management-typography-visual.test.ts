@@ -142,8 +142,8 @@ try {
     assert.deepEqual(result.tabFontWeights, ['600'])
     assert.equal(result.tabLabelsFit, true)
     assert.equal(result.nameFontSize, '13px')
-    assert.equal(result.nameFontWeight, '650')
-    assert.equal(result.nameColor, 'rgb(23, 61, 86)')
+    assert.equal(result.nameFontWeight, '800')
+    assert.equal(result.nameColor, 'rgb(16, 62, 56)')
     assert.equal(result.nameFits, true)
     measurements[String(width)] = result
     await screenshot(cdp, `team-directory-after-${width}.png`)
@@ -171,7 +171,9 @@ try {
     for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(50) }
   }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
-  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="edit"]');if(!button)return false;button.click();return true})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const view=document.querySelector('[data-staff-action="view"]');if(!view)return false;view.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-profile-drawer')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-profile-drawer footer button')].find(item=>item.textContent?.trim()==='Edit Staff');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Nationality'));const input=label?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'Visual Test Nationality');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`), true)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Designation'));const select=label?.querySelector('select');const value=[...select?.options||[]].find(option=>option.value)?.value;if(!select||!value)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(select,value);select.dispatchEvent(new Event('change',{bubbles:true}));return true})()`), true)
@@ -179,7 +181,9 @@ try {
   for (let attempt = 0; attempt < 100; attempt++) { if (!await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
   const saveResult = await cdp.evaluate<any>(`({closed:!document.querySelector('.staff-edit-modal'),error:document.querySelector('.staff-edit-modal .staff-form-error')?.textContent?.trim()||null})`)
   assert.equal(saveResult.closed, true, saveResult.error || 'Edit Staff modal did not close after saving disposable test data.')
-  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('[data-staff-action="edit"]');if(!button)return false;button.click();return true})()`), true)
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const view=document.querySelector('[data-staff-action="view"]');if(!view)return false;view.click();return true})()`), true)
+  for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-profile-drawer')`)) break; await sleep(100) }
+  assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-profile-drawer footer button')].find(item=>item.textContent?.trim()==='Edit Staff');if(!button)return false;button.click();return true})()`), true)
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-edit-modal')`)) break; await sleep(100) }
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const labels=[...document.querySelectorAll('.staff-edit-modal label')];const label=labels.find(item=>item.textContent?.includes('Nationality'));return label?.querySelector('input')?.value==='Visual Test Nationality'})()`), true)
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('.staff-edit-modal .form-actions button')].find(item=>item.textContent?.trim()==='Cancel');if(!button)return false;button.click();return true})()`), true)
