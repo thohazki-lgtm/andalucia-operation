@@ -695,7 +695,7 @@ main.module-dashboard .dashboard-page .tonight-card .hostess-state-summary > div
 
 main.module-dashboard .dashboard-page .hostess-state-summary span,
 main.module-dashboard .dashboard-page .tonight-card .next-arrivals .eyebrow {
-  color: var(--ao-dashboard-muted);
+  color: var(--ao-dashboard-gold);
 }
 
 main.module-dashboard .dashboard-page .hostess-state-summary > div:not(.arrived, .noshow) strong,
