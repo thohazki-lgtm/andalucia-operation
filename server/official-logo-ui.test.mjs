@@ -8,6 +8,7 @@ const auth = await readFile(new URL('../src/auth.tsx', import.meta.url), 'utf8')
 const authStyles = await readFile(new URL('../src/auth.css', import.meta.url), 'utf8')
 const brand = await readFile(new URL('../src/brand.tsx', import.meta.url), 'utf8')
 const corporateTheme = await readFile(new URL('../src/corporate-theme.css', import.meta.url), 'utf8')
+const dashboardTeam = await readFile(new URL('../src/dashboard-team.css', import.meta.url), 'utf8')
 const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
 
 assert.equal(asset.readUInt32BE(0), 0x89504e47, 'official logo must remain a PNG')
@@ -40,6 +41,8 @@ assert.match(corporateTheme, /\.module-dashboard \.dashboard-hero \{[^}]*border:
 assert.match(corporateTheme, /main\.module-dashboard \.dashboard-page \.dashboard-card \{[^}]*border: 1\.5px solid var\(--ao-dashboard-gold\);[^}]*border-top-width: 2\.5px;/s)
 assert.match(corporateTheme, /main\.module-dashboard \.dashboard-page \.dashboard-metric-grid > div,[^{]*\.team-secondary-panel \{[^}]*border: 1\.5px solid var\(--ao-dashboard-gold\);[^}]*border-top-width: 2px;/s)
 assert.match(corporateTheme, /\.dashboard-mobile-priority article \{[^}]*border: 1\.5px solid var\(--ao-dashboard-gold\);[^}]*border-top-width: 2px;/s)
+assert.match(dashboardTeam, /\.dashboard-metric-grid strong \{[^}]*text-align: center;/s)
+assert.match(corporateTheme, /\.dashboard-mobile-priority strong \{[^}]*text-align: center;/s)
 assert.match(corporateTheme, /:not\(\.dashboard-card\):not\(\.dashboard-mobile-priority article\)[^{]*\{\s*border-color: var\(--ao-module-line\);/s)
 
 console.log(JSON.stringify({ officialAssetPreserved: true, transparent: true, login: true, desktopSidebar: true, mobileHeader: true }, null, 2))

@@ -789,6 +789,7 @@ main.module-dashboard .dashboard-page .tonight-scroll {
     margin-top: 4px;
     color: var(--ao-dashboard-text);
     font: 600 21px/1 var(--ao-font-ui);
+    text-align: center;
   }
 }
 
