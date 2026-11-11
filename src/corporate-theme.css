@@ -596,14 +596,17 @@ main.module-dashboard .dashboard-page .team-secondary-panel {
 
 main.module-dashboard .dashboard-page .dashboard-metric-grid span,
 main.module-dashboard .dashboard-page .dashboard-training-details dt,
+main.module-dashboard .dashboard-page .team-secondary-panel header > b {
+  color: var(--ao-dashboard-gold);
+}
+
 main.module-dashboard .dashboard-page .team-name-grid .team-status-empty,
 main.module-dashboard .dashboard-page .team-status-list .team-status-empty {
   color: var(--ao-dashboard-muted);
 }
 
 main.module-dashboard .dashboard-page .dashboard-metric-grid strong,
-main.module-dashboard .dashboard-page .dashboard-training-details dd,
-main.module-dashboard .dashboard-page .team-secondary-panel header > b {
+main.module-dashboard .dashboard-page .dashboard-training-details dd {
   color: var(--ao-dashboard-text);
 }
 
@@ -779,7 +782,7 @@ main.module-dashboard .dashboard-page .tonight-scroll {
   }
 
   .dashboard-mobile-priority span {
-    color: var(--ao-dashboard-muted);
+    color: var(--ao-dashboard-gold);
     font: 600 11px/1.2 var(--ao-font-ui);
     letter-spacing: 0.035em;
     text-transform: uppercase;
