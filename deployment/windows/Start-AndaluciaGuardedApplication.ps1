@@ -24,6 +24,7 @@ $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 $viteCommand = Join-Path $projectRoot 'node_modules\.bin\vite.cmd'
 $concurrentlyCommand = Join-Path $projectRoot 'node_modules\.bin\concurrently.cmd'
 $recoveryBootstrap = Join-Path $projectRoot 'server\recovery-runtime-bootstrap.mjs'
+$schemaActivationControl = Join-Path $runtimeSourceRoot 'server\runtime-schema-activation-control.ts'
 
 function Write-StartupLog([string]$State, [string]$Detail) {
   New-Item -ItemType Directory -Path $startupLogRoot -Force | Out-Null
@@ -96,9 +97,18 @@ try {
 # non-interactive, so keep the frontend listener alive without weakening any
 # database or process-ownership guard.
   $env:CI = 'true'
-# Start only against the currently reviewed schema. A caller may explicitly
-# provide the immediately previous reviewed version for a controlled recovery.
-  if (-not $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION) { $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027' }
+# Recovery always reopens the verified previous Schema 027 rollback source.
+# Normal startup resolves Schema 028 only from consumed, source-bound migration evidence.
+  if ($RecoveryAuthorizationId) {
+    $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027'
+  } else {
+    if (-not (Test-Path -LiteralPath $tsxCommand -PathType Leaf) -or -not (Test-Path -LiteralPath $schemaActivationControl -PathType Leaf)) { throw 'ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_MISSING' }
+    $schemaOutput = & $tsxCommand $schemaActivationControl --project-root $projectRoot --expected-sha $source.Sha
+    if ($LASTEXITCODE -ne 0) { throw "ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_FAILED:$($schemaOutput -join [Environment]::NewLine)" }
+    try { $schemaResolution = ($schemaOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { throw 'ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_INVALID' }
+    if ([string]$schemaResolution.requiredSchemaVersion -notin @('027','028')) { throw 'ANDALUCIA_SCHEMA_ACTIVATION_VERSION_UNSUPPORTED' }
+    $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = [string]$schemaResolution.requiredSchemaVersion
+  }
   $startedAtUtc = [DateTime]::UtcNow
   Write-StartupLog 'SOURCE_APPROVED' "sha=$($source.Sha);branch=$($source.Branch);mode=$($source.Mode)"
   if ($RecoveryAuthorizationId) {

@@ -25,6 +25,7 @@ try {
     $stoppedRuntimeMode = [bool]$MaintenanceAuthorizationId
     $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
     $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
+    $schemaActivationControl = Join-Path $projectRoot 'server\runtime-schema-activation-control.ts'
     $listenerEvidenceModule = Join-Path $PSScriptRoot 'AndaluciaRuntimeListenerEvidence.psm1'
 
     $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
@@ -47,6 +48,16 @@ try {
     $expectedFullSha = (& git -C $projectRoot rev-parse $ExpectedSha 2>$null).Trim()
     if (-not $headSha -or $headSha -ne $expectedFullSha -or ($branch -eq 'main' -and $headSha -ne $originSha)) { Stop-Readiness 'SOURCE_SHA_MISMATCH' "head=$headSha origin=$originSha expected=$expectedFullSha" }
 
+    $targetSchema = '027'
+    if ($branch -eq 'main') {
+        if (-not (Test-Path -LiteralPath $tsxCommand -PathType Leaf) -or -not (Test-Path -LiteralPath $schemaActivationControl -PathType Leaf)) { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_MISSING' $schemaActivationControl }
+        $schemaOutput = & $tsxCommand $schemaActivationControl --project-root $projectRoot --expected-sha $headSha
+        if ($LASTEXITCODE -ne 0) { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_FAILED' ($schemaOutput -join [Environment]::NewLine) }
+        try { $schemaResolution = ($schemaOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_INVALID' $_.Exception.Message }
+        $targetSchema = [string]$schemaResolution.requiredSchemaVersion
+        if ($targetSchema -notin @('027','028')) { Stop-Readiness 'SCHEMA_ACTIVATION_VERSION_UNSUPPORTED' $targetSchema }
+    }
+
     if (-not (Test-Path -LiteralPath (Join-Path $canonicalData 'PG_VERSION') -PathType Leaf)) { Stop-Readiness 'CANONICAL_STORE_MISSING' $canonicalData }
     if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { Stop-Readiness 'CANONICAL_IDENTITY_MISSING' $identityPath }
     $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
@@ -60,13 +71,16 @@ try {
         if ($LASTEXITCODE -ne 0) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' ($controlOutput -join [Environment]::NewLine) }
         try { $evidence = ($controlOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' $_.Exception.Message }
         if ([string]$evidence.targetSha -ne $headSha -or [string]$evidence.targetSha -ne $expectedFullSha -or [string]$evidence.targetBranch -ne $branch) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_TARGET_MISMATCH' ([string]$evidence.targetSha) }
-        if ([string]$evidence.schema -ne '027' -or [string]$evidence.databaseStatus -ne 'HEALTHY' -or [bool]$evidence.migrationRequired -or [bool]$evidence.recoveryRequired) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_DATABASE_INVALID' ($evidence | ConvertTo-Json -Compress) }
+        $previousSchema = [string]$evidence.schema
+        $validTransition = $previousSchema -eq $targetSchema -or ($previousSchema -eq '027' -and $targetSchema -eq '028')
+        if (-not $validTransition -or [string]$evidence.databaseStatus -ne 'HEALTHY' -or [bool]$evidence.migrationRequired -or [bool]$evidence.recoveryRequired) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_DATABASE_INVALID' ($evidence | ConvertTo-Json -Compress) }
         if (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
         $runtimeSha = [string]$evidence.previousLiveSha
     } else {
         try { $health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5 } catch { Stop-Readiness 'RUNTIME_HEALTH_UNAVAILABLE' $_.Exception.Message }
         if (-not $health.ok -or $health.database.status -notin @('HEALTHY','BACKUP_RECOMMENDED')) { Stop-Readiness 'DATABASE_NOT_HEALTHY' ([string]$health.database.status) }
-        if ($health.database.migrationVersion -ne '027' -or $health.database.migrationRequired -or $health.database.recoveryRequired) { Stop-Readiness 'SCHEMA_GATE_FAILED' ($health.database | ConvertTo-Json -Compress) }
+        $previousSchema = [string]$health.database.migrationVersion
+        if ($previousSchema -ne $targetSchema -or $health.database.migrationRequired -or $health.database.recoveryRequired) { Stop-Readiness 'SCHEMA_GATE_FAILED' ($health.database | ConvertTo-Json -Compress) }
         $runtimeSha = [string]$health.application.sha
         if (-not $runtimeSha) { Stop-Readiness 'RUNTIME_SHA_MISSING' 'The health response did not identify its source.' }
     }
@@ -134,7 +148,9 @@ try {
         targetSha = $headSha
         runtimeSha = $runtimeSha
         branch = $branch
-        schema = if ($stoppedRuntimeMode) { [string]$evidence.schema } else { [string]$health.database.migrationVersion }
+        schema = $targetSchema
+        previousSchema = $previousSchema
+        targetSchema = $targetSchema
         database = if ($stoppedRuntimeMode) { [string]$evidence.databaseStatus } else { [string]$health.database.status }
         canonicalStoreId = [string]$identity.storeId
         runtimeTaskState = [string]$runtimeTask.State

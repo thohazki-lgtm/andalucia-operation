@@ -57,8 +57,14 @@ export type LiveMigrationAuthorizationArtifact = {
   protectedBackup?: { backupId: string; pinned: true; restoreRehearsal: 'PASS' }
   rehearsal?: { status: 'PASS'; migratedSchema: string; rollbackSchema: string; completedAt: string }
   evidenceFingerprints?: Record<string, { count: number; digest: string }>
+  approvedSourceSha?: string
 }
 const readArtifact = async (path: string) => JSON.parse(await readFile(path, 'utf8')) as LiveMigrationAuthorizationArtifact
+
+export const requireApprovedMigrationSource = (artifact: LiveMigrationAuthorizationArtifact, approvedSourceSha = process.env.ANDALUCIA_APPROVED_MIGRATION_SOURCE_SHA?.trim().toLowerCase()) => {
+  if (artifact.targetMigration?.version !== '028') return
+  if (!/^[0-9a-f]{40}$/i.test(artifact.approvedSourceSha || '') || artifact.approvedSourceSha !== approvedSourceSha) throw new Error('LIVE_MIGRATION_APPROVED_SOURCE_MISMATCH')
+}
 
 export const prepareLiveMigration = async (options: {
   sourceDirectory: string
@@ -160,6 +166,7 @@ export const authorizeLiveExecution = async (options: {
     if (preflight.status !== 'READY') throw new Error(`LIVE_PREFLIGHT_BLOCKED:${preflight.blockers.join(',')}`)
     if (boundArtifact) {
       const identity = await readStoreIdentity(sourceDirectory, 'canonical')
+      requireApprovedMigrationSource(artifact)
       if (!artifact.targetMigration || artifact.canonicalStoreId !== identity.storeId || artifact.outletScopeId !== '00000000-0000-4000-8000-00000000a001' || artifact.protectedBackup?.pinned !== true || artifact.protectedBackup.restoreRehearsal !== 'PASS' || artifact.rehearsal?.status !== 'PASS' || artifact.rehearsal.migratedSchema !== artifact.targetMigration.version) throw new Error('LIVE_MIGRATION_BOUND_EVIDENCE_MISMATCH')
       const status = await import('./migration-store.js').then(module => module.migrationStatus(db))
       const appliedVersions = status.migrations.filter(item => item.state === 'applied').map(item => item.version)
