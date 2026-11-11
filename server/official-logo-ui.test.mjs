@@ -43,6 +43,7 @@ assert.match(corporateTheme, /main\.module-dashboard \.dashboard-page \.dashboar
 assert.match(corporateTheme, /\.dashboard-mobile-priority article \{[^}]*border: 1\.5px solid var\(--ao-dashboard-gold\);[^}]*border-top-width: 2px;/s)
 assert.match(corporateTheme, /main\.module-dashboard \.dashboard-page \.dashboard-metric-grid span,[^{]*\.dashboard-training-details dt,[^{]*\.team-secondary-panel header > b \{[^}]*color: var\(--ao-dashboard-gold\);/s)
 assert.match(corporateTheme, /\.dashboard-mobile-priority span \{[^}]*color: var\(--ao-dashboard-gold\);/s)
+assert.match(corporateTheme, /main\.module-dashboard \.dashboard-page \.hostess-state-summary span,[^{]*\.tonight-card \.next-arrivals \.eyebrow \{[^}]*color: var\(--ao-dashboard-gold\);/s)
 assert.match(dashboardTeam, /\.dashboard-metric-grid strong \{[^}]*text-align: center;/s)
 assert.match(corporateTheme, /\.dashboard-mobile-priority strong \{[^}]*text-align: center;/s)
 assert.match(corporateTheme, /:not\(\.dashboard-card\):not\(\.dashboard-mobile-priority article\)[^{]*\{\s*border-color: var\(--ao-module-line\);/s)
