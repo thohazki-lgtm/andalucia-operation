@@ -58,7 +58,7 @@ try {
     ANDALUCIA_DATA_DIR: fixture.store,
     ANDALUCIA_STORE_ROLE: 'development',
     ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store,
-    ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027',
+    ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028',
     API_PORT: String(apiPort),
     APP_ORIGIN: `http://127.0.0.1:${frontendPort}`,
   }
@@ -73,7 +73,7 @@ try {
   const healthResponse = await waitFor(`http://127.0.0.1:${apiPort}/api/health`)
   const health = await healthResponse.json() as { ok?: boolean; database?: { migrationVersion?: string; status?: string; migrationRequired?: boolean; recoveryRequired?: boolean } }
   assert.equal(health.ok, true)
-  assert.equal(health.database?.migrationVersion, '027')
+  assert.equal(health.database?.migrationVersion, '028')
   assert.equal(health.database?.status, 'BACKUP_RECOMMENDED', 'the disposable store is healthy but intentionally has no operational backup')
   assert.equal(health.database?.migrationRequired, false)
   assert.equal(health.database?.recoveryRequired, false)

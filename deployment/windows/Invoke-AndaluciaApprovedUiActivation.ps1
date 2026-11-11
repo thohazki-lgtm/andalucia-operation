@@ -98,7 +98,7 @@ $healthy = $null
 for ($attempt = 0; $attempt -lt 90; $attempt++) {
     try {
         $candidate = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 3
-        if ($candidate.ok -and $candidate.application.sha -eq $preflight.targetSha -and $candidate.application.branch -eq $preflight.branch -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq '027' -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
+        if ($candidate.ok -and $candidate.application.sha -eq $preflight.targetSha -and $candidate.application.branch -eq $preflight.branch -and $candidate.database.status -eq 'HEALTHY' -and $candidate.database.migrationVersion -eq $preflight.targetSchema -and -not $candidate.database.migrationRequired -and -not $candidate.database.recoveryRequired) { $healthy = $candidate; break }
     } catch {}
     Start-Sleep -Seconds 1
 }
