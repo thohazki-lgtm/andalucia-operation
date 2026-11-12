@@ -88,6 +88,7 @@
     "test:manual-overtime-027": "tsx server/manual-overtime-migration-027.test.ts",
     "test:schema-028-activation-controls": "tsx server/schema-028-activation-control.test.ts",
     "test:schema-028-activation-bridge": "tsx server/schema-028-migration-activation-bridge.test.ts",
+    "test:schema-028-rehearsal-permissions": "tsx server/schema-028-rehearsal-permissions.test.ts",
     "test:activity-parser": "tsx server/activity-program-parser.test.ts",
     "test:booking-import": "tsx server/booking-import.test.ts",
     "test:booking-persistence": "tsx server/booking-persistence-service-date.test.ts",

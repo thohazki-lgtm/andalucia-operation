@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream, existsSync } from 'node:fs'
-import { cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
+import { chmod, cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 export type StoreManifestEntry = { path: string; bytes: number; sha256: string }
 export type StoreManifest = { generatedAt: string; root: string; files: number; bytes: number; aggregateSha256: string; entries: StoreManifestEntry[] }
@@ -34,6 +34,29 @@ export const copyStoreVerified = async (sourceInput: string, destinationInput: s
   const backupManifest = await createStoreManifest(destination)
   if (!manifestsMatch(sourceManifest, backupManifest)) throw new Error('LIVE_BACKUP_VERIFICATION_FAILED')
   return { sourceManifest, backupManifest }
+}
+export const makeDisposableStoreWritable = async (storeInput: string, workspaceInput: string, protectedInputs: string[] = []) => {
+  const store = resolve(storeInput); const workspace = resolve(workspaceInput)
+  const workspaceRelative = relative(workspace, store)
+  if (!workspaceRelative || workspaceRelative.startsWith('..') || isAbsolute(workspaceRelative)) throw new Error('DISPOSABLE_STORE_OUTSIDE_WORKSPACE')
+  for (const protectedInput of protectedInputs) {
+    const protectedRoot = resolve(protectedInput)
+    const storeFromProtected = relative(protectedRoot, store); const protectedFromStore = relative(store, protectedRoot)
+    if (!storeFromProtected || !protectedFromStore || (!storeFromProtected.startsWith('..') && !isAbsolute(storeFromProtected)) || (!protectedFromStore.startsWith('..') && !isAbsolute(protectedFromStore))) throw new Error('DISPOSABLE_STORE_OVERLAPS_PROTECTED_PATH')
+  }
+  if (!existsSync(join(store, 'PG_VERSION'))) throw new Error('DISPOSABLE_STORE_NOT_FOUND')
+  let files = 0; let directories = 0
+  const visit = async (directory: string): Promise<void> => {
+    await chmod(directory, 0o755); directories += 1
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) await visit(path)
+      else if (entry.isFile()) { await chmod(path, 0o644); files += 1 }
+      else throw new Error(`DISPOSABLE_STORE_UNSUPPORTED_ENTRY:${relative(store, path)}`)
+    }
+  }
+  await visit(store)
+  return { store, workspace, files, directories }
 }
 export const writeJsonAtomic = async (path: string, value: unknown) => {
   await mkdir(dirname(path), { recursive: true })
