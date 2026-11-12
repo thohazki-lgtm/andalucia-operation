@@ -76,7 +76,7 @@ export type CanonicalMaintenanceAuthorization = {
   createdAt: string
   updatedAt: string
   expiresAt: string
-  authorizationMode: 'live_requested_backup' | 'stopped_runtime_recovery' | 'stale_marker_recovery'
+  authorizationMode: 'live_requested_backup' | 'stopped_runtime_recovery' | 'stale_marker_recovery' | 'schema_028_migration_activation'
   previousLiveSha: string
   targetSha: string
   targetBranch: string

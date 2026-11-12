@@ -74,7 +74,10 @@ try {
         $previousSchema = [string]$evidence.schema
         $validTransition = $previousSchema -eq $targetSchema -or ($previousSchema -eq '027' -and $targetSchema -eq '028')
         if (-not $validTransition -or [string]$evidence.databaseStatus -ne 'HEALTHY' -or [bool]$evidence.migrationRequired -or [bool]$evidence.recoveryRequired) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_DATABASE_INVALID' ($evidence | ConvertTo-Json -Compress) }
-        if (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
+        $schemaMigrationActivation = [string]$evidence.authorizationMode -eq 'schema_028_migration_activation'
+        if ($schemaMigrationActivation) {
+            if ($branch -ne 'main' -or $previousSchema -ne '027' -or $targetSchema -ne '028' -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'SCHEMA_028_STOPPED_RUNTIME_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
+        } elseif (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
         $runtimeSha = [string]$evidence.previousLiveSha
     } else {
         try { $health = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -Method Get -TimeoutSec 5 } catch { Stop-Readiness 'RUNTIME_HEALTH_UNAVAILABLE' $_.Exception.Message }
@@ -139,7 +142,10 @@ try {
         break
     }
     if (-not $latestBackup) { Stop-Readiness 'VERIFIED_BACKUP_REQUIRED' 'No verified and restore-tested backup was found.' }
-    if ($stoppedRuntimeMode -and ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne 'manual')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category)" }
+    if ($stoppedRuntimeMode) {
+        $requiredBackupCategory = if ($schemaMigrationActivation) { 'pre-migration' } else { 'manual' }
+        if ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne $requiredBackupCategory -or ($schemaMigrationActivation -and [string]$latestBackup.schemaVersion -ne '027')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category) required=$requiredBackupCategory" }
+    }
     $backupAgeHours = ([DateTime]::UtcNow - [DateTime]::Parse([string]$latestBackup.createdAt).ToUniversalTime()).TotalHours
     if ($backupAgeHours -gt $MaximumBackupAgeHours) { Stop-Readiness 'VERIFIED_BACKUP_TOO_OLD' ([Math]::Round($backupAgeHours, 2).ToString()) }
 
@@ -160,6 +166,7 @@ try {
         changedFiles = $changedFiles
         reviewedNonUiFiles = $reviewedNonUiFiles
         reviewedNonUiAuthorizationUsed = [bool]$AllowReviewedNonUiPaths
+        maintenanceAuthorizationMode = if ($stoppedRuntimeMode) { [string]$evidence.authorizationMode } else { $null }
         mutationPerformed = $false
     } | ConvertTo-Json -Depth 6
 } catch {
