@@ -6,11 +6,11 @@ const styles = await readFile(new URL('../src/workforce.css', import.meta.url), 
 const corporateTheme = await readFile(new URL('../src/corporate-theme.css', import.meta.url), 'utf8')
 
 const employeeManager = workforce.match(/export function StaffEntitlementsManager[\s\S]*?\n\}/)?.[0] || ''
-for (const heading of ['Employee', 'Employee ID', 'Available AL', 'Accruing', 'Used', 'Booked', 'Remaining', 'Action']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
+for (const heading of ['Employee', 'Employee ID', 'Available AL', 'Used', 'Booked', 'Remaining', 'Action']) assert.ok(employeeManager.includes(`<th>${heading}</th>`), `Missing Employee Entitlements table heading: ${heading}`)
 assert.match(employeeManager, /className="employee-entitlement-table"/, 'Employee Entitlements must use one full-width table.')
 assert.match(employeeManager, /visible\.map\(item =>/, 'The table must render every active employee returned by the existing entitlement source.')
-assert.match(employeeManager, /serviceYear \? serviceYear\.knownAvailableLeave/, 'Available AL must contain only completed service years and approved opening adjustments.')
-assert.match(employeeManager, /serviceYear\?\.accruingForNextServiceYear/, 'Current service-year accrual must remain separately visible and unavailable.')
+assert.match(employeeManager, /serviceYear \? serviceYear\.knownAvailableLeave/, 'Available AL must use joining-date monthly accrual plus approved opening adjustments.')
+assert.doesNotMatch(employeeManager, /<th>Accruing<\/th>|data-label="Accruing"|serviceYear\?\.accruingForNextServiceYear/, 'Monthly accrual must be included in Available AL instead of a separate Accruing column.')
 assert.match(employeeManager, /serviceYear \? serviceYear\.availableAfterBooked/, 'Remaining must deduct confirmed usage and separate future bookings exactly once.')
 assert.match(employeeManager, /<EntitlementInlineDetails/, 'Each employee row must expand its details inline.')
 assert.doesNotMatch(employeeManager, /EntitlementBalanceDialog|modal-backdrop|setViewing/, 'The large entitlement popup must be removed from Employee Entitlements.')
@@ -18,13 +18,13 @@ assert.doesNotMatch(workforce, /Show inactive staff/, 'The Employee Entitlements
 assert.doesNotMatch(workforce, />Reconcile(?: Year)?</, 'The employee reconciliation action must remain removed.')
 
 assert.match(styles, /\.employee-entitlement-table-wrap\{[^}]*overflow-x:auto/, 'The desktop table must contain horizontal overflow safely.')
-assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:920px/, 'The eight-column entitlement table must remain full-width and aligned on desktop.')
-assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available AL<\/th><th>Accruing<\/th><th>Used<\/th><th>Booked<\/th><th>Remaining<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
-assert.match(employeeManager, /<colgroup><col className="entitlement-employee-column"\s*\/><col className="entitlement-id-column"\s*\/>(?:<col className="entitlement-metric-column"\s*\/>){5}<col className="entitlement-action-column"\s*\/><\/colgroup>/, 'The table must contain exactly eight explicit data columns with no unused spacer column.')
+assert.match(styles, /\.employee-entitlement-table\{width:100%;min-width:820px/, 'The seven-column entitlement table must remain full-width and aligned on desktop.')
+assert.match(employeeManager, /<th>Employee<\/th><th>Employee ID<\/th><th>Available AL<\/th><th>Used<\/th><th>Booked<\/th><th>Remaining<\/th><th>Action<\/th>/, 'Employee name, ID, balances, and the action must have distinct columns.')
+assert.match(employeeManager, /<colgroup><col className="entitlement-employee-column"\s*\/><col className="entitlement-id-column"\s*\/>(?:<col className="entitlement-metric-column"\s*\/>){4}<col className="entitlement-action-column"\s*\/><\/colgroup>/, 'The table must contain exactly seven explicit data columns with no unused spacer column.')
 assert.match(employeeManager, /staff-entitlements-panel entitlement-card-stack/, 'Employee Entitlements must use an unframed card stack.')
 assert.match(employeeManager, /<div className="panel-title workforce-section-title entitlement-heading-card"><div><p className="eyebrow">EMPLOYEE OVERRIDES &amp; BALANCES<\/p><h3>Employee Entitlements<\/h3><\/div><\/div>/, 'Employee Entitlements must be the Dahlia heading in its own card beneath the compact eyebrow.')
 assert.doesNotMatch(employeeManager, /entitlement-view-summary|employees? shown/, 'The redundant employee-count strip must be removed.')
-assert.match(employeeManager, /<footer className="entitlement-information-footer"[\s\S]*?Available AL contains completed service years and approved opening adjustments; Accruing remains unavailable until the next anniversary\.[\s\S]*?Confirmed Annual Leave usage comes only from Duty Roster; Booked\/Future remains separate until confirmed\.[\s\S]*?<\/footer>/, 'The footer must explain deferred availability and separate roster/booked usage.')
+assert.match(employeeManager, /<footer className="entitlement-information-footer"[\s\S]*?Available AL is earned from Date of Joining at 2\.5 days for every completed service month, plus approved opening adjustments\.[\s\S]*?Confirmed Annual Leave usage comes only from Duty Roster; Booked\/Future remains separate until confirmed\.[\s\S]*?<\/footer>/, 'The footer must explain monthly joining-date availability and separate roster/booked usage.')
 assert.ok(employeeManager.indexOf('entitlement-information-footer') > employeeManager.indexOf('employee-entitlement-table-wrap'), 'The information footer must follow the table and expanded inline details.')
 assert.doesNotMatch(employeeManager, /Close Details/, 'Inline details must not duplicate the row-level Close action.')
 assert.match(corporateTheme, /main\.module-leave-planner \.staff-entitlements-panel\.entitlement-card-stack\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/, 'The former shared Employee Entitlements panel must not remain as a visible outer card.')
@@ -38,7 +38,7 @@ assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-identi
 assert.match(styles, /\.employee-entitlement-table \.employee-entitlement-row td\{[^}]*vertical-align:middle/, 'Table values must stay vertically aligned.')
 assert.match(styles, /@media\(max-width:700px\)[\s\S]*?\.employee-entitlement-table \.employee-entitlement-row\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'Mobile rows must use a readable two-column layout.')
 assert.match(styles, /\.employee-entitlement-details-row>td\{[^}]*background:var\(--ao-leave-surface/, 'Inline details must remain connected to the selected employee.')
-assert.match(styles, /\.employee-entitlement-table \.entitlement-metric-column\{width:12%\}/, 'The five balance columns must share the rebalanced table width.')
+assert.match(styles, /\.employee-entitlement-table \.entitlement-metric-column\{width:15%\}/, 'The four balance columns must share the rebalanced table width.')
 assert.match(styles, /\.entitlement-information-footer\{[^}]*display:flex[^}]*border:1px solid var\(--ao-leave-gold/, 'The explanatory footer must use one compact gold-framed information treatment.')
 assert.match(corporateTheme, /main\.module-leave-planner :is\([\s\S]*?\.employee-entitlement-table-wrap,[\s\S]*?\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-gold\) !important;[\s\S]*?border-top-width:\s*2px !important;/, 'Employee Entitlements must retain a continuous gold outer and top table border.')
 assert.match(corporateTheme, /main\.module-leave-planner \.employee-entitlement-table :is\(th, td\)\s*\{[\s\S]*?border-color:\s*var\(--ao-leave-divider\) !important;/, 'Employee Entitlements row and column dividers must render subtle purple.')
@@ -80,7 +80,7 @@ assert.doesNotMatch(employeeManager, /Carry Forward|detailsDirty/, 'The retired 
 
 console.log(JSON.stringify({
   fullWidthEmployeeTable: true,
-  displayedColumns: ['Employee', 'Employee ID', 'Available AL', 'Accruing', 'Used', 'Booked', 'Remaining', 'Action'],
+  displayedColumns: ['Employee', 'Employee ID', 'Available AL', 'Used', 'Booked', 'Remaining', 'Action'],
   responsiveEmployeeRows: true,
   unconfiguredPreserved: true,
   serviceYearCalculationPreserved: true,

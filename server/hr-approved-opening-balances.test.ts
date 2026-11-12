@@ -43,7 +43,7 @@ try {
 
   const annual = await repository.annualLeaveServiceYearBalance(staffId, '2026-10-12')
   assert(annual)
-  assert.deepEqual({ available: annual.availableLeave, accruing: annual.accruingForNextServiceYear, openingAdjustment: annual.approvedOpeningCarry, used: annual.used, remaining: annual.remaining }, { available: 90, accruing: 22.5, openingAdjustment: null, used: 2, remaining: 88 })
+  assert.deepEqual({ available: annual.availableLeave, accruing: annual.accruingForNextServiceYear, openingAdjustment: annual.approvedOpeningCarry, used: annual.used, remaining: annual.remaining }, { available: 112.5, accruing: 22.5, openingAdjustment: null, used: 2, remaining: 110.5 })
   const balance = await repository.yearlyEntitlementBalance(staffId, 2026, '2026-10-05', '2026-10-11')
   const sick = balance.yearlyLeave.find(item => item.classification === 'sickLeave')!
   assert.deepEqual({ entitlement: sick.entitlement, used: sick.used, remaining: sick.remaining }, { entitlement: 8, used: 2, remaining: 6 })
@@ -75,7 +75,7 @@ try {
   assert.equal(persisted.find(item => item.classification === 'annualLeave')?.configured, false)
   const persistedAnnual = await reopened.annualLeaveServiceYearBalance(staffId, '2026-10-12')
   assert.equal(persistedAnnual?.approvedOpeningCarry, null)
-  assert.equal(persistedAnnual?.remaining, 88)
+  assert.equal(persistedAnnual?.remaining, 110.5)
   await reopened.close()
 
   console.log(JSON.stringify({ previewReadOnly: true, explicitManagerConfirmation: true, mandatoryApprovalReason: true, lifetimeAnnualLeave: true, historicalManualCarryPreservedWithoutDuplication: true, noDoubleCounting: true, nonAnnualYearlyEntitlements: true, nonAnnualReset: true, historicalSkSlSingleCount: true, dutyRosterAuthority: true, auditLogging: true, persistence: true, legacyTablesPreserved: true, schemaVersion: '027', canonicalDatabaseTouched: false }, null, 2))
