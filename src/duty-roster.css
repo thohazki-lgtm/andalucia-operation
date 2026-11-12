@@ -13,6 +13,45 @@
   min-width: 0;
 }
 
+/* Keep the page scrollbar compact and unmistakably part of Duty Roster. */
+html:has(.app-shell > main.module-duty-roster),
+body:has(.app-shell > main.module-duty-roster) {
+  scrollbar-width: thin;
+  scrollbar-color: #3f8fc2 #143b61;
+}
+
+html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar,
+body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #143b61;
+}
+
+html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 1px solid #c9a65a;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #78b9dc 0%, #3f8fc2 55%, #245f8a 100%);
+}
+
+html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #91cae7 0%, #54a5d3 55%, #2f729f 100%);
+}
+
+html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-button,
+body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .duty-roster-page > .duty-roster-tabs {
   display: grid;
   width: min(460px, 100%);
@@ -1241,23 +1280,8 @@ main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:first-child 
 }
 
 @media (max-width: 700px) {
-  html:has(.app-shell > main.module-duty-roster) {
-    scrollbar-width: thin;
-    scrollbar-color: var(--roster-gold, #c9a65a) transparent;
-  }
-
   html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar,
   body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar { width: 5px; }
-  html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-track,
-  body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-track { background: transparent; }
-  html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb,
-  body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-thumb {
-    min-height: 40px;
-    border-radius: 999px;
-    background: var(--roster-gold, #c9a65a);
-  }
-  html:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-button,
-  body:has(.app-shell > main.module-duty-roster)::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 
   .duty-roster-page > .duty-roster-tabs {
     width: 100%;
