@@ -118,7 +118,7 @@ try {
   await db.close()
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3002' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028', API_PORT: '3002' }, stdio: 'inherit' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3002' }, stdio: 'inherit' }))
   await Promise.all([waitFor('http://127.0.0.1:3002/api/health'), waitFor('http://127.0.0.1:5174/')])
 

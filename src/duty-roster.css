@@ -719,7 +719,7 @@ main.module-duty-roster .duty-roster-page .roster .duty-code-trigger.ao-action:n
   gap: 6px;
   padding: 6px 9px;
   overflow: hidden;
-  border: 1px solid rgb(63 127 168 / 38%);
+  border: 1.5px solid var(--roster-gold, #c9a65a);
   border-radius: 999px;
   background: var(--roster-mint);
   color: var(--roster-teal-dark);
@@ -915,24 +915,31 @@ main.module-duty-roster .duty-roster-page .roster tfoot td + td {
   padding: 9px 10px;
   border: 1.5px solid var(--roster-gold);
   border-radius: 10px;
-  background: linear-gradient(110deg, #f9fcfe 0%, var(--roster-surface) 100%);
+  overflow: hidden;
+  background: var(--roster-mint);
   box-shadow: 0 4px 13px rgb(20 69 104 / 8%);
 }
 
 .duty-roster-page .mobile-roster-identity b {
   display: block;
-  color: var(--roster-teal-dark);
+  color: #fff;
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.25;
 }
 
-.duty-roster-page .mobile-roster-identity { min-width: 0; }
+.duty-roster-page .mobile-roster-identity {
+  min-width: 0;
+  margin: -9px -10px 0;
+  padding: 11px 13px 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 26%);
+  background: linear-gradient(90deg, #143b61 0%, #2f729f 56%, #78b9dc 100%);
+}
 
 .duty-roster-page .mobile-roster-identity small {
   display: block;
   margin-top: 3px;
-  color: #738690;
+  color: #e4f4fc;
   font-size: 10.5px;
   line-height: 1.3;
 }
@@ -1187,20 +1194,30 @@ main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:first-child 
   .duty-roster-page .duty-code-card {
     min-width: 0;
     padding: 10px;
+    overflow: hidden;
     border: 1px solid var(--roster-gold);
     border-left: 3px solid var(--roster-teal);
     border-radius: 10px;
-    background: linear-gradient(110deg, #f9fcfe 0%, var(--roster-surface) 100%);
+    background: var(--roster-mint);
     box-shadow: 0 4px 13px rgba(23, 61, 86, .045);
   }
   .duty-roster-page .duty-code-card.is-dragging { opacity: .78; background: #e4f3fa; box-shadow: 0 6px 18px rgba(23, 61, 86, .12); }
-  .duty-roster-page .duty-code-card.is-disabled { border-left-color: #667f91; background: linear-gradient(110deg, #f9fcfe 0%, #eef4f7 100%); }
-  .duty-roster-page .duty-code-card > header { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; margin: 0; }
+  .duty-roster-page .duty-code-card.is-disabled { border-left-color: #667f91; background: var(--roster-mint); }
+  .duty-roster-page .duty-code-card > header {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin: -10px -10px 0;
+    padding: 10px;
+    border-bottom: 1px solid rgb(255 255 255 / 26%);
+    background: linear-gradient(90deg, #143b61 0%, #2f729f 56%, #78b9dc 100%);
+  }
   .duty-roster-page .duty-code-card > header > div { min-width: 0; }
   .duty-roster-page .duty-code-card > header b,
   .duty-roster-page .duty-code-card > header span { display: block; }
-  .duty-roster-page .duty-code-card > header b { color: var(--roster-teal-dark); font-size: 15px; font-weight: 700; letter-spacing: .04em; }
-  .duty-roster-page .duty-code-card > header > div span { margin-top: 2px; overflow: hidden; color: #607887; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  .duty-roster-page .duty-code-card > header b { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+  .duty-roster-page .duty-code-card > header > div span { margin-top: 2px; overflow: hidden; color: #e4f4fc; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
   .duty-roster-page .duty-code-card-preview { display: grid; grid-template-columns: 22px minmax(84px, 122px) 1fr; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 0; border-block: 1px solid var(--roster-line); }
   .duty-roster-page .duty-code-card-preview small { color: #718492; font-size: 10px; text-transform: uppercase; }
   .duty-roster-page .duty-code-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 7px; margin: 8px 0 0; }
