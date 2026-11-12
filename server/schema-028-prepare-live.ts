@@ -8,7 +8,7 @@ import { AuthorizationService } from './authorization-service.js'
 import { DatabaseBackupAdminService } from './database-backup-admin.js'
 import { createFinancialFinalizationFingerprint, createVerifiedBackup } from './database-backup.js'
 import { canonicalStoreDirectory, operationMarkerPaths, readStoreIdentity } from './database-protection.js'
-import { copyStoreVerified, createStoreManifest, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
+import { copyStoreVerified, createStoreManifest, makeDisposableStoreWritable, manifestsMatch, writeJsonAtomic } from './migration-filesystem.js'
 import { compareOperationalFingerprints, createMigrationFingerprint, migrationStatus, reviewedMigrationSet, runMigrations, runPreflight } from './migration-store.js'
 import { defaultExclusiveAccessCheck, type LiveMigrationAuthorizationArtifact } from './migration-live-gate.js'
 import { ANDALUCIA_SCOPE_ID } from './outlet-membership-repository.js'
@@ -45,6 +45,7 @@ const tempRoot = resolve('.tmp'); await mkdir(tempRoot, { recursive: true })
 const temp = await mkdtemp(join(tempRoot, 'schema-028-live-readiness-'))
 try {
   const rehearsalPath = join(temp, 'rehearsal', 'postgres'); await copyStoreVerified(backup.backupDirectory, rehearsalPath)
+  await makeDisposableStoreWritable(rehearsalPath, temp, [sourceDirectory, backup.backupDirectory])
   const rehearsal = new PGlite(rehearsalPath); await rehearsal.query('select 1')
   const before = await createMigrationFingerprint(rehearsal); const financialBefore = await createFinancialFinalizationFingerprint(rehearsal)
   const migration = await runMigrations(rehearsal, { throughVersion: targetVersion }); const after = await createMigrationFingerprint(rehearsal); const financialAfter = await createFinancialFinalizationFingerprint(rehearsal); const status = await migrationStatus(rehearsal)
