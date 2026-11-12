@@ -29,7 +29,7 @@ try {
     artifactVersion: 'andalucia-live-migration-authorization-v2', id: randomUUID(), state: 'consumed', createdAt, consumedAt, expiresAt,
     approvedSourceSha: targetSha, sourceDirectory: canonical, canonicalStoreId: storeId, outletScopeId,
     targetMigration: { version: '028', name: target.name, checksum: target.checksum },
-    sourceMigrationLedger: { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksumMatches: true }] },
+    sourceMigrationLedger: { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksum: target.checksum, checksumMatches: null }] },
     protectedBackup: { backupId, pinned: true, restoreRehearsal: 'PASS' }, rehearsal: { status: 'PASS', rollbackSchema: '027', migratedSchema: '028' },
     consumedPostMigrationFingerprint: fingerprint.digest,
     ownerSession: { sessionId: randomUUID(), sessionExpiresAt: new Date(now + 30 * 60_000).toISOString(), userId: randomUUID(), loginIdentifier: 'owner.test', displayName: 'Owner Test', isOwner: true, globalScope: true, requiredPermissions: ['manage_platform', 'manage_duty_roster'] },

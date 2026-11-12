@@ -40,7 +40,7 @@ export const resolveRuntimeSchemaActivation = async (projectRootInput: string, a
   if (artifact.rehearsal?.status !== 'PASS' || artifact.rehearsal?.rollbackSchema !== '027' || artifact.rehearsal?.migratedSchema !== '028' || artifact.protectedBackup?.pinned !== true || artifact.protectedBackup?.restoreRehearsal !== 'PASS') fail('SCHEMA_ACTIVATION_REHEARSAL_EVIDENCE_INVALID')
   const source027 = artifact.sourceMigrationLedger?.migrations?.find((item: any) => item.version === '027')
   const target028 = artifact.sourceMigrationLedger?.migrations?.find((item: any) => item.version === '028')
-  if (!artifact.consumedPostMigrationFingerprint || artifact.targetMigration?.version !== '028' || artifact.sourceMigrationLedger?.migrations?.filter((item: any) => item.state === 'applied').at(-1)?.version !== '027' || source027?.state !== 'applied' || source027?.checksumMatches !== true || target028?.state !== 'pending' || target028?.checksumMatches !== true) fail('SCHEMA_ACTIVATION_TRANSITION_INVALID')
+  if (!artifact.consumedPostMigrationFingerprint || artifact.targetMigration?.version !== '028' || artifact.sourceMigrationLedger?.migrations?.filter((item: any) => item.state === 'applied').at(-1)?.version !== '027' || source027?.state !== 'applied' || source027?.checksumMatches !== true || target028?.state !== 'pending' || target028?.checksum !== artifact.targetMigration?.checksum || target028?.checksumMatches !== null) fail('SCHEMA_ACTIVATION_TRANSITION_INVALID')
   const backupId = artifact.protectedBackup.backupId
   if (!backupId || folder !== resolve(backupRoot, backupId)) fail('SCHEMA_ACTIVATION_BACKUP_BINDING_INVALID')
   const metadata = await json<any>(join(folder, 'backup-metadata.json')).catch(() => fail('SCHEMA_ACTIVATION_BACKUP_EVIDENCE_MISSING'))
