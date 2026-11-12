@@ -82,25 +82,24 @@ export function StaffEntitlementsManager() {
     {loading ? <p className="workforce-loading">Loading staff entitlements…</p> : <>
       <div className="employee-entitlement-table-wrap" role="region" aria-label="Employee entitlement balances" tabIndex={0}>
         <table className="employee-entitlement-table">
-          <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-action-column" /></colgroup>
-          <thead><tr><th>Employee</th><th>Employee ID</th><th>Available AL</th><th>Accruing</th><th>Used</th><th>Booked</th><th>Remaining</th><th>Action</th></tr></thead>
+          <colgroup><col className="entitlement-employee-column" /><col className="entitlement-id-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-metric-column" /><col className="entitlement-action-column" /></colgroup>
+          <thead><tr><th>Employee</th><th>Employee ID</th><th>Available AL</th><th>Used</th><th>Booked</th><th>Remaining</th><th>Action</th></tr></thead>
           {visible.map(item => { const summary = summaries[item.staffId]; const serviceYear = summary?.annualLeave.serviceYear; const expanded = expandedStaffId === item.staffId; const detailsId = `employee-entitlement-details-${item.staffId}`; return <tbody key={item.staffId}>
             <tr className={expanded ? 'employee-entitlement-row expanded' : 'employee-entitlement-row'}>
               <td className="employee-entitlement-identity" data-label="Employee"><b>{item.staffName}</b></td>
               <td className="employee-entitlement-id" data-label="Employee ID"><b>{item.staffNumber}</b></td>
               <td data-label="Available AL"><b>{displayEntitlement(serviceYear ? serviceYear.knownAvailableLeave : summary?.annualLeave.entitlement)}</b></td>
-              <td data-label="Accruing"><b>{displayEntitlement(serviceYear?.accruingForNextServiceYear)}</b></td>
               <td data-label="Used"><b>{serviceYear?.used ?? summary?.annualLeave.used ?? '—'}</b></td>
               <td data-label="Booked"><b>{serviceYear?.bookedFuture ?? summary?.bookedFuture ?? '—'}</b></td>
               <td data-label="Remaining"><b>{displayEntitlement(serviceYear ? serviceYear.availableAfterBooked : summary?.availableAfterBooked)}</b></td>
               <td className="employee-entitlement-action" data-label="Action"><button type="button" className="entitlement-details-toggle" aria-expanded={expanded} aria-controls={detailsId} onClick={() => showDetails(expanded ? null : item.staffId)}>{expanded ? 'Close' : 'Details'}</button></td>
             </tr>
-            {expanded && <tr className="employee-entitlement-details-row"><td colSpan={8}><EntitlementInlineDetails id={detailsId} item={item} planningSummary={summary} onCollapse={() => showDetails(null)} /></td></tr>}
+            {expanded && <tr className="employee-entitlement-details-row"><td colSpan={7}><EntitlementInlineDetails id={detailsId} item={item} planningSummary={summary} onCollapse={() => showDetails(null)} /></td></tr>}
           </tbody> })}
         </table>
       </div>
       {!visible.length && <p className="workforce-empty">No staff match this view.</p>}
-      <footer className="entitlement-information-footer" aria-label="Employee entitlement information"><span className="entitlement-information-icon" aria-hidden="true">i</span><div><p>Available AL contains completed service years and approved opening adjustments; Accruing remains unavailable until the next anniversary.</p><p>Confirmed Annual Leave usage comes only from Duty Roster; Booked/Future remains separate until confirmed.</p></div></footer>
+      <footer className="entitlement-information-footer" aria-label="Employee entitlement information"><span className="entitlement-information-icon" aria-hidden="true">i</span><div><p>Available AL is earned from Date of Joining at 2.5 days for every completed service month, plus approved opening adjustments.</p><p>Confirmed Annual Leave usage comes only from Duty Roster; Booked/Future remains separate until confirmed.</p></div></footer>
     </>}
   </article>
 }
