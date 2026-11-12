@@ -19,8 +19,9 @@ try {
   assert.deepEqual(await resolveRuntimeSchemaActivation(root, sourceSha), { requiredSchemaVersion: '027', mode: 'pre-migration', approvedSourceSha: sourceSha })
 
   const backupId = 'andalucia-pre-migration-schema-028-test'; const folder = join(root, '.backups', backupId)
-  const ledger = { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksumMatches: true }] }
-  const artifact = { artifactVersion: 'andalucia-live-migration-authorization-v2', id: 'authorization-028', state: 'consumed', approvedSourceSha: sourceSha, sourceDirectory: canonical, canonicalStoreId: 'andalucia-canonical-live', outletScopeId: '00000000-0000-4000-8000-00000000a001', targetMigration: { version: '028' }, sourceMigrationLedger: ledger, protectedBackup: { backupId, pinned: true, restoreRehearsal: 'PASS' }, rehearsal: { status: 'PASS', rollbackSchema: '027', migratedSchema: '028' }, consumedPostMigrationFingerprint: 'post-028' }
+  const targetChecksum = 'a'.repeat(64)
+  const ledger = { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksum: targetChecksum, checksumMatches: null }] }
+  const artifact = { artifactVersion: 'andalucia-live-migration-authorization-v2', id: 'authorization-028', state: 'consumed', approvedSourceSha: sourceSha, sourceDirectory: canonical, canonicalStoreId: 'andalucia-canonical-live', outletScopeId: '00000000-0000-4000-8000-00000000a001', targetMigration: { version: '028', checksum: targetChecksum }, sourceMigrationLedger: ledger, protectedBackup: { backupId, pinned: true, restoreRehearsal: 'PASS' }, rehearsal: { status: 'PASS', rollbackSchema: '027', migratedSchema: '028' }, consumedPostMigrationFingerprint: 'post-028' }
   assert.doesNotThrow(() => requireApprovedMigrationSource(artifact as any, sourceSha))
   assert.throws(() => requireApprovedMigrationSource(artifact as any, 'f'.repeat(40)), /LIVE_MIGRATION_APPROVED_SOURCE_MISMATCH/)
   const metadata = { backupId, schemaVersion: '027', verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY' }
@@ -39,7 +40,9 @@ try {
   await assert.rejects(resolveRuntimeSchemaActivation(root, sourceSha), /SCHEMA_ACTIVATION_RESTORE_EVIDENCE_INVALID/)
   await write(join(folder, 'restore-test.json'), restore); await write(join(folder, 'migration-result.json'), { ...result, success: false })
   await assert.rejects(resolveRuntimeSchemaActivation(root, sourceSha), /SCHEMA_ACTIVATION_MIGRATION_RESULT_INVALID/)
-  await write(join(folder, 'migration-result.json'), result); await write(join(folder, 'live-migration-authorization.json'), { ...artifact, sourceMigrationLedger: { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksumMatches: false }] } })
+  await write(join(folder, 'migration-result.json'), result); await write(join(folder, 'live-migration-authorization.json'), { ...artifact, sourceMigrationLedger: { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksum: targetChecksum, checksumMatches: true }] } })
+  await assert.rejects(resolveRuntimeSchemaActivation(root, sourceSha), /SCHEMA_ACTIVATION_TRANSITION_INVALID/)
+  await write(join(folder, 'live-migration-authorization.json'), { ...artifact, sourceMigrationLedger: { migrations: [{ version: '027', state: 'applied', checksumMatches: true }, { version: '028', state: 'pending', checksum: 'b'.repeat(64), checksumMatches: null }] } })
   await assert.rejects(resolveRuntimeSchemaActivation(root, sourceSha), /SCHEMA_ACTIVATION_TRANSITION_INVALID/)
   await write(join(folder, 'migration-result.json'), result); await write(join(folder, 'live-migration-authorization.json'), { ...artifact, targetMigration: { version: '029' } })
   await assert.rejects(resolveRuntimeSchemaActivation(root, sourceSha), /SCHEMA_ACTIVATION_VERSION_UNSUPPORTED/)
