@@ -16,8 +16,8 @@ assert.match(mobileRoster, /<b>\{person\.name\}<\/b>[\s\S]*?\{person\.number\} Â
 assert.doesNotMatch(mobileRoster, /\{person\.number\} Â· \{person\.position\}/, 'Mobile roster must not expose a stale stored designation key.')
 
 assert.match(dutyRosterStyles, /\.mobile-roster-card > \.mobile-duty-select \{[\s\S]*?width: 100%;[\s\S]*?max-width: 100%;/, 'The dropdown must use the available card width without horizontal overflow.')
-assert.match(dutyRosterStyles, /\.duty-code-trigger > span \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/, 'Long selected duty names must remain contained and readable.')
-assert.match(dutyRosterStyles, /@media \(max-width: 390px\)[\s\S]*?\.mobile-roster-card \{ padding: 12px; \}/, 'Cards must remain compact at 390px and smaller.')
+assert.match(dutyRosterStyles, /\.mobile-roster-card > \.mobile-duty-select \.duty-code-trigger-copy small \{[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/, 'Long selected duty names must remain contained and readable.')
+assert.match(dutyRosterStyles, /@media \(max-width: 390px\)[\s\S]*?\.mobile-roster-card \{ padding: 9px 10px; \}/, 'Cards must remain compact at 390px and smaller.')
 assert.match(styles, /\.roster-scroll\{display:none\}\.mobile-roster\{display:block\}/, 'Desktop and mobile roster layouts must remain independently scoped.')
 
 console.log(JSON.stringify({ duplicateLabelsRemoved: true, configuredCodeAndName: true, colorsPreserved: true, dropdownFunctional: true, employeeIdentityPreserved: true, compactAt390: true, noHorizontalOverflow: true, desktopLayoutPreserved: true }, null, 2))

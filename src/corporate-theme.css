@@ -353,8 +353,136 @@ main.module-duty-roster {
 html:has(.app-shell > main.module-dashboard),
 body:has(.app-shell > main.module-dashboard) {
   background: #5b2b67;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ao-dashboard-gold, #c9a65a) #160923;
+}
+
+/* Keep Dashboard scrolling visually quiet while retaining an accessible gold
+   thumb against the dark module canvas. This includes the page, navigation,
+   and the horizontally scrollable hostess board. */
+html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar,
+body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar,
+.app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar,
+.app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-track,
+.app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar-track,
+.app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #160923;
+}
+
+html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-thumb,
+.app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar-thumb,
+.app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 1px solid #3a2048;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e0c476 0%, var(--ao-dashboard-gold, #c9a65a) 52%, #ad853b 100%);
+}
+
+html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-thumb:hover,
+.app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar-thumb:hover,
+.app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar-thumb:hover {
+  background: #e0c476;
+}
+
+html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-button,
+body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-button,
+.app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar-button,
+.app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.app-shell:has(> main.module-dashboard) .app-sidebar,
+.app-shell:has(> main.module-dashboard) .tonight-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ao-dashboard-gold, #c9a65a) #160923;
+}
+
+@media (max-width: 700px) {
+  html:has(.app-shell > main.module-dashboard)::-webkit-scrollbar,
+  body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar,
+  .app-shell:has(> main.module-dashboard) .app-sidebar::-webkit-scrollbar,
+  .app-shell:has(> main.module-dashboard) .tonight-scroll::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
 }
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
+
+/* Keep every Staff Management scroll surface slim and tied to the module palette. */
+html:has(.app-shell > main.module-staff-management),
+body:has(.app-shell > main.module-staff-management),
+body:has(.app-shell > main.module-staff-management) * {
+  scrollbar-width: thin;
+  scrollbar-color: #287a69 #e3f0e8;
+}
+
+html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar,
+body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar,
+body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar-track {
+  background: #e3f0e8;
+  border-radius: 999px;
+}
+
+html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 1px solid #e3f0e8;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4f9c87 0%, #287a69 52%, #103e38 100%);
+}
+
+html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #62ad97 0%, #328a77 52%, #164b43 100%);
+}
+
+html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-button,
+body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar-button,
+body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* The compact section-tab rail deliberately scrolls without a visible bar. */
+.app-shell:has(> main.module-staff-management) .staff-section-tabs {
+  scrollbar-width: none;
+}
+
+.app-shell:has(> main.module-staff-management) .staff-section-tabs::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (max-width: 700px) {
+  html:has(.app-shell > main.module-staff-management)::-webkit-scrollbar,
+  body:has(.app-shell > main.module-staff-management)::-webkit-scrollbar,
+  body:has(.app-shell > main.module-staff-management) *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+}
 .app-shell:has(> main.module-duty-roster) {
   --ao-shell-accent: #3f8fc2;
   --ao-shell-highlight: #6cd0ff;
@@ -3676,7 +3804,7 @@ main[class*='module-'].module-staff-management .staff-directory-page .staff-summ
   border-top: 2px solid var(--ao-staff-gold);
   border-top-color: var(--ao-staff-gold) !important;
   border-radius: 10px;
-  background: var(--ao-staff-surface);
+  background: var(--ao-staff-surface-strong);
   box-shadow: 0 6px 16px rgb(16 62 56 / 9%);
   display: grid;
   grid-template-rows: auto 1fr;
@@ -3697,7 +3825,7 @@ main.module-staff-management .staff-directory-page .staff-summary strong {
   width: 100%;
   margin-top: 4px;
   color: var(--ao-staff-emerald-deep);
-  font-family: 'Good Sans', var(--ao-font-ui);
+  font-family: var(--ao-font-ui);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.1;
@@ -3711,7 +3839,7 @@ main.module-staff-management .staff-directory-page .staff-summary strong .staff-
   display: inline;
   color: inherit;
   font: inherit;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
   letter-spacing: inherit;
   text-transform: none;
 }
@@ -3983,7 +4111,7 @@ main.module-staff-management .staff-profile-drawer > .staff-profile-header {
 }
 
 main.module-staff-management .staff-profile-heading .eyebrow,
-main.module-staff-management .staff-profile-scroll > section > .eyebrow,
+main.module-staff-management .staff-profile-scroll-content > section > .eyebrow,
 main.module-staff-management .staff-profile-drawer .staff-training-history > .eyebrow {
   color: var(--ao-staff-emerald);
 }
@@ -4005,7 +4133,7 @@ main.module-staff-management .staff-profile-drawer > .staff-profile-header .staf
   border-left-color: color-mix(in srgb, var(--ao-staff-gold) 75%, white);
 }
 
-main.module-staff-management .staff-profile-scroll > section,
+main.module-staff-management .staff-profile-scroll-content > section,
 main.module-staff-management .staff-profile-drawer .staff-training-history,
 main.module-staff-management .staff-profile-grid > div,
 main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
@@ -4113,7 +4241,6 @@ html body .app-shell main.module-staff-management :is(
   .membership-table td,
   .membership-mobile-list dd,
   .membership-history dd,
-  .staff-account-summary dd,
   .staff-account-table td,
   .staff-account-cards dd,
   .staff-account-cards header small
@@ -4795,6 +4922,49 @@ main.module-staff-management .manager-timesheet-card {
   border-top-color: var(--ao-staff-gold);
 }
 
+@media (max-width: 800px) {
+  main.module-staff-management .manager-timesheet-card {
+    overflow: hidden;
+    padding: 0;
+    border-top-width: 3px;
+    background: var(--ao-staff-surface);
+    box-shadow: 0 5px 14px rgb(16 62 56 / 9%);
+  }
+
+  main.module-staff-management .manager-timesheet-card > header {
+    align-items: center;
+    margin: 0;
+    padding: 11px 12px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ao-staff-gold) 62%, transparent);
+    background: linear-gradient(90deg, var(--ao-staff-emerald-deep) 0%, var(--ao-staff-emerald) 58%, #8fc3a8 100%);
+  }
+
+  main.module-staff-management .manager-timesheet-card > header :is(b, small) {
+    color: #fff;
+  }
+
+  main.module-staff-management .manager-timesheet-card > header b {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  main.module-staff-management .manager-timesheet-card > header .manager-month-status {
+    border-color: var(--ao-staff-gold);
+    background: #f7e8bd;
+    color: var(--ao-staff-emerald-deep);
+  }
+
+  main.module-staff-management .manager-timesheet-card > dl {
+    margin: 0;
+    padding: 9px 12px 7px;
+  }
+
+  main.module-staff-management .manager-timesheet-card > .ao-action {
+    width: calc(100% - 24px);
+    margin: 0 12px 12px;
+  }
+}
+
 main.module-staff-management :is(
   .manager-detail-actions,
   .manager-correction-form > footer,
@@ -5093,33 +5263,107 @@ main.module-staff-management .staff-training-controls .ao-action {
     display: none;
   }
 
+  main.module-staff-management .staff-directory-page .staff-tools {
+    margin: 4px 4px 9px;
+  }
+
   main.module-staff-management .staff-directory-page .staff-mobile-cards {
     display: grid;
     gap: 9px;
-    padding: 10px;
+    padding: 10px 4px;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-card {
     min-width: 0;
-    padding: 12px;
+    overflow: hidden;
+    padding: 0;
+    background: var(--ao-staff-surface-strong);
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card > header {
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 9px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ao-staff-gold) 62%, transparent);
+    background: linear-gradient(90deg, var(--ao-staff-emerald-deep) 0%, var(--ao-staff-emerald) 58%, #8fc3a8 100%);
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card > header :is(b, small) {
+    color: #fff;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card > header .direct-staff-drag-handle {
+    border-color: rgb(255 255 255 / 48%);
+    background: rgb(255 255 255 / 16%);
+    color: #fff;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card > header .staff-status {
+    border-color: var(--ao-staff-gold) !important;
+    background: #fbf6eb;
+    color: var(--ao-staff-emerald-deep) !important;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-card dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-areas:
+      "designation . joined"
+      "profile duty .";
+    grid-template-columns: minmax(0, 1fr) minmax(86px, auto) minmax(0, 1fr);
+    gap: 7px 12px;
+    padding: 9px 9px 10px;
+    border-block: 0;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-card dl > div:last-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-card dd {
     overflow-wrap: anywhere;
   }
 
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-designation {
+    grid-area: designation;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-joined {
+    grid-area: joined;
+    justify-self: end;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-duty {
+    grid-area: duty;
+    justify-self: center;
+    text-align: center;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-profile-action {
+    grid-area: profile;
+    justify-self: start;
+    min-width: 46px;
+    text-align: center;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-profile-action dt {
+    text-align: center;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-mobile-profile-action dd {
+    display: flex;
+    justify-content: center;
+  }
+
   main.module-staff-management .staff-directory-page .staff-mobile-card .staff-row-icon-actions {
-    width: 100%;
-    justify-content: flex-end;
+    width: auto;
+    justify-content: center;
+    margin: 0;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-mobile-card .staff-row-icon-actions .ao-icon-action {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
   }
 
   main.module-staff-management .staff-directory-page .staff-summary .panel {
@@ -5172,6 +5416,119 @@ main.module-staff-management .staff-training-controls .ao-action {
 
   main.module-staff-management .staff-profile-drawer > footer {
     position: static;
+  }
+
+  main.module-staff-management .staff-profile-drawer > .staff-profile-header {
+    gap: 6px;
+    padding: 12px 14px 11px;
+  }
+
+  main.module-staff-management .staff-profile-heading .eyebrow {
+    margin-bottom: 4px;
+  }
+
+  main.module-staff-management .staff-profile-heading h2 {
+    font-size: 22px;
+  }
+
+  main.module-staff-management .staff-profile-meta {
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .staff-profile-header > .staff-status {
+    min-height: 24px;
+    padding: 3px 9px;
+    font-size: 9px;
+  }
+
+  main.module-staff-management .staff-profile-scroll {
+    padding: 8px 10px;
+    overflow-y: scroll;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  main.module-staff-management .staff-profile-drawer > .staff-profile-header {
+    grid-row: 1;
+  }
+
+  main.module-staff-management .staff-profile-scroll {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  main.module-staff-management .staff-profile-drawer > footer {
+    grid-row: 3;
+  }
+
+  main.module-staff-management .staff-profile-scroll-content > section,
+  main.module-staff-management .staff-profile-drawer .staff-training-history {
+    margin-bottom: 8px;
+    padding: 9px;
+  }
+
+  main.module-staff-management .staff-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  main.module-staff-management .staff-profile-grid > div {
+    min-height: 50px;
+    padding: 7px 8px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .leave-summary-cards {
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .leave-summary-cards article {
+    min-height: 50px;
+    padding: 7px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .leave-summary-cards b {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .leave-history-link {
+    min-height: 40px;
+    margin-top: 8px;
+  }
+
+  main.module-staff-management .staff-profile-drawer .staff-training-history h3 {
+    margin-bottom: 8px;
+    font-size: 17px;
+  }
+
+  main.module-staff-management .staff-training-summary {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  main.module-staff-management .staff-training-summary article {
+    padding: 7px;
+  }
+
+  main.module-staff-management .staff-training-summary b {
+    font-size: 14px;
+  }
+
+  main.module-staff-management .staff-training-mobile-cards {
+    gap: 5px;
+  }
+
+  main.module-staff-management .staff-training-mobile-cards article {
+    padding: 8px;
+  }
+
+  main.module-staff-management .staff-profile-drawer > footer {
+    padding: 8px 10px;
   }
 }
 
@@ -6162,6 +6519,12 @@ html body .app-shell main.module-staff-management .membership-summary-heading .m
   flex: none;
 }
 
+html body .app-shell main.module-staff-management .membership-approved-page .membership-status.approved {
+  border-color: var(--ao-staff-gold);
+  background: #f7e8bd;
+  color: var(--ao-staff-emerald-deep);
+}
+
 html body .app-shell main.module-staff-management .membership-approved-page > .membership-review-card > header {
   padding: 9px 14px 7px;
   border-bottom: 1px solid var(--ao-staff-gold);
@@ -6236,6 +6599,20 @@ html body .app-shell main.module-staff-management .membership-approved-page > .s
     padding: 12px;
   }
 
+  html body .app-shell main.module-staff-management .membership-summary-heading {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  html body .app-shell main.module-staff-management .membership-summary-heading > b {
+    min-width: 0;
+  }
+
+  html body .app-shell main.module-staff-management .membership-summary-heading .membership-status {
+    margin-left: auto;
+  }
+
   html body .app-shell main.module-staff-management .membership-approved-page > .membership-approved-banner dl {
     grid-column: auto;
     grid-row: auto;
@@ -6272,6 +6649,7 @@ html body .app-shell main.module-staff-management .staff-account-header {
   grid-template-columns: minmax(220px, .8fr) minmax(360px, 1.2fr);
   align-items: center;
   gap: 20px;
+  margin: 0;
   padding: 16px 20px;
   border: 1px solid var(--ao-staff-gold);
   border-top-width: 2px;
@@ -6351,17 +6729,21 @@ html body .app-shell main.module-staff-management .staff-account-directory-headi
   gap: 16px;
   padding: 7px 14px 5px;
   border-bottom: 1px solid var(--ao-staff-gold);
-  background: var(--ao-staff-surface-strong);
+  background: linear-gradient(90deg, var(--ao-staff-emerald-deep) 0%, var(--ao-staff-emerald) 58%, #8fc3a8 100%);
   margin: 0;
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-heading h3 {
   margin: 2px 0 0;
-  color: var(--ao-staff-emerald-deep);
+  color: #fff;
   font-family: var(--ao-font-display);
   font-size: 18px;
   font-weight: 500;
   line-height: 1.15;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-heading .section-label {
+  color: #fff;
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-heading > span {
@@ -6385,6 +6767,22 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
 
 html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-actions button {
   font-weight: 700;
+}
+
+html body .app-shell main.module-staff-management .staff-account-actions :is(.staff-account-manage-action, .staff-account-create-action) {
+  border-radius: 999px;
+}
+
+html body .app-shell main.module-staff-management .staff-account-actions .staff-account-manage-action {
+  border-color: var(--ao-staff-gold);
+  background: #f7e8bd;
+  color: var(--ao-staff-emerald-deep);
+}
+
+html body .app-shell main.module-staff-management .staff-account-actions .staff-account-create-action {
+  border-color: #83b99d;
+  background: #dff3e6;
+  color: var(--ao-staff-emerald-deep);
 }
 
 html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table :is(th, td):last-child {
@@ -6444,11 +6842,29 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
   }
 
   html body .app-shell main.module-staff-management .staff-account-tools-panel .staff-account-tools {
+    grid-template-columns: minmax(0, 1.45fr) minmax(120px, .8fr);
+    align-items: end;
+    gap: 9px;
     padding: 11px 12px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-tools-panel .staff-account-search {
+    grid-column: auto;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-tools-panel .staff-account-tools :is(input, select) {
+    height: 40px;
+    min-height: 40px;
   }
 
   html body .app-shell main.module-staff-management .staff-account-directory-heading {
     padding: 11px 12px;
+    border-bottom-color: var(--ao-staff-gold);
+    background: linear-gradient(90deg, var(--ao-staff-emerald-deep) 0%, var(--ao-staff-emerald) 58%, #8fc3a8 100%);
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-directory-heading :is(.section-label, h3) {
+    color: #fff;
   }
 
   html body .app-shell main.module-staff-management .staff-account-directory-panel > .staff-table-wrap {
@@ -6457,6 +6873,31 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
 
   html body .app-shell main.module-staff-management .staff-account-directory-panel > .staff-account-cards {
     display: grid;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-cards > article {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-cards > article > header {
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom-color: var(--ao-staff-gold);
+    background: linear-gradient(90deg, var(--ao-staff-emerald-deep) 0%, var(--ao-staff-emerald) 58%, #8fc3a8 100%);
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-cards > article > header :is(b, small) {
+    color: #fff;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-cards > article > :is(dl, .staff-account-note, .staff-account-actions) {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-account-cards .staff-account-actions {
+    margin-bottom: 12px;
   }
 
   html body .app-shell main.module-staff-management :is(.staff-account-create-modal, .staff-account-manage-modal) > :is(.staff-account-create-header, .staff-account-manage-header) {

@@ -671,10 +671,10 @@ main{min-width:0}
 .staff-profile-drawer .staff-profile-header>.staff-status{flex:0 0 auto;align-self:flex-end;min-height:28px;width:auto;max-width:160px;margin:0;padding:5px 11px;border-width:1px;border-radius:999px;background:#fff;font-size:10px;font-weight:800;line-height:1.2;text-align:center;white-space:nowrap}
 .staff-profile-drawer>.staff-profile-header>.close.ao-icon-action{top:14px;right:16px;width:44px;height:44px;border-color:var(--ao-staff-line-strong);background:#fff;color:#173d56}
 .staff-profile-scroll{min-width:0;overflow-x:hidden;overflow-y:auto;padding:18px 22px;scrollbar-gutter:stable;overflow-anchor:none}
-.staff-profile-scroll>section,.staff-profile-drawer .staff-training-history{
+.staff-profile-scroll-content>section,.staff-profile-drawer .staff-training-history{
  min-width:0;margin:0 0 14px;padding:16px;border:1px solid var(--ao-staff-line);border-radius:10px;background:#fff;box-shadow:0 5px 14px #0c675c12
 }
-.staff-profile-scroll>section>.eyebrow,.staff-profile-drawer .staff-training-history>.eyebrow{margin-bottom:12px;color:#6e7f89}
+.staff-profile-scroll-content>section>.eyebrow,.staff-profile-drawer .staff-training-history>.eyebrow{margin-bottom:12px;color:#6e7f89}
 .staff-profile-grid{gap:8px}
 .staff-profile-grid>div{min-height:62px;padding:10px 11px;border:1px solid var(--ao-staff-line);border-radius:7px;background:var(--ao-staff-surface)}
 .staff-profile-grid dt{color:#6d7f8b;font-size:9px;font-weight:750;letter-spacing:.055em}
@@ -739,7 +739,7 @@ main{min-width:0}
  .staff-profile-drawer .staff-profile-header>.staff-status{align-self:flex-start;min-height:28px}
  .staff-profile-drawer>.staff-profile-header>.close.ao-icon-action{top:12px;right:12px}
  .staff-profile-scroll{padding:12px 14px;scrollbar-gutter:auto}
- .staff-profile-scroll>section,.staff-profile-drawer .staff-training-history{margin-bottom:12px;padding:13px}
+ .staff-profile-scroll-content>section,.staff-profile-drawer .staff-training-history{margin-bottom:12px;padding:13px}
  .staff-profile-grid{grid-template-columns:1fr;gap:7px}
  .staff-profile-grid>div{min-height:0;padding:9px 10px}
  .staff-profile-drawer .staff-leave-heading{display:block}

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 
 const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8')
 const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
+const dutyRosterStyles = await readFile(new URL('../src/duty-roster.css', import.meta.url), 'utf8')
 
 assert.match(app, /function DutyRosterPage\(/)
 assert.match(app, /useState<'roster' \| 'duty-codes'>\('roster'\)/, 'Roster must be the default Duty Roster tab.')
@@ -24,8 +25,8 @@ for (const classification of ['working', 'other']) assert.ok(app.includes(`value
 assert.match(app, /Object\.entries\(LEAVE_CLASSIFICATION_LABELS\)/, 'Approved leave/status classifications must remain available.')
 assert.match(app, /item\.value === entry\?\.dutyCode \|\| item\.active/, 'Historical Duty Codes must remain visible on assigned roster records.')
 
-assert.match(styles, /\.staff-section-tabs,\.duty-roster-tabs\{display:flex/)
-assert.match(styles, /@media\(max-width:700px\)\{\.staff-section-tabs,\.duty-roster-tabs\{width:100%\}/, 'Duty Roster tabs must expand responsively on mobile.')
-assert.match(styles, /\.duty-code-table-wrap\{[^}]*overflow-x:auto/, 'Duty Code settings table must remain usable at narrow widths.')
+assert.match(dutyRosterStyles, /\.duty-roster-page > \.duty-roster-tabs \{[\s\S]*?display: grid;[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/, 'Duty Roster tabs must retain their scoped two-column layout.')
+assert.match(dutyRosterStyles, /@media \(max-width: 700px\) \{[\s\S]*?\.duty-roster-page > \.duty-roster-tabs \{[\s\S]*?width: 100%;/, 'Duty Roster tabs must expand responsively on mobile.')
+assert.match(dutyRosterStyles, /\.duty-roster-page \.duty-code-table-wrap \{[\s\S]*?overflow-x: auto;/, 'Duty Code settings table must remain usable at narrow widths.')
 
 console.log(JSON.stringify({ defaultRosterTab: true, dutyCodeSettingsRelocated: true, customizationEntryRemoved: true, existingDutyCodeManagerReused: true, historicalRenderingPreserved: true, responsiveTabs: true }, null, 2))
