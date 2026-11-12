@@ -242,6 +242,45 @@ body,
   --ao-leave-history-gap: 7px;
 }
 
+/* Leave Planner scroll navigation stays native and draggable.  The page rail
+   and calendar rail share the violet/gold module treatment without adding a
+   simulated overlay scrollbar. */
+html:has(.app-shell > main.module-leave-planner) {
+  scrollbar-width: thin;
+  scrollbar-color: #6d3f88 #eadff1;
+}
+
+html:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar,
+body:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-track {
+  background: #eadff1;
+  border-inline: 1px solid color-mix(in srgb, #c5a35a 45%, transparent);
+}
+
+html:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 1px solid #c5a35a;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #80539a 0%, #45176b 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 24%);
+}
+
+html:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #9369aa 0%, #562176 100%);
+}
+
+html:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-corner,
+body:has(.app-shell > main.module-leave-planner)::-webkit-scrollbar-corner {
+  background: #eadff1;
+}
+
 .module-training,
 .module-my-timesheet {
   --ao-module-accent: var(--ao-lagoon-teal);
@@ -2366,7 +2405,36 @@ main.module-leave-planner .leave-planner-grid-wrap {
   max-width: calc(100% - 28px);
   margin-inline: 14px;
   border: 1px solid var(--ao-leave-line-strong) !important;
+  scrollbar-width: thin;
   scrollbar-color: var(--ao-leave-scrollbar) var(--ao-leave-scrollbar-track);
+}
+
+main.module-leave-planner .leave-planner-grid-wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+main.module-leave-planner .leave-planner-grid-wrap::-webkit-scrollbar-track {
+  margin-inline: 5px;
+  border: 1px solid color-mix(in srgb, var(--ao-leave-gold) 42%, transparent);
+  border-radius: 999px;
+  background: var(--ao-leave-scrollbar-track);
+}
+
+main.module-leave-planner .leave-planner-grid-wrap::-webkit-scrollbar-thumb {
+  min-width: 48px;
+  border: 1px solid var(--ao-leave-gold);
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ao-violet-hour) 70%, white), var(--ao-violet-hour));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
+}
+
+main.module-leave-planner .leave-planner-grid-wrap::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ao-violet-hour) 58%, white), color-mix(in srgb, var(--ao-violet-hour) 88%, black));
+}
+
+main.module-leave-planner .leave-planner-grid-wrap::-webkit-scrollbar-corner {
+  background: var(--ao-leave-scrollbar-track);
 }
 
 main.module-leave-planner .leave-planner-main-card > .staff-module-info {
