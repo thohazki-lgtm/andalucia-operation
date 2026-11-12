@@ -14,15 +14,19 @@ const reviewedActivationSuccessorFiles = new Set([
   'server/schema-028-activation-control.test.ts',
   'server/schema-028-migration-activation-bridge.test.ts',
 ])
-const assertReviewedActivationSuccessor = (projectRoot: string, migrationSourceSha: string, activationSourceSha: string) => {
+const reviewedActivationSuccessorSha = 'd38869b2765332573337b0c1a0b9fc7c05f59c62'
+const assertReviewedActivationSuccessor = (projectRoot: string, migrationSourceSha: string, activationSourceSha: string, reviewedSuccessorSha = reviewedActivationSuccessorSha) => {
   if (migrationSourceSha === activationSourceSha) return
-  if (!sha.test(migrationSourceSha)) fail('SCHEMA_ACTIVATION_AUTHORIZATION_BINDING_INVALID')
-  try { execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', migrationSourceSha, activationSourceSha], { stdio: 'ignore' }) } catch { fail('SCHEMA_ACTIVATION_SOURCE_SUCCESSOR_INVALID') }
-  const changed = execFileSync('git', ['-C', projectRoot, 'diff', '--name-only', `${migrationSourceSha}..${activationSourceSha}`], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
+  if (!sha.test(migrationSourceSha) || !sha.test(reviewedSuccessorSha)) fail('SCHEMA_ACTIVATION_AUTHORIZATION_BINDING_INVALID')
+  try {
+    execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', migrationSourceSha, reviewedSuccessorSha], { stdio: 'ignore' })
+    execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', reviewedSuccessorSha, activationSourceSha], { stdio: 'ignore' })
+  } catch { fail('SCHEMA_ACTIVATION_SOURCE_SUCCESSOR_INVALID') }
+  const changed = execFileSync('git', ['-C', projectRoot, 'diff', '--name-only', `${migrationSourceSha}..${reviewedSuccessorSha}`], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
   if (!changed.includes('server/runtime-schema-activation-control.ts') || changed.some(path => !reviewedActivationSuccessorFiles.has(path))) fail('SCHEMA_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
 }
 
-export const resolveRuntimeSchemaActivation = async (projectRootInput: string, approvedSourceSha: string) => {
+export const resolveRuntimeSchemaActivation = async (projectRootInput: string, approvedSourceSha: string, reviewedSuccessorSha = reviewedActivationSuccessorSha) => {
   const projectRoot = resolve(projectRootInput)
   if (!sha.test(approvedSourceSha)) fail('SCHEMA_ACTIVATION_SOURCE_SHA_INVALID')
   const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
@@ -48,7 +52,7 @@ export const resolveRuntimeSchemaActivation = async (projectRootInput: string, a
   if (candidates.length !== 1) fail('SCHEMA_ACTIVATION_AUTHORIZATION_AMBIGUOUS')
   const { folder, artifact } = candidates[0]
   if (artifact.artifactVersion !== 'andalucia-live-migration-authorization-v2' || artifact.state !== 'consumed') fail('SCHEMA_ACTIVATION_MIGRATION_INCOMPLETE')
-  assertReviewedActivationSuccessor(projectRoot, artifact.approvedSourceSha, head)
+  assertReviewedActivationSuccessor(projectRoot, artifact.approvedSourceSha, head, reviewedSuccessorSha)
   if (artifact.canonicalStoreId !== identity.storeId || artifact.outletScopeId !== identity.outletScopeId || normalized(artifact.sourceDirectory) !== normalized(canonicalData)) fail('SCHEMA_ACTIVATION_AUTHORIZATION_BINDING_INVALID')
   if (artifact.rehearsal?.status !== 'PASS' || artifact.rehearsal?.rollbackSchema !== '027' || artifact.rehearsal?.migratedSchema !== '028' || artifact.protectedBackup?.pinned !== true || artifact.protectedBackup?.restoreRehearsal !== 'PASS') fail('SCHEMA_ACTIVATION_REHEARSAL_EVIDENCE_INVALID')
   const source027 = artifact.sourceMigrationLedger?.migrations?.find((item: any) => item.version === '027')
