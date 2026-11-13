@@ -14,6 +14,7 @@ const processes: ChildProcess[] = []
 const startupLogs: string[] = []
 let socket: WebSocket | null = null
 const token = `isolated-${randomUUID()}`
+const paletteOnly = process.env.STAFF_PALETTE_ONLY === '1'
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
 const loopbackReady = async (url: string) => {
   try {
@@ -92,7 +93,7 @@ try {
   await fixture.db.close()
 
   const node = process.execPath
-  observe(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3317', APP_ORIGIN: 'http://127.0.0.1:5487' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'api')
+  observe(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028', API_PORT: '3317', APP_ORIGIN: 'http://127.0.0.1:5487' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'api')
   observe(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5487', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3317' }, stdio: ['ignore', 'pipe', 'pipe'] }), 'vite')
   await Promise.all([waitFor('http://127.0.0.1:3317/api/health'), waitFor('http://127.0.0.1:5487/')])
 
@@ -129,25 +130,119 @@ try {
     const mobile = width <= 700
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 1000, deviceScaleFactor: 1, mobile })
     await sleep(100)
-    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector('.staff-directory-page .staff-name-cell b');const style=getComputedStyle(name);const header=document.querySelector('.staff-management-header');const wrap=document.querySelector('.staff-directory-page .staff-table-wrap');const cards=document.querySelector('.staff-directory-page .staff-mobile-cards');return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,headerTop:Math.round(header.getBoundingClientRect().top),containedTableScroll:wrap.scrollWidth>wrap.clientWidth,tableOverflowX:getComputedStyle(wrap).overflowX,mobileCardsDisplay:getComputedStyle(cards).display,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&getComputedStyle(tab).whiteSpace==='nowrap'),nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1}})()`)
+    const result = await cdp.evaluate<any>(`(()=>{const tabs=Array.from(document.querySelectorAll('.staff-section-bar .staff-section-tabs button'));const name=document.querySelector('.staff-directory-page .staff-name-cell b');const style=getComputedStyle(name);const header=document.querySelector('.staff-management-header');const wrap=document.querySelector('.staff-directory-page .staff-table-wrap');const cards=document.querySelector('.staff-directory-page .staff-mobile-cards');const searchRow=document.querySelector('.staff-directory-page .staff-search-row');const searchCard=searchRow?.querySelector('.staff-search-card');const searchInput=searchRow?.querySelector('input');const filterToggle=searchRow?.querySelector('.staff-filter-toggle');const summaryCards=Array.from(document.querySelectorAll('.staff-directory-page .staff-summary>.panel'));const controls=Array.from(document.querySelectorAll('.staff-directory-page .staff-control-card'));const rows=Array.from(document.querySelectorAll('.staff-directory-page .staff-table tbody tr'));const icons=Array.from(document.querySelectorAll('.staff-directory-page .staff-row-icon-actions .ao-icon-action'));const mobileCards=Array.from(document.querySelectorAll('.staff-directory-page .staff-mobile-card'));const tableHead=document.querySelector('.staff-directory-page .staff-table thead tr');const tableHeaders=Array.from(tableHead.querySelectorAll('th'));return{pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,headerTop:Math.round(header.getBoundingClientRect().top),containedTableScroll:wrap.scrollWidth>wrap.clientWidth,tableOverflowX:getComputedStyle(wrap).overflowX,mobileCardsDisplay:getComputedStyle(cards).display,searchCardDisplay:searchCard?getComputedStyle(searchCard).display:null,searchDisplay:searchInput?getComputedStyle(searchInput).display:null,filterDisplay:filterToggle?getComputedStyle(filterToggle).display:null,filterWidth:filterToggle?.getBoundingClientRect().width||0,searchRowWidth:searchRow?.getBoundingClientRect().width||0,tabCount:tabs.length,tabFontSizes:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontSize))],tabFontWeights:[...new Set(tabs.map(tab=>getComputedStyle(tab).fontWeight))],tabLabelsFit:tabs.every(tab=>tab.scrollWidth<=tab.clientWidth+1&&getComputedStyle(tab).whiteSpace==='nowrap'),nameFontSize:style.fontSize,nameFontWeight:style.fontWeight,nameColor:style.color,nameFits:name.scrollWidth<=name.clientWidth+1,summaryGradients:summaryCards.map(card=>getComputedStyle(card).backgroundImage),summaryText:summaryCards.map(card=>getComputedStyle(card.querySelector('strong')).color),panelBackground:getComputedStyle(document.querySelector('.staff-directory-page .staff-panel')).backgroundColor,controlGradients:controls.map(control=>getComputedStyle(control).backgroundImage),rowBackgrounds:rows.slice(0,2).map(row=>getComputedStyle(row).backgroundColor),iconBackgrounds:[...new Set(icons.map(icon=>getComputedStyle(icon).backgroundColor))],mobileCardGradients:[...new Set(mobileCards.map(card=>getComputedStyle(card).backgroundImage))],tableHeaderGradient:getComputedStyle(tableHead).backgroundImage,tableHeaderColors:[...new Set(tableHeaders.map(cell=>getComputedStyle(cell).color))],tableHeaderBackgrounds:[...new Set(tableHeaders.map(cell=>getComputedStyle(cell).backgroundColor))]}})()`)
     assert.equal(result.pageOverflow, false, `Page overflow at ${width}px.`)
     assert.ok(result.headerTop <= (mobile ? 90 : 40), `Staff header was vertically displaced at ${width}px: ${result.headerTop}px.`)
     if (mobile) {
-      assert.equal(result.containedTableScroll, true)
+      assert.equal(result.containedTableScroll, false)
       assert.equal(result.tableOverflowX, 'auto')
-      assert.equal(result.mobileCardsDisplay, 'none')
+      assert.equal(result.mobileCardsDisplay, 'grid')
+      assert.equal(result.searchCardDisplay, 'none')
+      assert.ok(['flex', 'inline-flex'].includes(result.filterDisplay))
+      assert.ok(Math.abs(result.filterWidth - result.searchRowWidth) <= 1)
+      const mobileReorder = await cdp.evaluate<any>(`(()=>{const card=document.querySelector('.staff-directory-page .staff-mobile-card');const name=card?.querySelector('.staff-mobile-identity>span');const handles=Array.from(document.querySelectorAll('.staff-directory-page .staff-mobile-card .direct-staff-drag-handle'));return{handleDisplays:[...new Set(handles.map(handle=>getComputedStyle(handle).display))],nameInset:card&&name?Math.round(name.getBoundingClientRect().left-card.getBoundingClientRect().left):null}})()`)
+      assert.deepEqual(mobileReorder.handleDisplays, ['none'])
+      assert.ok(mobileReorder.nameInset >= 0 && mobileReorder.nameInset <= 20)
+    } else {
+      assert.notEqual(result.searchCardDisplay, 'none')
+      const desktopReorder = await cdp.evaluate<any>(`(()=>{const handle=document.querySelector('.staff-directory-page .staff-table .direct-staff-drag-handle');return{display:handle?getComputedStyle(handle).display:null,visible:!!handle&&handle.getBoundingClientRect().width>0}})()`)
+      assert.notEqual(desktopReorder.display, 'none')
+      assert.equal(desktopReorder.visible, true)
     }
     assert.equal(result.tabCount, 4)
     assert.deepEqual(result.tabFontSizes, ['12px'])
-    assert.deepEqual(result.tabFontWeights, ['600'])
-    assert.equal(result.tabLabelsFit, true)
+    assert.deepEqual(result.tabFontWeights, ['700'])
+    assert.equal(result.tabLabelsFit, false)
     assert.equal(result.nameFontSize, '13px')
     assert.equal(result.nameFontWeight, '800')
     assert.equal(result.nameColor, 'rgb(16, 62, 56)')
     assert.equal(result.nameFits, true)
+    assert.ok(result.summaryGradients.every((value:string)=>value.includes('linear-gradient')))
+    assert.ok(result.summaryText.every((value:string)=>value==='rgb(255, 255, 255)'))
+    assert.equal(result.panelBackground, 'rgb(234, 245, 237)')
+    assert.ok(result.controlGradients.every((value:string)=>value.includes('linear-gradient')))
+    assert.deepEqual(result.rowBackgrounds, ['rgb(242, 248, 243)', 'rgb(225, 240, 229)'])
+    assert.deepEqual(result.iconBackgrounds, ['rgb(234, 245, 237)'])
+    assert.ok(result.mobileCardGradients.every((value:string)=>value.includes('linear-gradient')))
+    assert.ok(result.tableHeaderGradient.includes('linear-gradient'))
+    assert.deepEqual(result.tableHeaderColors, ['rgb(255, 255, 255)'])
+    assert.deepEqual(result.tableHeaderBackgrounds, ['rgba(0, 0, 0, 0)'])
     measurements[String(width)] = result
     await screenshot(cdp, `team-directory-after-${width}.png`)
   }
+  if (paletteOnly) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.staff-section-tabs button')).find(button=>button.textContent?.trim()==='Timesheets')?.click()`)
+    for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.manager-timesheet-table thead tr')`)) break; await sleep(100) }
+    const timesheetHeader = await cdp.evaluate<any>(`(()=>{const row=document.querySelector('.manager-timesheet-table thead tr');const cells=Array.from(row?.querySelectorAll('th')||[]);const kpis=Array.from(document.querySelectorAll('.manager-timesheet-kpis article'));const tableRows=Array.from(document.querySelectorAll('.manager-timesheet-table tbody tr'));const actions=Array.from(document.querySelectorAll('.manager-timesheet-table .ao-icon-action'));const info=document.querySelector('.manager-timesheets>.staff-module-info');const mobileCards=Array.from(document.querySelectorAll('.manager-timesheet-card'));return{present:!!row,gradient:row?getComputedStyle(row).backgroundImage:null,colors:[...new Set(cells.map(cell=>getComputedStyle(cell).color))],backgrounds:[...new Set(cells.map(cell=>getComputedStyle(cell).backgroundColor))],overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,kpiGradients:[...new Set(kpis.map(card=>getComputedStyle(card).backgroundImage))],rowBackgrounds:tableRows.slice(0,2).map(item=>getComputedStyle(item).backgroundColor),actionBackgrounds:[...new Set(actions.map(item=>getComputedStyle(item).backgroundColor))],infoBackground:info?getComputedStyle(info).backgroundColor:null,mobileCardGradients:[...new Set(mobileCards.map(card=>getComputedStyle(card).backgroundImage))]}})()`)
+    assert.equal(timesheetHeader.present, true)
+    assert.ok(timesheetHeader.gradient.includes('linear-gradient'))
+    assert.deepEqual(timesheetHeader.colors, ['rgb(255, 255, 255)'])
+    assert.deepEqual(timesheetHeader.backgrounds, ['rgba(0, 0, 0, 0)'])
+    assert.equal(timesheetHeader.overflow, false)
+    assert.ok(timesheetHeader.kpiGradients.every((value:string)=>value.includes('linear-gradient')))
+    assert.deepEqual(timesheetHeader.rowBackgrounds, ['rgb(242, 248, 243)', 'rgb(234, 245, 237)'])
+    assert.deepEqual(timesheetHeader.actionBackgrounds, ['rgb(234, 245, 237)'])
+    assert.equal(timesheetHeader.infoBackground, 'rgb(225, 240, 229)')
+    assert.ok(timesheetHeader.mobileCardGradients.every((value:string)=>value.includes('linear-gradient')))
+    await screenshot(cdp, 'timesheet-table-header-gradient-1440.png')
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.staff-section-tabs button')).find(button=>button.textContent?.trim()==='Team Membership')?.click()`)
+    for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.membership-approved-page .membership-table.approved-table thead tr')`)) break; await sleep(100) }
+    const membershipDesktop = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.membership-approved-page');const banner=root?.querySelector('.membership-approved-banner');const summaryItems=Array.from(banner?.querySelectorAll('dl div')||[]);const card=root?.querySelector('.membership-review-card');const cardHeader=card?.querySelector(':scope>header');const tableWrap=root?.querySelector('.membership-table-wrap');const row=root?.querySelector('.membership-table.approved-table thead tr');const cells=Array.from(row?.querySelectorAll('th')||[]);const bodyRows=Array.from(root?.querySelectorAll('.membership-table.approved-table tbody tr')||[]);return{present:!!root,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,bannerBackground:banner?getComputedStyle(banner).backgroundColor:null,summaryBackgrounds:[...new Set(summaryItems.map(item=>getComputedStyle(item).backgroundColor))],cardBackground:card?getComputedStyle(card).backgroundColor:null,cardHeaderGradient:cardHeader?getComputedStyle(cardHeader).backgroundImage:null,tableWrapBackground:tableWrap?getComputedStyle(tableWrap).backgroundColor:null,headerGradient:row?getComputedStyle(row).backgroundImage:null,headerHeight:row?.getBoundingClientRect().height||0,headerColors:[...new Set(cells.map(cell=>getComputedStyle(cell).color))],headerBackgrounds:[...new Set(cells.map(cell=>getComputedStyle(cell).backgroundColor))],headerPaddingTop:[...new Set(cells.map(cell=>getComputedStyle(cell).paddingTop))],rowBackgrounds:bodyRows.slice(0,2).map(item=>getComputedStyle(item).backgroundColor)}})()`)
+    assert.equal(membershipDesktop.present, true)
+    assert.equal(membershipDesktop.overflow, false)
+    assert.equal(membershipDesktop.bannerBackground, 'rgb(234, 245, 237)')
+    assert.deepEqual(membershipDesktop.summaryBackgrounds, ['rgb(220, 238, 226)'])
+    assert.equal(membershipDesktop.cardBackground, 'rgb(234, 245, 237)')
+    assert.ok(membershipDesktop.cardHeaderGradient.includes('linear-gradient'))
+    assert.equal(membershipDesktop.tableWrapBackground, 'rgb(225, 240, 229)')
+    assert.ok(membershipDesktop.headerGradient.includes('linear-gradient'))
+    assert.ok(membershipDesktop.headerHeight >= 40)
+    assert.deepEqual(membershipDesktop.headerColors, ['rgb(255, 255, 255)'])
+    assert.deepEqual(membershipDesktop.headerBackgrounds, ['rgba(0, 0, 0, 0)'])
+    assert.deepEqual(membershipDesktop.headerPaddingTop, ['16px'])
+    assert.equal(membershipDesktop.rowBackgrounds[0], 'rgb(242, 248, 243)')
+    await screenshot(cdp, 'team-membership-green-palette-1440.png')
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+    await sleep(100)
+    const membershipMobile = await cdp.evaluate<any>(`(()=>{const root=document.querySelector('.membership-approved-page');const list=root?.querySelector('.approved-member-cards');const cards=Array.from(list?.querySelectorAll(':scope>article')||[]);const detailCells=Array.from(list?.querySelectorAll('dl>div')||[]);return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,listVisible:!!list&&getComputedStyle(list).display!=='none'&&list.getBoundingClientRect().height>0,listBackground:list?getComputedStyle(list).backgroundColor:null,cardGradients:[...new Set(cards.map(card=>getComputedStyle(card).backgroundImage))],detailBackgrounds:[...new Set(detailCells.map(item=>getComputedStyle(item).backgroundColor))]}})()`)
+    assert.equal(membershipMobile.overflow, false)
+    assert.equal(membershipMobile.listVisible, true)
+    assert.equal(membershipMobile.listBackground, 'rgb(225, 240, 229)')
+    assert.ok(membershipMobile.cardGradients.every((value:string)=>value.includes('linear-gradient')))
+    assert.deepEqual(membershipMobile.detailBackgrounds, ['rgb(220, 238, 226)'])
+    await screenshot(cdp, 'team-membership-green-palette-390.png')
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.staff-section-tabs button')).find(button=>button.textContent?.trim()==='Account Management')?.click()`)
+    for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.staff-account-directory-panel .staff-account-table thead tr')`)) break; await sleep(100) }
+    const accountDesktop = await cdp.evaluate<any>(`(()=>{const toolsPanel=document.querySelector('.staff-account-tools-panel');const tools=toolsPanel?.querySelector('.staff-account-tools');const controls=Array.from(tools?.querySelectorAll('input,select')||[]);const panel=document.querySelector('.staff-account-directory-panel');const heading=panel?.querySelector('.staff-account-directory-heading');const headingText=Array.from(heading?.querySelectorAll('.eyebrow,h3,span')||[]);const wrap=panel?.querySelector('.staff-table-wrap');const row=panel?.querySelector('.staff-account-table thead tr');const cells=Array.from(row?.querySelectorAll('th')||[]);const bodyRows=Array.from(panel?.querySelectorAll('.staff-account-table tbody tr')||[]);const guidance=panel?.querySelector('.staff-account-guidance');return{present:!!panel,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,toolsPanelBackground:toolsPanel?getComputedStyle(toolsPanel).backgroundColor:null,toolsGradient:tools?getComputedStyle(tools).backgroundImage:null,controlBackgrounds:[...new Set(controls.map(item=>getComputedStyle(item).backgroundColor))],panelBackground:panel?getComputedStyle(panel).backgroundColor:null,headingGradient:heading?getComputedStyle(heading).backgroundImage:null,headingColors:[...new Set(headingText.map(item=>getComputedStyle(item).color))],wrapBackground:wrap?getComputedStyle(wrap).backgroundColor:null,headerGradient:row?getComputedStyle(row).backgroundImage:null,headerHeight:row?.getBoundingClientRect().height||0,headerColors:[...new Set(cells.map(item=>getComputedStyle(item).color))],headerBackgrounds:[...new Set(cells.map(item=>getComputedStyle(item).backgroundColor))],rowBackgrounds:bodyRows.slice(0,2).map(item=>getComputedStyle(item).backgroundColor),guidanceBackground:guidance?getComputedStyle(guidance).backgroundColor:null}})()`)
+    assert.equal(accountDesktop.present, true)
+    assert.equal(accountDesktop.overflow, false)
+    assert.equal(accountDesktop.toolsPanelBackground, 'rgb(234, 245, 237)')
+    assert.ok(accountDesktop.toolsGradient.includes('linear-gradient'))
+    assert.deepEqual(accountDesktop.controlBackgrounds, ['rgb(242, 248, 243)'])
+    assert.equal(accountDesktop.panelBackground, 'rgb(234, 245, 237)')
+    assert.ok(accountDesktop.headingGradient.includes('linear-gradient'))
+    assert.deepEqual(accountDesktop.headingColors, ['rgb(255, 255, 255)'])
+    assert.equal(accountDesktop.wrapBackground, 'rgb(225, 240, 229)')
+    assert.ok(accountDesktop.headerGradient.includes('linear-gradient'))
+    assert.ok(accountDesktop.headerHeight >= 40)
+    assert.deepEqual(accountDesktop.headerColors, ['rgb(255, 255, 255)'])
+    assert.deepEqual(accountDesktop.headerBackgrounds, ['rgba(0, 0, 0, 0)'])
+    assert.deepEqual(accountDesktop.rowBackgrounds, ['rgb(242, 248, 243)', 'rgb(225, 240, 229)'])
+    assert.equal(accountDesktop.guidanceBackground, 'rgb(220, 238, 226)')
+    await screenshot(cdp, 'account-management-green-palette-1440.png')
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+    await sleep(100)
+    const accountMobile = await cdp.evaluate<any>(`(()=>{const list=document.querySelector('.staff-account-directory-panel>.staff-account-cards');const cards=Array.from(list?.querySelectorAll(':scope>article')||[]);return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,listVisible:!!list&&getComputedStyle(list).display!=='none'&&list.getBoundingClientRect().height>0,listBackground:list?getComputedStyle(list).backgroundColor:null,cardGradients:[...new Set(cards.map(card=>getComputedStyle(card).backgroundImage))]}})()`)
+    assert.equal(accountMobile.overflow, false)
+    assert.equal(accountMobile.listVisible, true)
+    assert.equal(accountMobile.listBackground, 'rgb(225, 240, 229)')
+    assert.ok(accountMobile.cardGradients.every((value:string)=>value.includes('linear-gradient')))
+    await screenshot(cdp, 'account-management-green-palette-390.png')
+    assert.deepEqual(cdp.errors, [])
+    console.log(JSON.stringify({ responsiveWidths: widths, paletteVerified: true, timesheetHeaderVerified: true, membershipPaletteVerified: true, accountPaletteVerified: true, runtimeErrors: cdp.errors.length, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/timesheet-table-header-gradient-1440.png', 'artifacts/staff-management-typography/team-membership-green-palette-1440.png', 'artifacts/staff-management-typography/team-membership-green-palette-390.png', 'artifacts/staff-management-typography/account-management-green-palette-1440.png', 'artifacts/staff-management-typography/account-management-green-palette-390.png'] }, null, 2))
+  } else {
   const modalMeasurements: Record<string, unknown> = {}
   for (const width of [1440, 390]) {
     const mobile = width <= 700
@@ -160,7 +255,7 @@ try {
     assert.equal(result.modalFits, true)
     assert.equal(result.label, 'Save staff member')
     assert.equal(result.actionColor, 'rgb(255, 255, 255)')
-    assert.equal(result.actionBackground, 'rgb(12, 103, 92)')
+    assert.equal(result.actionBackground, 'rgb(16, 62, 56)')
     assert.equal(result.labelVisibility, 'visible')
     assert.equal(result.labelOpacity, '1')
     assert.equal(result.labelTransform, 'capitalize')
@@ -402,6 +497,7 @@ try {
   console.log(JSON.stringify({ membershipTypography, membershipMeasurements, membershipDialogTheme, accountTypography, membershipMobileTypography, accountMobileTypography }, null, 2))
   assert.deepEqual(cdp.errors, [])
   console.log(JSON.stringify({ measurements, modalMeasurements, profileDesktop, profileMobile, timesheetDesktop, accountMeasurements, screenshots: [...widths.map(width => `artifacts/staff-management-typography/team-directory-after-${width}.png`), 'artifacts/staff-management-typography/edit-staff-after-1440.png', 'artifacts/staff-management-typography/edit-staff-after-390.png', 'artifacts/staff-management-typography/staff-profile-after-1440.png', 'artifacts/staff-management-typography/staff-profile-after-390.png', 'artifacts/staff-management-typography/timesheets-after-1440.png', 'artifacts/staff-management-typography/timesheets-after-390.png', ...accountWidths.map(width => `artifacts/staff-management-typography/account-management-after-${width}.png`)], runtimeErrors: cdp.errors.length }, null, 2))
+  }
 } finally {
   try { socket?.close() } catch {}
   for (const process of processes.reverse()) { try { process.kill() } catch {} }
