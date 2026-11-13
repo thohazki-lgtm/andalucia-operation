@@ -456,6 +456,96 @@ body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-button,
     height: 5px;
   }
 }
+
+/* Duty Roster blue-surface polish. Configured duty-code colors remain authoritative. */
+html body .app-shell main.module-duty-roster .duty-roster-page > .duty-roster-tabs button:not(.selected),
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-period-label.ao-action,
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-export,
+html body .app-shell main.module-duty-roster .duty-roster-page .staff-header-month-popover input {
+  background: #d9edf7 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-panel,
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-bottom-actions,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-manager {
+  background: #e7f4fb !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-scroll,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-table-wrap,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-card-list {
+  background: #d3eaf6 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster tbody tr:nth-child(odd) td,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:nth-child(odd) td {
+  background: #edf7fc !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster tbody tr:nth-child(even) td,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-table tbody tr:nth-child(even) td {
+  background: #dfeff8 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-table tbody tr.is-disabled td {
+  background: #d7e7ef !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster tfoot td {
+  background: #cfe7f3 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster tfoot .coverage-secondary td {
+  background: #dceef7 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .mobile-day-navigation,
+html body .app-shell main.module-duty-roster .duty-roster-page .mobile-roster-list {
+  background: #d3eaf6 !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .mobile-roster-card,
+html body .app-shell main.module-duty-roster .duty-roster-page .duty-code-card {
+  background: linear-gradient(145deg, #edf7fc 0%, #d3eaf6 100%) !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page :is(.duty-drag-handle, .duty-code-actions .ao-icon-action, .duty-availability-fixed) {
+  background: #d9edf7 !important;
+}
+
+html body .duty-code-modal,
+html body .duty-discard-confirmation {
+  background: linear-gradient(145deg, #e7f4fb 0%, #d3eaf6 100%) !important;
+}
+
+html body .duty-code-modal .duty-code-form-fields :is(input:not([type='color']), select, textarea),
+html body .duty-code-modal :is(.duty-live-preview, .protected-config-note) {
+  background: #edf7fc !important;
+}
+
+html body .app-shell main.module-duty-roster .duty-roster-page .roster-bottom-actions .roster-save:disabled {
+  background: #cfe3ee !important;
+  color: #5b7180 !important;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-duty-roster .duty-roster-page .mobile-roster-list {
+    gap: 16px;
+    padding: 12px;
+    border: 1px solid var(--roster-line);
+    border-radius: 14px;
+  }
+
+  html body .app-shell main.module-duty-roster .duty-roster-page .mobile-roster-card {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    border: 2px solid var(--roster-gold);
+    border-radius: 14px;
+    box-shadow: 0 7px 18px rgb(20 69 104 / 16%);
+    isolation: isolate;
+  }
+}
 .app-shell:has(> main.module-staff-management) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 
 /* Keep every Staff Management scroll surface slim and tied to the module palette. */
@@ -2309,6 +2399,10 @@ main.module-leave-planner .leave-month-navigation {
   width: 100%;
   min-width: 0;
   gap: 8px;
+  padding: 6px;
+  border: 2px solid var(--ao-leave-gold);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ao-lilac-calm) 13%, white);
   margin-bottom: 9px;
 }
 
@@ -2380,6 +2474,8 @@ main.module-leave-planner .leave-summary-grid {
 }
 
 main.module-leave-planner .leave-summary-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
   height: 68px;
   min-height: 68px;
   padding: 8px 11px;
@@ -2388,12 +2484,16 @@ main.module-leave-planner .leave-summary-card {
 }
 
 main.module-leave-planner .leave-summary-card > b {
-  margin-top: 5px;
+  width: 100%;
+  margin-top: 0;
+  align-self: center;
+  justify-self: center;
   color: var(--ao-violet-hour);
   font-family: var(--ao-font-ui);
   font-size: var(--ao-leave-summary-value-size);
   font-weight: 500;
   line-height: 1.1;
+  text-align: center;
 }
 
 main.module-leave-planner .leave-summary-card:not(.off):not(.holiday):not(.sick) {
@@ -2533,7 +2633,7 @@ main.module-leave-planner .leave-planner-grid thead th .weekday {
 }
 
 main.module-leave-planner .leave-planner-grid .today {
-  border-color: var(--ao-leave-grid-gold) !important;
+  border-color: var(--ao-leave-divider) !important;
   background: var(--ao-leave-surface-strong) !important;
   box-shadow: inset 1px 0 var(--ao-lilac-calm), inset -1px 0 var(--ao-lilac-calm) !important;
 }
@@ -2676,8 +2776,57 @@ main.module-leave-planner :is(
 }
 
 main.module-leave-planner .leave-planner-grid-wrap {
-  border-color: var(--ao-leave-line-strong) !important;
-  border-top-width: 1px !important;
+  border: 2px solid var(--ao-leave-gold) !important;
+  border-radius: 10px;
+}
+
+main.module-leave-planner .leave-planner-grid :is(th, td) {
+  border-top: 0 !important;
+  border-right: 1px solid var(--ao-leave-divider) !important;
+  border-bottom: 1px solid var(--ao-leave-divider) !important;
+  border-left: 0 !important;
+  background-clip: padding-box;
+}
+
+main.module-leave-planner .leave-planner-grid tr > :last-child {
+  border-right: 0 !important;
+}
+
+main.module-leave-planner .leave-planner-grid :is(th, td, button, span, small, b) {
+  font-weight: 700 !important;
+}
+
+main.module-leave-planner .leave-planner-grid :is(
+  thead th:not(.identity),
+  tbody td:not(.identity),
+  tfoot td:not(.identity)
+) {
+  text-align: center !important;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+main.module-leave-planner .leave-month-navigation :is(button, span) {
+  font-weight: 700 !important;
+}
+
+main.module-leave-planner .leave-month-navigation {
+  background: linear-gradient(120deg, var(--ao-leave-header-start), var(--ao-leave-header-end));
+}
+
+main.module-leave-planner .leave-month-navigation > .ao-icon-action {
+  border-color: var(--ao-leave-gold) !important;
+  background: transparent !important;
+  color: var(--ao-soft-ivory) !important;
+  box-shadow: none;
+}
+
+main.module-leave-planner .leave-month-navigation > .ao-icon-action:is(:hover, :focus-visible) {
+  background: rgb(255 255 255 / 10%) !important;
+  border-color: color-mix(in srgb, var(--ao-leave-gold) 82%, white) !important;
+}
+
+main.module-leave-planner .leave-month-navigation .ao-financial-date-control__trigger {
+  color: var(--ao-soft-ivory) !important;
 }
 
 main.module-leave-planner .staff-entitlements-panel .workforce-section-title h3 {
@@ -3553,6 +3702,70 @@ main.module-leave-planner .staff-profile-overlay.leave-modal-overlay .staff-prof
   padding: 14px 16px 12px;
 }
 
+main.module-leave-planner .staff-profile-overlay.leave-modal-overlay .leave-planner-drawer > header.leave-details-header {
+  border-top-color: var(--ao-leave-gold) !important;
+  border-bottom-color: var(--ao-leave-gold) !important;
+  background: linear-gradient(
+    120deg,
+    var(--ao-violet-hour) 0%,
+    color-mix(in srgb, var(--ao-violet-hour) 72%, var(--ao-lilac-calm)) 52%,
+    color-mix(in srgb, var(--ao-lilac-calm) 76%, white) 100%
+  ) !important;
+}
+
+main.module-leave-planner .leave-details-header :is(.eyebrow, h2),
+main.module-leave-planner .leave-details-header > div > span {
+  color: #fff !important;
+}
+
+main.module-leave-planner .leave-details-header .eyebrow {
+  color: color-mix(in srgb, var(--ao-lilac-calm) 38%, white) !important;
+}
+
+main.module-leave-planner .leave-details-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ao-leave-scrollbar) var(--ao-leave-scrollbar-track);
+  scrollbar-gutter: stable;
+}
+
+main.module-leave-planner .leave-details-scroll::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+main.module-leave-planner .leave-details-scroll::-webkit-scrollbar-track {
+  margin-block: 6px;
+  border: 1px solid color-mix(in srgb, var(--ao-leave-gold) 42%, transparent);
+  border-radius: 999px;
+  background: var(--ao-leave-scrollbar-track);
+}
+
+main.module-leave-planner .leave-details-scroll::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 1px solid var(--ao-leave-gold);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ao-violet-hour) 62%, white),
+    var(--ao-violet-hour)
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 24%);
+}
+
+main.module-leave-planner .leave-details-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ao-violet-hour) 50%, white),
+    color-mix(in srgb, var(--ao-violet-hour) 88%, black)
+  );
+}
+
+main.module-leave-planner .leave-details-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 main.module-leave-planner :is(.booked-leave-scroll, .leave-details-scroll) {
   padding-inline: 14px;
 }
@@ -3924,11 +4137,214 @@ main.module-staff-management .staff-directory-page .staff-mobile-cards {
 }
 
 main.module-staff-management .staff-directory-page .staff-tools {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
   margin: 9px 11px;
   padding: 9px;
   border: 1px solid var(--ao-staff-gold);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--ao-staff-surface-strong) 82%, white);
+  background: linear-gradient(112deg, color-mix(in srgb, var(--ao-staff-surface-strong) 88%, white) 0%, color-mix(in srgb, var(--ao-staff-surface) 82%, white) 100%);
+  box-shadow: 0 7px 18px rgb(16 62 56 / 8%), inset 0 1px 0 rgb(255 255 255 / 78%);
+}
+
+@media (max-width: 1200px) {
+  main.module-staff-management .staff-directory-page .staff-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+main.module-staff-management .staff-directory-page .staff-control-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 10px 7px;
+  border: 1px solid #a8cec5;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #ffffff 0%, color-mix(in srgb, var(--ao-staff-surface) 84%, white) 100%);
+  box-shadow: 0 3px 9px rgb(16 62 56 / 6%), inset 0 1px 0 #fff;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+main.module-staff-management .staff-directory-page .staff-control-card > span {
+  overflow: hidden;
+  color: var(--ao-staff-emerald);
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: .075em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+main.module-staff-management .staff-directory-page .staff-control-card:focus-within {
+  border-color: var(--ao-staff-emerald);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(177 228 220 / 44%), 0 6px 14px rgb(16 62 56 / 10%);
+}
+
+main.module-staff-management .staff-directory-page .staff-tools .staff-control-card :is(input, select) {
+  width: 100%;
+  height: 27px;
+  min-height: 27px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ao-premium-navy);
+  font-size: 11.5px;
+  font-weight: 550;
+}
+
+main.module-staff-management .staff-directory-page .staff-tools .staff-control-card :is(input, select):focus {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+main.module-staff-management .staff-directory-page .staff-search-card input::placeholder {
+  color: #6e817b;
+  opacity: .88;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-card {
+  padding-right: 10px;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select {
+  min-width: 0;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select-trigger {
+  display: flex;
+  width: 100%;
+  height: 27px;
+  min-height: 27px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ao-premium-navy);
+  font-family: var(--ao-font-ui);
+  font-size: 11.5px;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select-trigger .ao-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  color: var(--ao-staff-emerald-deep);
+  transform: rotate(90deg);
+  transition: transform .16s ease;
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select-trigger[aria-expanded='true'] .ao-icon {
+  transform: rotate(-90deg);
+}
+
+main.module-staff-management .staff-directory-page .staff-filter-select-trigger:focus-visible {
+  outline: 0;
+}
+
+.staff-filter-menu {
+  position: fixed;
+  z-index: 10000;
+  display: grid;
+  gap: 0;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(16 62 56 / 45%) transparent;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--ao-staff-gold);
+  border-radius: 11px;
+  background: var(--ao-staff-surface);
+  box-shadow: 0 18px 44px rgb(16 62 56 / 24%), 0 0 0 2px rgb(189 161 106 / 18%);
+  isolation: isolate;
+}
+
+.staff-filter-menu::-webkit-scrollbar { width: 7px; }
+.staff-filter-menu::-webkit-scrollbar-track { background: transparent; }
+.staff-filter-menu::-webkit-scrollbar-thumb {
+  min-height: 34px;
+  border: 2px solid var(--ao-staff-surface);
+  border-radius: 999px;
+  background: rgb(16 62 56 / 45%);
+}
+.staff-filter-menu::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+.staff-filter-menu > button {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--ao-staff-line);
+  border-radius: 0;
+  background: var(--ao-staff-surface);
+  color: var(--ao-staff-emerald-deep);
+  font-family: var(--ao-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.staff-filter-menu > button:first-child { border-radius: 7px 7px 0 0; }
+.staff-filter-menu > button:last-child { border-bottom: 0; border-radius: 0 0 7px 7px; }
+
+.staff-filter-menu > button:is(:hover, :focus-visible),
+.staff-filter-menu > button[aria-selected='true'] {
+  background: var(--ao-staff-surface-strong);
+  box-shadow: inset 3px 0 var(--ao-staff-emerald);
+}
+
+.staff-filter-menu > button:focus-visible {
+  outline: 2px solid var(--ao-staff-gold);
+  outline-offset: -2px;
+}
+
+.staff-filter-option-check {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ao-staff-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ao-staff-emerald-deep);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 60%);
+}
+
+.staff-filter-menu > button[aria-selected='true'] .staff-filter-option-check {
+  border-color: var(--ao-staff-emerald);
+  background: var(--ao-staff-emerald);
+  color: #fff;
 }
 
 main.module-staff-management .staff-directory-page .staff-tools :is(input, select),
@@ -5332,7 +5748,42 @@ main.module-staff-management .staff-training-controls .ao-action {
   }
 
   main.module-staff-management .staff-directory-page .staff-tools {
+    grid-template-columns: minmax(0, 1fr);
     margin: 4px 4px 9px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-search-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-control-card {
+    box-sizing: border-box;
+    min-height: 54px;
+    padding: 6px 10px 7px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-tools .staff-control-card :is(input, select) {
+    height: 32px;
+    min-height: 32px;
+  }
+
+  main.module-staff-management .staff-directory-page .staff-filter-toggle.ao-action {
+    width: 100%;
+    height: 100%;
+    min-height: 54px;
+    margin: 0;
+    border-color: var(--ao-staff-line-strong);
+    border-radius: 9px;
+    background: linear-gradient(145deg, #fff 0%, var(--ao-staff-surface-strong) 100%);
+    color: var(--ao-staff-emerald-deep);
+  }
+
+  main.module-staff-management .staff-directory-page .staff-filter-select-trigger {
+    height: 32px;
+    min-height: 32px;
   }
 
   main.module-staff-management .staff-directory-page .staff-mobile-cards {
@@ -8060,5 +8511,823 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 
   html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid {
     padding: 8px;
+  }
+}
+
+/* Leave Planner: polished Employee Entitlements detail palette. */
+html body .app-shell main.module-leave-planner .employee-entitlement-table thead tr {
+  background: linear-gradient(
+    100deg,
+    var(--ao-leave-header-start) 0%,
+    var(--ao-leave-header-end) 58%,
+    var(--ao-lilac-calm) 100%
+  );
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table thead th {
+  border-color: color-mix(in srgb, var(--ao-leave-gold) 68%, white) !important;
+  background: transparent !important;
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details-header,
+html body .app-shell main.module-leave-planner .off-days-summary > header {
+  border: 1px solid var(--ao-leave-gold);
+  border-radius: 9px;
+  background: linear-gradient(
+    100deg,
+    var(--ao-leave-header-start) 0%,
+    var(--ao-leave-header-end) 58%,
+    var(--ao-lilac-calm) 100%
+  );
+  box-shadow: 0 5px 14px rgb(69 23 107 / 14%);
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details-header {
+  padding: 9px 11px;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details-header h4,
+html body .app-shell main.module-leave-planner .employee-entitlement-details-header :is(dt, dd),
+html body .app-shell main.module-leave-planner .off-days-summary > header :is(.eyebrow, h3, small) {
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details-header dl div {
+  border-left-color: rgb(255 255 255 / 38%);
+}
+
+html body .app-shell main.module-leave-planner .off-days-summary > header {
+  align-items: center;
+  padding: 8px 10px;
+}
+
+html body .app-shell main.module-leave-planner :is(
+  .employee-entitlement-details-row > td,
+  .off-days-summary,
+  .off-days-metrics > div,
+  .off-days-weekly-review,
+  .additional-entitlement-card,
+  .employee-entitlement-details > .balance-controls input,
+  .off-days-summary .balance-week-actions .secondary
+) {
+  background: var(--ao-leave-surface-strong) !important;
+}
+
+html body .app-shell main.module-leave-planner :is(
+  .off-days-weekly-review dl div,
+  .additional-entitlement-card dl div
+) {
+  background: var(--ao-leave-surface) !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details :is(
+  .additional-entitlement-card dl div,
+  .off-days-metrics > div
+) {
+  padding: 7px 6px;
+  border: 1px solid var(--ao-leave-line) !important;
+  border-radius: 7px;
+  background: #e4dcf7 !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%);
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-details .off-days-summary .off-days-metrics > div {
+  padding: 7px 6px;
+  border: 1px solid var(--ao-leave-line) !important;
+  border-radius: 7px;
+  background: #e4dcf7 !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%);
+}
+
+html body .app-shell main.module-leave-planner .leave-summary-grid .leave-summary-card {
+  border: 1px solid var(--ao-leave-gold) !important;
+  border-top-width: 3px !important;
+  background: linear-gradient(
+    100deg,
+    var(--ao-leave-header-start) 0%,
+    color-mix(in srgb, var(--ao-leave-header-end) 76%, var(--ao-leave-header-start)) 52%,
+    var(--ao-leave-header-end) 100%
+  ) !important;
+  color: var(--ao-leave-header-text) !important;
+  box-shadow: 0 6px 15px rgb(69 23 107 / 17%);
+}
+
+html body .app-shell main.module-leave-planner .leave-summary-grid .leave-summary-card :is(span, b, small) {
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table-wrap {
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table tbody:nth-of-type(odd) > .employee-entitlement-row td {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table tbody:nth-of-type(even) > .employee-entitlement-row td {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .employee-entitlement-table .employee-entitlement-row:is(:hover, .expanded) td {
+  background: #ded1f2 !important;
+}
+
+html body .app-shell main.module-leave-planner .entitlement-details-toggle {
+  border-color: color-mix(in srgb, var(--ao-violet-hour) 45%, white);
+  background: #e4dcf7;
+  color: var(--ao-violet-hour);
+  box-shadow: 0 3px 8px rgb(69 23 107 / 10%);
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-grid-wrap,
+html body .app-shell main.module-leave-planner .leave-planner-grid {
+  background: #eee7fa;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-grid tbody tr:nth-child(odd) > :is(th, td) {
+  background: #f4effc;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-grid tbody tr:nth-child(even) > :is(th, td) {
+  background: #e9e0f7;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-grid .outside-membership {
+  background: repeating-linear-gradient(135deg, #eee7fa, #eee7fa 5px, #e3d8f3 5px, #e3d8f3 10px) !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-grid tfoot > tr > :is(th, td) {
+  background: #e4dcf7;
+}
+
+html body .app-shell main.module-leave-planner .staff-profile-drawer.leave-planner-drawer,
+html body .app-shell main.module-leave-planner .leave-details-scroll {
+  background: #eee7fa;
+}
+
+html body .app-shell main.module-leave-planner .leave-details-scroll > section {
+  margin-block: 8px;
+  padding: 12px;
+  border: 1px solid var(--ao-leave-line) !important;
+  border-radius: 10px;
+}
+
+html body .app-shell main.module-leave-planner .leave-details-scroll > section:nth-child(odd) {
+  background: #f4effc;
+}
+
+html body .app-shell main.module-leave-planner .leave-details-scroll > section:nth-child(even) {
+  background: #e9e0f7;
+}
+
+html body .app-shell main.module-leave-planner .leave-details-scroll .staff-profile-grid > div,
+html body .app-shell main.module-leave-planner .accumulated-off-opening > div,
+html body .app-shell main.module-leave-planner .leave-details-scroll .inline-empty {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .accumulated-off-opening :is(input, textarea) {
+  background: #f4effc;
+}
+
+html body .app-shell main.module-leave-planner .leave-history-filter-card {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .planned-leave-history {
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .confirmed-leave-history {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-history-filter-card :is(input, select),
+html body .app-shell main.module-leave-planner .planned-leave-history .leave-table-wrap,
+html body .app-shell main.module-leave-planner .planned-previous-history {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .planned-leave-table tbody tr:nth-child(odd) > td,
+html body .app-shell main.module-leave-planner .planned-leave-cards article:nth-child(odd),
+html body .app-shell main.module-leave-planner .planned-previous-history-cards article:nth-child(odd),
+html body .app-shell main.module-leave-planner .leave-employee-history:nth-child(odd) > summary,
+html body .app-shell main.module-leave-planner .leave-employee-history-body > section:nth-child(odd) {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .planned-leave-table tbody tr:nth-child(even) > td,
+html body .app-shell main.module-leave-planner .planned-leave-cards article:nth-child(even),
+html body .app-shell main.module-leave-planner .planned-previous-history-cards article:nth-child(even),
+html body .app-shell main.module-leave-planner .leave-employee-history:nth-child(even) > summary,
+html body .app-shell main.module-leave-planner .leave-employee-history-body > section:nth-child(even) {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .planned-previous-history > summary,
+html body .app-shell main.module-leave-planner .planned-previous-history-cards,
+html body .app-shell main.module-leave-planner .leave-employee-history-body,
+html body .app-shell main.module-leave-planner .leave-history-dates button {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner :is(
+  .planned-staff-identity b,
+  .planned-leave-cards article header b,
+  .planned-previous-history-cards article header b,
+  .leave-history-employee b
+) {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+html body .app-shell main.module-leave-planner :is(
+  .planned-staff-identity small,
+  .planned-leave-cards article header small,
+  .planned-previous-history-cards article header small,
+  .leave-history-employee small
+) {
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+/* Keep compact Leave Planner sections anchored to the top of the workspace.
+   The shared main rule uses auto block margins, which vertically centered this
+   short view and left an oversized band above the page heading. */
+html body .app-shell main.module-leave-planner {
+  margin: 0 auto;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-module-content .panel.leave-types-panel {
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-type-card:nth-child(odd) {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-type-card:nth-child(even) {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-types-panel :is(
+  .leave-type-count,
+  .leave-type-code,
+  .activate-duty-code
+) {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-module-content .panel.entitlement-policies-panel {
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .entitlement-policy-row:nth-child(odd) {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .entitlement-policy-row:nth-child(even) {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .entitlement-policies-panel :is(
+  .policy-code,
+  .policy-source,
+  .policy-protected,
+  .entitlement-policy-row .secondary,
+  .policy-information-note
+) {
+  border-color: var(--ao-leave-line) !important;
+  background: #e4dcf7 !important;
+  color: var(--ao-violet-hour) !important;
+}
+
+html body .app-shell main.module-leave-planner .modal.entitlement-policy-modal {
+  padding: 0 20px 18px !important;
+  overflow: hidden;
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .entitlement-policy-modal > h2 {
+  margin: 0 -20px 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ao-leave-gold);
+  background: linear-gradient(90deg, var(--ao-leave-header-start) 0%, var(--ao-leave-header-end) 100%);
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .leave-planner-module-content .panel.public-holidays-panel {
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-command > :is(label, .holiday-active-summary) {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-command input {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-record:nth-child(odd) {
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-record:nth-child(even) {
+  background: #e9e0f7 !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-record:hover {
+  background: #ded1f2 !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-record-actions .secondary {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holidays-panel .holiday-record-actions .danger {
+  border-color: #c4847d !important;
+  background: #f2d9d6 !important;
+  color: #7f2f2b !important;
+}
+
+html body .app-shell main.module-leave-planner .modal.public-holiday-modal {
+  padding: 0 22px 20px !important;
+  overflow: hidden;
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-modal > h2 {
+  margin: 0 -22px 14px;
+  padding: 18px 54px 18px 22px;
+  border-bottom: 1px solid var(--ao-leave-gold);
+  background: linear-gradient(90deg, var(--ao-leave-header-start) 0%, var(--ao-leave-header-end) 100%);
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-modal > .close {
+  top: 12px;
+  right: 14px;
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-modal :is(input, select) {
+  margin-top: 0;
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-form .ao-financial-date-control {
+  display: block;
+  width: 100%;
+  align-self: end;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-form .ao-financial-date-control__trigger {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  background: #f4effc !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-modal .form-actions .secondary {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .modal.public-holiday-delete-dialog {
+  padding: 0 22px 20px !important;
+  overflow: hidden;
+  background: #eee7fa !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-header {
+  margin: 0 -22px 14px;
+  padding: 17px 22px 18px;
+  border-bottom: 1px solid var(--ao-leave-gold);
+  background: linear-gradient(90deg, var(--ao-leave-header-start) 0%, var(--ao-leave-header-end) 100%);
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-header :is(.eyebrow, h2) {
+  color: var(--ao-leave-header-text) !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-header .eyebrow {
+  margin: 0 0 6px;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog > #holiday-delete-description {
+  padding: 12px;
+  border: 1px solid var(--ao-leave-line);
+  border-radius: 8px;
+  background: #e4dcf7;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog .holiday-delete-actions .secondary {
+  background: #e4dcf7 !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog .holiday-delete-actions .danger {
+  border-color: #913b36 !important;
+  background: #a84741 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  opacity: 1;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog .holiday-delete-actions .danger:hover:not(:disabled),
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog .holiday-delete-actions .danger:focus-visible:not(:disabled) {
+  background: #913b36 !important;
+  color: #fff !important;
+}
+
+html body .app-shell main.module-leave-planner .public-holiday-delete-dialog .holiday-delete-actions .danger:disabled {
+  background: #b96a65 !important;
+  color: #fff !important;
+  opacity: .68;
+}
+
+html body .app-shell main.module-leave-planner .leave-history-filter-toggle {
+  display: none;
+}
+
+html body .app-shell main.module-leave-planner .leave-history-filter-options,
+html body .app-shell main.module-leave-planner .leave-history-filter-options > .leave-period-controls {
+  display: contents;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-leave-planner .leave-record-filters {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  html body .app-shell main.module-leave-planner .leave-record-filters > input {
+    display: none;
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--ao-leave-line);
+    border-radius: 8px;
+    background: #e4dcf7;
+    color: var(--ao-violet-hour);
+    font: 500 11px/1.2 var(--ao-font-ui);
+    cursor: pointer;
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-toggle > span {
+    transition: transform .16s ease;
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-toggle[aria-expanded='true'] > span {
+    transform: rotate(180deg);
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-options {
+    position: absolute;
+    z-index: 45;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    display: none;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--ao-leave-gold);
+    border-radius: 10px;
+    background: #eee7fa;
+    box-shadow: 0 12px 28px rgb(69 23 107 / 22%);
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-options.is-open {
+    display: grid;
+  }
+
+  html body .app-shell main.module-leave-planner .leave-history-filter-options > .leave-period-controls {
+    display: contents;
+  }
+
+  html body .app-shell main.module-leave-planner .employee-entitlement-table tbody {
+    position: relative;
+    isolation: isolate;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  html body .app-shell main.module-leave-planner .employee-entitlement-table tbody::after {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border: 1px solid var(--ao-leave-gold);
+    border-top-width: 2px;
+    border-radius: 11px;
+    content: '';
+    pointer-events: none;
+  }
+
+  html body .app-shell main.module-leave-planner .staff-entitlements-panel .employee-entitlement-table .employee-entitlement-row {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  html body .app-shell main.module-leave-planner .employee-entitlement-table tbody:nth-of-type(n) > .employee-entitlement-row td {
+    border: 1px solid var(--ao-leave-line) !important;
+    border-radius: 7px;
+    background: #e4dcf7 !important;
+  }
+
+  html body .app-shell main.module-leave-planner .employee-entitlement-details-header,
+  html body .app-shell main.module-leave-planner .off-days-summary > header {
+    padding: 9px;
+  }
+
+  html body .app-shell main.module-leave-planner .off-days-summary > header {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  html body .app-shell main.module-leave-planner .off-days-summary > header > div,
+  html body .app-shell main.module-leave-planner .off-days-summary > header > small {
+    width: 100%;
+    margin-inline: 0;
+    text-align: left;
+  }
+
+  html body .app-shell main.module-leave-planner .modal.public-holiday-modal,
+  html body .app-shell main.module-leave-planner .modal.public-holiday-delete-dialog {
+    padding: 0 16px 16px !important;
+  }
+
+  html body .app-shell main.module-leave-planner .public-holiday-modal > h2,
+  html body .app-shell main.module-leave-planner .public-holiday-delete-header {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+}
+
+/* Team Directory green palette: rich summary gradients with pale-green data surfaces. */
+html body .app-shell main.module-staff-management .staff-directory-page .staff-summary > .panel:not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card) {
+  background: linear-gradient(105deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+  box-shadow: 0 8px 20px rgb(7 48 43 / 22%);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-summary :is(span, strong, .staff-summary-zero) {
+  color: #fff;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-panel {
+  background: #eaf5ed !important;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-tools {
+  background: linear-gradient(112deg, #dceee2 0%, #edf7ef 100%);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-control-card {
+  background: linear-gradient(145deg, #dceee2 0%, #edf7ef 100%);
+  box-shadow: 0 3px 9px rgb(16 62 56 / 8%);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-control-card:focus-within {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-tools .staff-control-card :is(input, select),
+html body .app-shell main.module-staff-management .staff-directory-page .staff-filter-select-trigger {
+  background: transparent;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table-wrap {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table thead tr {
+  background: linear-gradient(90deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table thead th {
+  background: transparent !important;
+  color: #fff;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table thead tr {
+  background: linear-gradient(90deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table thead th {
+  background: transparent !important;
+  color: #fff !important;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-kpis article {
+  background: linear-gradient(135deg, #d5eadb 0%, #edf7ef 100%);
+  box-shadow: 0 6px 16px rgb(16 62 56 / 9%);
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table tbody tr:nth-child(odd) {
+  background: #f2f8f3;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table tbody tr:nth-child(even) {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-table .ao-icon-action {
+  background: #eaf5ed !important;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheets > .staff-module-info {
+  background: #e1f0e5 !important;
+}
+
+html body .app-shell main.module-staff-management .manager-timesheet-card {
+  background: linear-gradient(145deg, #f2f8f3 0%, #dceee2 100%);
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(odd) {
+  background: #f2f8f3;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:nth-child(even) {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table tbody tr:hover {
+  background: #d3e8d9;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page :is(.staff-status, .direct-staff-drag-handle, .staff-row-icon-actions .ao-icon-action) {
+  background: #eaf5ed;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-cards {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card {
+  background: linear-gradient(145deg, #f2f8f3 0%, #dceee2 100%);
+}
+
+.staff-filter-menu,
+.staff-filter-menu > button {
+  background: #eaf5ed;
+}
+
+.staff-filter-menu > button:nth-child(even) {
+  background: #e1f0e5;
+}
+
+.staff-filter-option-check {
+  background: #dceee2;
+}
+
+/* Team Membership approved view: a deeper table heading with calm pale-green surfaces. */
+html body .app-shell main.module-staff-management .membership-approved-page > :is(.membership-approved-banner, .membership-review-card) {
+  background: #eaf5ed !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-approved-banner dl div {
+  background: #dceee2 !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-review-card > header {
+  background: linear-gradient(110deg, #dceee2 0%, #edf7ef 100%) !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table-wrap {
+  background: #e1f0e5 !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table.approved-table thead tr {
+  background: linear-gradient(90deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table.approved-table thead th {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  background: transparent !important;
+  color: #fff !important;
+  vertical-align: middle;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table.approved-table tbody tr:nth-child(odd) {
+  background: #f2f8f3;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .membership-table.approved-table tbody tr:nth-child(even) {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .approved-member-cards {
+  background: #e1f0e5 !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .approved-member-cards > article {
+  background: linear-gradient(145deg, #f2f8f3 0%, #dceee2 100%) !important;
+}
+
+html body .app-shell main.module-staff-management .membership-approved-page .approved-member-cards dl > div {
+  background: #dceee2 !important;
+  border-color: var(--ao-staff-line);
+}
+
+/* Account Management: continuous emerald table heading and pale-green data surfaces. */
+html body .app-shell main.module-staff-management .staff-account-tools-panel,
+html body .app-shell main.module-staff-management .staff-account-directory-panel {
+  background: #eaf5ed !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-tools-panel .staff-account-tools {
+  background: linear-gradient(112deg, #dceee2 0%, #edf7ef 100%) !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-tools-panel .staff-account-tools :is(input, select) {
+  background: #f2f8f3 !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-directory-heading {
+  background: linear-gradient(90deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-directory-heading :is(.eyebrow, h3, span) {
+  color: #fff;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel > .staff-table-wrap {
+  background: #e1f0e5 !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table thead tr {
+  background: linear-gradient(90deg, #103e38 0%, #287a69 58%, #76ad9d 100%);
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table thead th {
+  height: auto;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  background: transparent !important;
+  color: #fff !important;
+  vertical-align: middle;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table tbody tr:nth-child(odd) {
+  background: #f2f8f3;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-table tbody tr:nth-child(even) {
+  background: #e1f0e5;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-guidance {
+  background: #dceee2 !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel > .staff-account-cards {
+  background: #e1f0e5 !important;
+}
+
+html body .app-shell main.module-staff-management .staff-account-directory-panel .staff-account-cards > article {
+  background: linear-gradient(145deg, #f2f8f3 0%, #dceee2 100%);
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-search-row > input {
+    display: none;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-search-card {
+    display: none;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-filter-toggle.ao-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .direct-staff-drag-handle {
+    display: none;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-identity {
+    gap: 0;
   }
 }

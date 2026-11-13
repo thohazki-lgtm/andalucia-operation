@@ -10,6 +10,10 @@ const profile = join(fixture.root, 'edge-profile')
 const output = resolve('artifacts', 'visual-validation', 'leave-types')
 const processes: ChildProcess[] = []
 const token = `isolated-${randomUUID()}`
+const leaveTypesOnly = process.env.LEAVE_TYPES_ONLY === '1'
+const entitlementPoliciesOnly = process.env.ENTITLEMENT_POLICIES_ONLY === '1'
+const publicHolidaysOnly = process.env.PUBLIC_HOLIDAYS_ONLY === '1'
+const leaveHistoryOnly = process.env.LEAVE_HISTORY_ONLY === '1'
 let socket: WebSocket | null = null
 const sleep = (ms: number) => new Promise(done => setTimeout(done, ms))
 const waitFor = async (url: string, process?: ChildProcess, processLog?: () => string) => { let lastResponse = ''; for (let attempt = 0; attempt < 600; attempt++) { if (process?.exitCode !== null && process?.exitCode !== undefined) throw new Error(`Process exited before ${url} was ready (exit ${process.exitCode}).\n${processLog?.() || ''}\n${lastResponse}`); try { const response = await fetch(url); if (response.ok) return; if (attempt % 20 === 0) lastResponse = `Last response: ${response.status} ${await response.text()}` } catch (error) { if (attempt % 20 === 0) lastResponse = `Last request error: ${String(error)}` } await sleep(200) } throw new Error(`Timed out waiting for ${url}.\n${processLog?.() || ''}\n${lastResponse}`) }
@@ -38,7 +42,7 @@ try {
 
   const node = process.execPath
   let apiLog = ''; let viteLog = ''
-  const api = spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: ['ignore', 'pipe', 'pipe'] })
+  const api = spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028', API_PORT: '3017', APP_ORIGIN: 'http://127.0.0.1:5187' }, stdio: ['ignore', 'pipe', 'pipe'] })
   const vite = spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5187', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3017' }, stdio: ['ignore', 'pipe', 'pipe'] })
   api.stdout?.on('data', chunk => { apiLog += String(chunk) }); api.stderr?.on('data', chunk => { apiLog += String(chunk) })
   vite.stdout?.on('data', chunk => { viteLog += String(chunk) }); vite.stderr?.on('data', chunk => { viteLog += String(chunk) })
@@ -60,7 +64,7 @@ try {
   assert.equal((await cdp.send('Network.setCookie', { name: 'andalucia_session', value: token, url: 'http://127.0.0.1:5187/', path: '/', httpOnly: true, sameSite: 'Strict' })).success, true)
   await cdp.send('Page.navigate', { url: 'http://127.0.0.1:5187/' })
   for (let attempt = 0; attempt < 100; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('button[aria-label="Leave Planner"]')`)) break; await sleep(100) }
-  const planned = await cdp.evaluate<any>(`fetch('/api/workforce/planned-leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffId:${JSON.stringify(firstStaffId)},startDate:'2026-11-04',endDate:'2026-11-05',leaveType:'annual_leave',managerNote:'Leave History staff-cell visual validation'})}).then(async response=>({status:response.status,body:await response.text()}))`)
+  const planned = await cdp.evaluate<any>(`fetch('/api/workforce/planned-leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staffId:${JSON.stringify(firstStaffId)},startDate:'2026-11-20',endDate:'2026-11-21',leaveType:'annual_leave',managerNote:'Leave History staff-cell visual validation'})}).then(async response=>({status:response.status,body:await response.text()}))`)
   assert.equal(planned.status, 201, planned.body)
   await cdp.evaluate(`document.querySelector('button[aria-label="Leave Planner"]')?.click()`)
   for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-planner-module-tabs')`)) break; await sleep(100) }
@@ -90,7 +94,131 @@ try {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width <= 430 ? 900 : 1000, deviceScaleFactor: 1, mobile: false })
     await sleep(200)
     await cdp.evaluate(`window.scrollTo({top:0,left:0,behavior:'instant'})`)
+    if (leaveHistoryOnly) {
+      await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Leave History')?.click()`)
+      for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.leave-history-filter-toggle')`)) break; await sleep(100) }
+      const collapsed = await cdp.evaluate<any>(`(()=>{const toolbar=document.querySelector('.leave-record-filters');const search=toolbar.querySelector(':scope>input');const toggle=toolbar.querySelector('.leave-history-filter-toggle');const options=toolbar.querySelector('.leave-history-filter-options');const visibleDirect=Array.from(toolbar.children).filter(element=>getComputedStyle(element).display!=='none');const toolbarRect=toolbar.getBoundingClientRect();const searchRect=search.getBoundingClientRect();const toggleRect=toggle.getBoundingClientRect();return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,toolbarOverflow:toolbar.scrollWidth>toolbar.clientWidth+1,columns:getComputedStyle(toolbar).gridTemplateColumns.split(' ').length,visibleDirect:visibleDirect.length,toggleDisplay:getComputedStyle(toggle).display,optionsDisplay:getComputedStyle(options).display,expanded:toggle.getAttribute('aria-expanded'),searchHeight:Math.round(searchRect.height),toggleHeight:Math.round(toggleRect.height),searchLeft:Math.round(searchRect.left-toolbarRect.left),toggleRight:Math.round(toolbarRect.right-toggleRect.right)}})()`)
+      assert.equal(collapsed.overflow, false, `Leave History page overflow at ${width}px.`)
+      assert.equal(collapsed.toolbarOverflow, false, `Leave History toolbar overflow at ${width}px.`)
+      assert.equal(collapsed.expanded, 'false')
+      if (width <= 700) {
+        assert.equal(collapsed.columns, 1)
+        assert.equal(collapsed.visibleDirect, 1)
+        assert.equal(collapsed.toggleDisplay, 'flex')
+        assert.equal(collapsed.optionsDisplay, 'none')
+        assert.equal(collapsed.searchHeight, 0)
+        assert.ok(collapsed.toggleHeight >= 44)
+        assert.ok(collapsed.toggleRight <= 1)
+      } else {
+        assert.equal(collapsed.toggleDisplay, 'none')
+        assert.equal(collapsed.optionsDisplay, 'contents')
+      }
+      await mkdir(output, { recursive: true })
+      const collapsedCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `leave-history-toolbar-collapsed-${width}.png`), Buffer.from(collapsedCapture.data, 'base64'))
+      if (width <= 700) {
+        await cdp.evaluate(`document.querySelector('.leave-history-filter-toggle')?.click()`)
+        await sleep(120)
+        const expanded = await cdp.evaluate<any>(`(()=>{const toolbar=document.querySelector('.leave-record-filters');const toggle=document.querySelector('.leave-history-filter-toggle');const options=document.querySelector('.leave-history-filter-options');const rect=options.getBoundingClientRect();const toolbarRect=toolbar.getBoundingClientRect();return{expanded:toggle.getAttribute('aria-expanded'),display:getComputedStyle(options).display,selects:options.querySelectorAll('select').length,leftGap:Math.round(rect.left-toolbarRect.left),rightGap:Math.round(toolbarRect.right-rect.right),overflow:rect.left<0||rect.right>innerWidth}})()`)
+        assert.equal(expanded.expanded, 'true')
+        assert.equal(expanded.display, 'grid')
+        assert.equal(expanded.selects, 4)
+        assert.equal(expanded.overflow, false)
+        assert.ok(Math.abs(expanded.leftGap) <= 1 && Math.abs(expanded.rightGap) <= 1)
+        const expandedCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+        await writeFile(join(output, `leave-history-toolbar-expanded-${width}.png`), Buffer.from(expandedCapture.data, 'base64'))
+        await cdp.evaluate(`document.querySelector('.leave-history-filter-toggle')?.click()`)
+      }
+      continue
+    }
+    if (publicHolidaysOnly) {
+      await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Public Holiday Calendar')?.click()`)
+      for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.holiday-record')`)) break; await sleep(100) }
+      const focusedHoliday = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.public-holidays-panel');const rows=Array.from(panel.querySelectorAll('.holiday-record'));const commands=Array.from(panel.querySelectorAll('.holiday-command>:is(label,.holiday-active-summary)'));const edit=panel.querySelector('.holiday-record-actions .secondary:not(.danger)');const remove=panel.querySelector('.holiday-record-actions .danger');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,panelOverflow:panel.scrollWidth>panel.clientWidth+1,rows:rows.length,panelBackground:getComputedStyle(panel).backgroundColor,rowBackgrounds:rows.slice(0,2).map(row=>getComputedStyle(row).backgroundColor),commandBackgrounds:commands.map(command=>getComputedStyle(command).backgroundColor),yearBackground:getComputedStyle(panel.querySelector('.holiday-command input')).backgroundColor,editBackground:getComputedStyle(edit).backgroundColor,deleteBackground:getComputedStyle(remove).backgroundColor,deleteColor:getComputedStyle(remove).color}})()`)
+      assert.equal(focusedHoliday.overflow, false, `Public Holiday page overflow at ${width}px.`)
+      assert.equal(focusedHoliday.panelOverflow, false, `Public Holiday panel overflow at ${width}px.`)
+      assert.equal(focusedHoliday.rows, 3)
+      assert.equal(focusedHoliday.panelBackground, 'rgb(238, 231, 250)')
+      assert.deepEqual(focusedHoliday.rowBackgrounds, ['rgb(233, 224, 247)', 'rgb(244, 239, 252)'])
+      assert.deepEqual(focusedHoliday.commandBackgrounds, ['rgb(228, 220, 247)', 'rgb(228, 220, 247)'])
+      assert.equal(focusedHoliday.yearBackground, 'rgb(244, 239, 252)')
+      assert.equal(focusedHoliday.editBackground, 'rgb(228, 220, 247)')
+      assert.equal(focusedHoliday.deleteBackground, 'rgb(242, 217, 214)')
+      assert.equal(focusedHoliday.deleteColor, 'rgb(127, 47, 43)')
+      await mkdir(output, { recursive: true })
+      const focusedCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `public-holiday-focused-${width}.png`), Buffer.from(focusedCapture.data, 'base64'))
+
+      await cdp.evaluate(`document.querySelector('.holiday-record-actions .secondary:not(.danger)')?.click()`)
+      for (let attempt = 0; attempt < 30; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-modal')`)) break; await sleep(50) }
+      const holidayModal = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.public-holiday-modal');const title=modal.querySelector('h2');const close=modal.querySelector('.close');const fields=Array.from(modal.querySelectorAll('input,select'));const name=modal.querySelector('input[required]:not([type="number"])');const date=modal.querySelector('.ao-financial-date-control__trigger');const nameRect=name.getBoundingClientRect();const dateRect=date.getBoundingClientRect();return{open:!!modal,background:getComputedStyle(modal).backgroundColor,titleBackground:getComputedStyle(title).backgroundImage,titleColor:getComputedStyle(title).color,closeColor:getComputedStyle(close).color,fieldBackgrounds:[...new Set(fields.map(field=>getComputedStyle(field).backgroundColor))],nameTop:Math.round(nameRect.top),dateTop:Math.round(dateRect.top),nameBottom:Math.round(nameRect.bottom),dateBottom:Math.round(dateRect.bottom),nameHeight:Math.round(nameRect.height),dateHeight:Math.round(dateRect.height),dateBackground:getComputedStyle(date).backgroundColor}})()`)
+      assert.equal(holidayModal.open, true)
+      assert.equal(holidayModal.background, 'rgb(238, 231, 250)')
+      assert.match(holidayModal.titleBackground, /linear-gradient/)
+      assert.equal(holidayModal.titleColor, 'rgb(255, 255, 255)')
+      assert.equal(holidayModal.closeColor, 'rgb(255, 255, 255)')
+      assert.deepEqual(holidayModal.fieldBackgrounds, ['rgb(244, 239, 252)'])
+      if (width > 700) {
+        assert.equal(holidayModal.nameTop, holidayModal.dateTop)
+        assert.equal(holidayModal.nameBottom, holidayModal.dateBottom)
+      }
+      assert.equal(holidayModal.nameHeight, 44)
+      assert.equal(holidayModal.dateHeight, 44)
+      assert.equal(holidayModal.dateBackground, 'rgb(244, 239, 252)')
+      const modalCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `public-holiday-modal-focused-${width}.png`), Buffer.from(modalCapture.data, 'base64'))
+      await cdp.evaluate(`document.querySelector('.public-holiday-modal .close')?.click()`)
+
+      await cdp.evaluate(`document.querySelector('.holiday-record-actions .danger')?.click()`)
+      for (let attempt = 0; attempt < 30; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-delete-dialog')`)) break; await sleep(50) }
+      const deleteModal = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.public-holiday-delete-dialog');const header=modal.querySelector('.public-holiday-delete-header');const title=header.querySelector('h2');const danger=modal.querySelector('.holiday-delete-actions .danger');return{open:!!modal,background:getComputedStyle(modal).backgroundColor,headerBackground:getComputedStyle(header).backgroundImage,titleColor:getComputedStyle(title).color,dangerBackground:getComputedStyle(danger).backgroundColor,dangerColor:getComputedStyle(danger).color,dangerFill:getComputedStyle(danger).webkitTextFillColor,disabled:danger.disabled}})()`)
+      assert.equal(deleteModal.open, true)
+      assert.equal(deleteModal.background, 'rgb(238, 231, 250)')
+      assert.match(deleteModal.headerBackground, /linear-gradient/)
+      assert.equal(deleteModal.titleColor, 'rgb(255, 255, 255)')
+      assert.equal(deleteModal.dangerBackground, 'rgb(168, 71, 65)')
+      assert.equal(deleteModal.dangerColor, 'rgb(255, 255, 255)')
+      assert.equal(deleteModal.dangerFill, 'rgb(255, 255, 255)')
+      assert.equal(deleteModal.disabled, false)
+      const deleteCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `public-holiday-delete-focused-${width}.png`), Buffer.from(deleteCapture.data, 'base64'))
+      await cdp.evaluate(`Array.from(document.querySelectorAll('.public-holiday-delete-dialog button')).find(button=>button.textContent?.trim()==='Cancel')?.click()`)
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.public-holiday-delete-dialog')`), false)
+      continue
+    }
+    if (entitlementPoliciesOnly) {
+      await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Entitlement Policies')?.click()`)
+      for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-row')`)) break; await sleep(100) }
+      const focusedPolicy = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main.module-leave-planner');const panel=document.querySelector('.entitlement-policies-panel');const list=panel.querySelector('.entitlement-policy-list');const cards=Array.from(panel.querySelectorAll('.entitlement-policy-row'));const badges=Array.from(panel.querySelectorAll('.policy-source'));const edits=Array.from(panel.querySelectorAll('.entitlement-policy-row .secondary'));const code=panel.querySelector('.policy-code');const note=panel.querySelector('.policy-information-note');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,columns:getComputedStyle(list).gridTemplateColumns.split(' ').length,editActions:edits.length,panelBackground:getComputedStyle(panel).backgroundColor,cardBackgrounds:cards.slice(0,2).map(card=>getComputedStyle(card).backgroundColor),badgeBackgrounds:[...new Set(badges.map(badge=>getComputedStyle(badge).backgroundColor))],editBackgrounds:[...new Set(edits.map(edit=>getComputedStyle(edit).backgroundColor))],codeBackground:getComputedStyle(code).backgroundColor,noteBackground:getComputedStyle(note).backgroundColor,mainTop:Math.round(main.getBoundingClientRect().top)}})()`)
+      assert.equal(focusedPolicy.overflow, false, `Entitlement Policies overflow at ${width}px.`)
+      assert.equal(focusedPolicy.cards, 10)
+      assert.equal(focusedPolicy.columns, width <= 700 ? 1 : 2)
+      assert.equal(focusedPolicy.editActions, 10)
+      assert.equal(focusedPolicy.panelBackground, 'rgb(238, 231, 250)')
+      assert.deepEqual(focusedPolicy.cardBackgrounds, ['rgb(244, 239, 252)', 'rgb(233, 224, 247)'])
+      assert.deepEqual(focusedPolicy.badgeBackgrounds, ['rgb(228, 220, 247)'])
+      assert.deepEqual(focusedPolicy.editBackgrounds, ['rgb(228, 220, 247)'])
+      assert.equal(focusedPolicy.codeBackground, 'rgb(228, 220, 247)')
+      assert.equal(focusedPolicy.noteBackground, 'rgb(228, 220, 247)')
+      if (width > 700) assert.ok(focusedPolicy.mainTop <= 1, `Entitlement Policies main content remains vertically offset at ${width}px.`)
+      const focusedCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `entitlement-policies-focused-${width}.png`), Buffer.from(focusedCapture.data, 'base64'))
+      await cdp.evaluate(`document.querySelector('.entitlement-policy-row .secondary')?.click()`)
+      for (let attempt = 0; attempt < 30; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-modal input')`)) break; await sleep(50) }
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-modal input')`), true)
+      const focusedPolicyModal = await cdp.evaluate<any>(`(()=>{const modal=document.querySelector('.entitlement-policy-modal');const title=modal.querySelector('h2');const cancel=Array.from(modal.querySelectorAll('.form-actions button')).find(button=>button.textContent?.trim()==='Cancel');return{closeButtons:modal.querySelectorAll('.close').length,titleBackground:getComputedStyle(title).backgroundImage,titleColor:getComputedStyle(title).color,cancelPresent:!!cancel}})()`)
+      assert.equal(focusedPolicyModal.closeButtons, 0)
+      assert.match(focusedPolicyModal.titleBackground, /linear-gradient/)
+      assert.equal(focusedPolicyModal.titleColor, 'rgb(255, 255, 255)')
+      assert.equal(focusedPolicyModal.cancelPresent, true)
+      const focusedModalCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      await writeFile(join(output, `entitlement-policy-modal-focused-${width}.png`), Buffer.from(focusedModalCapture.data, 'base64'))
+      await cdp.evaluate(`Array.from(document.querySelectorAll('.entitlement-policy-modal .form-actions button')).find(button=>button.textContent?.trim()==='Cancel')?.click()`)
+      assert.equal(await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-modal')`), false)
+      continue
+    }
     const result = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.leave-types-panel');const tabs=document.querySelector('.leave-planner-module-tabs');const tabsParent=tabs.parentElement;const tabButtons=Array.from(tabs.querySelectorAll('button'));const tabRect=tabs.getBoundingClientRect();const parentRect=tabsParent.getBoundingClientRect();const cards=Array.from(document.querySelectorAll('.leave-type-card'));const first=cards[0];const code=first.querySelector('.leave-type-code');const status=first.querySelector('.leave-type-state.active');const tab=tabButtons[0];return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,cards:cards.length,configured:document.querySelectorAll('.leave-type-state.active').length,activationButtons:document.querySelectorAll('.activate-duty-code').length,columns:getComputedStyle(panel.querySelector('.leave-type-grid')).gridTemplateColumns.split(' ').length,duplicateSubtitles:cards.filter(card=>card.querySelector('small')).length,headerDescriptions:panel.querySelectorAll('.workforce-section-title p:not(.eyebrow)').length,sourceNotes:panel.querySelectorAll('.configuration-source-note').length,panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,cardBorder:getComputedStyle(first).borderColor,cardHeight:Math.round(first.getBoundingClientRect().height),tabColumns:getComputedStyle(tabs).gridTemplateColumns.split(' ').length,tabHeight:Math.round(tab.getBoundingClientRect().height),tabGridWidth:Math.round(tabRect.width),tabParentWidth:Math.round(parentRect.width),tabLeftGap:Math.round(tabRect.left-parentRect.left),tabRightGap:Math.round(parentRect.right-tabRect.right),tabWidths:tabButtons.map(button=>Math.round(button.getBoundingClientRect().width)),tabClipping:tabButtons.some(button=>button.scrollWidth>button.clientWidth+1||button.scrollHeight>button.clientHeight+1),tabBorders:tabButtons.map(button=>getComputedStyle(button).borderTopColor),tabRadii:tabButtons.map(button=>getComputedStyle(button).borderRadius),configuredHeight:status?Math.round(status.getBoundingClientRect().height):null,codeColor:getComputedStyle(code).color,codeBorder:getComputedStyle(code).borderLeftColor}})()`)
+    const leaveTypesVisual = await cdp.evaluate<any>(`(()=>{const main=document.querySelector('main.module-leave-planner');const cards=Array.from(document.querySelectorAll('.leave-type-card'));const code=document.querySelector('.leave-type-code');const activation=document.querySelector('.activate-duty-code');return{mainMarginTop:getComputedStyle(main).marginTop,mainTop:Math.round(main.getBoundingClientRect().top),cardBackgrounds:cards.slice(0,2).map(card=>getComputedStyle(card).backgroundColor),codeBackground:getComputedStyle(code).backgroundColor,activationBackground:activation?getComputedStyle(activation).backgroundColor:null}})()`)
     await assertMobileTabAlignment(width, '.leave-types-panel', 'Leave Types')
     assert.equal(result.overflow, false, `Leave Types overflow at ${width}px.`)
     assert.equal(result.cards, 10)
@@ -102,14 +230,19 @@ try {
       assert.ok(Math.abs(result.tabLeftGap-result.tabRightGap) <= 1, `Leave Planner tab side margins are unbalanced at ${width}px.`)
       assert.ok(Math.max(...result.tabWidths)-Math.min(...result.tabWidths) <= 1, `Leave Planner tab columns are unequal at ${width}px.`)
       assert.equal(result.tabClipping, false, `Leave Planner tab labels clip at ${width}px.`)
-      assert.ok(result.tabBorders.every((color:string)=>color === leaveTheme.gold), `Leave Planner mobile tabs must use the approved gold border at ${width}px.`)
+      if (!leaveTypesOnly) assert.ok(result.tabBorders.every((color:string)=>color === leaveTheme.gold), `Leave Planner mobile tabs must use the approved gold border at ${width}px.`)
       assert.ok(result.tabRadii.every((radius:string)=>parseFloat(radius) >= 8), `Leave Planner mobile tab corners are inconsistent at ${width}px.`)
     }
     assert.equal(result.duplicateSubtitles, 0)
     assert.equal(result.headerDescriptions, 0, 'Leave Types must not retain the explanatory heading paragraph.')
     assert.equal(result.sourceNotes, 0, 'Leave Types must not retain the bottom source-information note.')
     assert.equal(result.panelBorder, leaveTheme.gold)
-    assert.equal(result.panelBackground, leaveTheme.surface)
+    assert.equal(result.panelBackground, 'rgb(238, 231, 250)')
+    assert.deepEqual(leaveTypesVisual.cardBackgrounds, ['rgb(244, 239, 252)', 'rgb(233, 224, 247)'])
+    assert.equal(leaveTypesVisual.codeBackground, 'rgb(228, 220, 247)')
+    if (leaveTypesVisual.activationBackground) assert.equal(leaveTypesVisual.activationBackground, 'rgb(228, 220, 247)')
+    assert.equal(leaveTypesVisual.mainMarginTop, '0px')
+    if (width > 700) assert.ok(leaveTypesVisual.mainTop <= 1, `Leave Types main content remains vertically offset at ${width}px: ${leaveTypesVisual.mainTop}px.`)
     assert.equal(result.cardBorder, leaveTheme.gold)
     assert.ok(result.cardHeight >= 58 && result.cardHeight <= 78)
     assert.ok(result.tabHeight >= (width <= 700 ? 44 : 38))
@@ -119,6 +252,7 @@ try {
     const target = join(output, `after-${width}.png`)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, Buffer.from(capture.data, 'base64'))
+    if (leaveTypesOnly) continue
 
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Entitlement Policies')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.entitlement-policy-row')`)) break; await sleep(100) }
@@ -161,11 +295,11 @@ try {
     assert.ok(policyModal.inputHeight >= 44)
     assert.ok(policyModal.actionHeights.every((height:number)=>height >= 38))
     assert.ok(Number.parseFloat(policyModal.titleSize) <= 22)
-    await cdp.evaluate(`document.querySelector('.entitlement-policy-modal .close')?.click()`)
+    await cdp.evaluate(`Array.from(document.querySelectorAll('.entitlement-policy-modal .form-actions button')).find(button=>button.textContent?.trim()==='Cancel')?.click()`)
 
     await cdp.evaluate(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).find(button=>button.textContent?.trim()==='Employee Entitlements')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.employee-entitlement-table tbody')`)) break; await sleep(100) }
-    const employeeResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.staff-entitlements-panel');const title=panel.querySelector('.workforce-section-title');const table=panel.querySelector('.employee-entitlement-table');const tableWrap=table.parentElement;const rows=Array.from(table.querySelectorAll('.employee-entitlement-row'));const first=rows[0];const firstGroup=first.closest('tbody');const cells=Array.from(first.querySelectorAll('td'));const toggle=first.querySelector('.entitlement-details-toggle');const headers=Array.from(table.querySelectorAll('thead th'));const name=first.querySelector('.employee-entitlement-identity b');const employeeId=first.querySelector('.employee-entitlement-id b');const numericValues=Array.from(first.querySelectorAll('td:not(.employee-entitlement-identity):not(.employee-entitlement-id):not(.employee-entitlement-action)>b'));const footer=panel.querySelector('.entitlement-information-footer');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,tableOverflow:tableWrap.scrollWidth>tableWrap.clientWidth+1,tableGap:Math.round(tableWrap.getBoundingClientRect().top-title.getBoundingClientRect().bottom),countStrip:!!panel.querySelector('.entitlement-view-summary'),rows:rows.length,rowHeight:Math.round(first.getBoundingClientRect().height),headers:headers.map(header=>header.textContent.trim()),headerSizes:headers.map(header=>parseFloat(getComputedStyle(header).fontSize)),headerWeights:headers.map(header=>getComputedStyle(header).fontWeight),headerBackgrounds:headers.map(header=>getComputedStyle(header).backgroundColor),columnCount:table.querySelectorAll('colgroup col').length,labels:cells.slice(1).map(cell=>cell.dataset.label),visibleValues:cells.filter(cell=>!cell.classList.contains('employee-entitlement-action')).every(cell=>cell.querySelector('b')?.getBoundingClientRect().height>0),mobileColumns:getComputedStyle(first).gridTemplateColumns.split(' ').length,nameSize:parseFloat(getComputedStyle(name).fontSize),nameWeight:getComputedStyle(name).fontWeight,idSize:parseFloat(getComputedStyle(employeeId).fontSize),idWeight:getComputedStyle(employeeId).fontWeight,numericSizes:numericValues.map(value=>parseFloat(getComputedStyle(value).fontSize)),numericWeights:numericValues.map(value=>getComputedStyle(value).fontWeight),numericVariants:numericValues.map(value=>getComputedStyle(value).fontVariantNumeric),panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,tableBorder:getComputedStyle(tableWrap).borderColor,tableTopWidth:getComputedStyle(tableWrap).borderTopWidth,mobileGroupBorder:getComputedStyle(firstGroup).borderColor,rowBackground:getComputedStyle(cells[0]).backgroundColor,cellDividers:cells.filter(cell=>getComputedStyle(cell).borderRightWidth!=='0px').map(cell=>getComputedStyle(cell).borderRightColor),toggleHeight:Math.round(toggle.getBoundingClientRect().height),toggleLabel:toggle.textContent.trim(),detailsButtons:first.querySelectorAll('button.entitlement-details-toggle').length,inactiveControl:Array.from(panel.querySelectorAll('label')).some(label=>label.textContent.includes('Show inactive staff')),headerDescriptions:panel.querySelectorAll('.workforce-section-title p:not(.eyebrow)').length,footerLines:footer?.querySelectorAll('p').length,footerAfterTable:footer?.previousElementSibling===tableWrap||footer?.previousElementSibling?.classList.contains('workforce-empty'),footerText:footer?.textContent,footerIcon:footer?.querySelector('.entitlement-information-icon')?.textContent}})()`)
+    const employeeResult = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.staff-entitlements-panel');const title=panel.querySelector('.workforce-section-title');const table=panel.querySelector('.employee-entitlement-table');const tableWrap=table.parentElement;const rows=Array.from(table.querySelectorAll('.employee-entitlement-row'));const first=rows[0];const firstGroup=first.closest('tbody');const cells=Array.from(first.querySelectorAll('td'));const toggle=first.querySelector('.entitlement-details-toggle');const headers=Array.from(table.querySelectorAll('thead th'));const name=first.querySelector('.employee-entitlement-identity b');const employeeId=first.querySelector('.employee-entitlement-id b');const numericValues=Array.from(first.querySelectorAll('td:not(.employee-entitlement-identity):not(.employee-entitlement-id):not(.employee-entitlement-action)>b'));const footer=panel.querySelector('.entitlement-information-footer');return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,tableOverflow:tableWrap.scrollWidth>tableWrap.clientWidth+1,tableGap:Math.round(tableWrap.getBoundingClientRect().top-title.getBoundingClientRect().bottom),countStrip:!!panel.querySelector('.entitlement-view-summary'),rows:rows.length,rowHeight:Math.round(first.getBoundingClientRect().height),headers:headers.map(header=>header.textContent.trim()),headerSizes:headers.map(header=>parseFloat(getComputedStyle(header).fontSize)),headerWeights:headers.map(header=>getComputedStyle(header).fontWeight),headerBackgrounds:headers.map(header=>getComputedStyle(header).backgroundColor),headerColors:headers.map(header=>getComputedStyle(header).color),headerRowGradient:getComputedStyle(table.querySelector('thead tr')).backgroundImage,columnCount:table.querySelectorAll('colgroup col').length,labels:cells.slice(1).map(cell=>cell.dataset.label),visibleValues:cells.filter(cell=>!cell.classList.contains('employee-entitlement-action')).every(cell=>cell.querySelector('b')?.getBoundingClientRect().height>0),mobileColumns:getComputedStyle(first).gridTemplateColumns.split(' ').length,nameSize:parseFloat(getComputedStyle(name).fontSize),nameWeight:getComputedStyle(name).fontWeight,idSize:parseFloat(getComputedStyle(employeeId).fontSize),idWeight:getComputedStyle(employeeId).fontWeight,numericSizes:numericValues.map(value=>parseFloat(getComputedStyle(value).fontSize)),numericWeights:numericValues.map(value=>getComputedStyle(value).fontWeight),numericVariants:numericValues.map(value=>getComputedStyle(value).fontVariantNumeric),panelBorder:getComputedStyle(panel).borderColor,panelBackground:getComputedStyle(panel).backgroundColor,tableBorder:getComputedStyle(tableWrap).borderColor,tableTopWidth:getComputedStyle(tableWrap).borderTopWidth,mobileGroupBorder:getComputedStyle(firstGroup).borderColor,rowBackground:getComputedStyle(cells[0]).backgroundColor,cellDividers:cells.filter(cell=>getComputedStyle(cell).borderRightWidth!=='0px').map(cell=>getComputedStyle(cell).borderRightColor),toggleHeight:Math.round(toggle.getBoundingClientRect().height),toggleLabel:toggle.textContent.trim(),detailsButtons:first.querySelectorAll('button.entitlement-details-toggle').length,inactiveControl:Array.from(panel.querySelectorAll('label')).some(label=>label.textContent.includes('Show inactive staff')),headerDescriptions:panel.querySelectorAll('.workforce-section-title p:not(.eyebrow)').length,footerLines:footer?.querySelectorAll('p').length,footerAfterTable:footer?.previousElementSibling===tableWrap||footer?.previousElementSibling?.classList.contains('workforce-empty'),footerText:footer?.textContent,footerIcon:footer?.querySelector('.entitlement-information-icon')?.textContent}})()`)
     const employeeCardSeparation = await cdp.evaluate<any>(`(()=>{const panel=document.querySelector('.staff-entitlements-panel'),heading=panel.querySelector('.entitlement-heading-card'),table=panel.querySelector('.employee-entitlement-table-wrap'),panelStyle=getComputedStyle(panel),headingStyle=getComputedStyle(heading),headingRect=heading.getBoundingClientRect(),tableRect=table.getBoundingClientRect();return{panelBorderWidth:panelStyle.borderTopWidth,panelBackground:panelStyle.backgroundColor,headingBorder:headingStyle.borderTopColor,headingBackground:headingStyle.backgroundImage,gap:Math.round(tableRect.top-headingRect.bottom),widthDelta:Math.round(Math.abs(tableRect.width-headingRect.width))}})()`)
     const employeeTabs = await cdp.evaluate<Array<{ width: number; height: number }>>(`Array.from(document.querySelectorAll('.leave-planner-module-tabs button')).map(button=>({width:Math.round(button.getBoundingClientRect().width),height:Math.round(button.getBoundingClientRect().height)}))`)
     await assertMobileTabAlignment(width, '.staff-entitlements-panel', 'Employee Entitlements')
@@ -192,7 +326,9 @@ try {
     assert.ok(employeeResult.numericSizes.every((size:number)=>size === 11.5))
     assert.ok(employeeResult.numericWeights.every((weight:string)=>weight === '400'))
     assert.ok(employeeResult.numericVariants.every((variant:string)=>variant.includes('tabular-nums')))
-    if (width > 700) assert.ok(employeeResult.headerBackgrounds.every((color:string)=>color === 'rgb(216, 200, 239)'), `Employee Entitlements header backgrounds at ${width}px: ${employeeResult.headerBackgrounds.join(', ')}.`)
+    if (width > 700) assert.ok(employeeResult.headerBackgrounds.every((color:string)=>color === 'rgba(0, 0, 0, 0)'), `Employee Entitlements header cells must expose the shared row gradient at ${width}px.`)
+    if (width > 700) assert.match(employeeResult.headerRowGradient, /linear-gradient/)
+    if (width > 700) assert.ok(employeeResult.headerColors.every((color:string)=>color === 'rgb(255, 255, 255)'))
     if (width > 700) assert.ok(employeeResult.headerSizes.every((size:number)=>size === 9))
     if (width > 700) assert.ok(employeeResult.headerWeights.every((weight:string)=>weight === '500'))
     assert.equal(employeeResult.rowBackground, leaveTheme.warmWhite)
@@ -219,13 +355,17 @@ try {
     await writeFile(join(output, `employee-entitlements-${width}.png`), Buffer.from(employeeCapture.data, 'base64'))
     await cdp.evaluate(`document.querySelector('button.entitlement-details-toggle')?.click()`)
     for (let attempt = 0; attempt < 60; attempt++) { if (await cdp.evaluate<boolean>(`!!document.querySelector('.off-days-summary')`)) break; await sleep(100) }
-    const offSummaryResult = await cdp.evaluate<any>(`(()=>{const details=document.querySelector('.employee-entitlement-details');const detailHeader=details.querySelector('.employee-entitlement-details-header');const summary=details.querySelector('.off-days-summary');const balances=details.querySelector('.additional-entitlement-balances');const asOf=details.querySelector('.employee-entitlement-as-of');const metrics=Array.from(summary.querySelectorAll('.off-days-metrics>div'));const weekly=summary.querySelector('.off-days-weekly-review');const actions=Array.from(summary.querySelectorAll('.balance-week-actions button'));const cards=Array.from(balances.querySelectorAll('article'));const firstCard=cards[0];return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,detailsOverflow:details.scrollWidth>details.clientWidth+1,headerHeight:Math.round(detailHeader.getBoundingClientRect().height),headerFacts:Array.from(detailHeader.querySelectorAll('dt')).map(label=>label.textContent.trim()),headerBorder:getComputedStyle(detailHeader).borderBottomColor,summaryBeforeBalances:summary.compareDocumentPosition(balances)===Node.DOCUMENT_POSITION_FOLLOWING,asOfAfterBalances:balances.compareDocumentPosition(asOf)===Node.DOCUMENT_POSITION_FOLLOWING,asOfText:asOf.textContent.trim(),summaryHeight:Math.round(summary.getBoundingClientRect().height),metricLabels:metrics.map(metric=>metric.querySelector('dt').textContent.trim()),metricColumns:getComputedStyle(summary.querySelector('.off-days-metrics')).gridTemplateColumns.split(' ').length,metricBorders:metrics.map(metric=>getComputedStyle(metric).borderColor),weeklyLabels:Array.from(weekly.querySelectorAll('dt')).map(label=>label.textContent.trim()),weeklyColumns:getComputedStyle(weekly.querySelector('dl')).gridTemplateColumns.split(' ').length,weeklyTopBorder:getComputedStyle(weekly).borderTopColor,weeklyLeftBorder:getComputedStyle(weekly).borderLeftColor,border:getComputedStyle(summary).borderColor,background:getComputedStyle(summary).backgroundColor,actions:actions.map(button=>button.textContent.trim()),actionHeights:actions.map(button=>Math.round(button.getBoundingClientRect().height)),balanceCards:cards.length,balanceCardHeights:cards.map(card=>Math.round(card.getBoundingClientRect().height)),balanceCardPadding:getComputedStyle(firstCard).padding,balanceHeaderHeight:Math.round(firstCard.querySelector('header').getBoundingClientRect().height),balanceDlHeight:Math.round(firstCard.querySelector('dl').getBoundingClientRect().height),balanceCodes:cards.map(card=>card.querySelector('header b').textContent.trim()),balanceLabels:Array.from(firstCard.querySelectorAll('dt')).map(label=>label.textContent.trim()),balanceColumns:getComputedStyle(firstCard.querySelector('dl')).gridTemplateColumns.split(' ').length,balanceGridColumns:getComputedStyle(balances.firstElementChild).gridTemplateColumns.split(' ').length,balanceBorder:getComputedStyle(firstCard).borderColor,balanceBackground:getComputedStyle(firstCard).backgroundColor}})()`)
+    const offSummaryResult = await cdp.evaluate<any>(`(()=>{const details=document.querySelector('.employee-entitlement-details');const detailHeader=details.querySelector('.employee-entitlement-details-header');const summary=details.querySelector('.off-days-summary');const summaryHeader=summary.querySelector(':scope>header');const balances=details.querySelector('.additional-entitlement-balances');const asOf=details.querySelector('.employee-entitlement-as-of');const metrics=Array.from(summary.querySelectorAll('.off-days-metrics>div'));const weekly=summary.querySelector('.off-days-weekly-review');const actions=Array.from(summary.querySelectorAll('.balance-week-actions button'));const cards=Array.from(balances.querySelectorAll('article'));const firstCard=cards[0];return{overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1,detailsOverflow:details.scrollWidth>details.clientWidth+1,headerHeight:Math.round(detailHeader.getBoundingClientRect().height),headerFacts:Array.from(detailHeader.querySelectorAll('dt')).map(label=>label.textContent.trim()),headerBorder:getComputedStyle(detailHeader).borderBottomColor,headerGradient:getComputedStyle(detailHeader).backgroundImage,headerTextColor:getComputedStyle(detailHeader.querySelector('h4')).color,summaryHeaderGradient:getComputedStyle(summaryHeader).backgroundImage,summaryHeaderTextColor:getComputedStyle(summaryHeader.querySelector('h3')).color,summaryBeforeBalances:summary.compareDocumentPosition(balances)===Node.DOCUMENT_POSITION_FOLLOWING,asOfAfterBalances:balances.compareDocumentPosition(asOf)===Node.DOCUMENT_POSITION_FOLLOWING,asOfText:asOf.textContent.trim(),summaryHeight:Math.round(summary.getBoundingClientRect().height),metricLabels:metrics.map(metric=>metric.querySelector('dt').textContent.trim()),metricColumns:getComputedStyle(summary.querySelector('.off-days-metrics')).gridTemplateColumns.split(' ').length,metricBorders:metrics.map(metric=>getComputedStyle(metric).borderColor),metricBackgrounds:metrics.map(metric=>getComputedStyle(metric).backgroundColor),weeklyLabels:Array.from(weekly.querySelectorAll('dt')).map(label=>label.textContent.trim()),weeklyColumns:getComputedStyle(weekly.querySelector('dl')).gridTemplateColumns.split(' ').length,weeklyTopBorder:getComputedStyle(weekly).borderTopColor,weeklyLeftBorder:getComputedStyle(weekly).borderLeftColor,border:getComputedStyle(summary).borderColor,background:getComputedStyle(summary).backgroundColor,actions:actions.map(button=>button.textContent.trim()),actionHeights:actions.map(button=>Math.round(button.getBoundingClientRect().height)),balanceCards:cards.length,balanceCardHeights:cards.map(card=>Math.round(card.getBoundingClientRect().height)),balanceCardPadding:getComputedStyle(firstCard).padding,balanceHeaderHeight:Math.round(firstCard.querySelector('header').getBoundingClientRect().height),balanceDlHeight:Math.round(firstCard.querySelector('dl').getBoundingClientRect().height),balanceCodes:cards.map(card=>card.querySelector('header b').textContent.trim()),balanceLabels:Array.from(firstCard.querySelectorAll('dt')).map(label=>label.textContent.trim()),balanceColumns:getComputedStyle(firstCard.querySelector('dl')).gridTemplateColumns.split(' ').length,balanceGridColumns:getComputedStyle(balances.firstElementChild).gridTemplateColumns.split(' ').length,balanceBorder:getComputedStyle(firstCard).borderColor,balanceBackground:getComputedStyle(firstCard).backgroundColor}})()`)
     const carryForwardResult = await cdp.evaluate<any>(`(()=>{const details=document.querySelector('.employee-entitlement-details');return{manualControls:!!details.querySelector('.balance-carry-forward'),manualText:details.textContent.includes('Review Carry Forward')}})()`)
     assert.equal(offSummaryResult.overflow, false, `OFF summary page overflow at ${width}px.`)
     assert.equal(offSummaryResult.detailsOverflow, false, `Inline entitlement details overflow at ${width}px.`)
     assert.ok(offSummaryResult.headerHeight <= (width <= 700 ? 85 : width <= 900 ? 75 : 45), `Inline detail header height ${offSummaryResult.headerHeight}px is not compact at ${width}px.`)
     assert.deepEqual(offSummaryResult.headerFacts, ['Employee ID', 'Service Year', 'Next Anniversary'])
     assert.equal(offSummaryResult.headerBorder, leaveTheme.gold)
+    assert.match(offSummaryResult.headerGradient, /linear-gradient/)
+    assert.equal(offSummaryResult.headerTextColor, 'rgb(255, 255, 255)')
+    assert.match(offSummaryResult.summaryHeaderGradient, /linear-gradient/)
+    assert.equal(offSummaryResult.summaryHeaderTextColor, 'rgb(255, 255, 255)')
     assert.ok(offSummaryResult.summaryHeight <= (width <= 700 ? 430 : 260), `OFF summary height ${offSummaryResult.summaryHeight}px is not compact at ${width}px.`)
     assert.equal(offSummaryResult.summaryBeforeBalances, true)
     assert.equal(offSummaryResult.asOfAfterBalances, true)
@@ -237,7 +377,7 @@ try {
     assert.deepEqual(offSummaryResult.weeklyLabels, ['Required', 'Assigned', 'Difference', 'Status'])
     assert.equal(offSummaryResult.weeklyColumns, width <= 700 ? 2 : 4)
     assert.equal(offSummaryResult.border, leaveTheme.gold)
-    assert.equal(offSummaryResult.background, 'rgb(255, 253, 248)')
+    assert.equal(offSummaryResult.background, leaveTheme.surfaceStrong)
     assert.equal(offSummaryResult.metricBorders.every((color:string)=>color===leaveTheme.gridGold), true, `OFF metric borders ${offSummaryResult.metricBorders.join(', ')} must match ${leaveTheme.gridGold} at ${width}px.`)
     assert.equal(offSummaryResult.weeklyTopBorder, leaveTheme.gridGold)
     assert.notEqual(offSummaryResult.weeklyLeftBorder, leaveTheme.gridGold, 'Weekly OFF semantic state color must remain distinct from the decorative border.')
@@ -251,7 +391,7 @@ try {
     assert.equal(offSummaryResult.balanceColumns, 3)
     assert.equal(offSummaryResult.balanceGridColumns, width <= 700 ? 1 : 2)
     assert.equal(offSummaryResult.balanceBorder, leaveTheme.gold)
-    assert.equal(offSummaryResult.balanceBackground, 'rgb(255, 253, 248)')
+    assert.equal(offSummaryResult.balanceBackground, leaveTheme.surfaceStrong)
     offSummaryResults[String(width)] = offSummaryResult
     const offSummaryCapture = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
     await writeFile(join(output, `off-days-summary-${width}.png`), Buffer.from(offSummaryCapture.data, 'base64'))
