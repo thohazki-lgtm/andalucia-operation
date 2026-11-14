@@ -10485,3 +10485,115 @@ html body:has(.app-shell main.module-guest-occasions) :is(.occasion-alert-copy, 
     height: 82px;
   }
 }
+
+/* Guest Occasions: compact manual occasion editor. */
+html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
+  width: min(820px, calc(100vw - 32px));
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 {
+  padding: 9px 14px 8px;
+  font-size: 20px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form {
+  gap: 6px;
+  padding: 8px 10px 54px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section {
+  margin: 0;
+  padding: 8px 10px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section h3 {
+  margin: 0 0 5px;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section label {
+  font-size: 10px;
+  line-height: 1.15;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section :is(input, select) {
+  min-height: 36px;
+  height: 36px;
+  margin-top: 3px;
+  padding-block: 5px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section .ao-date-control {
+  min-height: 36px;
+  height: 36px;
+  margin-top: 3px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-notes textarea {
+  min-height: 64px;
+  height: 64px;
+  margin-top: 3px;
+  padding: 7px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions {
+  grid-template-columns: repeat(2, minmax(0, 145px));
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions .ao-action {
+  min-height: 38px;
+}
+
+@media (max-width: 900px) and (min-width: 701px) {
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
+    width: calc(100vw - 16px);
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 {
+    padding: 10px 12px 9px;
+    font-size: 18px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form {
+    gap: 6px;
+    padding: 7px 8px 60px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section {
+    padding: 8px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section :is(input, select),
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section .ao-date-control {
+    min-height: 42px;
+    height: 42px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-notes textarea {
+    min-height: 58px;
+    height: 58px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions .ao-action {
+    min-height: 44px;
+  }
+}
