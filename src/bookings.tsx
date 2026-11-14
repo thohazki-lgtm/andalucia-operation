@@ -10,6 +10,7 @@ import { consumeWorkflow } from './workflow-intent'
 import { bookingTimeWindow } from './booking-time'
 import { detectBookingAllergyEvidence } from './booking-allergy'
 import { ActionButton, DateControl, IconAction, StatusPill, StatusSelect, SvgIcon } from './action-system'
+import { FinancialDateControl } from './financial-date-control'
 
 type BookingConfiguration = { statuses: ConfigOption[]; sources: ConfigOption[]; tables: ConfigOption[]; tableRanges?: ConfigOption[]; walkInFields?: ConfigOption[]; occasionTypes?: ConfigOption[] }
 type BookingConfigApiGroup = 'statuses' | 'sources' | 'tables' | 'tableRanges' | 'walkInFields'
@@ -55,6 +56,16 @@ const orderedBookingStatuses = (statuses: ConfigOption[]) => statuses.map((optio
   return left.index - right.index
 }).map(({ option }) => option)
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`)) : '—'
+const noteKey = (value?: string | null) => (value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+const distinctNoteParts = (value?: string | null) => {
+  const seen = new Set<string>()
+  return (value || '').split(/\s*\|\s*/).map(part => part.trim()).filter(part => {
+    const key = noteKey(part)
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 const serviceStageFor = (statuses: ConfigOption[], value: string) => { const metadata = statuses.find(option => option.value === value)?.metadata; return metadata?.serviceStage || (metadata?.bookingMetric === 'arrived' ? 'arrived' : metadata?.bookingMetric === 'noShow' ? 'noShow' : 'remaining') }
 const timeWindow = bookingTimeWindow
 const bookingServiceKind = (booking: Pick<BookingRecord, 'sourceServiceKind' | 'sourceActivityLabel'>) => booking.sourceServiceKind === 'celebration' || /\bCelebration\s*@\s*Andalucia\b/i.test(booking.sourceActivityLabel || '') ? 'celebration' as const : 'dinner' as const
@@ -210,27 +221,29 @@ export function BookingsPage({ staff, configuration, onToast, initialBooking }: 
   const noShowStatus = configuration.statuses.find(option => option.active && option.metadata?.serviceStage === 'noShow')
 
   return <>
-    <section className="booking-command">
-<div>
+    <section className="booking-command" aria-label="Booking calendar controls">
+<div className="booking-command-copy"><h2>TodayBooking</h2></div>
+<div className="booking-command-navigation">
 <IconAction className="date-step" icon="chevron-left" label="Previous service day" onClick={() => setDate(current => addCalendarDays(current, -1))}/>
-<DateControl label="Booking date" value={date} onChange={event => setDate(event.target.value)} />
+<FinancialDateControl className="booking-date-picker" label="Booking date" value={date} onChange={setDate} />
 <IconAction className="date-step" icon="chevron-right" label="Next service day" onClick={() => setDate(current => addCalendarDays(current, 1))}/>
-<ActionButton compact icon="calendar" onClick={() => setDate(serviceDate())}>Today</ActionButton>
 </div>
-<div>
-<ActionButton className="upload-action" icon="upload" onClick={() => setShowImport(true)}>Upload Booking</ActionButton>
-<ActionButton variant="primary" icon="add" onClick={() => setEditing('walk-in')}>Add Walk-In</ActionButton>
+<div className="booking-command-actions">
+<ActionButton className="upload-action" icon="upload" aria-label="Upload Booking" onClick={() => setShowImport(true)}>UPLOAD</ActionButton>
+<ActionButton className="walk-in-action" icon="add" aria-label="Add Walk-In" onClick={() => setEditing('walk-in')}>WALK IN</ActionButton>
 </div>
 </section>
-    <section className="service-summary">
+    <section className="booking-service-overview">
+    <div className="service-summary">
 <ServiceMetric label="Total Covers" value={summary.covers} detail={`${expected.length} expected bookings`} />
 <ServiceMetric label="Arrived Covers" value={summary.arrivedCovers} detail={`${summary.arrived} bookings`} tone="arrived" />
 <ServiceMetric label="Remaining Covers" value={summary.remainingCovers} detail={`${summary.remaining} bookings`} />
 <ServiceMetric label="No-Show Covers" value={summary.noShowCovers} detail={`${summary.noShows} bookings`} tone="exception" />
 <ServiceMetric label="Total Adults" value={summary.adults} detail={summary.unknownAges ? `${summary.unknownAges} age${summary.unknownAges === 1 ? '' : 's'} unverified` : summary.unverifiedAges ? 'Some ages unverified' : 'Age classification complete'} tone={summary.unknownAges || summary.unverifiedAges ? 'warning' : ''} />
 <ServiceMetric label="Total Kids" value={summary.kids} detail="Strictly under 12 on service date" />
-</section>
+</div>
     <section className="service-progress" aria-label={`${summary.arrivedCovers} of ${summary.covers} covers arrived`}><div><span>Dinner Service Progress</span><b>{summary.arrivedCovers} / {summary.covers} covers</b></div><div className="service-progress-track"><span style={{ width: `${summary.covers ? Math.min(100, summary.arrivedCovers / summary.covers * 100) : 0}%` }} /></div></section>
+    </section>
     <section className="panel booking-panel service-panel">
 <nav className="booking-service-tabs" aria-label="Booking service status">{serviceTabs.map(tab => <button key={tab.value} className={serviceTab === tab.value ? 'active' : ''} aria-pressed={serviceTab === tab.value} onClick={() => setServiceTab(tab.value)}>{tab.label}<span>{tab.count}</span></button>)}</nav>
 <div className="booking-tools service-tools">
@@ -293,9 +306,9 @@ function OccasionBadges({ occasions, options }: { occasions: GuestOccasionRecord
   return values.length ? <div className="occasion-badges">{values.map(value => { const option = options.find(item => item.value === value); return <span key={value} className="occasion-chip booking-info-pill booking-occasion-pill" style={{ borderColor: option?.color || '#b38b3a', color: option?.color || '#775b22' }}>{option?.label || value}</span> })}</div> : <span className="quiet-value">—</span>
 }
 
-function AllergyBadges({ booking, full = false }: { booking: BookingRecord; full?: boolean }) {
+function AllergyBadges({ booking, full = false, emptyLabel = 'None recorded' }: { booking: BookingRecord; full?: boolean; emptyLabel?: string }) {
   const alerts = guestAlerts(booking)
-  return alerts.length ? <div className={`allergy-badges${full ? ' full' : ''}`} role="note" aria-label={`Allergy or dietary alert: ${alerts.map(alert => alert.label).join(', ')}`}>{alerts.map(alert => <span key={alert.label} className="allergy-alert booking-info-pill booking-allergy-pill" title={alert.note}>⚠ {alert.label}</span>)}{full && <p>{alerts[0].note}</p>}</div> : <span className="quiet-value">None recorded</span>
+  return alerts.length ? <div className={`allergy-badges${full ? ' full' : ''}`} role="note" aria-label={`Allergy or dietary alert: ${alerts.map(alert => alert.label).join(', ')}`}>{alerts.map(alert => <span key={alert.label} className="allergy-alert booking-info-pill booking-allergy-pill" title={alert.note}>⚠ {alert.label}</span>)}{full && <p>{alerts[0].note}</p>}</div> : <span className="quiet-value" aria-label="No allergies recorded">{emptyLabel}</span>
 }
 
 function ServiceBookingRow({ booking, occasions, staff, configuration, waitingStatus, arrivedStatus, noShowStatus, onUpdate, onView }: { booking: BookingRecord; occasions: GuestOccasionRecord[]; staff: Staff[]; configuration: BookingConfiguration; waitingStatus?: ConfigOption; arrivedStatus?: ConfigOption; noShowStatus?: ConfigOption; onUpdate: (booking: BookingRecord, changes: Partial<BookingRecord>) => Promise<void>; onView: () => void }) {
@@ -311,13 +324,13 @@ function ServiceBookingRow({ booking, occasions, staff, configuration, waitingSt
 </td>
 <td className="service-guest">
 <button type="button" className="booking-guest-trigger" onClick={onView} aria-label={`Open booking details for ${guestLabel}`}><b>{guestLabel}</b><SvgIcon name="chevron-right" size={18} /></button>
-{booking.bookingSource === 'walk_in' ? <span className="booking-walk-in-badge">Walk-In</span> : <small>{booking.bookingNumber || 'No booking number'}</small>}
+{booking.bookingSource === 'walk_in' && <span className="booking-walk-in-badge">Walk-In</span>}
 </td>
 <td className="service-covers">
 <b>{booking.covers}</b>
 </td>
 <td><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></td>
-<td><AllergyBadges booking={booking} /></td>
+<td><AllergyBadges booking={booking} emptyLabel="" /></td>
 <td>
 <select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}>
 <option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select>
@@ -327,8 +340,8 @@ function ServiceBookingRow({ booking, occasions, staff, configuration, waitingSt
 <option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select>
 </td>
 <td className="service-status-cell">
-<div className="service-status-controls"><div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}>{stage === 'arrived' && <SvgIcon name="check" size={16} />}{stage === 'noShow' && <SvgIcon name="close" size={16} />}<StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div>
-<div className="service-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div></div>
+<div className="service-status-controls"><div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div>
+<div className="service-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div></div>
 </td>
 </tr>
 }
@@ -340,11 +353,11 @@ function MobileBookingCard({ booking, occasions, staff, configuration, waitingSt
   const waiting = booking.bookingStatus === waitingStatus?.value
   const guestLabel = booking.guestName || (booking.bookingSource === 'walk_in' ? 'Walk-In Guest' : 'Guest not recorded')
   return <article className={`mobile-operation-card stage-${waiting ? 'waiting' : stage.toLowerCase()}${stage === 'arrived' ? ' is-arrived' : ''}`}>
-    <header><div><span className="mobile-card-kicker">{bookingDisplayTime(booking) || 'Time not set'}{bookingServiceKind(booking) === 'celebration' ? ' · Celebration' : ''}</span><button type="button" className="booking-guest-trigger mobile" onClick={onView} aria-label={`Open booking details for ${guestLabel}`}><b>{guestLabel}</b><SvgIcon name="chevron-right" size={18} /></button>{booking.bookingSource === 'walk_in' ? <span className="booking-walk-in-badge">Walk-In</span> : <small>#{booking.bookingNumber || 'No booking number'}</small>}</div><StatusPill className={`booking-status ${bookingStatusClass(booking.bookingStatus)}`} tone={bookingStatusTone(booking.bookingStatus)}>{status?.label || booking.bookingStatus}</StatusPill></header>
+    <header><div><span className="mobile-card-kicker">{bookingDisplayTime(booking) || 'Time not set'}{bookingServiceKind(booking) === 'celebration' ? ' · Celebration' : ''}</span><button type="button" className="booking-guest-trigger mobile" onClick={onView} aria-label={`Open booking details for ${guestLabel}`}><b>{guestLabel}</b><SvgIcon name="chevron-right" size={18} /></button>{booking.bookingSource === 'walk_in' && <span className="booking-walk-in-badge">Walk-In</span>}</div><StatusPill className={`booking-status ${bookingStatusClass(booking.bookingStatus)}`} tone={bookingStatusTone(booking.bookingStatus)}>{status?.label || booking.bookingStatus}</StatusPill></header>
     {stage === 'arrived' && <p className="mobile-arrived-state">✓ Guest has arrived</p>}
     <div className="mobile-card-facts"><span><small>Room</small><b>{booking.roomNumber || '—'}</b></span><span><small>Covers</small><b>{booking.covers}</b></span><span><small>Occasion</small><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></span><span><small>Allergies</small><AllergyBadges booking={booking} /></span></div>
-    <div className="mobile-card-fields"><label>Table<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select></label><label>Waiter<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}>{stage === 'arrived' && <SvgIcon name="check" size={16} />}{stage === 'noShow' && <SvgIcon name="close" size={16} />}<StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
-    <div className="mobile-card-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" icon="clock" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" icon="check" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" icon="close" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div>
+    <div className="mobile-card-fields"><label>Table<select className={`booking-assignment-select ${booking.tableNumber ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile table for ${booking.guestName}`} value={booking.tableNumber} onChange={event => void onUpdate(booking, { tableNumber: event.target.value })}><option value="">Unassigned</option>{assignmentTableOptions(configuration.tables, booking.tableNumber).map(option => <option key={option.id} value={option.value} disabled={!option.active}>{option.label}</option>)}</select></label><label>Waiter<select className={`booking-assignment-select ${booking.waiterId ? 'is-assigned' : 'unassigned-control'}`} aria-label={`Mobile waiter for ${booking.guestName}`} value={booking.waiterId || ''} onChange={event => void onUpdate(booking, { waiterId: event.target.value || null })}><option value="">Unassigned</option>{availableStaff.map(person => { const eligible = canReceiveServiceAssignment(person); return <option key={person.id} value={person.id} disabled={!eligible}>{person.name}{!eligible ? ' · Ineligible (historical)' : ''}</option> })}</select></label><label className="mobile-full-field">Status<div className={`booking-status-field booking-status-field--${stage.toLowerCase()}`}><StatusSelect className={`service-status-select ${bookingStatusClass(booking.bookingStatus)}`} label={`Mobile status for ${booking.guestName}`} value={booking.bookingStatus} onChange={event => void onUpdate(booking, { bookingStatus: event.target.value })}>{configuration.statuses.filter(option => option.active || option.value === booking.bookingStatus).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</StatusSelect></div></label></div>
+    <div className="mobile-card-actions">{waitingStatus && stage === 'remaining' && !waiting && <ActionButton compact className="quick-waiting" onClick={() => void onUpdate(booking, { bookingStatus: waitingStatus.value })}>{waitingStatus.label}</ActionButton>}{arrivedStatus && stage === 'remaining' && <ActionButton compact className="quick-arrive" onClick={() => void onUpdate(booking, { bookingStatus: arrivedStatus.value })}>{arrivedStatus.label}</ActionButton>}{noShowStatus && stage === 'remaining' && <ActionButton compact className="quick-noshow" onClick={() => void onUpdate(booking, { bookingStatus: noShowStatus.value })}>{noShowStatus.label}</ActionButton>}</div>
   </article>
 }
 
@@ -489,12 +502,13 @@ function ActivityProgramImport({ statuses, onClose, onImported, onViewImported }
 </table>
 </div><div className="import-record-cards">{readyEntries.map(({ booking, index }) => <ImportPreviewCard key={`${booking.bookingNumber}-${index}`} booking={booking} selected={selectedIndexes.has(index)} onToggle={() => toggle(index)} onView={() => setSelectedPreview(booking)} />)}</div></section>
 <section className="import-review-section requires-review"><header><div><p className="eyebrow">REQUIRES REVIEW</p><h4>{reviewEntries.length} booking group{reviewEntries.length === 1 ? '' : 's'}</h4></div><span>{reviewEntries.reduce((total, { booking }) => total + operationalPax(booking), 0)} candidate covers</span></header><div className="manager-review-progress" aria-label={`${completedReviews} of ${reviewEntries.length} manager reviews completed`}><div><span><small>MANAGER REVIEW PROGRESS</small><b>{completedReviews} of {reviewEntries.length} reviewed</b></span><strong>{reviewProgress}% complete · {unresolvedReviews} pending decision{unresolvedReviews === 1 ? '' : 's'}</strong></div><div className="manager-review-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={reviewEntries.length} aria-valuenow={completedReviews}><span style={{ width: `${reviewProgress}%` }} /></div></div>{reviewEntries.length === 0 ? <p className="empty-review-state">No uncertain records require manager review.</p> : <div className="review-item-list">{reviewEntries.map(({ booking, index }) => { const decision = reviewDecisions[index]; const displayed = decision?.record || booking; const sourceCovers = booking.intelligence?.sourcePax ?? booking.covers; const detectedCovers = booking.coverResolution?.groupTotal ?? booking.intelligence?.detectedPax; const operationalCovers = booking.intelligence?.effectiveCandidatePax ?? operationalPax(displayed); const decisionClass = decision?.action === 'IMPORT_ANYWAY' ? 'import' : decision?.action === 'EDIT_BEFORE_IMPORT' ? 'edited' : decision?.action === 'SKIP' ? 'skip' : 'unresolved'; return <details className={`review-item decision-${decisionClass}`} key={`${booking.bookingNumber}-${index}`}><summary><div className="review-card-primary"><b>{displayed.reservationTime || 'Time missing'}</b><span>#{displayed.bookingNumber || 'Missing'}</span><strong>{displayed.primaryGuest || 'Guest missing'}</strong></div><div className="review-card-secondary"><span>{displayed.rooms.join(', ') || 'Room missing'}</span><b>{sourceCovers ?? '—'} source covers</b></div><ReviewWarningPills booking={booking} /><ReviewDecisionIndicator decision={decision} /><span className="review-expand-control"><SvgIcon name="chevron-right" size={16} /> View Details</span></summary><div className="review-item-expanded"><div className="review-cover-summary"><span><small>Source covers</small><b>{sourceCovers ?? '—'}</b></span><span><small>Detected covers</small><b>{detectedCovers ?? '—'}</b></span><span><small>Operational covers</small><b>{operationalCovers ?? '—'}</b></span></div>{decision?.record && <ReviewDecisionComparison original={booking} corrected={decision.record} />}<div className="review-item-facts"><span><small>Room</small><b>{displayed.rooms.join(', ') || 'Missing'}</b></span><span><small>Source status</small><b>{displayed.sourceStatus || 'Missing'}</b></span><span><small>Booked by</small><b>{displayed.bookedBy || '—'}</b></span></div><IntelligencePills booking={booking} /><div className="review-reasons"><b>Why manager review is required</b>{booking.warnings.map(warning => <span key={warning}>{warning}</span>)}</div>{booking.sourceNotes && <p className="review-source-note"><b>Source evidence</b>{booking.sourceNotes}</p>}<div className="review-actions"><ActionButton compact icon="upload" onClick={() => decide(index, { action: 'IMPORT_ANYWAY', record: booking })}>Import Anyway</ActionButton><ActionButton compact variant="primary" className="review-edit-action" icon="edit" onClick={() => setEditingReview({ index, booking: displayed })}>Review / Edit</ActionButton><ActionButton compact className="import-skip-action" icon="close" onClick={() => decide(index, { action: 'SKIP' })}>Skip</ActionButton><ActionButton compact icon="list" onClick={() => setSelectedPreview(displayed)}>Guest Group ({displayed.guestMembers.length})</ActionButton></div></div></details> })}</div>}</section>
-<section className="import-review-section duplicate-section"><header><div><p className="eyebrow">DUPLICATES / EXISTING BOOKINGS</p><h4>{duplicateEntries.length} booking group{duplicateEntries.length === 1 ? '' : 's'} safely skipped</h4></div>{duplicateEntries.length > 0 && <ActionButton compact className="reanalyze-intelligence" icon="refresh" disabled={reanalyzing} onClick={() => void reanalyzeDuplicates()}>{reanalyzing ? 'Re-analyzing…' : reanalysis ? 'Re-analyze again' : 'Re-analyze Intelligence'}</ActionButton>}</header>{reanalysis && <div className="reanalysis-summary"><Summary label="Existing Bookings" value={reanalysis.existingBookings} /><Summary label="Intelligence Findings" value={reanalysis.intelligenceFindings} /><Summary label="Requires Intelligence Review" value={reanalysis.requiresIntelligenceReview} /></div>}<p className="duplicate-protection"><SvgIcon name="check" size={17} /><span><b>Existing bookings are protected.</b> Duplicate source records are safely skipped and will not overwrite restaurant operations.</span></p>{duplicateEntries.length === 0 ? <p className="empty-review-state">No live booking duplicates found.</p> : <><div className="duplicate-list">{visibleDuplicateEntries.map(({ booking, index }) => { const intelligence = reanalysis?.records.find(item => item.index === index); return <details className="duplicate-item" key={`${booking.bookingNumber}-${index}`}><summary><b>{booking.reservationTime || 'Time missing'}</b><span>#{booking.bookingNumber || 'Missing'}</span><strong>{booking.primaryGuest || 'Guest missing'}</strong><span className="duplicate-view-control"><SvgIcon name="chevron-right" size={16} /> View Details</span></summary><div className="duplicate-item-details"><div className="duplicate-detail-grid"><span><small>Room</small><b>{booking.rooms.join(', ') || 'No room'}</b></span><span><small>Source covers</small><b>{booking.intelligence?.sourcePax ?? booking.covers ?? '—'}</b></span><span><small>Source status</small><b>{booking.sourceStatus || '—'}</b></span><span><small>Booked by</small><b>{booking.bookedBy || '—'}</b></span><span><small>Activity</small><b>{booking.activityLabel || '—'}</b></span><span><small>Duplicate protection</small><b>{booking.duplicateBookingId ? 'Matched existing booking' : 'Protected existing record'}</b></span></div>{booking.sourceNotes && <p className="duplicate-source-note"><b>Source evidence</b>{booking.sourceNotes}</p>}{intelligence && <div className="duplicate-intelligence"><IntelligencePills booking={intelligence.source} /><ActionButton compact icon="list" onClick={() => setSelectedIntelligence(intelligence)}>View Intelligence</ActionButton></div>}</div></details> })}</div>{duplicateEntries.length > 5 && <ActionButton className="duplicate-show-toggle" icon={showAllDuplicates ? 'chevron-left' : 'chevron-right'} onClick={() => setShowAllDuplicates(value => !value)}>{showAllDuplicates ? 'Show Less' : `Show All (${duplicateEntries.length})`}</ActionButton>}</>}</section>
+{duplicateEntries.length > 0 && <section className="import-review-section duplicate-section"><header><div><p className="eyebrow">DUPLICATES / EXISTING BOOKINGS</p><h4>{duplicateEntries.length} booking group{duplicateEntries.length === 1 ? '' : 's'} safely skipped</h4></div><ActionButton compact className="reanalyze-intelligence" icon="refresh" disabled={reanalyzing} onClick={() => void reanalyzeDuplicates()}>{reanalyzing ? 'Re-analyzing…' : reanalysis ? 'Re-analyze again' : 'Re-analyze Intelligence'}</ActionButton></header>{reanalysis && <div className="reanalysis-summary"><Summary label="Existing Bookings" value={reanalysis.existingBookings} /><Summary label="Intelligence Findings" value={reanalysis.intelligenceFindings} /><Summary label="Requires Intelligence Review" value={reanalysis.requiresIntelligenceReview} /></div>}<p className="duplicate-protection"><SvgIcon name="check" size={17} /><span><b>Existing bookings are protected.</b> Duplicate source records are safely skipped and will not overwrite restaurant operations.</span></p><div className="duplicate-list">{visibleDuplicateEntries.map(({ booking, index }) => { const intelligence = reanalysis?.records.find(item => item.index === index); return <details className="duplicate-item" key={`${booking.bookingNumber}-${index}`}><summary><b>{booking.reservationTime || 'Time missing'}</b><span>#{booking.bookingNumber || 'Missing'}</span><strong>{booking.primaryGuest || 'Guest missing'}</strong><span className="duplicate-view-control"><SvgIcon name="chevron-right" size={16} /> View Details</span></summary><div className="duplicate-item-details"><div className="duplicate-detail-grid"><span><small>Room</small><b>{booking.rooms.join(', ') || 'No room'}</b></span><span><small>Source covers</small><b>{booking.intelligence?.sourcePax ?? booking.covers ?? '—'}</b></span><span><small>Source status</small><b>{booking.sourceStatus || '—'}</b></span><span><small>Booked by</small><b>{booking.bookedBy || '—'}</b></span><span><small>Activity</small><b>{booking.activityLabel || '—'}</b></span><span><small>Duplicate protection</small><b>{booking.duplicateBookingId ? 'Matched existing booking' : 'Protected existing record'}</b></span></div>{booking.sourceNotes && <p className="duplicate-source-note"><b>Source evidence</b>{booking.sourceNotes}</p>}{intelligence && <div className="duplicate-intelligence"><IntelligencePills booking={intelligence.source} /><ActionButton compact icon="list" onClick={() => setSelectedIntelligence(intelligence)}>View Intelligence</ActionButton></div>}</div></details> })}</div>{duplicateEntries.length > 5 && <ActionButton className="duplicate-show-toggle" icon={showAllDuplicates ? 'chevron-left' : 'chevron-right'} onClick={() => setShowAllDuplicates(value => !value)}>{showAllDuplicates ? 'Show Less' : `Show All (${duplicateEntries.length})`}</ActionButton>}</section>}
 </>}{result && <ImportResult result={result} onView={() => onViewImported(result.reservationDate)} />}</div>{selectedPreview && <PreviewDetails booking={selectedPreview} onClose={() => setSelectedPreview(null)} />}{selectedIntelligence && <IntelligenceComparisonDetails record={selectedIntelligence} onClose={() => setSelectedIntelligence(null)} />}{showConfirmation && preview && <div className="preview-detail-overlay import-confirmation-overlay">
 <section className="confirmation-card" role="dialog" aria-modal="true" aria-label="Confirm Activity Program import">
 <ImportWorkflowProgress stage="confirm" />
+<header className="confirmation-heading">
 <p className="eyebrow">MANAGER CONFIRMATION</p>
-<h3>Confirm Activity Program import?</h3>
+</header>
 <div className="confirmation-summary">
 <span>Activity Program Date</span>
 <b>{formatDate(preview.reportDate)}</b>
@@ -600,7 +614,7 @@ function ReviewEditDialog({ batchId, index, booking, statuses, onClose, onSave }
   }, [])
   useEffect(() => { const notes = notesRef.current; if (!notes) return; notes.style.height = 'auto'; notes.style.height = `${Math.min(notes.scrollHeight, 160)}px` }, [form.sourceNotes])
   const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(''); try { const validation = await bookingApi.validateImportReview(batchId, index, form); if (validation.duplicateBookingId) throw new Error(`These corrected values match existing booking ${validation.duplicateBookingId}. It will remain in the duplicate section.`); onSave(form, validation.record) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'The correction could not be validated.') } finally { setSaving(false) } }
-  return <div className="preview-detail-overlay review-edit-overlay" onClick={event => { if (event.target === event.currentTarget) requestClose() }}><section ref={dialogRef} className="review-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit booking before import" tabIndex={-1}><header className="review-edit-heading"><div><p className="eyebrow">EDIT BEFORE IMPORT</p><h3>Correct booking #{booking.bookingNumber}</h3><strong>{booking.primaryGuest || 'Guest name missing'}</strong></div><IconAction className="close" icon="close" label="Close review editor" onClick={requestClose}/><p className="immutable-source-key"><SvgIcon name="list" size={16} /><span><b>PDF source record</b> · Booking #{booking.bookingNumber || 'missing'} · Original identity preserved</span></p></header><form className="review-edit-form" onSubmit={event => void submit(event)}><div className="review-edit-scroll"><fieldset><legend>Reservation Details</legend><div className="review-edit-grid"><label>Reservation date<DateControl label="Reservation date" value={form.reservationDate} onChange={event => update('reservationDate', event.target.value)} /></label><label>Reservation time<input type="time" value={form.reservationTime} onChange={event => update('reservationTime', event.target.value)} /></label></div></fieldset><fieldset><legend>Guest Information</legend><div className="review-edit-grid"><label>Primary guest<input value={form.primaryGuest} onChange={event => update('primaryGuest', event.target.value)} /></label><label>Room(s)<input value={form.room} placeholder="e.g. 211, 212" onChange={event => update('room', event.target.value)} /></label></div></fieldset><fieldset><legend>Operational Details</legend><div className="review-edit-grid"><label>Covers<input type="number" min="1" step="1" value={form.covers} onChange={event => update('covers', Number(event.target.value))} /></label><label>Operational status<select value={form.sourceStatus} onChange={event => update('sourceStatus', event.target.value)}>{statuses.filter(option => option.active).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select></label><label className="review-notes-field">Source notes<textarea ref={notesRef} rows={2} value={form.sourceNotes} onChange={event => update('sourceNotes', event.target.value)} /></label></div></fieldset>{error && <p className="save-error review-form-error">{error}</p>}</div><div className="review-edit-footer"><ActionButton disabled={saving} onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Validating…' : 'Save Correction'}</ActionButton></div></form></section></div>
+  return <div className="preview-detail-overlay review-edit-overlay" onClick={event => { if (event.target === event.currentTarget) requestClose() }}><section ref={dialogRef} className="review-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit booking before import" tabIndex={-1}><header className="review-edit-heading"><div><p className="eyebrow">EDIT BEFORE IMPORT</p><h3>Correct booking #{booking.bookingNumber}</h3><strong>{booking.primaryGuest || 'Guest name missing'}</strong></div><p className="immutable-source-key"><SvgIcon name="list" size={16} /><span><b>PDF source record</b> · Booking #{booking.bookingNumber || 'missing'} · Original identity preserved</span></p></header><form className="review-edit-form" onSubmit={event => void submit(event)}><div className="review-edit-scroll"><fieldset><legend>Reservation Details</legend><div className="review-edit-grid"><label>Reservation date<DateControl label="Reservation date" value={form.reservationDate} onChange={event => update('reservationDate', event.target.value)} /></label><label>Reservation time<input type="time" value={form.reservationTime} onChange={event => update('reservationTime', event.target.value)} /></label></div></fieldset><fieldset><legend>Guest Information</legend><div className="review-edit-grid"><label>Primary guest<input value={form.primaryGuest} onChange={event => update('primaryGuest', event.target.value)} /></label><label>Room(s)<input value={form.room} placeholder="e.g. 211, 212" onChange={event => update('room', event.target.value)} /></label></div></fieldset><fieldset><legend>Operational Details</legend><div className="review-edit-grid"><label>Covers<input type="number" min="1" step="1" value={form.covers} onChange={event => update('covers', Number(event.target.value))} /></label><label>Operational status<select value={form.sourceStatus} onChange={event => update('sourceStatus', event.target.value)}>{statuses.filter(option => option.active).map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select></label><label className="review-notes-field">Source notes<textarea ref={notesRef} rows={2} value={form.sourceNotes} onChange={event => update('sourceNotes', event.target.value)} /></label></div></fieldset>{error && <p className="save-error review-form-error">{error}</p>}</div><div className="review-edit-footer"><ActionButton disabled={saving} onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="save" disabled={saving}>{saving ? 'Validating…' : 'Save Correction'}</ActionButton></div></form></section></div>
 }
 
 function ImportResult({ result, onView }: { result: BookingImportResult; onView: () => void }) { return <div className="import-result">
@@ -625,9 +639,10 @@ function Readiness({ state }: { state: BookingImportPreviewRecord['readiness'] }
 function PreviewDetails({ booking, onClose }: { booking: BookingImportPreviewRecord; onClose: () => void }) {
   return <div className="preview-detail-overlay">
 <section className="preview-detail" role="dialog" aria-modal="true" aria-label="Booking source preview">
-<IconAction className="close" icon="close" label="Close preview" onClick={onClose} />
+<header className="preview-detail-heading">
 <p className="eyebrow">SOURCE BOOKING PREVIEW</p>
 <h3>{booking.primaryGuest || 'Guest details'}</h3>
+</header>
 <div className="booking-detail preview-source">
 <span>Reservation</span>
 <b>{formatDate(booking.reservationDate)} · {bookingDisplayTime(booking)}</b>
@@ -720,7 +735,7 @@ function WalkInBookingForm({ date, staff, configuration, onClose, onSave }: { da
     catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save Walk-in booking.') }
     finally { setSaving(false) }
   }
-  return <BookingModal title="Add Walk-In" onClose={onClose} wide>
+  return <BookingModal title="Add Walk-In" onClose={onClose} wide showClose={false} className="booking-entry-modal booking-walk-in-modal">
 <div className="walk-in-system-note"><span>Fast service entry</span><b>Source: Walk-In · Status: Confirmed</b><small>Booked By is recorded from your signed-in account.</small></div>
 <form className="staff-form booking-form walk-in-booking-form" onSubmit={event => void submit(event)}>
 <div className="booking-form-grid">
@@ -750,7 +765,7 @@ function BookingForm({ booking, date, staff, configuration, onClose, onSave }: {
   const availableWaiters = staff.filter(person => canReceiveServiceAssignment(person) || person.id === form.waiterId)
   const update = <K extends keyof BookingRecord>(field: K, value: BookingRecord[K]) => setForm(current => ({ ...current, [field]: value }))
   const submit = async (event: FormEvent) => { event.preventDefault(); if (!form.guestName.trim() || !form.reservationDate || !form.reservationTime || !Number.isInteger(form.covers) || form.covers < 1 || !form.bookingStatus || !form.bookingSource) return setError('Guest name, reservation date, time, covers, status and source are required.'); if (form.arrivalDate && form.departureDate && form.departureDate < form.arrivalDate) return setError('Departure date cannot be before arrival date.'); setSaving(true); setError(''); try { await onSave({ ...form, guestName: form.guestName.trim(), roomNumber: form.roomNumber.trim(), bookingNumber: form.bookingNumber.trim(), bookedBy: form.bookedBy.trim(), guestNotes: form.guestNotes.trim() }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save booking.') } finally { setSaving(false) } }
-  return <BookingModal title={booking ? 'Edit Booking' : 'Add Manual Booking'} onClose={onClose} wide>
+  return <BookingModal title={booking ? 'Edit Booking' : 'Add Manual Booking'} onClose={onClose} wide showClose={!booking} className="booking-entry-modal booking-edit-modal">
 <form className="staff-form booking-form" onSubmit={event => void submit(event)}>
 {imported && <div className="booking-source-protection" role="note"><b>Imported source evidence is preserved</b><span>Operational corrections are audited. The original booking identity, PDF notes and import provenance cannot be changed.</span></div>}
 <div className="booking-form-grid">
@@ -801,34 +816,28 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
   useEffect(() => { if (booking.importedBatchId) void bookingApi.guestMembers(booking.id).then(setMembers) }, [booking.id, booking.importedBatchId])
   const stage = serviceStageFor(configuration.statuses, booking.bookingStatus)
   const arrivedTime = maldivesArrivalTime(booking.arrivedAt)
+  const linkedNotes = useMemo(() => {
+    const memberNoteKeys = new Set(members.map(member => noteKey(member.guestNotes)).filter(Boolean))
+    const sourceParts = distinctNoteParts(booking.sourceGuestNotes)
+    const primarySourceNote = sourceParts.find(part => !memberNoteKeys.has(noteKey(part))) || sourceParts[0] || ''
+    const seenMemberNotes = new Set<string>(primarySourceNote ? [noteKey(primarySourceNote)] : [])
+    const bySourceRow = new Map<BookingGuestMemberPreview['sourceRowOrder'], string>()
+    members.forEach(member => {
+      const value = member.guestNotes?.trim() || ''
+      const key = noteKey(value)
+      bySourceRow.set(member.sourceRowOrder, !key || seenMemberNotes.has(key) ? '' : value)
+      if (key) seenMemberNotes.add(key)
+    })
+    return { primarySourceNote, bySourceRow }
+  }, [booking.sourceGuestNotes, members])
   return <BookingModal title="Booking details" onClose={onClose} side>
 {stage === 'arrived' && <div className="booking-arrived-banner" role="status"><strong>✓ Guest has arrived</strong><small>{arrivedTime ? `Arrived at ${arrivedTime}` : 'Arrival time not recorded'}</small></div>}
 {guestAlerts(booking).length > 0 && <section className="booking-alert-detail"><p className="eyebrow">ALLERGIES / DIETARY ALERTS</p><AllergyBadges booking={booking} full /></section>}
 <div className="detail-sections">
-<section className="detail-section booking-reservation-summary">
-<p className="eyebrow">GUEST &amp; RESERVATION</p>
-<div className="booking-summary-facts">
-<article className="booking-primary-fact"><span>Primary guest</span><b>{booking.guestName || (booking.bookingSource === 'walk_in' ? 'Walk-In Guest' : '—')}</b></article>
-<article><span>All room numbers</span><b>{booking.roomNumber || '—'}</b></article>
-<article><span>Reservation</span><b>{formatDate(booking.reservationDate)} · {bookingDisplayTime(booking)}</b></article>
-<article><span>Covers</span><b>{booking.covers}</b></article>
-<article><span>Booking number</span><b>{booking.bookingNumber || '—'}</b></article>
-<article><span>Occasion</span><b><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></b></article>
-</div>
-</section>
-<section className="detail-section booking-source-summary">
-<p className="eyebrow">SOURCE INFORMATION &amp; NOTES</p>
-<div className="booking-source-facts">
-<article><span>Source</span><b>{optionLabel(configuration.sources, booking.bookingSource)}</b></article>
-<article><span>Original source status</span><b>{booking.sourceBookingStatus || booking.bookingStatus || '—'}</b></article>
-<article><span>Booked by</span><b>{booking.bookedBy || '—'}</b></article>
-<article className="booking-source-notes"><span>Guest/source notes</span><b>{booking.sourceGuestNotes || '—'}</b></article>
-</div>
-</section>
 {members.length > 0 && <section className="detail-section booking-members-section">
 <div className="booking-detail-section-heading"><div><p className="eyebrow">LINKED GUEST MEMBERS</p><h3>Guest party</h3></div><span>{members.length} guests</span></div>
 <div className="guest-member-table booking-members-table">
-<table>
+<table className="booking-members-data-table">
 <thead>
 <tr>
 <th>#</th>
@@ -851,7 +860,7 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 <td>{formatDate(member.arrivalDate)}</td>
 <td>{formatDate(member.departureDate)}</td>
 <td>{member.mealPlan || '—'}</td>
-<td>{member.guestNotes || '—'}</td>
+<td>{linkedNotes.bySourceRow.get(member.sourceRowOrder) || '—'}</td>
 </tr>)}</tbody>
 </table>
 </div>
@@ -863,10 +872,30 @@ function BookingView({ booking, occasions, configuration, onClose, onEdit }: { b
 <div><dt>Arrival</dt><dd>{formatDate(member.arrivalDate)}</dd></div>
 <div><dt>Departure</dt><dd>{formatDate(member.departureDate)}</dd></div>
 <div><dt>Meal plan</dt><dd>{member.mealPlan || '—'}</dd></div>
-<div className="booking-member-notes"><dt>Notes</dt><dd>{member.guestNotes || '—'}</dd></div>
+<div className="booking-member-notes"><dt>Notes</dt><dd>{linkedNotes.bySourceRow.get(member.sourceRowOrder) || '—'}</dd></div>
 </dl>
 </article>)}</div>
 </section>}
+<section className="detail-section booking-reservation-summary">
+<p className="eyebrow">GUEST &amp; RESERVATION</p>
+<div className="booking-summary-facts">
+<article className="booking-primary-fact"><span>Primary guest</span><b>{booking.guestName || (booking.bookingSource === 'walk_in' ? 'Walk-In Guest' : '—')}</b></article>
+<article><span>All room numbers</span><b>{booking.roomNumber || '—'}</b></article>
+<article><span>Reservation</span><b>{formatDate(booking.reservationDate)} · {bookingDisplayTime(booking)}</b></article>
+<article><span>Covers</span><b>{booking.covers}</b></article>
+<article><span>Booking number</span><b>{booking.bookingNumber || '—'}</b></article>
+<article><span>Occasion</span><b><OccasionBadges occasions={occasions} options={configuration.occasionTypes || []} /></b></article>
+</div>
+</section>
+<section className="detail-section booking-source-summary">
+<p className="eyebrow">SOURCE INFORMATION &amp; NOTES</p>
+<div className="booking-source-facts">
+<article><span>Source</span><b>{optionLabel(configuration.sources, booking.bookingSource)}</b></article>
+<article><span>Original source status</span><b>{booking.sourceBookingStatus || booking.bookingStatus || '—'}</b></article>
+<article><span>Booked by</span><b>{booking.bookedBy || '—'}</b></article>
+<article className="booking-source-notes"><span>Guest/source notes</span><b>{linkedNotes.primarySourceNote || '—'}</b></article>
+</div>
+</section>
 <section className="detail-section operation-section compact-operation-card">
 <p className="eyebrow">ANDALUCÍA OPERATIONAL DETAILS</p>
 <div className="booking-operation-facts">

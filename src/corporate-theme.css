@@ -206,11 +206,18 @@ body,
 }
 
 .module-bookings {
-  --ao-module-accent: var(--ao-sunset-orange);
-  --ao-module-accent-ink: #9b4b29;
-  --ao-module-accent-soft: var(--ao-orange-glow);
-  --ao-module-canvas-primary: #f7d5c2;
-  --ao-module-canvas-secondary: var(--ao-sunset-orange);
+  --ao-bookings-sky: #6cd0ff;
+  --ao-bookings-navy: #1c2e4c;
+  --ao-bookings-blue: #478dba;
+  --ao-bookings-transition: #31587b;
+  --ao-bookings-pale: #eaf7ff;
+  --ao-bookings-light: #cfefff;
+  --ao-bookings-gold: #c5a35a;
+  --ao-module-accent: var(--ao-bookings-blue);
+  --ao-module-accent-ink: var(--ao-bookings-navy);
+  --ao-module-accent-soft: var(--ao-bookings-light);
+  --ao-module-canvas-primary: var(--ao-bookings-pale);
+  --ao-module-canvas-secondary: var(--ao-bookings-sky);
 }
 
 .module-leave-planner,
@@ -636,20 +643,20 @@ body:has(.app-shell > main.module-duty-roster) { background: #6cd0ff; }
 }
 .app-shell:has(> main.module-training) { --ao-shell-accent: var(--ao-lagoon-teal); --ao-shell-highlight: var(--ao-turquoise-coral); --ao-page-canvas-tint: var(--ao-turquoise-coral); }
 .app-shell:has(> main.module-bookings) {
-  --ao-shell-accent: var(--ao-sunset-orange);
-  --ao-shell-highlight: var(--ao-orange-glow);
-  --ao-page-canvas-tint: var(--ao-orange-glow);
+  --ao-shell-accent: #31587b;
+  --ao-shell-highlight: #6cd0ff;
+  --ao-page-canvas-tint: #cfefff;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: #ffbd6f;
-  background-image: linear-gradient(to bottom, #a94428 0%, #d96538 30%, #fd8451 62%, #ffbd6f 100%);
+  background-color: #6cd0ff;
+  background-image: linear-gradient(to bottom, #1c2e4c 0%, #285b86 32%, #439bc7 66%, #6cd0ff 100%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-attachment: scroll;
 }
 
 html:has(.app-shell > main.module-bookings),
-body:has(.app-shell > main.module-bookings) { background: #ffbd6f; }
+body:has(.app-shell > main.module-bookings) { background: #6cd0ff; }
 .app-shell:has(> main.module-guest-occasions) {
   --ao-shell-accent: var(--ao-violet-hour);
   --ao-shell-highlight: var(--ao-lilac-calm);
@@ -1446,9 +1453,8 @@ html body .app-shell main[class*='module-']:not(.module-duty-roster):not(.module
   vertical-align: middle;
 }
 
-/* Bookings uses gold only for outer operational frames and controls.  Keep
-   the denser table grid in its warm orange family so the hierarchy remains
-   calm and the semantic booking states retain their own colors. */
+/* Bookings uses its approved blue family for structure while gold remains an
+   outer-frame accent and semantic booking states retain their own colors. */
 html body .app-shell main.module-bookings :is(
   .service-summary > .panel,
   .service-progress,
@@ -1473,7 +1479,7 @@ html body .app-shell main.module-bookings :is(
 html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
   border: 0;
   background: transparent;
-  color: #fff8ec;
+  color: #fffdf5;
   font-family: var(--ao-font-display);
   font-size: 31px;
   font-synthesis: none;
@@ -1504,7 +1510,7 @@ html body .app-shell main.module-bookings .booking-command {
 }
 
 html body .app-shell main.module-bookings .booking-status-field .service-status-select {
-  background-color: #fff;
+  background-color: #eaf7ff;
 }
 
 html body .app-shell main.module-bookings .booking-status-field--arrived .service-status-select {
@@ -1529,24 +1535,26 @@ html body .app-shell main.module-bookings .booking-status-field .service-status-
 }
 
 html body .app-shell main.module-bookings .service-table :is(th, td) {
-  border-color: #e4b99b;
+  border-color: #a9cee3;
 }
 
 html body .app-shell main.module-bookings .service-table thead th {
-  border-bottom-color: #c87b55;
+  border-bottom-color: #6fa7ca;
+  background: #1c2e4c;
+  color: #fffdf5;
   font-size: 11px;
   font-weight: 700;
 }
 
 html body .app-shell main.module-bookings .service-table thead th:nth-child(-n + 3) {
-  color: #4f2418;
+  color: #fffdf5;
   font-weight: 800;
 }
 
 html body .app-shell main.module-bookings .booking-assignment-select.is-assigned {
   border-color: #c2923d;
-  background: #f6ddb2;
-  color: #5f361c;
+  background: #dff3ff;
+  color: #1c2e4c;
   font-weight: 700;
 }
 
