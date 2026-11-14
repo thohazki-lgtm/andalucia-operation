@@ -6073,17 +6073,17 @@ main.module-training {
   --ao-training-border: #bda16a;
   --ao-training-line: #8dbdaf;
   --ao-training-divider: #b6d7cd;
-  --ao-training-surface: #f6fbf7;
-  --ao-training-surface-soft: #eaf6ed;
-  --ao-training-surface-strong: #dcefe2;
-  --ao-training-row-alt: #f1f9f4;
+  --ao-training-surface: #edf8f0;
+  --ao-training-surface-soft: #dff2e6;
+  --ao-training-surface-strong: #cfe9d9;
+  --ao-training-row-alt: #e5f4ea;
   color: var(--ao-premium-navy);
   font-family: var(--ao-font-ui);
 }
 
 main.module-training > .page-header {
   min-height: 0;
-  margin-bottom: 0;
+  margin-bottom: 14px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -6173,7 +6173,7 @@ main.module-training .training-r2-toolbar .view-switch .ao-action {
   min-height: 40px;
   border: 1px solid var(--ao-training-gold) !important;
   border-radius: 8px;
-  background: #fff;
+  background: var(--ao-training-surface-soft);
   box-shadow: none;
 }
 
@@ -6190,6 +6190,11 @@ main.module-training .training-r2-period .ao-icon-action,
 main.module-training .training-coverage > header .ao-action {
   border-color: var(--ao-training-gold);
   color: var(--ao-training-ink);
+}
+
+main.module-training .training-r2-actions .ao-action:not(.ao-action--primary),
+main.module-training :is(.training-r2-drawer, .training-confirm-modal, .training-modal-wide, .training-delete-modal) .ao-action:not(.ao-action--primary, .danger) {
+  background: var(--ao-training-surface-soft);
 }
 
 main.module-training .training-r2-toolbar .ao-action:hover,
@@ -6215,10 +6220,10 @@ main.module-training .training-r2-period {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 0;
-  border: 0 !important;
-  border-radius: 0;
-  background: transparent;
+  padding: 7px;
+  border: 1px solid var(--ao-training-gold) !important;
+  border-radius: 12px;
+  background: linear-gradient(100deg, var(--ao-training-surface-strong) 0%, var(--ao-training-surface-soft) 100%);
   box-shadow: none;
   overflow: visible;
 }
@@ -6231,7 +6236,8 @@ main.module-training .training-r2-period > .ao-icon-action {
   padding: 0;
   border: 1px solid var(--ao-training-gold) !important;
   border-radius: 9px;
-  background: transparent;
+  background: color-mix(in srgb, var(--ao-training-ink-strong) 36%, transparent);
+  color: var(--ao-training-mint);
 }
 
 main.module-training .training-r2-month {
@@ -6251,6 +6257,7 @@ main.module-training .training-r2-month {
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-month > span {
+  color: var(--ao-training-ink-strong);
   font: 500 clamp(21px, 2.2vw, 27px)/1.05 var(--ao-font-display);
   letter-spacing: -.02em;
   text-align: center;
@@ -6283,7 +6290,8 @@ html body .app-shell main.module-training .training-r2 .training-r2-kpis > .pane
   border: 1px solid var(--ao-training-border) !important;
   border-top: 2px solid var(--ao-training-gold) !important;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  box-shadow: 0 7px 16px rgb(18 62 72 / .13);
 }
 
 main.module-training .training-review-alert {
@@ -6292,7 +6300,7 @@ main.module-training .training-review-alert {
 
 main.module-training .training-r2-kpis span {
   min-height: 0;
-  color: var(--ao-training-ink);
+  color: #fff;
   font-size: 9.5px;
   font-weight: 650;
   line-height: 1.15;
@@ -6301,8 +6309,9 @@ main.module-training .training-r2-kpis span {
 }
 
 main.module-training .training-r2-kpis strong {
-  color: var(--ao-training-ink-strong);
+  color: #fff;
   font: 600 clamp(15px, 1.5vw, 19px)/1.05 var(--ao-font-ui);
+  text-align: center;
 }
 
 main.module-training .training-r2-kpis small,
@@ -6312,6 +6321,7 @@ main.module-training .training-coverage > header span {
 }
 
 main.module-training .training-r2-kpis small {
+  color: color-mix(in srgb, var(--ao-training-mint) 78%, white);
   font-size: 9px;
   line-height: 1.15;
 }
@@ -6322,7 +6332,27 @@ html body .app-shell main.module-training .training-r2 .training-next {
   border: 1px solid var(--ao-training-border) !important;
   border-top: 2px solid var(--ao-training-gold) !important;
   border-left: 4px solid var(--ao-training-ink) !important;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, white);
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  box-shadow: 0 7px 16px rgb(18 62 72 / .13);
+}
+
+html body .app-shell main.module-training .training-r2 .training-next :is(.eyebrow, h2, span) {
+  color: #fff !important;
+}
+
+html body .app-shell main.module-training .training-r2 .training-next .ao-action {
+  border-color: var(--ao-training-gold) !important;
+  background: var(--ao-training-mint) !important;
+  color: var(--ao-training-ink-strong) !important;
+}
+
+html body .app-shell main.module-training .training-r2 :is(.training-next, .training-coverage > header) .ao-action .ao-action__label {
+  color: var(--ao-training-ink-strong) !important;
+  font-weight: 700;
+}
+
+html body .app-shell main.module-training .training-r2 :is(.training-next, .training-r2-cards) .ao-action :is(span, svg) {
+  color: currentColor;
 }
 
 main.module-training .training-next .eyebrow,
@@ -6339,7 +6369,15 @@ html body .app-shell main.module-training .training-r2 .training-r2-filters {
   padding: 7px;
   border: 1px solid var(--ao-training-border) !important;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--ao-training-surface-strong) 70%, white);
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 72%, var(--ao-training-surface));
+}
+
+main.module-training .training-filter-toggle.ao-action {
+  display: none;
+}
+
+main.module-training .training-filter-fields {
+  display: contents;
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-view {
@@ -6358,7 +6396,7 @@ html body .app-shell main.module-training .training-r2 .training-r2-view--calend
   border: 1px solid var(--ao-training-gold) !important;
   border-top-width: 2px !important;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 78%, white);
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 80%, var(--ao-training-surface));
   box-shadow: 0 6px 16px rgb(18 62 72 / .07);
 }
 
@@ -6367,13 +6405,17 @@ main.module-training .training-r2-view-heading {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  margin: 0;
-  padding: 0 2px 1px;
+  margin: -10px -10px 0;
+  padding: 11px 14px 10px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  box-shadow: 0 5px 12px rgb(18 62 72 / .12);
 }
 
 main.module-training .training-r2-view-heading h2 {
   margin: 2px 0 0;
-  color: var(--ao-training-ink-strong);
+  color: #fff;
   font: 500 19px/1.2 var(--ao-font-display);
 }
 
@@ -6384,8 +6426,12 @@ main.module-training .training-r2-list > header > div > span {
   font-weight: 550;
 }
 
+main.module-training .training-r2-view-heading > span {
+  color: color-mix(in srgb, var(--ao-training-mint) 78%, white);
+}
+
 main.module-training .training-r2-view-heading .eyebrow {
-  color: var(--ao-training-ink);
+  color: #fff;
 }
 
 html body .app-shell main.module-training .training-r2 .training-r2-view--calendar .training-r2-filters {
@@ -6397,7 +6443,7 @@ html body .app-shell main.module-training .training-r2 .training-r2-view--calend
 
 html body .app-shell main.module-training .training-r2 :is(.training-r2-filters, .training-form, .training-confirm-modal, .training-import-list) :is(input, select, textarea) {
   border-color: var(--ao-training-gold) !important;
-  background: #fff;
+  background: var(--ao-training-surface);
   color: var(--ao-premium-navy);
 }
 
@@ -6451,7 +6497,7 @@ main.module-training .training-calendar-grid > article:nth-child(even) {
 }
 
 main.module-training .training-calendar-grid > article.today {
-  background: color-mix(in srgb, var(--ao-training-mint) 30%, white);
+  background: color-mix(in srgb, var(--ao-training-mint) 42%, var(--ao-training-surface-strong));
   box-shadow: inset 0 0 0 2px var(--ao-training-ink);
 }
 
@@ -6463,7 +6509,7 @@ main.module-training .training-calendar-grid time {
 main.module-training .training-event {
   min-height: 54px;
   border-color: var(--ao-training-line);
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 68%, white);
+  background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, var(--ao-training-surface));
   color: var(--ao-premium-navy);
 }
 
@@ -6503,7 +6549,23 @@ main.module-training .training-r2-list {
 main.module-training .training-r2-list > header {
   align-items: end;
   gap: 12px;
-  padding-bottom: 8px;
+  margin: -11px -12px 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(105deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  box-shadow: 0 6px 14px rgb(18 62 72 / 12%);
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-list > header > div :is(.eyebrow, h2, span) {
+  color: #fff !important;
+}
+
+main.module-training .training-r2-list > header .training-r2-filters {
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--ao-training-gold) 78%, var(--ao-training-line));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 88%, transparent);
 }
 
 main.module-training .training-r2-list > header > div {
@@ -6518,6 +6580,7 @@ main.module-training .training-r2-table {
   margin-top: 7px;
   border: 1px solid var(--ao-training-border);
   border-radius: 10px;
+  background: var(--ao-training-surface-soft);
   overflow-x: auto;
 }
 
@@ -6562,16 +6625,21 @@ main.module-training .training-r2-table td:nth-child(2) b {
 
 main.module-training .training-r2-table th {
   border-color: var(--ao-training-divider);
-  background: var(--ao-training-surface-strong);
-  color: var(--ao-training-ink);
+  background: transparent;
+  color: #fff;
   font-size: 10px;
   font-weight: 650;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
 
+main.module-training .training-r2-table thead tr {
+  background: linear-gradient(105deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+}
+
 main.module-training .training-r2-table td {
   border-color: var(--ao-training-divider);
+  background: transparent;
   color: var(--ao-premium-navy);
   font-size: 12px;
 }
@@ -6589,15 +6657,23 @@ main.module-training .training-r2-table .training-session-actions {
   justify-content: center;
 }
 
+main.module-training .training-r2-table tbody tr:nth-child(odd) {
+  background: var(--ao-training-surface);
+}
+
 main.module-training .training-r2-table tbody tr:nth-child(even) {
   background: var(--ao-training-row-alt);
+}
+
+main.module-training .training-r2-cards > article {
+  background: linear-gradient(145deg, var(--ao-training-surface) 0%, var(--ao-training-surface-soft) 100%) !important;
 }
 
 main.module-training .training-r2-cards > article,
 main.module-training .training-coverage-grid > article {
   border: 1px solid var(--ao-training-border);
   border-left: 3px solid var(--ao-training-ink);
-  background: color-mix(in srgb, var(--ao-training-surface-soft) 72%, white);
+  background: linear-gradient(145deg, var(--ao-training-surface) 0%, var(--ao-training-surface-soft) 100%);
 }
 
 main.module-training .training-coverage {
@@ -6607,7 +6683,23 @@ main.module-training .training-coverage {
 
 main.module-training .training-coverage > header {
   gap: 10px;
-  padding-bottom: 8px;
+  margin: -10px -12px 0;
+  padding: 11px 14px 10px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  box-shadow: 0 7px 16px rgb(18 62 72 / .13);
+}
+
+html body .app-shell main.module-training .training-r2 .training-coverage > header :is(.eyebrow, h2, span) {
+  color: #fff !important;
+}
+
+html body .app-shell main.module-training .training-r2 .training-coverage > header .ao-action,
+html body .app-shell main.module-training .training-r2 .training-r2-cards footer .ao-action {
+  border-color: var(--ao-training-gold) !important;
+  background: var(--ao-training-mint) !important;
+  color: var(--ao-training-ink-strong) !important;
 }
 
 main.module-training .training-coverage-grid {
@@ -6617,6 +6709,15 @@ main.module-training .training-coverage-grid {
 
 main.module-training .training-coverage-grid > article {
   padding: 10px 11px;
+}
+
+main.module-training .training-coverage-identity {
+  align-items: center;
+  margin: -10px -11px 8px;
+  padding: 10px 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ao-training-gold) 70%, var(--ao-training-line));
+  border-radius: 9px 9px 0 0;
+  background: linear-gradient(105deg, #c9efda 0%, #b5e4cc 100%);
 }
 
 main.module-training .training-coverage-metrics {
@@ -6637,6 +6738,10 @@ main.module-training .training-coverage-identity b,
 main.module-training .training-evidence-row b {
   color: var(--ao-training-ink-strong);
   font-weight: 600;
+}
+
+html body .app-shell main.module-training .training-r2 .training-coverage-grid .training-coverage-identity b {
+  color: var(--ao-training-ink-strong);
 }
 
 main.module-training .training-coverage-metrics > div,
@@ -6668,9 +6773,18 @@ main.module-training .training-confirm-modal > :is(header, div, footer) {
 }
 
 main.module-training .training-r2-drawer {
-  padding: 16px;
+  position: relative;
+  inset: auto;
+  box-sizing: border-box;
+  width: min(700px, calc(100% - 24px));
+  height: calc(100dvh - 24px);
+  margin: 12px;
+  padding: 0;
   border: 1px solid var(--ao-training-border);
+  border-radius: 16px;
   background: var(--ao-training-surface);
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 main.module-training .training-r2-drawer > .training-detail-header {
@@ -6682,8 +6796,86 @@ main.module-training .training-r2-drawer > .training-detail-header {
 }
 
 main.module-training .training-r2-drawer > :is(.training-session-section, .training-performance-section, .training-eligibility-section) {
+  box-sizing: border-box;
+  width: auto;
+  max-width: calc(100% - 32px);
+  margin: 0 16px;
+  padding: 0 0 12px;
+  border: 1px solid var(--ao-training-divider);
+  border-radius: 12px;
+  background: var(--ao-training-surface);
+  overflow: hidden;
+}
+
+main.module-training .training-r2-drawer .training-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  background: linear-gradient(105deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+}
+
+main.module-training .training-r2-drawer .training-section-heading :is(h3, span) {
+  min-width: 0;
   margin: 0;
-  padding: 12px 0;
+  color: #fff !important;
+}
+
+main.module-training .training-r2-drawer .training-section-heading span {
+  font-size: 9px;
+  font-weight: 650;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+main.module-training .training-r2-drawer :is(.training-detail-grid, .training-performance-summary, .training-evidence-list) {
+  box-sizing: border-box;
+  width: auto;
+  max-width: calc(100% - 24px);
+  margin-inline: 12px;
+}
+
+main.module-training .training-r2-drawer .training-evidence-list {
+  gap: 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+main.module-training .training-r2-drawer .training-evidence-row,
+main.module-training .training-r2-drawer .training-evidence-row:nth-child(even) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--ao-training-divider);
+  border-left: 3px solid var(--ao-training-ink);
+  border-radius: 9px;
+  background: linear-gradient(100deg, var(--ao-training-surface-soft) 0%, var(--ao-training-surface) 100%);
+  box-shadow: 0 3px 9px rgb(18 62 72 / 7%);
+  overflow: hidden;
+}
+
+main.module-training .training-r2-drawer .training-evidence-row:last-child {
+  border-bottom: 1px solid var(--ao-training-divider);
+}
+
+main.module-training .training-r2-drawer .training-evidence-row > :is(span, em),
+main.module-training .training-r2-drawer .training-evidence-duty {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+main.module-training .training-r2-drawer .training-performance-section > small,
+main.module-training .training-r2-drawer .training-session-section > p {
+  display: block;
+  margin-inline: 12px;
 }
 
 main.module-training .training-detail-grid,
@@ -6709,7 +6901,7 @@ main.module-training .training-section-heading h3 {
 main.module-training .training-evidence-row,
 main.module-training .training-confirm-list > article {
   border-color: var(--ao-training-divider);
-  background: #fff;
+  background: var(--ao-training-surface-soft);
 }
 
 main.module-training .training-evidence-row:nth-child(even),
@@ -6736,16 +6928,64 @@ main.module-training .training-delete-modal > .form-actions {
 main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
   position: sticky;
   z-index: 2;
-  bottom: -16px;
-  margin: 8px -16px -16px;
+  bottom: 0;
+  margin: 8px 0 0;
   padding: 10px 16px 14px;
   border-top: 1px solid var(--ao-training-divider);
-  background: color-mix(in srgb, var(--ao-training-surface) 96%, white);
+  border-radius: 0 0 15px 15px;
+  background: color-mix(in srgb, var(--ao-training-surface) 92%, var(--ao-training-surface-strong));
   box-shadow: 0 -6px 16px rgb(18 62 72 / .07);
 }
 
+main.module-training :is(.training-detail-header, .training-confirm-header, .training-modal-header, .training-delete-header) {
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+}
+
+main.module-training :is(.training-detail-header, .training-confirm-header, .training-modal-header, .training-delete-header) :is(.eyebrow, h2, p, span, label, small) {
+  color: #fff !important;
+}
+
+main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-header {
+  margin: 0;
+  padding: 18px 16px;
+  border-bottom-color: var(--ao-training-gold);
+  border-radius: 15px 15px 0 0;
+  background: linear-gradient(110deg, var(--ao-training-ink-strong) 0%, var(--ao-training-ink) 58%, #6ca997 100%);
+  overflow: hidden;
+}
+
 main.module-training .training-confirm-header {
-  background: var(--ao-training-surface-soft);
+  border-bottom: 1px solid var(--ao-training-gold);
+}
+
+main.module-training .training-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -28px -28px 20px;
+  padding: 18px 18px 16px 22px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  border-radius: 12px 12px 0 0;
+}
+
+main.module-training .training-modal-header h2 {
+  margin: 0;
+}
+
+main.module-training .training-modal-header > .ao-icon-action.close {
+  position: static;
+  flex: 0 0 auto;
+  border-color: var(--ao-training-gold);
+  background: var(--ao-training-mint);
+  color: var(--ao-training-ink-strong);
+}
+
+main.module-training .training-delete-header {
+  margin: -22px -22px 16px;
+  padding: 18px 22px 15px;
+  border-bottom: 1px solid var(--ao-training-gold);
+  border-radius: 16px 16px 0 0;
 }
 
 main.module-training :is(.training-confirm-modal, .training-delete-modal, .training-form) {
@@ -6758,6 +6998,311 @@ main.module-training .training-confirm-modal .training-confirm-list,
 main.module-training .training-confirm-modal > .form-actions {
   border-color: var(--ao-training-divider);
   background: var(--ao-training-surface);
+}
+
+/* Training finishing polish: compact module scrollbars and aligned popup cards. */
+html:has(main.module-training),
+html:has(main.module-training) body,
+main.module-training,
+main.module-training * {
+  scrollbar-width: thin;
+  scrollbar-color: #1e5b53 #dff2e6;
+}
+
+html:has(main.module-training)::-webkit-scrollbar,
+html:has(main.module-training) body::-webkit-scrollbar,
+main.module-training::-webkit-scrollbar,
+main.module-training *::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html:has(main.module-training)::-webkit-scrollbar-track,
+html:has(main.module-training) body::-webkit-scrollbar-track,
+main.module-training::-webkit-scrollbar-track,
+main.module-training *::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #dff2e6;
+}
+
+html:has(main.module-training)::-webkit-scrollbar-thumb,
+html:has(main.module-training) body::-webkit-scrollbar-thumb,
+main.module-training::-webkit-scrollbar-thumb,
+main.module-training *::-webkit-scrollbar-thumb {
+  min-height: 38px;
+  border: 1px solid var(--ao-training-gold, #bda16a);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6ca997 0%, #1e5b53 100%);
+}
+
+html:has(main.module-training)::-webkit-scrollbar-button,
+html:has(main.module-training) body::-webkit-scrollbar-button,
+main.module-training::-webkit-scrollbar-button,
+main.module-training *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+main.module-training .training-detail-header > .training-status {
+  align-self: center;
+  justify-self: end;
+  max-width: 160px;
+  margin: 0;
+  border-color: var(--ao-training-line) !important;
+  background: var(--ao-training-surface-soft) !important;
+  color: var(--ao-training-ink-strong) !important;
+  white-space: normal;
+  text-align: center;
+  text-shadow: none;
+}
+
+main.module-training .training-detail-header > div {
+  min-width: 0;
+}
+
+main.module-training .training-detail-header h2 {
+  max-width: 100%;
+  font-size: clamp(21px, 2.5vw, 30px);
+  line-height: 1.08;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+main.module-training .training-confirm-header {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 210px);
+  align-items: center;
+  gap: 22px;
+}
+
+main.module-training .training-confirm-header > div {
+  min-width: 0;
+}
+
+main.module-training .training-confirm-modal .training-duration {
+  align-self: center;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--ao-training-mint) 55%, var(--ao-training-gold));
+  border-radius: 10px;
+  background: rgb(237 248 240 / 18%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%);
+}
+
+main.module-training .training-confirm-modal .training-duration > span {
+  border-color: var(--ao-training-gold);
+  background: var(--ao-training-surface);
+}
+
+main.module-training .training-confirm-modal .training-duration :is(input, small) {
+  color: var(--ao-training-ink-strong) !important;
+}
+
+main.module-training .training-confirm-modal .training-confirm-list {
+  gap: 8px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--ao-training-surface) 76%, var(--ao-training-surface-strong));
+}
+
+main.module-training .training-confirm-modal .training-confirm-list > article,
+main.module-training .training-confirm-modal .training-confirm-list > article:nth-child(even) {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ao-training-divider);
+  border-left: 4px solid var(--ao-training-ink);
+  border-radius: 10px;
+  background: linear-gradient(105deg, var(--ao-training-surface-soft) 0%, var(--ao-training-surface) 100%);
+  box-shadow: 0 3px 10px rgb(18 62 72 / 8%);
+}
+
+main.module-training .training-confirm-modal .training-confirm-list > article:hover {
+  border-color: color-mix(in srgb, var(--ao-training-ink) 58%, var(--ao-training-divider));
+  box-shadow: 0 5px 14px rgb(18 62 72 / 12%);
+}
+
+main.module-training .training-confirm-modal .training-confirm-person b {
+  color: var(--ao-training-ink-strong);
+  font-weight: 700;
+}
+
+main.module-training .training-confirm-modal .training-confirm-duty {
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 72%, transparent);
+}
+
+main.module-training .training-confirm-modal .training-participation {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ao-training-mint) 22%, transparent);
+}
+
+main.module-training .training-modal-wide {
+  border: 1px solid var(--ao-training-gold);
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--ao-training-surface-soft) 0%, var(--ao-training-surface) 100%);
+  box-shadow: 0 24px 64px rgb(18 62 72 / 28%);
+  overflow-x: hidden;
+}
+
+main.module-training .training-modal-wide > .training-modal-header {
+  border-radius: 15px 15px 0 0;
+}
+
+main.module-training .training-modal-wide > .training-form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+main.module-training .training-modal-wide .training-form-grid {
+  gap: 12px 16px;
+  padding: 14px;
+  border: 1px solid var(--ao-training-divider);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ao-training-surface-strong) 60%, var(--ao-training-surface));
+}
+
+main.module-training .training-modal-wide .training-form label {
+  margin-bottom: 0;
+  color: var(--ao-training-ink-strong);
+  font-weight: 650;
+}
+
+main.module-training .training-modal-wide .training-form > label {
+  margin-top: 14px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--ao-training-divider);
+  border-radius: 12px;
+  background: var(--ao-training-surface-soft);
+}
+
+main.module-training .training-modal-wide .training-form :is(input, select, textarea) {
+  border-color: var(--ao-training-gold) !important;
+  border-radius: 9px;
+  background: linear-gradient(105deg, var(--ao-training-surface-strong) 0%, var(--ao-training-surface-soft) 100%);
+  color: var(--ao-training-ink-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%);
+}
+
+main.module-training .training-modal-wide .training-form :is(input, select, textarea):focus {
+  border-color: var(--ao-training-ink) !important;
+  background: var(--ao-training-surface-strong);
+  box-shadow: 0 0 0 3px rgb(30 91 83 / 13%), inset 0 1px 0 rgb(255 255 255 / 18%);
+}
+
+main.module-training .training-modal-wide .training-form :is(input, textarea)::placeholder {
+  color: color-mix(in srgb, var(--ao-training-ink) 68%, transparent);
+}
+
+main.module-training .training-modal-wide .training-form > .form-actions {
+  margin: 18px -28px -28px;
+  padding: 12px 28px;
+  border-top: 1px solid var(--ao-training-gold);
+  border-radius: 0 0 15px 15px;
+  background: var(--ao-training-surface-strong);
+  box-shadow: 0 -6px 16px rgb(18 62 72 / 8%);
+}
+
+@media (max-width: 700px) {
+  main.module-training .staff-profile-overlay {
+    box-sizing: border-box;
+    padding: 8px;
+  }
+
+  main.module-training .staff-profile-drawer.training-r2-drawer {
+    position: relative;
+    inset: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    border-radius: 14px;
+    scrollbar-gutter: stable;
+  }
+
+  main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-header,
+  main.module-training .training-confirm-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  main.module-training .training-detail-header > .training-status {
+    justify-self: start;
+    max-width: min(100%, 230px);
+  }
+
+  main.module-training .training-detail-header h2 {
+    font-size: clamp(20px, 7vw, 25px);
+  }
+
+  main.module-training .training-r2-drawer > :is(.training-session-section, .training-performance-section, .training-eligibility-section) {
+    box-sizing: border-box;
+    width: auto;
+    max-width: calc(100% - 20px);
+    margin: 10px 10px 0;
+  }
+
+  main.module-training .training-r2-drawer .training-section-heading {
+    align-items: flex-start;
+    padding: 10px 11px;
+  }
+
+  main.module-training .training-r2-drawer :is(.training-detail-grid, .training-performance-summary, .training-evidence-list) {
+    margin-inline: 10px;
+  }
+
+  main.module-training .training-r2-drawer .training-evidence-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 10px;
+  }
+
+  main.module-training .training-r2-drawer .training-evidence-row > :is(span, em),
+  main.module-training .training-r2-drawer .training-evidence-duty {
+    grid-column: 1;
+    grid-row: auto;
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 10px;
+  }
+
+  main.module-training .training-confirm-modal .training-duration {
+    max-width: none;
+  }
+
+  main.module-training .training-confirm-modal .training-confirm-list {
+    gap: 7px;
+    padding: 10px 12px;
+  }
+
+  main.module-training .training-modal-wide .training-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
 }
 
 main.module-training .training-delete-backdrop {
@@ -6807,7 +7352,7 @@ main.module-training .training-import-list > article {
 
 @media (max-width: 768px) {
   main[class*='module-'].module-training > .page-header {
-    margin-bottom: 0;
+    margin-bottom: 8px;
   }
 
   main.module-training .training-r2-toolbar {
@@ -6873,6 +7418,43 @@ main.module-training .training-import-list > article {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+
+  html body .app-shell main.module-training .training-r2 .training-r2-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    padding: 8px;
+  }
+
+  main.module-training .training-r2-filters .training-filter-search {
+    display: none;
+  }
+
+  main.module-training .training-filter-toggle.ao-action {
+    display: inline-flex;
+    width: 100%;
+    min-height: 52px;
+    justify-content: center;
+    border-color: var(--ao-training-line);
+    background: var(--ao-training-surface-soft);
+    color: var(--ao-training-ink-strong);
+    font-size: 14px;
+  }
+
+  main.module-training .training-filter-fields {
+    display: none;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  main.module-training .training-r2-filters.mobile-filters-open .training-filter-fields {
+    display: grid;
+  }
+
+  main.module-training .training-r2-filters.mobile-filters-open .training-filter-toggle.ao-action {
+    border-color: var(--ao-training-gold);
+    background: color-mix(in srgb, var(--ao-training-surface-strong) 68%, var(--ao-training-surface));
+  }
 }
 
 @media (max-width: 430px) {
@@ -6900,12 +7482,19 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-drawer {
-    padding: 14px 12px;
+    inset: auto;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  main.module-training .training-r2-drawer > :is(.training-session-section, .training-performance-section, .training-eligibility-section) {
+    margin-inline: 10px;
   }
 
   main.module-training .staff-profile-drawer.training-r2-drawer > .training-detail-actions {
-    bottom: -14px;
-    margin: 8px -12px -14px;
+    bottom: 0;
+    margin: 8px 0 0;
     padding: 10px 12px 12px;
   }
 
