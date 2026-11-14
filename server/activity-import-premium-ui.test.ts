@@ -63,7 +63,7 @@ try {
   await writeFile(pdfPath, pdf)
 
   const node = process.execPath
-  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '027', API_PORT: '3016', APP_ORIGIN: 'http://127.0.0.1:5186' }, stdio: 'inherit' }))
+  processes.push(spawn(node, ['node_modules/tsx/dist/cli.mjs', 'server/index.ts'], { cwd: resolve('.'), env: { ...process.env, NODE_ENV: 'test', ANDALUCIA_DATA_DIR: fixture.store, ANDALUCIA_STORE_ROLE: 'development', ANDALUCIA_TEST_DEVELOPMENT_DATA_DIR: fixture.store, ANDALUCIA_REQUIRED_SCHEMA_VERSION: '028', API_PORT: '3016', APP_ORIGIN: 'http://127.0.0.1:5186' }, stdio: 'inherit' }))
   processes.push(spawn(node, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5186', '--strictPort'], { cwd: resolve('.'), env: { ...process.env, API_PORT: '3016' }, stdio: 'ignore' }))
   await Promise.all([waitFor('http://127.0.0.1:3016/api/health'), waitFor('http://127.0.0.1:5186/')])
 
@@ -84,7 +84,7 @@ try {
   await waitForSelector(cdp, 'button[aria-label="Bookings"]')
   assert.equal(await cdp.evaluate<boolean>(`(()=>{const button=document.querySelector('button[aria-label="Bookings"]');if(!button)return false;button.click();return true})()`), true)
   await waitForSelector(cdp, '.upload-action')
-  assert.equal(await clickText(cdp, 'Upload Booking'), true)
+  assert.equal(await clickText(cdp, 'UPLOAD'), true)
   await waitForSelector(cdp, '.activity-import-modal')
   await cdp.evaluate(`(()=>{const original=window.fetch.bind(window);window.fetch=async(input,init)=>{const response=await original(input,init);if(!String(input).includes('/api/bookings/import-preview')||!response.ok)return response;const body=await response.clone().json();const duplicate=body.bookings.find(item=>item.readiness==='DUPLICATE');if(duplicate){for(let index=1;index<7;index++)body.bookings.push({...duplicate,bookingNumber:duplicate.bookingNumber+'-'+index,primaryGuest:duplicate.primaryGuest+' '+index,duplicateBookingId:duplicate.duplicateBookingId+'-'+index});body.summary.possibleDuplicates=7}return new Response(JSON.stringify(body),{status:response.status,headers:{'Content-Type':'application/json'}})}})()`)
 
