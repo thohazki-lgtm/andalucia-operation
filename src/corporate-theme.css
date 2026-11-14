@@ -10597,3 +10597,46 @@ html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form
     min-height: 44px;
   }
 }
+
+/* Guest Occasions: match Staff Management metric-card proportions. */
+html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 66px;
+  height: 66px;
+  padding: 10px 13px;
+  place-items: initial;
+  align-items: stretch;
+  align-content: stretch;
+  justify-content: stretch;
+  text-align: left;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card span {
+  align-self: start;
+  justify-self: start;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: left;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card strong {
+  align-self: center;
+  justify-self: stretch;
+  width: 100%;
+  margin-top: 2px;
+  font-family: var(--ao-font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+    min-height: 74px;
+    height: 74px;
+    padding: 11px 12px;
+  }
+}
