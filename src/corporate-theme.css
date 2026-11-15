@@ -10244,18 +10244,24 @@ main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions 
 /* Maintenance mobile summary, filter, and issue-card alignment. */
 @media (max-width: 700px) {
   html body .app-shell main.module-maintenance .maintenance-summary {
-    gap: 6px;
-    margin-bottom: 5px;
+    gap: 4px;
+    margin-bottom: 4px;
   }
 
   html body .app-shell main.module-maintenance .maintenance-summary article {
-    min-height: 64px;
-    padding: 8px 10px;
+    min-height: 48px;
+    padding: 5px 8px;
+  }
+
+  .module-maintenance .maintenance-summary span {
+    font-size: 10px;
+    line-height: 1.05;
   }
 
   .module-maintenance .maintenance-summary strong {
-    margin-top: 2px;
-    font-size: 18px;
+    margin-top: 0;
+    font-size: 16px;
+    line-height: 1;
   }
 
   html body .app-shell main.module-maintenance .maintenance-panel .maintenance-filters {
@@ -10273,6 +10279,13 @@ main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions 
   }
 
   html body .app-shell main.module-maintenance .maintenance-card {
-    border: 1px solid #478dba;
+    border: 2px solid #478dba;
+    overflow: hidden;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card-head {
+    margin: -12px -12px 0;
+    padding: 12px;
+    border-radius: 9px 9px 0 0;
   }
 }
