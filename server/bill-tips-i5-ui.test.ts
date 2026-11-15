@@ -82,6 +82,8 @@ assert.match(corporateTheme, /\.panel\.chargeable-panel \{[\s\S]*?border-width: 
 assert.match(corporateTheme, /\.chargeable-card-grid \{[\s\S]*?grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 420px\), 1fr\)\)/)
 assert.match(corporateTheme, /\.chargeable-table-wrap:has\(> \.inline-empty\) \.chargeable-card-grid \{[\s\S]*?display: none !important/)
 assert.match(corporateTheme, /\.mobile-operation-card\.mobile-chargeable-card \{[\s\S]*?border-width: 2px 1px 1px;[\s\S]*?border-color: #78b496;[\s\S]*?background: linear-gradient\(135deg, #effaf3 0%, #d8f0e2 100%\)/)
+assert.match(corporateTheme, /\.chargeable-card-grid \.mobile-card-heading \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;[\s\S]*?border: 1px solid #78b496;[\s\S]*?background: linear-gradient\(90deg, #e8f7ed 0%, #d5efdf 52%, #c5e6d2 100%\);[\s\S]*?box-shadow: inset 4px 0 #287a69/)
+assert.match(corporateTheme, /\.chargeable-card-grid \.mobile-card-total \{[\s\S]*?font-family: Arial, Helvetica, sans-serif;[\s\S]*?font-size: 20px/)
 assert.match(wineComponent, /className="wine-month-navigation" role="group" aria-label="Wine and Spirits month navigation"/)
 assert.match(wineComponent, /className="wine-month-step" label="Previous Wine and Spirits month"/)
 assert.match(wineComponent, /className="wine-month-step" label="Next Wine and Spirits month"/)
