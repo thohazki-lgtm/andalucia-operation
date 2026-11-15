@@ -10769,3 +10769,163 @@ html body .app-shell main.module-guest-occasions .mobile-attention-card .attenti
   font-weight: 700;
   line-height: 1.15;
 }
+
+/* Chargeable Items: compact pale-green entry editor. */
+html body:has(.app-shell main.module-incentives-and-bill-tips) .modal.chargeable-entry-modal {
+  width: min(900px, calc(100vw - 32px));
+  border-color: #78b496;
+  border-top-color: var(--ao-financial-gold);
+  background: #e8f7ed;
+  box-shadow: 0 20px 54px rgb(9 48 43 / 28%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal > h2 {
+  min-height: 58px;
+  margin: 0;
+  padding: 14px 62px 12px 18px;
+  border-bottom: 1px solid var(--ao-financial-gold);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
+  color: #fff;
+  font-family: var(--ao-font-display);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal > .close {
+  top: 9px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  border: 1px solid #9bcdb0;
+  border-radius: 10px;
+  background: #dff3e7;
+  color: #103e38;
+  box-shadow: 0 2px 7px rgb(9 48 43 / 14%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form {
+  max-height: calc(100dvh - 90px);
+  background: #dff3e7;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-scroll {
+  padding: 7px 9px 3px;
+  background: linear-gradient(135deg, #e8f7ed 0%, #d7f0e0 100%);
+  scrollbar-width: thin;
+  scrollbar-color: #4f8a7c #e8f7ed;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #e8f7ed;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-scroll::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 1px solid #d5efdf;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #287a69 0%, #4f8a7c 100%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-section {
+  margin: 0 0 5px;
+  padding: 7px 9px 8px;
+  border-color: #78b496;
+  border-radius: 10px;
+  background: #effaf3;
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-section h3 {
+  margin: 0 0 5px;
+  padding-bottom: 4px;
+  border-bottom-color: #8fc5a7;
+  color: #103e38;
+  font-size: 15px;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-grid {
+  gap: 4px 8px;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .staff-form label {
+  color: #356b52;
+  font-size: 10px;
+  line-height: 1.15;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .staff-form :is(input, select) {
+  box-sizing: border-box;
+  min-height: 36px;
+  height: 36px;
+  margin-top: 2px;
+  padding: 6px 9px;
+  border-color: #8fc5a7;
+  background: #f7fcf9;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .staff-form textarea {
+  min-height: 48px;
+  margin-top: 2px;
+  padding: 7px 9px;
+  border-color: #8fc5a7;
+  background: #f7fcf9;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .modal.chargeable-entry-modal .form-actions {
+  gap: 7px;
+  padding: 7px 9px;
+  border-top-color: #78b496;
+  background: #d5efdf;
+  box-shadow: 0 -5px 14px rgb(9 48 43 / 9%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .form-actions .ao-action {
+  min-height: 38px;
+}
+
+@media (max-width: 700px) {
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .modal.chargeable-entry-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal > h2 {
+    min-height: 52px;
+    padding: 12px 56px 10px 13px;
+    font-size: 19px;
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal > .close {
+    top: 7px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form {
+    max-height: calc(100dvh - 68px);
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-scroll {
+    padding: 6px 7px 2px;
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .chargeable-form-section {
+    padding: 7px;
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .staff-form :is(input, select) {
+    min-height: 42px;
+    height: 42px;
+  }
+
+  html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry-modal .form-actions .ao-action {
+    min-height: 44px;
+  }
+}
