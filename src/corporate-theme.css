@@ -9928,3 +9928,351 @@ html body .app-shell main.module-staff-management .staff-account-directory-panel
     gap: 0;
   }
 }
+
+/* Maintenance follows the Duty Roster blue presentation while retaining its
+   gold framing and semantic priority/status colors. */
+.module-maintenance {
+  --ao-module-accent: #6cd0ff;
+  --ao-module-accent-ink: #1c2e4c;
+  --ao-module-accent-soft: #cfefff;
+  --ao-module-canvas-primary: #6cd0ff;
+  --ao-module-canvas-secondary: #1c2e4c;
+  --ao-maintenance-gold: #c9a65a;
+  --ao-maintenance-cream: #eaf7ff;
+  --ao-maintenance-peach: #cfefff;
+  --ao-maintenance-divider: #86acc5;
+  --ao-maintenance-burnt: #31587b;
+}
+
+main.module-maintenance {
+  --ao-module-surface: rgb(234 247 255 / 78%);
+  --ao-module-surface-strong: rgb(207 239 255 / 86%);
+}
+
+.app-shell:has(> main.module-maintenance) {
+  --ao-shell-accent: #3f8fc2;
+  --ao-shell-highlight: #6cd0ff;
+  --ao-page-canvas-tint: #6cd0ff;
+  background-color: #6cd0ff;
+  background-image: linear-gradient(to bottom, #1c2e4c 0%, #285b86 32%, #439bc7 66%, #6cd0ff 100%);
+}
+
+html:has(.app-shell > main.module-maintenance),
+body:has(.app-shell > main.module-maintenance) {
+  background: #6cd0ff;
+  scrollbar-color: #3f8fc2 #143b61;
+  scrollbar-width: thin;
+}
+
+html:has(.app-shell > main.module-maintenance)::-webkit-scrollbar,
+body:has(.app-shell > main.module-maintenance)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html:has(.app-shell > main.module-maintenance)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-maintenance)::-webkit-scrollbar-track {
+  background: #143b61;
+}
+
+html:has(.app-shell > main.module-maintenance)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-maintenance)::-webkit-scrollbar-thumb {
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #78b9dc 0%, #3f8fc2 55%, #245f8a 100%);
+}
+
+main.module-maintenance > .page-header :is(h1, .eyebrow) {
+  color: #fff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-toolbar,
+main.module-maintenance .maintenance-modal .modal-title {
+  border-color: var(--ao-maintenance-gold);
+  background: linear-gradient(105deg, #1c2e4c 0%, #31587b 58%, #478dba 100%);
+  box-shadow: inset 0 1px rgb(207 239 255 / 24%), 0 8px 22px rgb(15 44 72 / 20%);
+}
+
+.module-maintenance .maintenance-toolbar-heading > .ao-action,
+.module-maintenance .maintenance-date-step {
+  border-color: var(--ao-maintenance-gold);
+  background: rgb(28 46 76 / 58%);
+  color: #fff;
+}
+
+.module-maintenance .maintenance-toolbar-heading > .ao-action:hover,
+.module-maintenance .maintenance-date-step:hover {
+  background: #31587b;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker {
+  border-color: var(--ao-maintenance-gold);
+  background: linear-gradient(145deg, #eaf7ff 0%, #cfefff 62%, #b8e4f7 100%);
+  color: #1c2e4c;
+  box-shadow: 0 18px 42px rgb(17 48 75 / 28%);
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header {
+  border-bottom-color: #86acc5;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header strong,
+.module-maintenance .maintenance-date-control .ao-financial-picker__weekdays,
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button {
+  color: #1c2e4c;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__header button,
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button,
+.module-maintenance .maintenance-date-control .ao-financial-picker footer button {
+  border-color: #86acc5;
+  background: #f4fbff;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button:hover {
+  border-color: #478dba;
+  background: #cfefff;
+}
+
+.module-maintenance .maintenance-date-control .ao-financial-picker__days button.is-selected {
+  border-color: var(--ao-maintenance-gold);
+  background: linear-gradient(120deg, #1c2e4c, #478dba);
+  color: #fff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary article {
+  border-color: var(--ao-maintenance-gold);
+  background: linear-gradient(105deg, #1c2e4c 0%, #31587b 58%, #478dba 100%);
+  box-shadow: inset 0 1px rgb(207 239 255 / 22%), 0 6px 16px rgb(15 44 72 / 18%);
+}
+
+.module-maintenance .maintenance-summary span {
+  color: #eaf7ff;
+}
+
+.module-maintenance .maintenance-summary strong {
+  width: 100%;
+  color: #fff;
+  text-align: center;
+}
+
+.module-maintenance .maintenance-summary article::before {
+  background: var(--ao-maintenance-gold);
+}
+
+html body .app-shell main.module-maintenance .panel.maintenance-panel {
+  border-color: var(--ao-maintenance-gold);
+  background: #eaf7ff;
+  box-shadow: 0 8px 22px rgb(15 44 72 / 16%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-panel .maintenance-filters {
+  border: 1px solid #478dba;
+  border-radius: 10px;
+  background: #cfefff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-filters :is(input, select) {
+  border-color: #86acc5;
+  background: #f4fbff;
+  color: #1c2e4c;
+}
+
+.module-maintenance .maintenance-cards {
+  padding-inline: 0;
+}
+
+html body .app-shell main.module-maintenance .maintenance-card {
+  border-color: #86acc5;
+  background: linear-gradient(105deg, #f4fbff 0%, #eaf7ff 58%, #cfefff 100%);
+  box-shadow: 0 4px 12px rgb(22 67 101 / 10%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-card-head {
+  margin: -13px -13px 0;
+  padding: 13px;
+  border-bottom: 1px solid #478dba;
+  border-radius: 11px 11px 0 0;
+  background: #cfefff;
+}
+
+.module-maintenance .maintenance-card-urgent {
+  box-shadow: inset 4px 0 #a9362b, 0 4px 12px rgb(22 67 101 / 10%);
+}
+
+.module-maintenance .maintenance-card-date,
+.module-maintenance .maintenance-card dt,
+.module-maintenance .maintenance-card-footer label > span {
+  color: #5f7c90;
+}
+
+.module-maintenance .maintenance-issue-trigger,
+.module-maintenance .maintenance-card dd {
+  color: #1c2e4c;
+}
+
+.module-maintenance .maintenance-card-footer {
+  border-top-color: #478dba;
+}
+
+.module-maintenance .maintenance-status-select,
+.module-maintenance .maintenance-status-pill,
+.module-maintenance .maintenance-card-footer .ao-action,
+.module-maintenance .maintenance-panel .empty-state-action {
+  border-color: #86acc5;
+  background-color: #f4fbff;
+  color: #1c2e4c;
+}
+
+.module-maintenance .inline-empty {
+  border-color: #86acc5;
+  background: #dff3ff;
+}
+
+main.module-maintenance .maintenance-modal-backdrop {
+  background: rgb(15 36 59 / 60%);
+}
+
+main.module-maintenance .modal.maintenance-modal {
+  border-color: var(--ao-maintenance-gold);
+  background: #eaf7ff;
+  box-shadow: 0 20px 52px rgb(12 35 57 / 32%);
+}
+
+main.module-maintenance .maintenance-modal .maintenance-form-body,
+main.module-maintenance .maintenance-detail {
+  background: #cfefff;
+}
+
+main.module-maintenance .maintenance-form-section,
+main.module-maintenance .maintenance-detail-hero,
+main.module-maintenance .maintenance-detail-section {
+  border-color: #86acc5;
+  background: #eaf7ff;
+}
+
+main.module-maintenance .maintenance-form-section h4,
+main.module-maintenance .maintenance-detail :is(h3, h4) {
+  color: #1c2e4c;
+}
+
+main.module-maintenance .maintenance-form-section label {
+  color: #55758b;
+}
+
+main.module-maintenance .maintenance-form-section :is(input, select, textarea) {
+  border-color: #86acc5;
+  background: #f4fbff;
+  color: #1c2e4c;
+}
+
+main.module-maintenance .maintenance-modal .form-actions {
+  border-top-color: #86acc5;
+  background: #dff3ff;
+}
+
+main.module-maintenance .maintenance-detail-notes > div + div {
+  border-top-color: #86acc5;
+}
+
+/* Maintenance calendar typography and compact issue form. */
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger,
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger > span,
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker__header strong,
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker__weekdays,
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker__days button,
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-picker footer button {
+  font-family: var(--ao-font-display) !important;
+  font-synthesis: none;
+}
+
+main.module-maintenance .modal.maintenance-modal:has(.maintenance-form) {
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(680px, calc(100dvh - 28px));
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .modal-title {
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 10px 13px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-body {
+  padding: 8px 9px 60px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-section {
+  margin-bottom: 7px;
+  padding: 8px 10px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-section h4 {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-grid {
+  gap: 7px 9px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-section :is(input, select) {
+  min-height: 38px;
+  height: 38px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions {
+  padding: 8px 9px;
+}
+
+main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions .ao-action {
+  min-height: 40px;
+}
+
+@media (max-width: 700px) {
+  main.module-maintenance .modal.maintenance-modal:has(.maintenance-form) {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  main.module-maintenance .maintenance-modal:has(.maintenance-form) .maintenance-form-section :is(input, select),
+  main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions .ao-action {
+    min-height: 44px;
+    height: 44px;
+  }
+}
+
+/* Maintenance mobile summary, filter, and issue-card alignment. */
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance .maintenance-summary {
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary article {
+    min-height: 64px;
+    padding: 8px 10px;
+  }
+
+  .module-maintenance .maintenance-summary strong {
+    margin-top: 2px;
+    font-size: 18px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-panel .maintenance-filters {
+    display: block;
+    padding: 8px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-filters > input {
+    display: none;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-filters > select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card {
+    border: 1px solid #478dba;
+  }
+}
