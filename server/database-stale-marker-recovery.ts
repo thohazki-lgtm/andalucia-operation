@@ -12,6 +12,8 @@ import { DatabaseOperationCoordinator, type CanonicalMaintenanceAuthorization } 
 
 const SHA = /^[0-9a-f]{40}$/i
 const HASH = /^[0-9a-f]{64}$/i
+type RecoverableSchema = '027' | '028'
+const RECOVERABLE_SCHEMAS = new Set<RecoverableSchema>(['027', '028'])
 const fail = (code: string): never => { throw new Error(code) }
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
 const stable = (value: unknown): string => {
@@ -21,7 +23,7 @@ const stable = (value: unknown): string => {
 }
 
 export type Db3BackupEvidence = {
-  backupId: string; backupDirectory: string; createdAt: string; schemaVersion: string
+  backupId: string; backupDirectory: string; createdAt: string; schemaVersion: RecoverableSchema
   verificationStatus: string; openTestStatus: string; preflightStatus: string
   restoreStatus: string; manifestMatch: boolean; fingerprintMatch: boolean; migrationMatch: boolean
   restorePreflightStatus: string; metadataSha256: string; restoreSha256: string; backupManifest: any
@@ -53,7 +55,7 @@ export const assertDb3StaleMarkerEvidence = (evidence: Db3MarkerEvidence) => {
   if (evidence.ownershipState !== 'STALE' || !evidence.exclusiveRead || evidence.listenerCount || evidence.matchingProcessCount || evidence.runningTaskCount) fail('DB3_MARKER_OWNERSHIP_NOT_EXCLUSIVE')
   if (evidence.activeOperationCount || evidence.ownerMarkerPresent || evidence.migrationMarkerPresent || evidence.recoveryMarkerPresent) fail('DB3_CANONICAL_OPERATION_NOT_EXCLUSIVE')
   const backup = evidence.backup
-  if (!backup.backupId || backup.schemaVersion !== '027' || backup.verificationStatus !== 'VERIFIED' || backup.openTestStatus !== 'PASS' || backup.preflightStatus !== 'READY' || backup.restoreStatus !== 'RESTORE_TEST_PASSED' || !backup.manifestMatch || !backup.fingerprintMatch || !backup.migrationMatch || backup.restorePreflightStatus !== 'READY' || !HASH.test(backup.metadataSha256) || !HASH.test(backup.restoreSha256)) fail('DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED')
+  if (!backup.backupId || !RECOVERABLE_SCHEMAS.has(backup.schemaVersion) || backup.verificationStatus !== 'VERIFIED' || backup.openTestStatus !== 'PASS' || backup.preflightStatus !== 'READY' || backup.restoreStatus !== 'RESTORE_TEST_PASSED' || !backup.manifestMatch || !backup.fingerprintMatch || !backup.migrationMatch || backup.restorePreflightStatus !== 'READY' || !HASH.test(backup.metadataSha256) || !HASH.test(backup.restoreSha256)) fail('DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED')
 }
 
 export class Db3StaleMarkerRecoveryControl {
@@ -67,7 +69,7 @@ export class Db3StaleMarkerRecoveryControl {
       authorizationMode: 'stale_marker_recovery', previousLiveSha: evidence.sourceSha, targetSha: evidence.sourceSha, targetBranch: 'main',
       approvalManifestSha256: sha256(stable({ sourceSha: evidence.sourceSha, branch: evidence.sourceBranch, originMainSha: evidence.originMainSha })),
       canonicalIdentitySha256: evidence.canonicalIdentitySha256, canonicalStoreId: evidence.canonicalStoreId,
-      schema: '027', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false,
+      schema: evidence.backup.schemaVersion, databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false,
       requestId: `db3-stale-marker:${evidence.sourceSha}:${evidence.markerSha256}`,
       requestSha256: binding, requestedBy: actor, backupId: evidence.backup.backupId,
       historicalRuntimeEvidenceSha256: evidence.markerSha256, schemaEvidenceSha256: sha256(stable({ backupId: evidence.backup.backupId, schema: '027', metadata: evidence.backup.metadataSha256, restore: evidence.backup.restoreSha256 })),
@@ -92,7 +94,7 @@ export class Db3StaleMarkerRecoveryControl {
       claimed = true
       await dependencies.preserve(authorization, evidence)
       const result = await dependencies.recoverStore(evidence)
-      if (!result.databaseHealthy || result.schema !== '027' || !result.markerReleased) fail('DB3_RECOVERY_POST_OPEN_HEALTH_INVALID')
+      if (!result.databaseHealthy || result.schema !== evidence.backup.schemaVersion || !result.markerReleased) fail('DB3_RECOVERY_POST_OPEN_HEALTH_INVALID')
       await this.coordinator.transitionCanonicalMaintenanceAuthorization(authorizationId, ['RECOVERY_CLAIMED'], 'RECOVERY_HEALTHY')
       await operation.succeed({ authorizationId, backupId: authorization.backupId, markerSha256: evidence.markerSha256, schema: result.schema })
       return { authorizationId, state: 'RECOVERY_HEALTHY', sourceSha: evidence.sourceSha, backupId: authorization.backupId, schema: result.schema }
@@ -118,7 +120,7 @@ const latestRestoreReadyBackup = async (backupRoot: string, canonicalDirectory: 
       candidates.push({ backupId: metadata.backupId, backupDirectory: metadata.backupDirectory, createdAt: metadata.createdAt, schemaVersion: metadata.schemaVersion, verificationStatus: metadata.verificationStatus, openTestStatus: metadata.openTestStatus, preflightStatus: metadata.preflightStatus, restoreStatus: restore.status, manifestMatch: Boolean(restore.manifestMatch), fingerprintMatch: Boolean(restore.fingerprintMatch), migrationMatch: Boolean(restore.migrationMatch), restorePreflightStatus: restore.preflightStatus, metadataSha256: sha256(metadataBuffer), restoreSha256: sha256(restoreBuffer), backupManifest: metadata.backupManifest })
     } catch { /* Invalid evidence is never eligible. */ }
   }
-  const eligible = candidates.filter(item => item.schemaVersion === '027' && item.verificationStatus === 'VERIFIED' && item.openTestStatus === 'PASS' && item.preflightStatus === 'READY' && item.restoreStatus === 'RESTORE_TEST_PASSED' && item.manifestMatch && item.fingerprintMatch && item.migrationMatch && item.restorePreflightStatus === 'READY').sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const eligible = candidates.filter(item => RECOVERABLE_SCHEMAS.has(item.schemaVersion) && item.verificationStatus === 'VERIFIED' && item.openTestStatus === 'PASS' && item.preflightStatus === 'READY' && item.restoreStatus === 'RESTORE_TEST_PASSED' && item.manifestMatch && item.fingerprintMatch && item.migrationMatch && item.restorePreflightStatus === 'READY').sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   return eligible[0] || fail('DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED')
 }
 
@@ -148,7 +150,7 @@ const authenticateFromBackup = async (projectRoot: string, backup: Db3BackupEvid
     const copied = await copyStoreVerified(backup.backupDirectory, disposable)
     if (!manifestsMatch(copied.sourceManifest, backup.backupManifest)) fail('DB3_BACKUP_MANIFEST_CHANGED')
     await createStoreIdentity(disposable, 'rehearsal', { storeId: `andalucia-db3-auth-${randomUUID()}` })
-    const opened = await openVerifiedDatabase({ dataDirectory: disposable, role: 'rehearsal', requiredVersion: '027', backupRoot: resolve(projectRoot, '.backups') })
+    const opened = await openVerifiedDatabase({ dataDirectory: disposable, role: 'rehearsal', requiredVersion: backup.schemaVersion, backupRoot: resolve(projectRoot, '.backups') })
     try { return await authenticateOfflineManager(opened.db, identifier, password) } finally { await opened.db.close() }
   } finally { await rm(temporaryRoot, { recursive: true, force: true, maxRetries: 4, retryDelay: 250 }).catch(() => undefined) }
 }
@@ -169,7 +171,7 @@ const recoverPgliteStore = async (evidence: Db3MarkerEvidence): Promise<Recovery
   try {
     db = new PGlite(evidence.canonicalDirectory); await db.query('select 1')
     const version = (await db.query<{ version: string }>("select version from schema_migrations where status='applied' order by version desc limit 1")).rows[0]?.version || ''
-    if (version !== '027') fail('DB3_RECOVERY_SCHEMA_INVALID')
+    if (version !== evidence.backup.schemaVersion) fail('DB3_RECOVERY_SCHEMA_INVALID')
     const foundation = (await db.query<{ owners: number; outlets: number }>("select (select count(*)::int from user_accounts u join authorization_user_roles ur on ur.user_id=u.id and ur.active=true join authorization_roles r on r.id=ur.role_id and r.active=true where u.status='active' and r.role_key='owner' and r.global_scope=true) owners,(select count(*)::int from outlet_scopes where scope_key='andalucia' and active=true) outlets")).rows[0]
     if (!foundation?.owners || !foundation?.outlets) fail('DB3_RECOVERY_FOUNDATION_INVALID')
     await db.close(); db = null

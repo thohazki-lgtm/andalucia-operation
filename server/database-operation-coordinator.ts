@@ -83,7 +83,7 @@ export type CanonicalMaintenanceAuthorization = {
   approvalManifestSha256: string
   canonicalIdentitySha256: string
   canonicalStoreId: string
-  schema: '027'
+  schema: '027' | '028'
   databaseStatus: 'HEALTHY'
   migrationRequired: false
   recoveryRequired: false
