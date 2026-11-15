@@ -10289,3 +10289,446 @@ main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions 
     border-radius: 9px 9px 0 0;
   }
 }
+
+/* Guest Occasions final local polish: purple-only surfaces, centered gradient
+   metrics and a more deliberate calendar command. This remains scoped to the
+   Guest Occasions module so shared controls and other modules are unchanged. */
+html body .app-shell main.module-guest-occasions {
+  --ao-occasion-deep: #35104f;
+  --ao-occasion-ink: #45176b;
+  --ao-occasion-mid: #6f348b;
+  --ao-occasion-light: #e6d2f2;
+  --ao-occasion-pale: #f3e8fa;
+  --ao-occasion-mist: #eadcf4;
+  --ao-occasion-line: #b895ca;
+  color: #382344;
+}
+
+html body .app-shell main.module-guest-occasions > .page-header h1,
+html body .app-shell main.module-guest-occasions > .page-header .eyebrow {
+  color: #f5eafa;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-toolbar {
+  border-color: var(--ao-occasion-gold);
+  background: linear-gradient(100deg, var(--ao-occasion-deep) 0%, var(--ao-occasion-ink) 48%, var(--ao-occasion-mid) 100%);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-calendar-title-row h2 {
+  color: #f5eafa;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--ao-occasion-gold);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #e6d2f2 0%, #f3e8fa 52%, #dcc2ec 100%);
+  box-shadow: inset 0 1px rgb(245 234 250 / 72%), 0 6px 16px rgb(39 13 57 / 18%);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control input {
+  height: 38px;
+  min-height: 38px;
+  background: transparent !important;
+  color: var(--ao-occasion-deep) !important;
+  text-shadow: none;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control__icon {
+  color: var(--ao-occasion-ink);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-toolbar .ao-icon-action {
+  background: linear-gradient(135deg, var(--ao-occasion-deep), var(--ao-occasion-mid));
+  color: #f5eafa;
+  box-shadow: inset 0 1px rgb(245 234 250 / 14%);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+  min-height: 86px;
+  place-items: center;
+  align-content: center;
+  border-color: var(--ao-occasion-gold);
+  background: linear-gradient(90deg, var(--ao-occasion-deep) 0%, #4d1d66 48%, var(--ao-occasion-mid) 100%);
+  text-align: center;
+  box-shadow: 0 8px 20px rgb(39 13 57 / 24%);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card span {
+  color: #eadcf4;
+  text-align: center;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card strong {
+  width: 100%;
+  color: #f5eafa;
+  text-align: center;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary :is(.occasion-summary-celebrations, .attention, .vip, .complete) {
+  border-left-color: var(--ao-occasion-gold);
+}
+
+html body .app-shell main.module-guest-occasions .panel.occasion-panel,
+html body .app-shell main.module-guest-occasions .occasion-tabs,
+html body .app-shell main.module-guest-occasions .occasion-filters,
+html body .app-shell main.module-guest-occasions .occasion-results {
+  background: var(--ao-occasion-pale);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs button {
+  border-color: var(--ao-occasion-line);
+  background: var(--ao-occasion-light);
+  color: var(--ao-occasion-ink);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs button:hover {
+  border-color: var(--ao-occasion-gold);
+  background: #dcc2ec;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs button.active {
+  border-color: var(--ao-occasion-gold);
+  background: linear-gradient(90deg, var(--ao-occasion-deep), var(--ao-occasion-mid));
+  color: #f5eafa;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs b {
+  border-color: var(--ao-occasion-line);
+  background: #d9bde9;
+  color: var(--ao-occasion-ink);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs button.active b {
+  background: rgb(230 210 242 / 18%);
+  color: #f5eafa;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-filters :is(input, select),
+html body .app-shell main.module-guest-occasions .occasion-status-select,
+html body:has(.app-shell main.module-guest-occasions) .occasion-form-section :is(input, select, textarea, .ao-date-control) {
+  border-color: var(--ao-occasion-line);
+  background: var(--ao-occasion-light);
+  color: #382344;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-filters :is(input, select):focus,
+html body:has(.app-shell main.module-guest-occasions) .occasion-form-section :is(input, select, textarea):focus {
+  border-color: var(--ao-occasion-mid);
+  box-shadow: 0 0 0 3px rgb(111 52 139 / 18%);
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-records, .attention-records),
+html body .app-shell main.module-guest-occasions :is(.occasion-table-wrap, .attention-table-wrap),
+html body .app-shell main.module-guest-occasions .occasion-empty {
+  background: var(--ao-occasion-light);
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-records, .attention-records) > header > :is(.badge, .ao-status-pill) {
+  background: var(--ao-occasion-light);
+  color: var(--ao-occasion-deep);
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) th {
+  background: #d9bde9;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) tbody tr:nth-child(odd) {
+  background: #f0e3f7;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) tbody tr:nth-child(even) {
+  background: #e6d2f2;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) tbody tr:hover {
+  background: #dcc2ec;
+}
+
+html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) {
+  background: linear-gradient(145deg, var(--ao-occasion-pale), var(--ao-occasion-light));
+}
+
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-drawer, .booking-modal-wide.occasion-edit-modal) {
+  background: var(--ao-occasion-pale);
+}
+
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-drawer-body, .occasion-edit-modal .occasion-form) {
+  background: #e2caef;
+}
+
+html body:has(.app-shell main.module-guest-occasions) :is(.drawer-section, .occasion-form-section) {
+  background: var(--ao-occasion-pale);
+}
+
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-drawer > footer, .occasion-edit-modal .form-actions) {
+  background: #dcc2ec;
+}
+
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-alert-copy, .occasion-alert-copy.danger, .linked-booking-note) {
+  background: var(--ao-occasion-light);
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control input {
+    min-height: 42px;
+    height: 42px;
+  }
+
+  html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+    min-height: 82px;
+    height: 82px;
+  }
+}
+
+/* Guest Occasions: compact manual occasion editor. */
+html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
+  width: min(820px, calc(100vw - 32px));
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 {
+  padding: 9px 14px 8px;
+  font-size: 20px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form {
+  gap: 6px;
+  padding: 8px 10px 54px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section {
+  margin: 0;
+  padding: 8px 10px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section h3 {
+  margin: 0 0 5px;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section label {
+  font-size: 10px;
+  line-height: 1.15;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section :is(input, select) {
+  min-height: 36px;
+  height: 36px;
+  margin-top: 3px;
+  padding-block: 5px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section .ao-date-control {
+  min-height: 36px;
+  height: 36px;
+  margin-top: 3px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-notes textarea {
+  min-height: 64px;
+  height: 64px;
+  margin-top: 3px;
+  padding: 7px 9px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions {
+  grid-template-columns: repeat(2, minmax(0, 145px));
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions .ao-action {
+  min-height: 38px;
+}
+
+@media (max-width: 900px) and (min-width: 701px) {
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  html body:has(.app-shell main.module-guest-occasions) .booking-modal-wide.occasion-edit-modal {
+    width: calc(100vw - 16px);
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal > h2 {
+    padding: 10px 12px 9px;
+    font-size: 18px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form {
+    gap: 6px;
+    padding: 7px 8px 60px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section {
+    padding: 8px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section :is(input, select),
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-section .ao-date-control {
+    min-height: 42px;
+    height: 42px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .occasion-form-notes textarea {
+    min-height: 58px;
+    height: 58px;
+  }
+
+  html body:has(.app-shell main.module-guest-occasions) .occasion-edit-modal .form-actions .ao-action {
+    min-height: 44px;
+  }
+}
+
+/* Guest Occasions: match Staff Management metric-card proportions. */
+html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 66px;
+  height: 66px;
+  padding: 10px 13px;
+  place-items: initial;
+  align-items: stretch;
+  align-content: stretch;
+  justify-content: stretch;
+  text-align: left;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card span {
+  align-self: start;
+  justify-self: start;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: left;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card strong {
+  align-self: center;
+  justify-self: stretch;
+  width: 100%;
+  margin-top: 2px;
+  font-family: var(--ao-font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-guest-occasions .occasion-summary .occasion-summary-card {
+    min-height: 74px;
+    height: 74px;
+    padding: 11px 12px;
+  }
+}
+
+/* Guest Occasions: narrow module scrollbars and clearer attention pills. */
+html:has(.app-shell main.module-guest-occasions),
+body:has(.app-shell main.module-guest-occasions),
+html body .app-shell main.module-guest-occasions,
+html body .app-shell main.module-guest-occasions :is(.occasion-tabs, .occasion-table-wrap, .attention-table-wrap),
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-edit-modal .occasion-form, .occasion-drawer-body) {
+  scrollbar-width: thin;
+  scrollbar-color: #6f348b #eadcf4;
+}
+
+html:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar,
+body:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar,
+html body .app-shell main.module-guest-occasions::-webkit-scrollbar,
+html body .app-shell main.module-guest-occasions :is(.occasion-tabs, .occasion-table-wrap, .attention-table-wrap)::-webkit-scrollbar,
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-edit-modal .occasion-form, .occasion-drawer-body)::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-track,
+body:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-track,
+html body .app-shell main.module-guest-occasions::-webkit-scrollbar-track,
+html body .app-shell main.module-guest-occasions :is(.occasion-tabs, .occasion-table-wrap, .attention-table-wrap)::-webkit-scrollbar-track,
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-edit-modal .occasion-form, .occasion-drawer-body)::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #eadcf4;
+}
+
+html:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-thumb,
+body:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-thumb,
+html body .app-shell main.module-guest-occasions::-webkit-scrollbar-thumb,
+html body .app-shell main.module-guest-occasions :is(.occasion-tabs, .occasion-table-wrap, .attention-table-wrap)::-webkit-scrollbar-thumb,
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-edit-modal .occasion-form, .occasion-drawer-body)::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 1px solid #eadcf4;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #45176b 0%, #6f348b 100%);
+}
+
+html:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell main.module-guest-occasions)::-webkit-scrollbar-thumb:hover,
+html body .app-shell main.module-guest-occasions::-webkit-scrollbar-thumb:hover,
+html body .app-shell main.module-guest-occasions :is(.occasion-tabs, .occasion-table-wrap, .attention-table-wrap)::-webkit-scrollbar-thumb:hover,
+html body:has(.app-shell main.module-guest-occasions) :is(.occasion-edit-modal .occasion-form, .occasion-drawer-body)::-webkit-scrollbar-thumb:hover {
+  background: #45176b;
+}
+
+html body .app-shell main.module-guest-occasions .attention-table td:nth-child(3) > .badge,
+html body .app-shell main.module-guest-occasions .mobile-attention-card .badge,
+html body:has(.app-shell main.module-guest-occasions) .attention-detail-type {
+  min-width: 94px;
+  min-height: 28px;
+  border: 1.5px solid;
+  border-radius: 999px;
+  padding: 5px 10px;
+  box-shadow: inset 0 1px rgb(255 255 255 / 56%);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+html body .app-shell main.module-guest-occasions .attention-table td:nth-child(3) > .badge.danger,
+html body .app-shell main.module-guest-occasions .mobile-attention-card .badge.danger,
+html body:has(.app-shell main.module-guest-occasions) .attention-detail-type.danger {
+  border-color: #c55c57;
+  background: #f8dfdc;
+  color: #8f302c;
+}
+
+html body .app-shell main.module-guest-occasions .attention-table td:nth-child(3) > .badge.blue,
+html body .app-shell main.module-guest-occasions .mobile-attention-card .badge.blue,
+html body:has(.app-shell main.module-guest-occasions) .attention-detail-type.blue {
+  border-color: #5c9fc5;
+  background: #dceff8;
+  color: #1f668d;
+}
+
+html body .app-shell main.module-guest-occasions .attention-state,
+html body .app-shell main.module-guest-occasions .mobile-attention-card .attention-flag {
+  min-width: 94px;
+  min-height: 28px;
+  border: 1.5px solid #c59f45;
+  border-radius: 999px;
+  background: #f8edc9;
+  box-shadow: inset 0 1px rgb(255 255 255 / 62%);
+  color: #715014;
+  font-weight: 700;
+  line-height: 1.15;
+}
