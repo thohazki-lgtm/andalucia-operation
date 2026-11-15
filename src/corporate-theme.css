@@ -10287,6 +10287,9 @@ main.module-maintenance .maintenance-modal:has(.maintenance-form) .form-actions 
     margin: -12px -12px 0;
     padding: 12px;
     border-radius: 9px 9px 0 0;
+  }
+}
+
 /* Guest Occasions final local polish: purple-only surfaces, centered gradient
    metrics and a more deliberate calendar command. This remains scoped to the
    Guest Occasions module so shared controls and other modules are unchanged. */
