@@ -26,6 +26,18 @@ try {
   assert.throws(() => assertDb3StaleMarkerEvidence(evidence({ matchingProcessCount: 1, ownershipState: 'AMBIGUOUS' })), /DB3_MARKER_OWNERSHIP_NOT_EXCLUSIVE/)
   assert.throws(() => assertDb3StaleMarkerEvidence(evidence({ canonicalStoreId: 'wrong-store' })), /DB3_CANONICAL_IDENTITY_INVALID/)
   assert.throws(() => assertDb3StaleMarkerEvidence(evidence({ backup: backup({ restoreStatus: 'RESTORE_TEST_FAILED' }) })), /DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED/)
+  assert.throws(() => assertDb3StaleMarkerEvidence(evidence({ backup: backup({ schemaVersion: '026' }) })), /DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED/)
+
+  // Schema 028 uses the same fail-closed evidence and authorization flow.
+  {
+    const c = await coordinator('schema-028'); const control = new Db3StaleMarkerRecoveryControl(c)
+    const current = evidence({ backup: backup({ backupId: 'verified-backup-028', schemaVersion: '028' }) })
+    const authorization = await control.prepare(current, actor)
+    assert.equal(authorization.schema, '028')
+    const result = await control.recover(authorization.authorizationId, { ...dependencies(current), recoverStore: async () => ({ schema: '028', databaseHealthy: true, markerReleased: true }) })
+    assert.equal(result.schema, '028')
+    assert.equal(result.state, 'RECOVERY_HEALTHY')
+  }
 
   // Changed marker evidence is rejected and the authorization becomes terminal.
   {
@@ -93,7 +105,7 @@ try {
   assert.equal(existsSync(markerPath), false)
   assert.equal(result.state, 'RECOVERY_HEALTHY')
 
-  console.log(JSON.stringify({ activeOwnerRejected: true, concurrentClaimRejected: true, mismatchedStoreRejected: true, failedBackupRejected: true, changedMarkerRejected: true, interruptedRecoveryTerminal: true, disposablePgliteStaleMarkerRecovered: true, schema027Verified: true }, null, 2))
+  console.log(JSON.stringify({ activeOwnerRejected: true, concurrentClaimRejected: true, mismatchedStoreRejected: true, failedBackupRejected: true, unsupportedSchemaRejected: true, changedMarkerRejected: true, interruptedRecoveryTerminal: true, disposablePgliteStaleMarkerRecovered: true, schema027Verified: true, schema028Verified: true }, null, 2))
 } finally {
   for (const root of [...new Set(roots)].reverse()) await rm(root, { recursive: true, force: true, maxRetries: 6, retryDelay: 300 }).catch(() => undefined)
 }

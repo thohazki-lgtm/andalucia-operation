@@ -20,7 +20,7 @@ try {
   . $nativeControl
   $output = Invoke-AndaluciaNativeJsonControl -ExecutablePath $node -ArgumentList @($tsx, $control, '--project-root', $root) -Payload $payload
   $result = $output | ConvertFrom-Json
-  if ($result.state -ne 'RECOVERY_HEALTHY' -or $result.schema -ne '027') { throw 'DB3_STALE_MARKER_RECOVERY_NOT_HEALTHY' }
+  if ($result.state -ne 'RECOVERY_HEALTHY' -or $result.schema -notin @('027', '028')) { throw 'DB3_STALE_MARKER_RECOVERY_NOT_HEALTHY' }
   [pscustomobject]@{ AuthorizationId=$result.authorizationId; State=$result.state; SourceSha=$result.sourceSha; BackupId=$result.backupId; Schema=$result.schema }
 } finally {
   if ($pointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
