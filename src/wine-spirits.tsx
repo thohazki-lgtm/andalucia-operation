@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { wineSpiritsApi } from './api'
 import type { ConfigOption, Staff, WineSpiritCalculation, WineSpiritSale, WineSpiritSaleInput, WineSpiritSaleStatus } from './domain'
 import { addCalendarDays, serviceDate } from './service-date'
@@ -12,17 +12,19 @@ const toInput = (sale: WineSpiritSale): WineSpiritSaleInput => ({ id: sale.id, s
 const statusLabel = (value: WineSpiritSaleStatus) => statuses.find(item => item.value === value)?.label || value
 const statusTone = (value: WineSpiritSaleStatus) => value === 'charged' ? 'success' : value === 'pending' ? 'gold' : 'danger'
 
-export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; tables: ConfigOption[]; onToast: (message: string) => void }) {
-  const [date, setDate] = useState(serviceDate())
+export function WineSpiritsPage({ staff, tables, onToast, initialDate, reviewRecordId, onReviewOpened }: { staff: Staff[]; tables: ConfigOption[]; onToast: (message: string) => void; initialDate?: string; reviewRecordId?: string; onReviewOpened?: () => void }) {
+  const [date, setDate] = useState(initialDate || serviceDate())
   const [records, setRecords] = useState<WineSpiritSale[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [waiter, setWaiter] = useState('all')
   const [status, setStatus] = useState<'all' | WineSpiritSaleStatus>('all')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [editing, setEditing] = useState<WineSpiritSale | 'new' | null>(null)
   const [viewing, setViewing] = useState<WineSpiritSale | null>(null)
-  const load = async () => { setLoading(true); setError(''); try { setRecords(await wineSpiritsApi.list(date, date)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Wine/Spirits sales could not be loaded.') } finally { setLoading(false) } }
+  const reviewOpenedRef = useRef(false)
+  const load = async () => { setLoading(true); setError(''); try { const nextRecords = await wineSpiritsApi.list(date, date); setRecords(nextRecords); if (reviewRecordId && !reviewOpenedRef.current) { const reviewRecord = nextRecords.find(record => record.id === reviewRecordId); if (reviewRecord) { reviewOpenedRef.current = true; setViewing(reviewRecord); onReviewOpened?.() } } } catch (cause) { setError(cause instanceof Error ? cause.message : 'Wine/Spirits sales could not be loaded.') } finally { setLoading(false) } }
   useEffect(() => { void load() }, [date])
   const visible = useMemo(() => records.filter(record => {
     const search = `${record.checkInvoiceNumber} ${record.roomNumber} ${record.tableNumber} ${record.itemName} ${record.waiter.name} ${record.waiter.number}`.toLowerCase()
@@ -41,7 +43,8 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
       <ActionButton variant="primary" icon="add" className="wine-add-sale" onClick={() => setEditing('new')}>Add Wine / Spirit Sale</ActionButton>
     </header>
     <section className="panel wine-panel">
-      <div className="wine-filters"><input aria-label="Search Wine and Spirits sales" placeholder="Search check, room, bottle, table or waiter" value={query} onChange={event => setQuery(event.target.value)} /><select aria-label="Filter by waiter" value={waiter} onChange={event => setWaiter(event.target.value)}><option value="all">All waiters</option>{staff.map(person => <option key={person.id} value={person.id}>{person.name} · {person.number}</option>)}</select><select aria-label="Filter by status" value={status} onChange={event => setStatus(event.target.value as typeof status)}><option value="all">All statuses</option>{statuses.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+      <ActionButton className="wine-filter-toggle" icon="filter" compact aria-expanded={filtersOpen} aria-controls="wine-spirit-filters" onClick={() => setFiltersOpen(open => !open)}>Filters{[waiter !== 'all', status !== 'all'].filter(Boolean).length ? ` (${[waiter !== 'all', status !== 'all'].filter(Boolean).length})` : ''}</ActionButton>
+      <div id="wine-spirit-filters" className={`wine-filters${filtersOpen ? ' open' : ''}`}><input aria-label="Search Wine and Spirits sales" placeholder="Search check, room, bottle, table or waiter" value={query} onChange={event => setQuery(event.target.value)} /><select aria-label="Filter by waiter" value={waiter} onChange={event => setWaiter(event.target.value)}><option value="all">All waiters</option>{staff.map(person => <option key={person.id} value={person.id}>{person.name} · {person.number}</option>)}</select><select aria-label="Filter by status" value={status} onChange={event => setStatus(event.target.value as typeof status)}><option value="all">All statuses</option>{statuses.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
       {loading && <div className="inline-state">Loading Wine/Spirits sales…</div>}
       {error && <div className="inline-state error-state"><p>{error}</p><ActionButton icon="refresh" onClick={() => void load()}>Try again</ActionButton></div>}
       {!loading && !error && <>{visible.length > 0 ? <div className="wine-sale-grid">{visible.map(sale => <article key={sale.id} className={`wine-sale-card${sale.archived ? ' is-archived' : ''}`}>

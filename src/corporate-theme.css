@@ -6,6 +6,49 @@
   font-display: swap;
 }
 
+/* Incentives & Bill Tips: compact module-colored page and table scrollbars. */
+html:has(.app-shell > main.module-incentives-and-bill-tips),
+body:has(.app-shell > main.module-incentives-and-bill-tips),
+.app-shell > main.module-incentives-and-bill-tips,
+.app-shell > main.module-incentives-and-bill-tips .financial-table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: #287a69 #dff3e7;
+}
+
+html:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar,
+body:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar,
+.app-shell > main.module-incentives-and-bill-tips::-webkit-scrollbar,
+.app-shell > main.module-incentives-and-bill-tips .financial-table-wrap::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-track,
+body:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-track,
+.app-shell > main.module-incentives-and-bill-tips::-webkit-scrollbar-track,
+.app-shell > main.module-incentives-and-bill-tips .financial-table-wrap::-webkit-scrollbar-track {
+  background: #dff3e7;
+}
+
+html:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-thumb,
+body:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-thumb,
+.app-shell > main.module-incentives-and-bill-tips::-webkit-scrollbar-thumb,
+.app-shell > main.module-incentives-and-bill-tips .financial-table-wrap::-webkit-scrollbar-thumb {
+  min-height: 38px;
+  border: 1px solid #dec58f;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #103e38 0%, #287a69 100%);
+}
+
+html:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-button,
+body:has(.app-shell > main.module-incentives-and-bill-tips)::-webkit-scrollbar-button,
+.app-shell > main.module-incentives-and-bill-tips::-webkit-scrollbar-button,
+.app-shell > main.module-incentives-and-bill-tips .financial-table-wrap::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @font-face {
   font-family: 'AO Dahlia';
   src: local('Dahlia Medium'), local('Dahlia');
@@ -1255,7 +1298,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings):not(.modul
   .weekly-report-section,
   .monthly-dashboard-section,
   .custom-report-section
-):not(.chargeable-panel):not(.chargeable-summary article):not(.bill-tip-command):not(.earnings-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-reconciliation):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
+):not(.chargeable-panel):not(.wine-panel):not(.chargeable-summary article):not(.bill-tip-command):not(.earnings-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-reconciliation):not(.error-state):not(.exception):not(.attention-card):not(.dashboard-card):where(:not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config)) {
   border-color: var(--ao-module-line);
   border-radius: var(--ao-module-card-radius);
   background-color: var(--ao-module-surface);
@@ -1387,7 +1430,7 @@ main[class*='module-']:not(.module-duty-roster):not(.module-bookings):not(.modul
   [class*='-fields '],
   [class$='-grid'],
   [class*='-grid ']
-):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.ao-financial-picker):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.dashboard-mobile-priority article):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config):not(.maintenance-toolbar):not(.maintenance-panel):not(.maintenance-card):not(.maintenance-summary article):not(.maintenance-config-card):not(.maintenance-modal):not(.maintenance-form-section):not(.maintenance-detail-hero):not(.maintenance-detail-section)) {
+):not(.chargeable-summary article):not(.chargeable-toolbar):not(.chargeable-panel):not(.wine-panel):not(.chargeable-tabs):not(.chargeable-filters):not(.chargeable-table-wrap):not(.mobile-chargeable-card):not(.bill-tip-command):not(.external-allocations):not(.bill-tip-team-preview):not(.bill-tip-finalization-card):not(.financial-subsection):not(.financial-metric):not(.financial-preview-banner):not(.financial-reconciliation):not(.bill-tip-staff-card):not(.ao-financial-picker):not(.error-state):not(.exception):not(.attention):not(.attention-card):not(.urgent):not(.danger):not(.open):not(.progress):not(.complete):not(.achieved):not(.cancelled):not(.dashboard-card):not(.dashboard-mobile-priority article):not(.leave-summary-card):not(.leave-summary-section):not(.off-days-summary):not(.off-days-weekly-review):not(.additional-entitlement-card):where(:not(.occasion-edit-modal):not(.occasion-form-section):not(.occasion-toolbar):not(.occasion-summary-card):not(.occasion-panel):not(.guest-experience-config):not(.maintenance-toolbar):not(.maintenance-panel):not(.maintenance-card):not(.maintenance-summary article):not(.maintenance-config-card):not(.maintenance-modal):not(.maintenance-form-section):not(.maintenance-detail-hero):not(.maintenance-detail-section)) {
   border-color: var(--ao-module-line);
 }
 
@@ -8645,17 +8688,20 @@ html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-resu
   padding: 10px 12px;
   border: 1px solid var(--ao-financial-gold);
   border-top-width: 2px;
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 48%, #287a69 100%);
+  box-shadow: 0 8px 18px rgba(16, 62, 56, 0.14);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics span {
-  color: color-mix(in srgb, var(--ao-staff-emerald-deep) 80%, white);
+  color: #f3fff8;
   font-weight: 700;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics strong {
   margin-top: 4px;
-  font-size: 19px;
-  font-weight: 650;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .financial-table-wrap {
@@ -8870,6 +8916,18 @@ html body .app-shell main.module-incentives-and-bill-tips .financial-command.ear
   color: #fff;
 }
 
+/* Keep every financial calendar label in the Dahlia display face, even when
+   the shared form-control typography has greater specificity. */
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control:is(
+  .chargeable-date-picker,
+  .wine-date-control,
+  .bill-tip-month-control,
+  .earnings-month-control
+) :is(input, .ao-financial-date-control__trigger, .ao-financial-date-control__trigger > span) {
+  font-family: var(--ao-font-display) !important;
+  font-synthesis: none;
+}
+
 html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > :is(
   .financial-preview-banner,
   .financial-subsection
@@ -8909,10 +8967,193 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
   font-variant-numeric: normal;
 }
 
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics strong {
+  font-size: 16px;
+}
+
 html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap thead th {
   border-color: var(--ao-financial-green-line-strong);
-  background: #d5e9de;
+  background: linear-gradient(90deg, #a9d7bd 0%, #c6e6d3 52%, #d9f0e2 100%);
+  color: #103e38;
   font-weight: 650;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics article {
+  display: grid;
+  min-height: 80px;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  border-color: var(--ao-financial-gold);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 48%, #287a69 100%);
+  box-shadow: 0 8px 18px rgba(16, 62, 56, 0.14);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics span {
+  color: #f3fff8;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics strong {
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+  color: #fff;
+  font-family: var(--ao-font-ui);
+  font-feature-settings: normal;
+  font-size: 16px;
+  font-weight: 600;
+  font-synthesis: none;
+  font-variant-numeric: normal;
+  text-align: center;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results :is(
+  .financial-preview-banner,
+  .financial-table-wrap tbody td,
+  .financial-status,
+  .earnings-staff-card dd
+) {
+  font-family: var(--ao-font-ui);
+  font-feature-settings: normal;
+  font-synthesis: none;
+  font-variant-numeric: normal;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-preview-banner,
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-subsection {
+  background: linear-gradient(135deg, #effaf3 0%, #dff3e7 56%, #cfeada 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-subsection > header {
+  padding: 11px 13px;
+  border: 1px solid var(--ao-financial-gold);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 48%, #287a69 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-subsection > header h3,
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-subsection > header p {
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap {
+  background: #e5f4ea;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap tbody tr:nth-child(odd) {
+  background: #edf8f1;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap tbody tr:nth-child(even) {
+  background: #dff1e6;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-summary-table .emphasized-total {
+  background: #cfe8da;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .earnings-staff-card {
+  background: linear-gradient(145deg, #effaf3 0%, #dff3e7 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results .financial-table-wrap thead th {
+  border-color: color-mix(in srgb, var(--ao-financial-gold) 72%, #103e38);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 48%, #287a69 100%);
+  color: #fff;
+  font-weight: 650;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-command .bill-tip-pool-control input {
+  background: #edf8f1;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .panel.external-allocations,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-subsection,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-reconciliation.panel,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .bill-tip-finalization-card {
+  background: linear-gradient(135deg, #effaf3 0%, #dff3e7 56%, #cfeada 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .external-allocations > header,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-team-preview > header,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header {
+  padding: 11px 13px;
+  border: 1px solid var(--ao-financial-green-line-strong);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #b8dec8 0%, #cde9d8 48%, #e1f3e8 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .external-allocations > header h3,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-team-preview > header h3,
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header h3 {
+  color: #103e38;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .external-allocations > header h3 {
+  font-size: 14px !important;
+  line-height: 1.2;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .external-list article {
+  border-color: var(--ao-financial-green-line);
+  background: linear-gradient(90deg, #e2f3e9 0%, #d4ecdf 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .external-list input,
+html body .app-shell main.module-incentives-and-bill-tips .external-list .quick-amounts .ao-action,
+html body .app-shell main.module-incentives-and-bill-tips .external-allocations .financial-empty {
+  border-color: var(--ao-financial-green-line);
+  background: #f0f9f3;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results .financial-table-wrap {
+  background: #e5f4ea;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-table tbody tr:nth-child(odd) {
+  background: #edf8f1;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-table tbody tr:nth-child(even) {
+  background: #dff1e6;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-table tbody td:first-child > b {
+  font-weight: 700 !important;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-table tbody :is(
+  td:nth-child(2),
+  td:nth-child(4),
+  .numeric-cell,
+  .currency-cell,
+  .numeric-cell b,
+  .currency-cell b
+) {
+  font-family: 'AO Good Sans', 'Good Sans', Arial, sans-serif !important;
+  font-feature-settings: 'zero' 0, 'lnum' 1, 'tnum' 0, 'pnum' 1;
+  font-synthesis: none;
+  font-variant-numeric: lining-nums proportional-nums;
+  font-weight: 300;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-table :is(
+  th:nth-child(4),
+  td:nth-child(4),
+  .amount-heading,
+  .currency-cell
+) {
+  text-align: center;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card .finalization-guidance {
+  border-color: var(--ao-financial-green-line-strong);
+  background: #dff1e6;
+  color: #315f50;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results .financial-table-wrap :is(th, td) + :is(th, td),
@@ -8921,6 +9162,172 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
 }
 
 @media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips .external-allocations > header h3 {
+    font-size: 12px !important;
+    line-height: 1.25;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .financial-command.bill-tip-command .bill-tip-pool-control {
+    color: #dff3e7;
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .financial-command.bill-tip-command .bill-tip-pool-control input {
+    border-color: #78b496;
+    background: #dff3e7;
+    color: #173d56;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .panel.external-allocations,
+    .bill-tip-preview-results > .financial-preview-banner,
+    .bill-tip-preview-results > .financial-subsection,
+    .bill-tip-preview-results > .financial-reconciliation.panel,
+    .bill-tip-preview-results > .bill-tip-finalization-card
+  ) {
+    border-color: #78b496;
+    background: linear-gradient(145deg, #effaf3 0%, #dff3e7 100%);
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner {
+    gap: 5px;
+    padding: 10px 11px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner > div {
+    gap: 2px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner > div b {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner > div small {
+    font-size: 9.5px;
+    line-height: 1.35;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-preview-banner > em {
+    padding: 3px 7px;
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card {
+    padding: 9px;
+    border-color: #8fc5a7;
+    background: linear-gradient(145deg, #effaf3 0%, #e1f3e8 100%);
+    box-shadow: 0 3px 10px rgb(16 62 56 / 7%);
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-cards {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card > header {
+    margin: 0;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-membership {
+    margin: 5px 0;
+    padding-bottom: 5px;
+    border-bottom-color: #b7d9c5;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card dl {
+    gap: 5px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card dl > div {
+    padding: 6px;
+    background: #e8f5ed;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card dd {
+    margin-top: 2px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card :is(.future-unclosed, .has-warning) {
+    background: #dff1e6;
+    color: #315f50;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-card .bill-tip-staff-amount {
+    background: #cfe8da;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .financial-reconciliation.panel {
+    border-color: #78b496;
+    background: linear-gradient(145deg, #edf8f1 0%, #d8eee1 100%);
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header {
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 0;
+    padding: 10px 11px;
+    text-align: left;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card {
+    height: auto;
+    min-height: 0;
+    align-self: start;
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 0;
+    padding: 10px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header > div {
+    display: grid;
+    gap: 3px;
+    flex: 1 1 auto;
+    justify-items: start;
+    min-width: 0;
+    width: auto;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header .eyebrow {
+    margin: 0;
+    font-size: 8px;
+    line-height: 1.25;
+    letter-spacing: .08em;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > header h3 {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.15;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card .period-pill.open {
+    flex: 0 0 auto;
+    min-height: 25px;
+    padding-inline: 8px;
+    border: 1px solid #9bcdb0;
+    background: #edf8f1;
+    color: #315f50;
+    font-size: 8.5px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card .finalization-guidance {
+    max-width: 100%;
+    margin: 0;
+    padding: 10px 11px;
+    font-size: 9.5px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-finalization-card > .ao-action {
+    margin: 0;
+    font-size: 10.5px;
+  }
+
   html body .app-shell main.module-incentives-and-bill-tips :is(
     .earnings-preview-results,
     .bill-tip-preview-results
@@ -8934,6 +9341,18 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
     .bill-tip-preview-results
   ) > .financial-metrics strong {
     font-size: 16px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .bill-tip-preview-results > .financial-metrics strong {
+    font-size: 14px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-results > .financial-metrics strong {
+    font-size: 14px;
   }
 }
 
@@ -8987,9 +9406,9 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-summary .s
 
 html body .app-shell main.module-incentives-and-bill-tips .panel.chargeable-panel {
   padding: 8px;
-  border-width: 2px 1px 1px;
+  border-width: 4px 2px 2px;
   border-style: solid;
-  border-color: #78b496;
+  border-color: var(--ao-financial-gold);
   background: linear-gradient(180deg, #effaf3 0%, #dff3e7 100%);
 }
 
@@ -9025,8 +9444,8 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
   max-width: none;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   justify-content: stretch;
-  gap: 10px;
-  padding: 10px;
+  gap: 6px;
+  padding: 6px;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap:has(> .inline-empty) .chargeable-card-grid {
@@ -9043,10 +9462,8 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-operation-card.mobile-chargeable-card {
   width: 100%;
-  padding: 10px 11px;
-  border-width: 2px 1px 1px;
-  border-style: solid;
-  border-color: #78b496;
+  padding: 7px 8px;
+  border: 1px solid #78b496;
   background: linear-gradient(135deg, #effaf3 0%, #d8f0e2 100%);
   box-shadow: 0 3px 10px rgb(16 62 56 / 9%);
 }
@@ -9054,15 +9471,15 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  margin: -1px -1px 2px;
-  padding: 12px 14px;
+  margin: 0 0 2px;
+  padding: 9px 10px;
   overflow: hidden;
-  border: 1px solid var(--ao-financial-gold);
+  border: 1px solid #78b496;
   border-radius: 10px 10px 8px 8px;
   background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
-  box-shadow: inset 4px 0 var(--ao-financial-gold), 0 5px 12px rgb(16 62 56 / 18%);
+  box-shadow: 0 5px 12px rgb(16 62 56 / 18%);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading > div {
@@ -9093,14 +9510,14 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-facts {
-  gap: 8px;
-  padding: 7px 0;
+  gap: 6px;
+  padding: 5px 0;
   border-bottom-color: #9fcdb3;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-fields {
-  gap: 7px;
-  padding-top: 7px;
+  gap: 5px;
+  padding-top: 5px;
 }
 
 @media (max-width: 900px) {
@@ -10944,8 +11361,9 @@ html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawe
 
 /* Wine & Spirits: daily review cards and details share the green revenue palette. */
 html body .app-shell main.module-incentives-and-bill-tips .panel.wine-panel {
-  border-color: #78b496;
-  border-top-color: var(--ao-financial-gold);
+  padding: 5px;
+  border-width: 4px 2px 2px;
+  border-color: var(--ao-financial-gold);
   background: linear-gradient(180deg, #effaf3 0%, #dff3e7 100%);
 }
 
@@ -10956,19 +11374,23 @@ html body .app-shell main.module-incentives-and-bill-tips .wine-filters {
 
 html body .app-shell main.module-incentives-and-bill-tips .wine-sale-grid {
   max-width: none;
+  gap: 6px;
+  padding: 6px;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card {
-  border-width: 2px 1px 1px;
-  border-color: #78b496;
+  padding: .5rem .56rem;
+  border: 1px solid #78b496;
   background: linear-gradient(145deg, #effaf3 0%, #d8f0e2 100%);
   box-shadow: 0 5px 15px rgb(16 62 56 / 10%);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading {
-  border: 1px solid var(--ao-financial-gold);
+  margin: -.08rem -.1rem .08rem;
+  padding: .56rem .62rem;
+  border: 1px solid #78b496;
   background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
-  box-shadow: inset 4px 0 var(--ao-financial-gold), 0 5px 12px rgb(16 62 56 / 18%);
+  box-shadow: 0 5px 12px rgb(16 62 56 / 18%);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading :is(h3, strong) {
@@ -10977,6 +11399,15 @@ html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-headin
 
 html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading :is(small, p) {
   color: #d9efe2;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .modal.wine-modal {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  padding: 0 !important;
+  border: 1px solid var(--ao-financial-gold);
+  border-top-width: 3px;
 }
 
 html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer {

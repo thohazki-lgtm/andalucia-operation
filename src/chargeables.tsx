@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { bookingApi, chargeableApi } from './api'
-import type { BookingRecord, ChargeableCorrectionHistory, ChargeableCorrectionRequest, ChargeableDuplicateWarning, ChargeableRecord, ChargeableSummary, ChargeableWriteRequest, ConfigOption, Staff } from './domain'
+import type { BookingRecord, ChargeableCorrectionRequest, ChargeableDuplicateWarning, ChargeableRecord, ChargeableSummary, ChargeableWriteRequest, ConfigOption, Staff } from './domain'
 import './chargeables.css'
 import { addCalendarDays, serviceDate } from './service-date'
 import { consumeWorkflow } from './workflow-intent'
@@ -18,9 +18,9 @@ const familyForItem = (option?: Pick<ConfigOption, 'value' | 'label'>) => option
 const familyLabelForRecord = (record: ChargeableRecord, configuration: ChargeableConfiguration) => familyForItem(configuration.items.find(option => option.value === record.itemValue))?.label || record.itemLabel.replace(/\s+(Basic|Premium)$/i, '')
 const transactionLocked = (record: ChargeableRecord, configuration: ChargeableConfiguration) => { const metadata = configuration.statuses.find(option => option.value === record.status)?.metadata; return metadata?.countsAsRealizedRevenue === true || metadata?.excludesFromChargeableTotals === true }
 
-export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: Staff[]; configuration: ChargeableConfiguration; onToast: (message: string) => void }) {
+export function ChargeableItemsPage({ staff, configuration, onToast, initialDate, reviewRecordId, onReviewOpened }: { staff: Staff[]; configuration: ChargeableConfiguration; onToast: (message: string) => void; initialDate?: string; reviewRecordId?: string; onReviewOpened?: () => void }) {
   const { can } = useAuth()
-  const [date, setDate] = useState(serviceDate())
+  const [date, setDate] = useState(initialDate || serviceDate())
   const [records, setRecords] = useState<ChargeableRecord[]>([])
   const [bookings, setBookings] = useState<BookingRecord[]>([])
   const [summary, setSummary] = useState<ChargeableSummary>({ totalCharges: 0, totalValue: 0, realizedRevenue: 0, pendingValue: 0, charged: 0, pending: 0 })
@@ -30,9 +30,11 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
   const [status, setStatus] = useState('all')
   const [item, setItem] = useState('all')
   const [waiter, setWaiter] = useState('all')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [editing, setEditing] = useState<ChargeableRecord | 'new' | null>(null)
   const [viewing, setViewing] = useState<ChargeableRecord | null>(null)
   const [correcting, setCorrecting] = useState<ChargeableRecord | null>(null)
+  const reviewOpenedRef = useRef(false)
   const itemFamilies = useMemo<ChargeableFamily[]>(() => {
     const groups = new Map<string, ChargeableFamily>()
     configuration.items.filter(option => option.active).forEach(option => {
@@ -52,6 +54,10 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
     try {
       const [nextRecords, nextBookings, nextSummary] = await Promise.all([chargeableApi.list(date), bookingApi.list(date), chargeableApi.summary(date)])
       setRecords(nextRecords); setBookings(nextBookings); setSummary(nextSummary)
+      if (reviewRecordId && !reviewOpenedRef.current) {
+        const reviewRecord = nextRecords.find(record => record.id === reviewRecordId)
+        if (reviewRecord) { reviewOpenedRef.current = true; setViewing(reviewRecord); onReviewOpened?.() }
+      }
     } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load chargeable records.') }
     finally { setLoading(false) }
   }
@@ -101,7 +107,8 @@ export function ChargeableItemsPage({ staff, configuration, onToast }: { staff: 
 </section>
     <section className="panel chargeable-panel">
 <nav className="chargeable-tabs" aria-label="Chargeable items"><button className={item === 'all' ? 'active' : ''} onClick={() => setItem('all')}>All <b>{records.filter(record => record.active).length}</b></button>{itemFamilies.map(family => <button key={family.value} className={item === family.value ? 'active' : ''} onClick={() => setItem(family.value)}>{family.label} <b>{records.filter(record => record.active && familyForItem(configuration.items.find(option => option.value === record.itemValue))?.value === family.value).length}</b></button>)}</nav>
-<div className="chargeable-filters">
+<ActionButton className="chargeable-filter-toggle" icon="filter" compact aria-expanded={filtersOpen} aria-controls="chargeable-item-filters" onClick={() => setFiltersOpen(open => !open)}>Filters{[status !== 'all', item !== 'all', waiter !== 'all'].filter(Boolean).length ? ` (${[status !== 'all', item !== 'all', waiter !== 'all'].filter(Boolean).length})` : ''}</ActionButton>
+<div id="chargeable-item-filters" className={`chargeable-filters${filtersOpen ? ' open' : ''}`}>
 <input aria-label="Search chargeable records" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search guest, room, check / invoice, item or waiter" />
 <select aria-label="Filter chargeable status" value={status} onChange={event => setStatus(event.target.value)}>
 <option value="all">All statuses</option>{configuration.statuses.map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>
@@ -261,7 +268,6 @@ function ChargeableForm({ record, date, bookings, staff, configuration, onClose,
 }
 
 function ChargeableDetails({ record, configuration, canCorrect, onClose, onEdit, onCorrect, onStatus }: { record: ChargeableRecord; configuration: ChargeableConfiguration; canCorrect: boolean; onClose: () => void; onEdit: () => void; onCorrect: () => void; onStatus: (status: string, correctionReason?: string) => void }) {
-  const [history, setHistory] = useState<ChargeableCorrectionHistory[]>([])
   const [cancelling, setCancelling] = useState(false)
   const drawerRef = useRef<HTMLElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -270,15 +276,13 @@ function ChargeableDetails({ record, configuration, canCorrect, onClose, onEdit,
   const cancelled = configuration.statuses.find(option => option.active && option.metadata?.excludesFromChargeableTotals === true)
   const locked = transactionLocked(record, configuration)
   const realized = configuration.statuses.find(option => option.value === record.status)?.metadata?.countsAsRealizedRevenue === true
-  useEffect(() => { if (canCorrect) void chargeableApi.correctionHistory(record.id).then(setHistory).catch(() => setHistory([])) }, [canCorrect, record.id, record.updatedAt])
   useEffect(() => { openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; drawerRef.current?.focus(); return () => openerRef.current?.focus() }, [])
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
   return <><div className="chargeable-drawer-backdrop" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={drawerRef} tabIndex={-1} className="chargeable-drawer" role="dialog" aria-modal="true" aria-label="Chargeable Item Details">
 <header><p className="eyebrow">SERVICE REVENUE</p><div className="chargeable-drawer-heading"><h2>{record.itemLabel}</h2><StatusPill tone="navy" className="chargeable-item-chip">{statusLabel(configuration, record.status)}</StatusPill></div></header>
 <div className="chargeable-drawer-body"><ChargeableDrawerSection title="Financial Proof"><ChargeableDetail label="Guest" value={record.guestName} /><ChargeableDetail label="Room Number" value={record.roomNumber || '—'} /><ChargeableDetail label="Check / Invoice Number" value={record.checkInvoiceNumber || 'Historical · not recorded'} /><ChargeableDetail label="Covers" value={record.covers ? String(record.covers) : '—'} /></ChargeableDrawerSection>
 <ChargeableDrawerSection title="Item Details"><ChargeableDetail label="Item" value={record.itemLabel} /><ChargeableDetail label="Quantity" value={String(record.quantity)} /><ChargeableDetail label="Unit price" value={money(record.unitPrice)} /><ChargeableDetail label="Total" value={money(record.totalAmount)} /></ChargeableDrawerSection>
-<ChargeableDrawerSection title="Booking Information"><ChargeableDetail label="Date / time" value={`${dateLabel(record.reservationDate || record.date)}${record.reservationTime ? ` · ${record.reservationTime}` : ''}`} /><ChargeableDetail label="Table" value={configuration.tables.find(option => option.value === record.tableNumber)?.label || record.tableNumber || 'Unassigned'} /><ChargeableDetail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /><ChargeableDetail label="Source" value={record.importSource === 'activity_program' ? 'Activity Program booking' : record.bookingId ? 'Booking' : 'Manual'} />{record.sourceGuestNotes && <ChargeableDetail label="Source note" value={record.sourceGuestNotes} />}</ChargeableDrawerSection>
-{history.length > 0 && <ChargeableDrawerSection title="Correction History">{history.map(item => <div className="chargeable-correction-history" key={item.id}><b>{item.reason || 'Audited correction'}</b><span>{new Date(item.createdAt).toLocaleString()} · {item.actor}</span><small>{correctionChanges(item)}</small></div>)}</ChargeableDrawerSection>}</div>
+<ChargeableDrawerSection title="Booking Information"><ChargeableDetail label="Date / time" value={`${dateLabel(record.reservationDate || record.date)}${record.reservationTime ? ` · ${record.reservationTime}` : ''}`} /><ChargeableDetail label="Table" value={configuration.tables.find(option => option.value === record.tableNumber)?.label || record.tableNumber || 'Unassigned'} /><ChargeableDetail label="Waiter" value={record.waiter ? `${record.waiter.name}${record.waiter.employmentStatus !== 'active' ? ' · Inactive historical assignment' : ''}` : 'Unassigned'} /><ChargeableDetail label="Source" value={record.importSource === 'activity_program' ? 'Activity Program booking' : record.bookingId ? 'Booking' : 'Manual'} />{record.sourceGuestNotes && <ChargeableDetail label="Source note" value={record.sourceGuestNotes} />}</ChargeableDrawerSection></div>
 <footer>{!locked && <ActionButton icon="edit" onClick={onEdit}>Edit</ActionButton>}{realized && canCorrect && <ActionButton variant="primary" icon="edit" onClick={onCorrect}>Correct Transaction</ActionButton>}{!locked && pending && record.status !== pending.value && <ActionButton icon="clock" onClick={() => onStatus(pending.value)}>Mark as Pending</ActionButton>}{!locked && charged && record.status !== charged.value && <ActionButton variant="primary" icon="check" onClick={() => onStatus(charged.value)}>Mark as Charged</ActionButton>}{realized && cancelled && <ActionButton icon="close" className="danger" onClick={() => setCancelling(true)}>Cancel with reason</ActionButton>}</footer>
 </aside></div>{cancelling && cancelled && <ChargeableCancellationForm onClose={() => setCancelling(false)} onConfirm={reason => { onStatus(cancelled.value, reason); setCancelling(false) }} />}</>
 }
@@ -290,20 +294,16 @@ function ChargeableCancellationForm({ onClose, onConfirm }: { onClose: () => voi
   return <ChargeableModal title="Cancel Charged Transaction" onClose={requestClose} dismissible hideClose className="chargeable-cancellation-modal"><form className="chargeable-cancellation-form" onSubmit={event => { event.preventDefault(); if (!reason.trim()) return setError('Enter a cancellation reason.'); onConfirm(reason.trim()) }}><p className="config-protected-note">The original realized transaction remains protected in the financial audit history.</p><label>Cancellation reason<textarea rows={4} value={reason} onChange={event => setReason(event.target.value)} placeholder="Explain why this charged transaction must be cancelled" /></label>{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><ActionButton type="button" onClick={requestClose}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="check">Confirm Cancellation</ActionButton></div></form></ChargeableModal>
 }
 
-const correctionChanges = (history: ChargeableCorrectionHistory) => {
-  if (!history.before || !history.after) return 'Original and corrected values remain available in the audit record.'
-  const fields: Array<[keyof ChargeableRecord, string]> = [['guestName','Guest'],['roomNumber','Room'],['checkInvoiceNumber','Check / Invoice'],['tableNumber','Table'],['itemLabel','Item'],['quantity','Quantity'],['unitPrice','Unit price'],['waiterId','Waiter'],['notes','Notes']]
-  const changes = fields.filter(([key]) => String(history.before?.[key] ?? '') !== String(history.after?.[key] ?? '')).map(([,label]) => label)
-  return changes.length ? `Changed: ${changes.join(', ')}` : 'Status correction'
-}
-
 function ChargeableCorrectionForm({ record, staff, configuration, onClose, onSave }: { record: ChargeableRecord; staff: Staff[]; configuration: ChargeableConfiguration; onClose: () => void; onSave: (record: ChargeableCorrectionRequest) => Promise<void> }) {
-  const [form, setForm] = useState(record); const [reason, setReason] = useState(''); const [confirmed, setConfirmed] = useState(false); const [saving, setSaving] = useState(false); const [error, setError] = useState('')
+  const [form, setForm] = useState(record); const [confirmed, setConfirmed] = useState(false); const [saving, setSaving] = useState(false); const [error, setError] = useState('')
   const activeStaff = staff.filter(person => person.employmentStatus === 'active' || person.id === record.waiterId)
-  const dirty = reason.length > 0 || confirmed || ['guestName','roomNumber','checkInvoiceNumber','tableNumber','itemValue','quantity','unitPrice','waiterId','notes'].some(key => String(form[key as keyof ChargeableRecord] ?? '') !== String(record[key as keyof ChargeableRecord] ?? ''))
+  const correctionFields: Array<[keyof ChargeableRecord, string]> = [['guestName','guest'],['roomNumber','room'],['checkInvoiceNumber','check / invoice'],['tableNumber','table'],['itemValue','item'],['quantity','quantity'],['unitPrice','unit price'],['waiterId','waiter'],['notes','notes']]
+  const changedFields = correctionFields.filter(([key]) => String(form[key] ?? '') !== String(record[key] ?? '')).map(([, label]) => label)
+  const dirty = confirmed || changedFields.length > 0
   const requestClose = useCallback(() => { if (dirty && !window.confirm('You have unsaved transaction correction changes. Discard them?')) return; onClose() }, [dirty, onClose])
-  const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); if (reason.trim().length < 8) return setError('Enter a clear correction reason of at least 8 characters.'); if (!confirmed) return setError('Confirm that the original values will remain in the audit history.'); setSaving(true); try { await onSave({ ...form, correctionReason: reason.trim(), confirmation: 'CORRECT CHARGED TRANSACTION', expectedUpdatedAt: record.updatedAt }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to correct the charged transaction.') } finally { setSaving(false) } }
+  const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); if (!changedFields.length) return setError('Change at least one transaction value before saving.'); if (!confirmed) return setError('Confirm that the original values will remain in the audit history.'); setSaving(true); try { await onSave({ ...form, correctionReason: `Manager correction: ${changedFields.join(', ')}`, confirmation: 'CORRECT CHARGED TRANSACTION', expectedUpdatedAt: record.updatedAt }) } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to correct the charged transaction.') } finally { setSaving(false) } }
   return <ChargeableModal title="Correct Charged Transaction" onClose={requestClose} dismissible wide hideClose className="chargeable-correction-modal"><form className="chargeable-correction-form" onSubmit={event => void submit(event)}>
+<div className="chargeable-correction-scroll">
 <p className="config-protected-note">Original values remain in the audit history. Approved reports and finalized incentives cannot be silently rewritten.</p>
 <div className="chargeable-correction-head" aria-hidden="true"><span>Field</span><span>Original</span><span>Proposed correction</span></div>
 <CorrectionField label="Guest" original={record.guestName}><input required value={form.guestName} onChange={event => setForm({ ...form, guestName: event.target.value })}/></CorrectionField>
@@ -314,14 +314,15 @@ function ChargeableCorrectionForm({ record, staff, configuration, onClose, onSav
 <CorrectionField label="Quantity" original={String(record.quantity)}><input type="number" min="1" step="1" required value={form.quantity} onChange={event => setForm({ ...form, quantity: Number(event.target.value) })}/></CorrectionField>
 <CorrectionField label="Unit price" original={money(record.unitPrice)}><input type="number" min="0" step="0.01" required value={form.unitPrice} onChange={event => setForm({ ...form, unitPrice: Number(event.target.value) })}/></CorrectionField>
 <CorrectionField label="Waiter" original={record.waiter ? `${record.waiter.name} · ${record.waiter.number}` : 'Unassigned'}><select value={form.waiterId || ''} onChange={event => setForm({ ...form, waiterId: event.target.value || null })}><option value="">Unassigned</option>{activeStaff.map(person => <option key={person.id} value={person.id}>{person.name} · {person.number}</option>)}</select></CorrectionField>
-<CorrectionField label="Notes" original={record.notes || '—'}><textarea rows={2} value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })}/></CorrectionField>
-<label className="chargeable-correction-reason">Correction reason<textarea rows={3} required value={reason} onChange={event => setReason(event.target.value)} placeholder="Explain the operational mistake and required correction"/></label>
+<CorrectionField className="chargeable-correction-row--wide" label="Notes" original={record.notes || '—'}><textarea rows={2} value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })}/></CorrectionField>
 <label className="check-label chargeable-correction-confirm"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/> I confirm this correction. Preserve the original values and manager identity in audit history.</label>
-{error && <p className="save-error" role="alert">{error}</p>}<div className="form-actions"><ActionButton type="button" onClick={requestClose} disabled={saving}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="check" disabled={saving}>{saving ? 'Saving Correction…' : 'Confirm Correction'}</ActionButton></div>
+{error && <p className="save-error" role="alert">{error}</p>}
+</div>
+<div className="form-actions"><ActionButton type="button" onClick={requestClose} disabled={saving}>Cancel</ActionButton><ActionButton type="submit" variant="primary" icon="check" disabled={saving}>{saving ? 'Saving Correction…' : 'Confirm Correction'}</ActionButton></div>
 </form></ChargeableModal>
 }
 
-function CorrectionField({ label, original, children }: { label: string; original: string; children: ReactNode }) { return <label className="chargeable-correction-row"><b>{label}</b><span>{original || '—'}</span><span>{children}</span></label> }
+function CorrectionField({ label, original, children, className = '' }: { label: string; original: string; children: ReactNode; className?: string }) { return <label className={`chargeable-correction-row ${className}`.trim()}><b>{label}</b><span>{original || '—'}</span><span>{children}</span></label> }
 
 function ChargeableDrawerSection({ title, children }: { title: string; children: ReactNode }) { return <section className="chargeable-drawer-section"><h3>{title}</h3><div>{children}</div></section> }
 function ChargeableDetail({ label, value }: { label: string; value: string }) { return <div className="chargeable-drawer-detail"><span>{label}</span><b>{value}</b></div> }
