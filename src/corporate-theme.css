@@ -10889,6 +10889,59 @@ html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-entry
   min-height: 36px;
 }
 
+/* Chargeable Items: pale-green transaction details with an emerald header. */
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) {
+  border-color: #78b496;
+  border-top-color: var(--ao-financial-gold);
+  background: #e8f7ed;
+  box-shadow: 0 20px 54px rgb(9 48 43 / 28%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) > header {
+  border-bottom-color: var(--ao-financial-gold);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) > header :is(.eyebrow, h2) {
+  color: #fff;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-item-chip {
+  border: 1px solid #9bcdb0;
+  background: #dff3e7;
+  color: #103e38;
+  box-shadow: inset 0 1px rgb(255 255 255 / 70%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-drawer-body {
+  background: linear-gradient(135deg, #e8f7ed 0%, #d7f0e0 100%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-drawer-section {
+  border-color: #78b496;
+  background: #effaf3;
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-drawer-section h3 {
+  border-bottom-color: #8fc5a7;
+  color: #103e38;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-drawer-detail span {
+  color: #53766a;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) .chargeable-drawer-detail b {
+  color: #173f39;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer:not(.wine-drawer) > footer {
+  border-top-color: #78b496;
+  background: #d5efdf;
+  box-shadow: 0 -5px 14px rgb(9 48 43 / 9%);
+}
+
 @media (max-width: 700px) {
   html body:has(.app-shell main.module-incentives-and-bill-tips) .modal.chargeable-entry-modal {
     width: calc(100vw - 16px);
