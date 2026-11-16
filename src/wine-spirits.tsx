@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { wineSpiritsApi } from './api'
 import type { ConfigOption, Staff, WineSpiritCalculation, WineSpiritSale, WineSpiritSaleInput, WineSpiritSaleStatus } from './domain'
-import { serviceDate } from './service-date'
+import { addCalendarDays, serviceDate } from './service-date'
 import { ActionButton, DateControl, IconAction, StatusPill } from './action-system'
 import { FinancialDateControl } from './financial-date-control'
 import './wine-spirits.css'
 
 const money = (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0))
 const statuses: Array<{ value: WineSpiritSaleStatus; label: string }> = [{ value: 'pending', label: 'Pending' }, { value: 'charged', label: 'Charged / Realized' }, { value: 'cancelled', label: 'Cancelled' }, { value: 'void', label: 'Void' }]
-const monthRange = (month: string) => ({ start: `${month}-01`, end: `${month}-${String(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()).padStart(2, '0')}` })
-const shiftMonth = (month: string, offset: number) => {
-  const [year, monthNumber] = month.split('-').map(Number)
-  const next = new Date(Date.UTC(year, monthNumber - 1 + offset, 1))
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`
-}
 const toInput = (sale: WineSpiritSale): WineSpiritSaleInput => ({ id: sale.id, serviceDate: sale.serviceDate, checkInvoiceNumber: sale.checkInvoiceNumber, itemName: sale.itemName, roomNumber: sale.roomNumber, tableNumber: sale.tableNumber, waiterId: sale.waiterId, grossUnitPrice: sale.grossUnitPrice, quantity: sale.quantity, status: sale.status, notes: sale.notes })
 const statusLabel = (value: WineSpiritSaleStatus) => statuses.find(item => item.value === value)?.label || value
 const statusTone = (value: WineSpiritSaleStatus) => value === 'charged' ? 'success' : value === 'pending' ? 'gold' : 'danger'
 
 export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; tables: ConfigOption[]; onToast: (message: string) => void }) {
-  const [month, setMonth] = useState(serviceDate().slice(0, 7))
+  const [date, setDate] = useState(serviceDate())
   const [records, setRecords] = useState<WineSpiritSale[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,8 +22,8 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
   const [status, setStatus] = useState<'all' | WineSpiritSaleStatus>('all')
   const [editing, setEditing] = useState<WineSpiritSale | 'new' | null>(null)
   const [viewing, setViewing] = useState<WineSpiritSale | null>(null)
-  const load = async () => { setLoading(true); setError(''); try { const range = monthRange(month); setRecords(await wineSpiritsApi.list(range.start, range.end)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Wine/Spirits sales could not be loaded.') } finally { setLoading(false) } }
-  useEffect(() => { void load() }, [month])
+  const load = async () => { setLoading(true); setError(''); try { setRecords(await wineSpiritsApi.list(date, date)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Wine/Spirits sales could not be loaded.') } finally { setLoading(false) } }
+  useEffect(() => { void load() }, [date])
   const visible = useMemo(() => records.filter(record => {
     const search = `${record.checkInvoiceNumber} ${record.roomNumber} ${record.tableNumber} ${record.itemName} ${record.waiter.name} ${record.waiter.number}`.toLowerCase()
     return !record.archived && (waiter === 'all' || record.waiterId === waiter) && (status === 'all' || record.status === status) && search.includes(query.toLowerCase())
@@ -39,10 +33,10 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
   return <section className="wine-page">
     <header className="wine-toolbar">
       <div className="wine-toolbar-heading"><h2>Wine &amp; Spirits Sales</h2></div>
-      <div className="wine-month-navigation" role="group" aria-label="Wine and Spirits month navigation">
-        <IconAction icon="chevron-left" className="wine-month-step" label="Previous Wine and Spirits month" title="Previous month" onClick={() => setMonth(value => shiftMonth(value, -1))} />
-        <FinancialDateControl className="wine-month-control" type="month" label="Wine and Spirits month" value={month} onChange={setMonth} />
-        <IconAction icon="chevron-right" className="wine-month-step" label="Next Wine and Spirits month" title="Next month" onClick={() => setMonth(value => shiftMonth(value, 1))} />
+      <div className="wine-date-navigation" role="group" aria-label="Wine and Spirits date navigation">
+        <IconAction icon="chevron-left" className="wine-date-step" label="Previous Wine and Spirits date" title="Previous day" onClick={() => setDate(value => addCalendarDays(value, -1))} />
+        <FinancialDateControl className="wine-date-control" type="date" label="Wine and Spirits date" value={date} onChange={setDate} />
+        <IconAction icon="chevron-right" className="wine-date-step" label="Next Wine and Spirits date" title="Next day" onClick={() => setDate(value => addCalendarDays(value, 1))} />
       </div>
       <ActionButton variant="primary" icon="add" className="wine-add-sale" onClick={() => setEditing('new')}>Add Wine / Spirit Sale</ActionButton>
     </header>
@@ -54,7 +48,7 @@ export function WineSpiritsPage({ staff, tables, onToast }: { staff: Staff[]; ta
         <header className="wine-sale-card-heading"><div className="wine-sale-card-title"><small>Wine / Spirit</small><h3>{sale.itemName}</h3><p>{sale.quantity} × {money(sale.grossUnitPrice)} gross unit price</p></div><div className="wine-sale-amount"><small>Sale amount</small><strong>{money(sale.grossTotal)}</strong></div></header>
         <div className="wine-sale-facts"><div className="wine-sale-fact"><span>Check / Invoice</span><b>{sale.checkInvoiceNumber}</b><small>{sale.serviceDate} · Room {sale.roomNumber}</small></div><div className="wine-sale-fact"><span>Table &amp; Waiter</span><b>Table {sale.tableNumber}</b><small>{sale.waiter.name} · {sale.waiter.number}</small></div><div className="wine-sale-fact"><span>Incentive</span><b>{sale.status === 'charged' && !sale.archived ? money(sale.totalIncentive) : '$0.00'}</b><small>{sale.appliedTier} · {money(sale.incentivePerBottle)} / bottle</small></div><div className="wine-sale-fact"><span>Status</span><StatusPill tone={sale.archived ? 'neutral' : statusTone(sale.status)} className="wine-status">{sale.archived ? 'Archived' : statusLabel(sale.status)}</StatusPill></div></div>
         <footer className="wine-sale-card-actions"><ActionButton compact icon="list" onClick={() => setViewing(sale)}>Details</ActionButton>{!sale.archived && sale.status === 'pending' && <ActionButton compact icon="edit" onClick={() => setEditing(sale)}>Edit</ActionButton>}{!sale.archived && !['cancelled','void'].includes(sale.status) && <ActionButton compact icon={sale.status === 'charged' ? 'close' : 'archive'} className="danger" onClick={() => void archive(sale)}>{sale.status === 'charged' ? 'Void' : 'Archive'}</ActionButton>}</footer>
-      </article>)}</div> : <div className="wine-empty-state"><span aria-hidden="true">◇</span><h3>No Wine/Spirits sales match this period and filters.</h3><p>Adjust the month, search, waiter, or status filters to review other transactions.</p></div>}</>}
+      </article>)}</div> : <div className="wine-empty-state"><span aria-hidden="true">◇</span><h3>No Wine/Spirits sales match this date and filters.</h3><p>Adjust the date, search, waiter, or status filters to review other transactions.</p></div>}</>}
     </section>
     {editing && <WineSaleForm sale={editing === 'new' ? undefined : editing} staff={staff} tables={tables} onClose={() => setEditing(null)} onSave={async input => { const result = editing === 'new' ? await wineSpiritsApi.create(input) : await wineSpiritsApi.update(input); saved(result); setEditing(null); onToast('Wine / Spirit sale saved.') }} />}
     {viewing && <WineSaleDetails sale={viewing} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null) }} />}
@@ -85,8 +79,7 @@ function WineSaleForm({ sale, staff, tables, onClose, onSave }: { sale?: WineSpi
 function Calc({ label, value }: { label: string; value: string }) { return <div><span>{label}</span><b>{value}</b></div> }
 
 function WineSaleDetails({ sale, onClose, onEdit }: { sale: WineSpiritSale; onClose: () => void; onEdit: () => void }) {
-  const [audit, setAudit] = useState<Array<{ id: string; action: string; actor: string; createdAt: string }>>([])
-  useEffect(() => { void wineSpiritsApi.audit(sale.id).then(setAudit).catch(() => setAudit([])); const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [sale.id, onClose])
+  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
   const detail = (label: string, value: string, key?: string) => <div key={key}><span>{label}</span><b>{value}</b></div>
-  return <div className="chargeable-drawer-backdrop" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="chargeable-drawer wine-drawer" role="dialog" aria-modal="true" aria-label="Wine and Spirit Sale Details"><header><div><p className="eyebrow">FINANCIAL PROOF CHAIN</p><div className="chargeable-drawer-heading"><h2>{sale.itemName}</h2><StatusPill tone={sale.archived ? 'neutral' : statusTone(sale.status)}>{sale.archived ? 'Archived' : statusLabel(sale.status)}</StatusPill></div></div></header><div className="chargeable-drawer-body"><section className="chargeable-drawer-section"><h3>Reservation &amp; Guest</h3>{detail('Service Date', sale.serviceDate)}{detail('Check / Invoice', sale.checkInvoiceNumber)}{detail('Room', sale.roomNumber)}{detail('Table', sale.tableNumber)}{detail('Waiter', `${sale.waiter.name} · ${sale.waiter.number}`)}</section><section className="chargeable-drawer-section"><h3>Wine &amp; Pricing</h3>{detail('Bottle / Item', sale.itemName)}{detail('Gross Unit Price', money(sale.grossUnitPrice))}{detail('Quantity', String(sale.quantity))}{detail('Gross Total', money(sale.grossTotal))}{detail('Service Charge', `${sale.serviceChargeRate}%`)}{detail('GST', `${sale.gstRate}%`)}{detail('Net Unit Price', money(sale.netUnitPrice))}{detail('Net Total', money(sale.netTotal))}{detail('Applied Tier', sale.appliedTier)}{detail('Incentive / Bottle', money(sale.incentivePerBottle))}{detail('Total Incentive', sale.status === 'charged' && !sale.archived ? money(sale.totalIncentive) : '$0.00 contributing')}</section><section className="chargeable-drawer-section"><h3>Record &amp; Audit</h3>{detail('Outlet', 'Andalucía')}{detail('Notes', sale.notes || '—')}{detail('Created', `${new Date(sale.createdAt).toLocaleString()} · ${sale.createdBy}`)}{detail('Updated', `${new Date(sale.updatedAt).toLocaleString()} · ${sale.updatedBy}`)}{audit.map(item => detail(item.action.replaceAll('_', ' '), `${new Date(item.createdAt).toLocaleString()} · ${item.actor}`, item.id))}</section></div>{!sale.archived && sale.status === 'pending' && <footer><ActionButton icon="edit" onClick={onEdit}>Edit Sale</ActionButton></footer>}</aside></div>
+  return <div className="chargeable-drawer-backdrop" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><aside className="chargeable-drawer wine-drawer" role="dialog" aria-modal="true" aria-label="Wine and Spirit Sale Details"><header><div><p className="eyebrow">FINANCIAL PROOF CHAIN</p><div className="chargeable-drawer-heading"><h2>{sale.itemName}</h2><StatusPill tone={sale.archived ? 'neutral' : statusTone(sale.status)}>{sale.archived ? 'Archived' : statusLabel(sale.status)}</StatusPill></div></div></header><div className="chargeable-drawer-body"><section className="chargeable-drawer-section"><h3>Reservation &amp; Guest</h3>{detail('Service Date', sale.serviceDate)}{detail('Check / Invoice', sale.checkInvoiceNumber)}{detail('Room', sale.roomNumber)}{detail('Table', sale.tableNumber)}{detail('Waiter', `${sale.waiter.name} · ${sale.waiter.number}`)}</section><section className="chargeable-drawer-section"><h3>Wine &amp; Pricing</h3>{detail('Bottle / Item', sale.itemName)}{detail('Gross Unit Price', money(sale.grossUnitPrice))}{detail('Quantity', String(sale.quantity))}{detail('Gross Total', money(sale.grossTotal))}{detail('Service Charge', `${sale.serviceChargeRate}%`)}{detail('GST', `${sale.gstRate}%`)}{detail('Net Unit Price', money(sale.netUnitPrice))}{detail('Net Total', money(sale.netTotal))}{detail('Applied Tier', sale.appliedTier)}{detail('Incentive / Bottle', money(sale.incentivePerBottle))}{detail('Total Incentive', sale.status === 'charged' && !sale.archived ? money(sale.totalIncentive) : '$0.00 contributing')}</section></div>{!sale.archived && sale.status === 'pending' && <footer><ActionButton icon="edit" onClick={onEdit}>Edit Sale</ActionButton></footer>}</aside></div>
 }

@@ -8546,7 +8546,7 @@ html body .app-shell main.module-incentives-and-bill-tips :is(
 
 html body .app-shell main.module-incentives-and-bill-tips :is(
   .chargeable-date-step,
-  .wine-month-step,
+  .wine-date-step,
   .chargeable-today,
   .chargeable-add,
   .wine-add-sale
@@ -8774,13 +8774,13 @@ html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.charg
 /* Wine & Spirits uses the same boxless calendar treatment as Chargeable
    Items. Keep these scoped declarations below the shared module controls so
    the corporate input surface cannot reintroduce an ivory month box. */
-html body .app-shell main.module-incentives-and-bill-tips .wine-month-navigation .wine-month-step {
+html body .app-shell main.module-incentives-and-bill-tips .wine-date-navigation .wine-date-step {
   border-color: var(--ao-financial-gold);
   background: rgb(16 62 56 / 58%);
   color: #fff;
 }
 
-html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control input {
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-date-control input {
   border-color: transparent;
   border-radius: 0;
   background: transparent;
@@ -8790,7 +8790,7 @@ html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-
   box-shadow: none;
 }
 
-html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control .ao-date-control__icon {
+html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-date-control .ao-date-control__icon {
   color: #fff;
 }
 
@@ -9118,7 +9118,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
     font-size: 16px;
   }
 
-  html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-month-control input {
+  html body .app-shell main.module-incentives-and-bill-tips .ao-date-control.wine-date-control input {
     font-size: 16px;
   }
 
@@ -10940,6 +10940,69 @@ html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawe
   border-top-color: #78b496;
   background: #d5efdf;
   box-shadow: 0 -5px 14px rgb(9 48 43 / 9%);
+}
+
+/* Wine & Spirits: daily review cards and details share the green revenue palette. */
+html body .app-shell main.module-incentives-and-bill-tips .panel.wine-panel {
+  border-color: #78b496;
+  border-top-color: var(--ao-financial-gold);
+  background: linear-gradient(180deg, #effaf3 0%, #dff3e7 100%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-filters {
+  border-color: #78b496;
+  background: #dff3e7;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-grid {
+  max-width: none;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card {
+  border-width: 2px 1px 1px;
+  border-color: #78b496;
+  background: linear-gradient(145deg, #effaf3 0%, #d8f0e2 100%);
+  box-shadow: 0 5px 15px rgb(16 62 56 / 10%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading {
+  border: 1px solid var(--ao-financial-gold);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
+  box-shadow: inset 4px 0 var(--ao-financial-gold), 0 5px 12px rgb(16 62 56 / 18%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading :is(h3, strong) {
+  color: #fff;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips .wine-sale-card-heading :is(small, p) {
+  color: #d9efe2;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer {
+  border-color: #78b496;
+  border-top-color: var(--ao-financial-gold);
+  background: #e8f7ed;
+  box-shadow: 0 20px 54px rgb(9 48 43 / 28%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer > header {
+  border-bottom-color: var(--ao-financial-gold);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer > header :is(.eyebrow, h2) {
+  color: #fff;
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer .chargeable-drawer-body {
+  background: linear-gradient(135deg, #e8f7ed 0%, #d7f0e0 100%);
+}
+
+html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawer.wine-drawer .chargeable-drawer-section {
+  border-color: #78b496;
+  background: #effaf3;
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%);
 }
 
 @media (max-width: 700px) {
