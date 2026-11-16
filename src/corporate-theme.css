@@ -9059,10 +9059,10 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
   margin: -1px -1px 2px;
   padding: 12px 14px;
   overflow: hidden;
-  border: 1px solid #78b496;
+  border: 1px solid var(--ao-financial-gold);
   border-radius: 10px 10px 8px 8px;
-  background: linear-gradient(90deg, #e8f7ed 0%, #d5efdf 52%, #c5e6d2 100%);
-  box-shadow: inset 4px 0 #287a69, 0 4px 10px rgb(16 62 56 / 8%);
+  background: linear-gradient(90deg, #103e38 0%, #1b5a4d 52%, #287a69 100%);
+  box-shadow: inset 4px 0 var(--ao-financial-gold), 0 5px 12px rgb(16 62 56 / 18%);
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading > div {
@@ -9071,7 +9071,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading h4 {
   margin-block: 4px 3px;
-  color: var(--ao-staff-emerald-deep);
+  color: #fff;
   font-size: 18px;
   font-weight: 600;
   line-height: 1.15;
@@ -9079,13 +9079,13 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid 
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-kicker,
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-heading small {
-  color: #527b68;
+  color: #d9efe2;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-card-grid .mobile-card-total {
   align-self: start;
   padding: 2px 0 0 12px;
-  color: var(--ao-staff-emerald-deep);
+  color: #fff;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 20px;
   font-weight: 500;
