@@ -219,12 +219,12 @@
   .bill-tip-team-table{display:none}
   .bill-tip-staff-cards{display:grid;gap:10px;margin-top:12px}
   .bill-tip-staff-card{min-width:0;padding:13px;border:1px solid var(--financial-gold);border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%)}
-  .bill-tip-staff-identity{margin:-5px -5px 8px;padding:9px 10px 8px;border:1px solid #71ad95;border-radius:8px;background:linear-gradient(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%)}
+  .bill-tip-staff-identity{margin:-5px -5px 0;padding:9px 10px 8px;border:1px solid #71ad95;border-radius:8px;background:linear-gradient(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%)}
   .bill-tip-staff-identity>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .bill-tip-staff-identity>header>div{display:grid;gap:3px;min-width:0}
   .bill-tip-staff-identity>header b{color:#fff;font-size:13px;line-height:1.2}
-  .bill-tip-staff-identity>header small,.bill-tip-staff-identity .bill-tip-membership{color:#effaf3;font-size:10px;line-height:1.35}
-  .bill-tip-staff-identity .bill-tip-membership{margin:7px 0 0;padding-top:7px;border-top:1px solid rgb(255 255 255 / .38)}
+  .bill-tip-staff-identity>header small{color:#effaf3;font-size:10px;line-height:1.35}
+  .bill-tip-membership{margin:4px 0 5px;padding:4px 1px 5px;border-bottom:1px solid #b7d9c5;color:#657d87;font-size:10px;line-height:1.35}
   .bill-tip-staff-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
   .bill-tip-staff-card dl>div{min-width:0;padding:8px;border-radius:8px;background:#f9f6ef}
   .bill-tip-staff-card dt{color:#78878d;font-size:8px;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
