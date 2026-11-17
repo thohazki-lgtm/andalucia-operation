@@ -24,6 +24,7 @@ internal static class AndaluciaWindowsShutdownService
     private static IntPtr statusHandle;
     private static ServiceControlHandler handler;
     private static string projectRoot;
+    private static string sourceRoot;
     private static string expectedSha;
     private static string gitPath;
     private static string handshakeSha256;
@@ -46,8 +47,15 @@ internal static class AndaluciaWindowsShutdownService
     public static int Main(string[] args)
     {
         try {
-            projectRoot = Path.GetFullPath(RequiredValue(args, "--project-root"));
             bool disposableSimulation = Array.IndexOf(args, "--simulate-preshutdown") >= 0;
+            if (disposableSimulation) {
+                projectRoot = Path.GetFullPath(RequiredValue(args, "--project-root"));
+                sourceRoot = projectRoot;
+            } else {
+                sourceRoot = Path.GetFullPath(RequiredValue(args, "--source-root"));
+                projectRoot = Path.GetFullPath(RequiredValue(args, "--canonical-project-root"));
+                if (String.Equals(sourceRoot, projectRoot, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("SHUTDOWN_SERVICE_SOURCE_MUST_BE_ISOLATED");
+            }
             if (!disposableSimulation) {
                 expectedSha = RequiredValue(args, "--expected-sha").ToLowerInvariant();
                 gitPath = Path.GetFullPath(RequiredValue(args, "--git-path"));
@@ -152,10 +160,12 @@ internal static class AndaluciaWindowsShutdownService
         if (!System.Text.RegularExpressions.Regex.IsMatch(expectedSha ?? "", "^[0-9a-f]{40}$")) throw new InvalidOperationException("SHUTDOWN_SERVICE_EXPECTED_SHA_INVALID");
         if (!System.Text.RegularExpressions.Regex.IsMatch(handshakeSha256 ?? "", "^[0-9a-f]{64}$")) throw new InvalidOperationException("SHUTDOWN_SERVICE_HANDSHAKE_SHA_INVALID");
         if (!File.Exists(gitPath)) throw new InvalidOperationException("SHUTDOWN_SERVICE_GIT_MISSING");
-        string common = "-c safe.directory=\"" + projectRoot + "\" -C \"" + projectRoot + "\" ";
+        string common = "-c safe.directory=\"" + sourceRoot + "\" -C \"" + sourceRoot + "\" ";
         string head = RunGit(common + "rev-parse HEAD").Trim().ToLowerInvariant();
-        string branch = RunGit(common + "branch --show-current").Trim();
-        if (head != expectedSha || branch != "main") throw new InvalidOperationException("SHUTDOWN_SERVICE_SOURCE_BINDING_MISMATCH");
+        string changes = RunGit(common + "status --porcelain").Trim();
+        string approvalPath = Path.Combine(projectRoot, ".runtime", "approved-runtime-source.json");
+        string approval = File.Exists(approvalPath) ? File.ReadAllText(approvalPath) : "";
+        if (head != expectedSha || changes.Length != 0 || approval.IndexOf("\"approvedSha\":\"" + expectedSha + "\"", StringComparison.OrdinalIgnoreCase) < 0) throw new InvalidOperationException("SHUTDOWN_SERVICE_SOURCE_BINDING_MISMATCH");
     }
 
     private static string ComputeSha256(string path)
@@ -166,7 +176,7 @@ internal static class AndaluciaWindowsShutdownService
 
     private static string RunGit(string arguments)
     {
-        var start = new ProcessStartInfo { FileName = gitPath, Arguments = arguments, WorkingDirectory = projectRoot, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = new ProcessStartInfo { FileName = gitPath, Arguments = arguments, WorkingDirectory = sourceRoot, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         using (Process process = Process.Start(start)) {
             if (process == null || !process.WaitForExit(10000)) throw new InvalidOperationException("SHUTDOWN_SERVICE_SOURCE_INSPECTION_FAILED");
             string output = process.StandardOutput.ReadToEnd();

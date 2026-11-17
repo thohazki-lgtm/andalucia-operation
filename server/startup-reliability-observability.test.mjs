@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { acknowledgeGuardedStartupHealth } from './guarded-startup-observability.ts'
@@ -21,6 +21,9 @@ try {
   assert.equal(diagnostic.firstFatalError.cause, 'FIRST_CURRENT_FATAL')
   assert.equal(diagnostic.frontend.status, 'NOT_CHECKED')
   assert.equal(diagnostic.backend.status, 'NOT_CHECKED')
+  assert.equal(diagnostic.authentication.status, 'NOT_CHECKED')
+  assert.equal(diagnostic.bindings.frontend.status, 'NOT_CHECKED')
+  assert.equal(diagnostic.database.schema, 'UNKNOWN_WHILE_BACKEND_OFFLINE')
 
   const acknowledged = acknowledgeGuardedStartupHealth({ sha: 'a'.repeat(40), branch: 'main', storeId: 'andalucia-canonical-live', schema: '027', databaseStatus: 'HEALTHY' }, log)
   assert.equal(acknowledged, true)
@@ -35,6 +38,33 @@ try {
   assert.match(launcher, /ANDALUCIA_GUARDED_STARTUP_LOG/)
   assert.match(launcher, /Tee-Object -FilePath \$runtimeOutputLog/)
   assert.match(launcher, /firstFatal=/)
+  assert.match(launcher, /boundedMaximum=2/)
+
+  const diagnosticSource = await readFile(resolve('deployment/windows/Get-AndaluciaStartupDiagnostic.ps1'), 'utf8')
+  assert.match(diagnosticSource, /http:\/\/\[::1\]:5173\//)
+  assert.match(diagnosticSource, /api\/auth\/bootstrap-status/)
+  assert.match(diagnosticSource, /Get-ListenerOwnership 5173/)
+  assert.match(diagnosticSource, /Get-AndaluciaApprovedSourceState/)
+  assert.match(diagnosticSource, /RUNTIME_TERMINATED_WITHOUT_FINAL_RECORD/)
+
+  const canonicalFixture = join(fixture, 'canonical')
+  const sourceFixture = join(fixture, 'runtime-source')
+  await mkdir(join(canonicalFixture, '.runtime'), { recursive: true })
+  await mkdir(sourceFixture, { recursive: true })
+  execFileSync('git', ['init', '-b', 'main'], { cwd: sourceFixture })
+  execFileSync('git', ['config', 'user.email', 'synthetic@example.invalid'], { cwd: sourceFixture })
+  execFileSync('git', ['config', 'user.name', 'Synthetic Test'], { cwd: sourceFixture })
+  await writeFile(join(sourceFixture, 'approved.txt'), 'approved runtime source\n')
+  execFileSync('git', ['add', '.'], { cwd: sourceFixture })
+  execFileSync('git', ['commit', '-m', 'approved source'], { cwd: sourceFixture })
+  const approvedSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: sourceFixture, encoding: 'utf8' }).trim()
+  execFileSync('git', ['update-ref', 'refs/remotes/origin/main', approvedSha], { cwd: sourceFixture })
+  execFileSync('git', ['switch', '--detach', approvedSha], { cwd: sourceFixture })
+  await writeFile(join(canonicalFixture, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha, sourceRoot: sourceFixture }))
+  const resolverCommand = `. '${resolve('deployment/windows/Resolve-AndaluciaApprovedSource.ps1').replaceAll("'", "''")}'; Get-AndaluciaApprovedSourceState -ProjectRoot '${sourceFixture.replaceAll("'", "''")}' -CanonicalProjectRoot '${canonicalFixture.replaceAll("'", "''")}' | ConvertTo-Json -Compress`
+  const isolatedSource = JSON.parse(execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', resolverCommand], { encoding: 'utf8' }))
+  assert.equal(isolatedSource.Mode, 'verified_isolated_main')
+  assert.equal(isolatedSource.Sha, approvedSha)
 
   const activation = await readFile(resolve('deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1'), 'utf8')
   const preflight = activation.indexOf('$preflightOutput = & powershell.exe @preflightArguments')

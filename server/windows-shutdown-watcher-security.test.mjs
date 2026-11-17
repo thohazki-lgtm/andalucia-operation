@@ -118,6 +118,7 @@ try {
     if (-not $assignment) { throw 'SC_BINARY_PATH_ASSIGNMENT_MISSING' }
     $serviceExe = 'C:\Program Files\ANDALUCIA OPERATION\ShutdownGuard\AndaluciaWindowsShutdownService.exe'
     $root = 'C:\Users\Disposable SCM Fixture'
+    $sourceRoot = 'C:\Users\Disposable SCM Runtime Source'
     $approved = [pscustomobject]@{ Sha = '${'1'.repeat(40)}' }
     $git = 'C:\Program Files\Git\cmd\git.exe'
     $handshakeSha256 = '${'a'.repeat(64)}'
@@ -128,7 +129,8 @@ try {
   const serializedArguments = JSON.parse(nativeArgument.stdout)
   assert.equal(serializedArguments.length, 1, 'Windows PowerShell 5.1 must pass binPath as one native argument')
   assert.match(serializedArguments[0], /^"C:\\Program Files\\ANDALUCIA OPERATION\\ShutdownGuard\\AndaluciaWindowsShutdownService\.exe"/)
-  assert.match(serializedArguments[0], /--project-root "C:\\Users\\Disposable SCM Fixture"/)
+  assert.match(serializedArguments[0], /--source-root "C:\\Users\\Disposable SCM Runtime Source"/)
+  assert.match(serializedArguments[0], /--canonical-project-root "C:\\Users\\Disposable SCM Fixture"/)
   assert.match(serializedArguments[0], /--git-path "C:\\Program Files\\Git\\cmd\\git\.exe"/)
 
   const timeoutRegistryFixture = `
@@ -163,7 +165,8 @@ try {
   await exec(gitPath, ['config','user.name','Synthetic Test'], { cwd: good.root })
   await exec(gitPath, ['add','.'], { cwd: good.root })
   await exec(gitPath, ['commit','-m','disposable fixture'], { cwd: good.root })
-  const wrongSource = await runProcess(exe, ['--project-root',good.root,'--expected-sha','0000000000000000000000000000000000000000','--git-path',gitPath,'--handshake-sha256',handshakeSha])
+  await exec(gitPath, ['update-ref','refs/remotes/origin/main','HEAD'], { cwd: good.root })
+  const wrongSource = await runProcess(exe, ['--source-root',good.root,'--canonical-project-root',argvRoot,'--expected-sha','0000000000000000000000000000000000000000','--git-path',gitPath,'--handshake-sha256',handshakeSha])
   assert.notEqual(wrongSource.code, 0)
   assert.match(wrongSource.err + wrongSource.out, /SHUTDOWN_SERVICE_SOURCE_BINDING_MISMATCH/)
   const pending = runSimulation(exe, good, 8)

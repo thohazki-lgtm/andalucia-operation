@@ -41,6 +41,10 @@ function Get-FirstFatalRuntimeLine([string]$Path) {
   return (([string]$fatal) -replace '[\r\n;]+', ' ').Trim()
 }
 
+function Test-OrdinaryTransientRuntimeFailure([string]$Detail) {
+  return $Detail -match '(?i)(ECONNRESET|EPIPE|temporarily unavailable|resource temporarily unavailable|network name is no longer available)'
+}
+
 function Wait-StartupDependencies([int]$TimeoutSeconds = 90) {
   $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
   $attempt = 0
@@ -67,7 +71,7 @@ function Get-ApprovedSourceState {
   if ($RecoveryAuthorizationId) {
     return Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot -CanonicalProjectRoot $projectRoot -RecoveryAuthorizationId $RecoveryAuthorizationId
   }
-  return Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot
+  return Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot -CanonicalProjectRoot $projectRoot
 }
 
 try {
@@ -118,10 +122,26 @@ try {
     $apiCommand = "`"$tsxCommand`" `"$recoveryBootstrap`" --source-root `"$runtimeSourceRoot`" --canonical-root `"$projectRoot`" --authorization-id `"$RecoveryAuthorizationId`""
     $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$runtimeSourceRoot`""
     & $concurrentlyCommand -k -n api,client -c blue,cyan $apiCommand $clientCommand 2>&1 | Tee-Object -FilePath $runtimeOutputLog -Append
+    $runtimeExit = $LASTEXITCODE
   } else {
-    & $npmCommand run dev:canonical 2>&1 | Tee-Object -FilePath $runtimeOutputLog -Append
+    foreach ($runtimeDependency in @($tsxCommand, $viteCommand, $concurrentlyCommand)) {
+      if (-not (Test-Path -LiteralPath $runtimeDependency -PathType Leaf)) { throw "ANDALUCIA_RUNTIME_DEPENDENCY_MISSING:$runtimeDependency" }
+    }
+    $apiCommand = "`"$tsxCommand`" `"$(Join-Path $runtimeSourceRoot 'server\index.ts')`""
+    $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$projectRoot`""
+    $attempt = 0
+    do {
+      $attempt += 1
+      & $concurrentlyCommand -k -n api,client -c blue,cyan $apiCommand $clientCommand 2>&1 | Tee-Object -FilePath $runtimeOutputLog -Append
+      $runtimeExit = $LASTEXITCODE
+      if ($runtimeExit -eq 0) { break }
+      $retryFatal = Get-FirstFatalRuntimeLine $runtimeOutputLog
+      $ownershipMarkerPresent = Test-Path -LiteralPath (Join-Path $canonicalData 'postmaster.pid')
+      if ($attempt -ge 2 -or $ownershipMarkerPresent -or -not (Test-OrdinaryTransientRuntimeFailure $retryFatal)) { break }
+      Write-StartupLog 'RETRYING' "attempt=$attempt;reason=$retryFatal;boundedMaximum=2"
+      Start-Sleep -Seconds 5
+    } while ($true)
   }
-  $runtimeExit = $LASTEXITCODE
   if ($runtimeExit -ne 0) {
     $responseRoot = Join-Path $projectRoot '.backups\.db2\scheduler\control\responses'
     $gracefulSchedulerStop = Get-ChildItem -LiteralPath $responseRoot -Filter '*.json' -File -ErrorAction SilentlyContinue | ForEach-Object {
