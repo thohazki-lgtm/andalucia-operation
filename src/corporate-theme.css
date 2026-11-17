@@ -9226,12 +9226,13 @@ html body .app-shell main.module-incentives-and-bill-tips .earnings-preview-resu
   }
 
   html body .app-shell main.module-incentives-and-bill-tips .bill-tip-staff-identity {
+    min-height: 0;
     margin-bottom: 0;
   }
 
   html body .app-shell main.module-incentives-and-bill-tips .bill-tip-membership {
-    margin: 3px 0 5px;
-    padding: 3px 1px 5px;
+    margin: 2px 0 4px;
+    padding: 2px 1px 4px;
     border-bottom-color: #b7d9c5;
   }
 
