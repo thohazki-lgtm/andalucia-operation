@@ -309,17 +309,17 @@
   .earnings-preview-results>.financial-subsection>header{align-items:flex-start;gap:9px}
   .earnings-incentive-preview .financial-table-wrap,.staff-incentive-summary .financial-table-wrap{overflow-x:auto}
   .earnings-summary-desktop{display:none}
-  .earnings-staff-cards{display:grid;gap:10px;margin-top:12px}
-  .earnings-staff-card{min-width:0;padding:13px;border:1px solid var(--financial-gold);border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%)}
-  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #eadbbd}
-  .earnings-staff-card>header>div{display:grid;gap:3px;min-width:0}
+  .earnings-staff-cards{display:grid;gap:7px;margin-top:8px}
+  .earnings-staff-card{min-width:0;padding:10px;border:1px solid #82b9a2;border-radius:10px;background:linear-gradient(145deg,#effaf3 0%,#e3f4e9 100%)}
+  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #9bcbb6}
+  .earnings-staff-card>header>div{display:grid;gap:2px;min-width:0}
   .earnings-staff-card>header b{color:#173d56;font-size:13px;line-height:1.2}
   .earnings-staff-card>header small{color:#6f828c;font-size:10px}
-  .earnings-staff-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 0}
-  .earnings-staff-card dl>div{min-width:0;padding:8px;border-radius:8px;background:#f9f6ef}
+  .earnings-staff-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0 0}
+  .earnings-staff-card dl>div{min-width:0;padding:6px 8px;border:1px solid #c6e3d2;border-radius:8px;background:#edf8f1}
   .earnings-staff-card dt{color:#78878d;font-size:8px;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
-  .earnings-staff-card dd{margin:4px 0 0;color:#294b60;font-size:12px;font-weight:750}
-  .earnings-staff-card .earnings-total{background:#f4ead6}
-  .earnings-staff-card .earnings-total dd{color:#173d56;font:800 16px 'Playfair Display',serif}
-  .earnings-staff-card>.financial-review-reason{max-width:none;margin-top:9px}
+  .earnings-staff-card dd{margin:2px 0 0;color:#294b60;font-size:12px;font-weight:750;line-height:1.2}
+  .earnings-staff-card .earnings-total{border-color:#9fcdb2;background:#d3ecdd}
+  .earnings-staff-card .earnings-total dd{color:#173d56;font:800 15px/1.2 'Playfair Display',serif}
+  .earnings-staff-card>.financial-review-reason{max-width:none;margin-top:6px}
 }

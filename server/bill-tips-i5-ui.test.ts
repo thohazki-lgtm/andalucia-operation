@@ -233,5 +233,12 @@ assert.match(corporateTheme, /html:has\(\.app-shell > main\.module-incentives-an
 assert.match(styles, /@media\(max-width:700px\)\{\.external-list,[\s\S]*?\.external-list article\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:8px;padding:10px\}/)
 assert.match(styles, /\.external-remarks,\.quick-amounts\{grid-column:1\/-1\}/)
 assert.match(styles, /\.quick-amounts\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\);width:100%;gap:6px\}/)
+assert.match(styles, /\.earnings-staff-cards\{display:grid;gap:7px;margin-top:8px\}/)
+assert.match(styles, /\.earnings-staff-card\{min-width:0;padding:10px;border:1px solid #82b9a2;[\s\S]*?background:linear-gradient\(145deg,#effaf3 0%,#e3f4e9 100%\)\}/)
+assert.match(styles, /\.earnings-staff-card>header\{[\s\S]*?padding-bottom:6px;border-bottom:1px solid #9bcbb6\}/)
+assert.match(styles, /\.earnings-staff-card dl>div\{[\s\S]*?padding:6px 8px;border:1px solid #c6e3d2;[\s\S]*?background:#edf8f1\}/)
+assert.match(styles, /\.earnings-staff-card \.earnings-total\{border-color:#9fcdb2;background:#d3ecdd\}/)
+assert.doesNotMatch(styles, /\.earnings-staff-card(?:>|\s)[^{]*\{[^}]*#(?:eadbbd|f4ead6|f9f6ef)/)
+assert.match(corporateTheme, /\.earnings-staff-card \{[\s\S]*?background: linear-gradient\(145deg, #effaf3 0%, #e3f4e9 100%\);/)
 
 console.log('Bill Tips I5 UI assertions passed.')
