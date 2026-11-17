@@ -48,6 +48,7 @@
     "test:windows-shutdown-watcher": "node server/windows-shutdown-watcher-security.test.mjs",
     "test:runtime-source-version": "tsx server/runtime-source-version.test.ts",
     "test:database-operation-coordinator": "tsx server/database-operation-coordinator.test.ts",
+    "test:requested-backup-activation-security": "tsx server/requested-backup-activation-security.test.mjs",
     "test:secure-cloud-upload": "tsx server/secure-cloud-upload.test.ts",
     "test:cloud-provisioning": "tsx server/google-drive-provisioning.test.ts",
     "cloud:provision": "tsx server/google-drive-provisioning-cli.ts",
