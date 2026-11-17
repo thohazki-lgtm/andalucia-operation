@@ -230,5 +230,8 @@ assert.match(chargeableStyles, /\.chargeable-filter-toggle\.ao-action\{box-sizin
 assert.match(chargeableStyles, /@media\(max-width:700px\)\{[\s\S]*?\.panel\.chargeable-panel \.chargeable-table-wrap\{scrollbar-gutter:auto\}[\s\S]*?\.chargeable-card-grid\{box-sizing:border-box;width:100%;[\s\S]*?\.mobile-operation-card\.mobile-chargeable-card\{box-sizing:border-box;width:100%;max-width:100%/)
 assert.match(corporateTheme, /html:has\(\.app-shell > main\.module-incentives-and-bill-tips\)::-webkit-scrollbar,[\s\S]*?width: 7px;[\s\S]*?height: 7px;/)
 assert.match(corporateTheme, /html:has\(\.app-shell > main\.module-incentives-and-bill-tips\)::-webkit-scrollbar-thumb,[\s\S]*?border: 1px solid #dec58f;[\s\S]*?background: linear-gradient\(180deg, #103e38 0%, #287a69 100%\);/)
+assert.match(styles, /@media\(max-width:700px\)\{\.external-list,[\s\S]*?\.external-list article\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:8px;padding:10px\}/)
+assert.match(styles, /\.external-remarks,\.quick-amounts\{grid-column:1\/-1\}/)
+assert.match(styles, /\.quick-amounts\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\);width:100%;gap:6px\}/)
 
 console.log('Bill Tips I5 UI assertions passed.')
