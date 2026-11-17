@@ -81,7 +81,7 @@
 @media(max-width:390px){.table-range-row{grid-template-columns:1fr}.table-range-row .booking-config-row-actions{grid-column:1;justify-self:end}.booking-config-row-actions{gap:4px}.booking-status-config-row .booking-config-row-actions{grid-template-columns:46px 34px 58px}.booking-status-config-row .compact-state{width:46px}.booking-status-config-row .compact-edit-action{width:34px}.booking-status-config-row .protected-config{width:58px}.booking-config-modal{padding-inline:13px}}
 
 /* Final Bookings service polish */
-.booking-guest-trigger{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:0;border:0;background:transparent;color:#173d56;font:inherit;text-align:left;cursor:pointer}.booking-guest-trigger b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.booking-guest-trigger span{display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;width:18px;height:18px;border:1px solid #cbd9df;border-radius:50%;color:#1b6288;font-size:15px;line-height:1}.booking-guest-trigger:hover b{text-decoration:underline;text-decoration-color:#bd9854;text-underline-offset:3px}.booking-guest-trigger:focus-visible{outline:2px solid #1b6288;outline-offset:3px;border-radius:3px}.booking-guest-trigger.mobile{margin-top:3px;font-size:15px;font-weight:800}.booking-guest-trigger.mobile span{width:22px;height:22px;flex-basis:22px}
+.booking-guest-trigger{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:0;border:0;background:transparent;color:#173d56;font:inherit;text-align:left;cursor:pointer}.booking-guest-trigger b{min-width:0;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.booking-guest-trigger span{display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;width:18px;height:18px;border:1px solid #cbd9df;border-radius:50%;color:#1b6288;font-size:15px;line-height:1}.booking-guest-trigger:hover b{text-decoration:underline;text-decoration-color:#bd9854;text-underline-offset:3px}.booking-guest-trigger:focus-visible{outline:2px solid #1b6288;outline-offset:3px;border-radius:3px}.booking-guest-trigger.mobile{margin-top:3px;font-size:15px;font-weight:800}.booking-guest-trigger.mobile span{width:22px;height:22px;flex-basis:22px}
 .service-table{min-width:1010px}.service-table th:nth-child(3){width:180px}.service-table th:nth-child(9){width:190px}.service-table .service-actions{flex-wrap:nowrap;margin-top:5px}.service-table .service-actions button{padding:4px 6px;min-height:25px}.compact-operation-card{border-top:3px solid #bd9854;background:linear-gradient(135deg,#fffaf0,#fff)}.compact-operation-card .booking-detail{grid-template-columns:145px minmax(0,1fr)}.booking-source-evidence{overflow:hidden;border:1px solid #e1e8eb;border-radius:9px;background:#fff}.booking-source-evidence>summary{padding:13px 16px;color:#315167;font-size:11px;font-weight:800;cursor:pointer;list-style-position:inside}.booking-source-evidence[open]>summary{border-bottom:1px solid #e8edef}.booking-source-evidence .source-section{border:0;border-radius:0}.booking-detail-actions{position:sticky;bottom:-28px;background:#fff;padding-bottom:2px}
 @media(max-width:700px){.booking-guest-trigger.mobile{max-width:100%}.mobile-card-actions:empty{display:none}.compact-operation-card .booking-detail{grid-template-columns:1fr}.booking-source-evidence>summary{min-height:44px}.booking-detail-actions{bottom:-22px}.service-summary .warning small{color:#8c6728;font-weight:700}}
 
@@ -143,6 +143,7 @@
 .service-table .service-covers b{font-size:15px;line-height:1}
 .service-table select{font-size:10.5px;line-height:1.2}
 .service-table .occasion-chip,.service-table .allergy-alert{font-size:9px;line-height:1.2}
+.booking-tlc-pill{border-color:#55a9d0!important;background:#e4eff4!important;color:#23678c!important}
 .booking-arrived-banner{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
 .booking-arrived-banner strong{font:inherit}
 .booking-arrived-banner small{font-size:10px;font-weight:700;letter-spacing:.025em;opacity:.9}
@@ -221,15 +222,15 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
   .booking-detail-section-heading{align-items:center}
   .booking-members-table{display:none}
   .booking-member-cards{display:grid;gap:6px}
-  .booking-member-cards>article{min-width:0;padding:7px;border:1px solid #c5a35a;border-left:3px solid #31587b;border-radius:8px;background:#eaf7ff}
-  .booking-member-cards header{display:grid;gap:2px;margin:-7px -7px 6px;padding:8px 12px 7px;border-bottom:1px solid #9bcce7;border-radius:7px 7px 0 0;background:#cfefff}
+  .booking-member-cards>article{min-width:0;padding:6px;border:1px solid #c5a35a;border-left:3px solid #31587b;border-radius:8px;background:#eaf7ff}
+  .booking-member-cards header{display:grid;gap:1px;margin:-6px -6px 5px;padding:6px 9px 5px;border-bottom:1px solid #9bcce7;border-radius:7px 7px 0 0;background:#cfefff}
   .booking-member-cards header span{color:#8a713d;font-size:8px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
   .booking-member-cards header b{color:#173d56;font-size:12px;line-height:1.25;overflow-wrap:anywhere}
-  .booking-member-cards dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 8px;margin:0}
+  .booking-member-cards dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px;margin:0}
   .booking-member-cards dl>div{min-width:0}
   .booking-member-cards dt{color:#7b8c97;font-size:8px;font-weight:700;text-transform:uppercase}
   .booking-member-cards dd{margin:1px 0 0;color:#294b61;font-size:9.5px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
-  .booking-member-cards .booking-member-notes{grid-column:1/-1}
+  .booking-member-cards .booking-member-notes{grid-column:auto}
   .booking-detail-drawer .booking-detail-actions{bottom:-13px;margin:0 -13px -13px;padding:9px 13px}
   .booking-detail-drawer .booking-detail-actions .ao-action{width:100%;min-width:0;min-height:44px}
 }
@@ -286,10 +287,11 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
   .booking-command>div:last-child .ao-action__label{min-width:0;overflow-wrap:normal}
   .mobile-card-actions>.ao-action,.mobile-card-fields .ao-status-select{min-height:44px}
   .mobile-booking-list .mobile-operation-card{padding:13px}
-  .mobile-booking-list .mobile-operation-card>header{align-items:center;margin-bottom:10px}
+  .mobile-booking-list .mobile-operation-card>header{align-items:center;margin:-13px -13px 10px;padding:11px 12px 10px;border-bottom:1px solid #9fcce4;border-radius:8px 8px 0 0;background:#cfefff}
   .mobile-booking-list .mobile-operation-card>header>div{display:grid;min-width:0;align-content:center;gap:2px}
   .mobile-booking-list .booking-guest-trigger.mobile{margin-top:0}
   .mobile-booking-list .mobile-card-facts{gap:8px;padding:10px 0}
+  .module-bookings .mobile-booking-list .mobile-operation-card .mobile-card-facts small,.module-bookings .mobile-booking-list .mobile-operation-card .mobile-card-facts b,.module-bookings .mobile-booking-list .mobile-operation-card .mobile-card-facts .quiet-value,.module-bookings .mobile-booking-list .mobile-operation-card .mobile-card-facts .booking-info-pill,.module-bookings .mobile-booking-list .mobile-operation-card .mobile-card-fields>label{color:#244b64;font-weight:800!important}
   .mobile-booking-list .mobile-card-fields{gap:8px;margin-top:10px}
   .mobile-booking-list .mobile-card-actions{gap:7px;margin-top:10px}
   .service-actions .ao-action{min-height:44px}
@@ -299,7 +301,7 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
   .service-summary span{font-size:12px}
   .service-summary strong{font-size:28px}
   .service-summary small{font-size:11px}
-  .mobile-booking-list .booking-guest-trigger b{font-size:16px}
+  .mobile-booking-list .booking-guest-trigger b{font-size:14px;line-height:1.15}
   .mobile-booking-list .mobile-card-kicker{font-size:11px}
 }
 
@@ -429,6 +431,8 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 .booking-command .booking-date-picker .ao-financial-date-control__trigger svg{flex:0 0 auto}
 .booking-command .booking-date-picker .ao-financial-date-control__trigger:focus-visible{outline:2px solid #c5a35a;outline-offset:2px}
 .module-bookings .booking-date-picker .ao-financial-picker{position:absolute;top:calc(100% + 10px);left:50%;z-index:300;box-sizing:border-box;width:min(330px,calc(100vw - 28px));padding:12px;overflow:hidden;border:1px solid #c5a35a;border-top:3px solid #c5a35a;border-radius:14px;background:linear-gradient(160deg,#eaf7ff 0%,#cfefff 55%,#b9e5fb 100%);color:#1c2e4c;box-shadow:0 20px 48px rgb(28 46 76 / 32%);font-family:var(--ao-font-body,"Good Sans",Arial,sans-serif);transform:translateX(-50%)}
+/* Keep every Bookings dialog above the page-level date picker and its floating calendar. */
+main.module-bookings .modal-backdrop{z-index:400}
 .module-bookings .booking-date-picker .ao-financial-picker__header{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid rgb(197 163 90 / 72%)}
 .module-bookings .booking-date-picker .ao-financial-picker__header strong{overflow:hidden;color:#1c2e4c;font:500 21px/1.1 var(--ao-font-display,"Dahlia",serif);text-align:center;text-overflow:ellipsis;white-space:nowrap}
 .app-shell main.module-bookings .booking-date-picker .ao-financial-picker__header strong{font-family:var(--ao-font-display)!important;font-synthesis:none}
@@ -608,13 +612,13 @@ html body .app-shell main.module-bookings .booking-detail-drawer .booking-member
 }
 
 @media(max-width:900px) and (min-width:701px){
-  .booking-command{grid-template-areas:"copy actions" "navigation navigation";grid-template-columns:minmax(0,1fr) auto;row-gap:9px}
-  .booking-command-actions{display:grid;width:auto;grid-template-columns:repeat(2,minmax(104px,1fr))}
+  .booking-command{grid-template-areas:"copy" "navigation" "actions";grid-template-columns:1fr;row-gap:9px}
+  .booking-command-actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(104px,1fr))}
   .booking-command-actions .ao-action{width:100%;min-width:0}
 }
 
 @media(max-width:700px){
-  .booking-command{display:grid;grid-template-areas:"copy" "actions" "navigation";grid-template-columns:1fr;gap:8px;padding:10px}
+  .booking-command{display:grid;grid-template-areas:"copy" "navigation" "actions";grid-template-columns:1fr;gap:8px;padding:10px}
   .booking-command .ao-action,.booking-command .ao-icon-action{min-height:44px}
   .booking-command-copy h2{font-size:21px}
   .booking-command-navigation{
@@ -727,6 +731,9 @@ main.module-bookings .activity-import-modal>h2 { display:flex; min-height:66px; 
   main.module-bookings .booking-entry-modal>h2 { margin:-14px -14px 10px; padding:13px 44px 12px 14px; font-size:21px; }
   main.module-bookings .activity-import-modal>h2 { min-height:62px; margin:0; padding:12px 48px 11px 14px; }
   .booking-entry-modal .booking-form-grid { grid-template-columns:1fr; gap:8px; }
+  .booking-edit-modal .booking-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+  .booking-edit-modal .booking-form-grid>label { padding:5px 6px; }
+  .booking-edit-modal .booking-form-grid>label:last-child:nth-child(odd) { grid-column:1/-1; }
   .booking-entry-modal .form-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); margin-inline:-4px; padding:10px 4px 0; background:transparent; }
   .booking-entry-modal .form-actions .ao-action { width:100%; min-width:0; min-height:44px; }
 }

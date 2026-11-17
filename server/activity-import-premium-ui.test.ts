@@ -143,6 +143,8 @@ try {
   await cdp.evaluate(`document.querySelector('.duplicate-item summary')?.click()`)
   assert.equal(await clickText(cdp, 'Re-analyze Intelligence'), true)
   await waitForSelector(cdp, '.reanalysis-summary')
+  assert.equal(await cdp.evaluate<boolean>(`!Array.from(document.querySelectorAll('button')).some(button=>button.textContent?.trim()==='View Intelligence')`), true)
+  assert.equal(await cdp.evaluate<boolean>(`!document.querySelector('.intelligence-comparison')`), true)
   await cdp.evaluate(`document.querySelector('.duplicate-section')?.scrollIntoView({block:'start'})`); await sleep(100); await screenshot(cdp, 'duplicates-expanded-1440.png')
   await setViewport(cdp, 390); await cdp.evaluate(`document.querySelector('.duplicate-section')?.scrollIntoView({block:'start'})`); await sleep(80); await screenshot(cdp, 'duplicates-expanded-390.png')
   await setViewport(cdp, 1440)

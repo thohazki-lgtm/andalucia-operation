@@ -704,7 +704,16 @@ main:has(.reports-page){min-width:0;max-width:100%;overflow-x:hidden}
 .module-reports>.reports-header{margin-bottom:8px}
 .module-reports>.reports-header :is(h1,.eyebrow,.report-header-date){color:#fff}
 .module-reports>.reports-header .eyebrow{color:#f4ecf8}
-.module-reports .report-mode-tabs{gap:10px;width:min(100%,760px);padding:0;border:0;background:transparent}
+.module-reports .report-mode-tabs{
+  gap:10px;
+  width:min(100%,780px);
+  padding:8px;
+  border:1px solid var(--reports-purple-line);
+  border-top:3px solid var(--reports-gold);
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--reports-purple-surface) 0%,var(--reports-lavender) 100%);
+  box-shadow:0 7px 18px rgba(45,21,65,.14);
+}
 .module-reports .report-mode-tabs .ao-action{
   border:1px solid var(--reports-gold);
   border-radius:12px;
@@ -722,7 +731,59 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
 html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-action.active .ao-action__label{color:#fff!important;-webkit-text-fill-color:#fff}
 html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-action:not(.active),
 html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-action:not(.active) .ao-action__label{
-  color:#173e54;
+  color:var(--reports-purple-deep);
+}
+html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-action{
+  border-color:var(--reports-purple-line);
+  background:var(--reports-purple-surface-strong);
+  color:var(--reports-purple-deep);
+  text-transform:uppercase;
+}
+html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-action.active{
+  border-color:var(--reports-gold);
+  background:var(--reports-purple-deep);
+  color:#fff;
+}
+html body .app-shell>main.module-reports .reports-page #daily-service .daily-performance-kpis .report-stat>strong{
+  display:block;
+  width:100%;
+  text-align:center;
+}
+html:has(.app-shell main.module-reports),
+body:has(.app-shell main.module-reports),
+html body .app-shell main.module-reports,
+html body .app-shell main.module-reports :is(.report-mode-content,.report-table-wrap){
+  scrollbar-width:thin;
+  scrollbar-color:#673b83 #e5d6ed;
+}
+html:has(.app-shell main.module-reports)::-webkit-scrollbar,
+body:has(.app-shell main.module-reports)::-webkit-scrollbar,
+html body .app-shell main.module-reports::-webkit-scrollbar,
+html body .app-shell main.module-reports :is(.report-mode-content,.report-table-wrap)::-webkit-scrollbar{
+  width:7px;
+  height:7px;
+}
+html:has(.app-shell main.module-reports)::-webkit-scrollbar-track,
+body:has(.app-shell main.module-reports)::-webkit-scrollbar-track,
+html body .app-shell main.module-reports::-webkit-scrollbar-track,
+html body .app-shell main.module-reports :is(.report-mode-content,.report-table-wrap)::-webkit-scrollbar-track{
+  border-radius:999px;
+  background:#e5d6ed;
+}
+html:has(.app-shell main.module-reports)::-webkit-scrollbar-thumb,
+body:has(.app-shell main.module-reports)::-webkit-scrollbar-thumb,
+html body .app-shell main.module-reports::-webkit-scrollbar-thumb,
+html body .app-shell main.module-reports :is(.report-mode-content,.report-table-wrap)::-webkit-scrollbar-thumb{
+  min-height:36px;
+  border:1px solid #e5d6ed;
+  border-radius:999px;
+  background:linear-gradient(180deg,#35154d 0%,#673b83 100%);
+}
+html:has(.app-shell main.module-reports)::-webkit-scrollbar-thumb:hover,
+body:has(.app-shell main.module-reports)::-webkit-scrollbar-thumb:hover,
+html body .app-shell main.module-reports::-webkit-scrollbar-thumb:hover,
+html body .app-shell main.module-reports :is(.report-mode-content,.report-table-wrap)::-webkit-scrollbar-thumb:hover{
+  background:#35154d;
 }
 .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header){
   margin-bottom:0;
@@ -901,7 +962,7 @@ html body .app-shell>main.module-reports .reports-page .report-mode-tabs .ao-act
   }
 }
 @media(max-width:650px){
-  .module-reports .report-mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible}
+  .module-reports .report-mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:7px;overflow:visible}
   .module-reports .report-mode-tabs .ao-action{min-width:0}
   .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header){padding:11px}
   .module-reports .reports-page :is(.daily-report-header,.weekly-report-header,.monthly-report-header) .ao-date-control input{font-size:20px}
@@ -1083,6 +1144,20 @@ html body .app-shell main.module-reports .reports-page :is(
 .module-reports .reports-page :is(.weekly-report,.monthly-report,.custom-report)> :is(.monthly-dashboard-section,.monthly-readiness-panel,.custom-dashboard-section){
   margin:0;
 }
+@media(max-width:900px){
+  .module-reports .reports-page .daily-report-header{
+    position:relative;
+  }
+  .module-reports .reports-page .daily-report-header .daily-report-identity{
+    padding-right:112px;
+  }
+  .module-reports .reports-page .daily-report-header .daily-status{
+    position:absolute;
+    top:11px;
+    right:11px;
+    z-index:1;
+  }
+}
 @media(max-width:650px){
   .module-reports .reports-page .report-mode-content:has(>.daily-report-header){
     gap:0;
@@ -1102,5 +1177,131 @@ html body .app-shell main.module-reports .reports-page :is(
     #daily-readiness .monthly-readiness
   ){
     gap:12px;
+  }
+}
+
+/* Daily Report detail editors: contained void card and lighter verification rows. */
+.module-reports .reports-page #daily-symphony .void-editor{
+  margin:10px 0 0;
+  padding:11px 12px 12px;
+  overflow:hidden;
+}
+.module-reports .reports-page #daily-symphony .detail-editor-title{
+  min-height:0;
+  gap:10px;
+}
+.module-reports .reports-page #daily-symphony .void-editor details{
+  box-sizing:border-box;
+  width:100%;
+  margin-top:8px;
+  overflow:hidden;
+}
+.module-reports .reports-page #daily-verification .service-verification-charge-grid{
+  align-items:start;
+}
+.module-reports .reports-page #daily-verification .service-verification-card{
+  padding:11px 12px;
+  box-shadow:none;
+}
+.module-reports .reports-page #daily-verification .service-verification-card>header{
+  margin-bottom:8px;
+  padding-bottom:7px;
+}
+.module-reports .reports-page #daily-verification :is(.service-verification-card,.service-charge-card)>header h4{
+  font-size:15px;
+  line-height:1.15;
+}
+.module-reports .reports-page #daily-verification .service-charge-fields>label:nth-child(2),
+.module-reports .reports-page #daily-verification .service-charge-readonly>div:nth-child(2){
+  display:none;
+}
+.module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-table-wrap{
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-gutter:auto;
+  border-radius:10px;
+  background:#eee4f4;
+}
+.module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-table{
+  box-sizing:border-box;
+  background:#eee4f4;
+}
+.module-reports .reports-page #daily-time .report-table td:first-child b{
+  font-family:'DM Sans',Arial,Helvetica,sans-serif;
+  font-weight:500;
+  letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"zero" 0,"tnum" 1;
+}
+.module-reports .reports-page .daily-report-header~.monthly-dashboard-section .report-empty,
+.module-reports .reports-page #daily-occasions .occasion-room-grid article:has(div>small:only-child){
+  border-color:var(--reports-gold-soft);
+  background:#eee4f4;
+  box-shadow:none;
+}
+.module-reports .reports-page #daily-verification .double-dine-compact{
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+}
+.module-reports .reports-page #daily-verification .double-dine-total-summary{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+}
+.module-reports .reports-page #daily-verification .service-verification-details{
+  margin-top:8px;
+}
+.module-reports .reports-page #daily-verification .service-verification-details>summary{
+  min-height:34px;
+  padding:6px 2px;
+}
+.module-reports .reports-page #daily-verification .double-dine-editor-head,
+.module-reports .reports-page #daily-verification .double-dine-editor-row{
+  grid-template-columns:minmax(74px,.7fr) 64px minmax(115px,1.15fr) 34px;
+}
+.module-reports .reports-page #daily-verification .double-dine-editor-head>*{
+  min-height:30px;
+  padding:7px 8px;
+  font-size:10px;
+}
+.module-reports .reports-page #daily-verification .double-dine-editor-row label{
+  padding:5px 6px;
+}
+.module-reports .reports-page #daily-verification .double-dine-editor-row input{
+  min-height:34px;
+  padding:6px 7px;
+  font-size:12px;
+}
+.module-reports .reports-page #daily-verification .double-dine-editor-row .ao-icon-action{
+  width:32px;
+  height:32px;
+  min-width:32px;
+  min-height:32px;
+}
+@media(max-width:650px){
+  .module-reports .reports-page #daily-symphony .void-editor{
+    padding:10px;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-compact{
+    grid-template-columns:1fr;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-add{
+    width:100%;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-editor-row{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding:9px;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-editor-row label{
+    padding:0;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-editor-row label:nth-of-type(3){
+    grid-column:1/-1;
+  }
+  .module-reports .reports-page #daily-verification .double-dine-editor-row .ao-icon-action{
+    grid-column:1/-1;
+    justify-self:end;
   }
 }
