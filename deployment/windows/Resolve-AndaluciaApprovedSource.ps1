@@ -407,6 +407,17 @@ function Get-AndaluciaApprovedSourceState {
     return [ordered]@{ Sha=$headSha; Branch="recovery/$RecoveryAuthorizationId"; Mode='approved_journal_bound_recovery'; PreviousLiveSha=[string]$authorization.previousLiveSha; TargetSha=[string]$authorization.targetSha; AuthorizationId=$RecoveryAuthorizationId }
   }
   $originMainSha = Resolve-AndaluciaGitRef $ProjectRoot 'refs/remotes/origin/main'
+  if ($CanonicalProjectRoot) {
+    $canonicalRoot = [IO.Path]::GetFullPath($CanonicalProjectRoot)
+    if ([IO.Path]::GetFullPath($ProjectRoot) -ne $canonicalRoot -and -not $branch) {
+      $runtimeApprovalPath = Join-Path $canonicalRoot '.runtime\approved-runtime-source.json'
+      if (-not (Test-Path -LiteralPath $runtimeApprovalPath -PathType Leaf)) { throw 'ANDALUCIA_ISOLATED_RUNTIME_APPROVAL_MISSING' }
+      try { $runtimeApproval = Get-Content -LiteralPath $runtimeApprovalPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_ISOLATED_RUNTIME_APPROVAL_INVALID' }
+      if ([string]$runtimeApproval.version -ne 'andalucia-approved-runtime-source-v1' -or [string]$runtimeApproval.approvedSha -ne $headSha -or [IO.Path]::GetFullPath([string]$runtimeApproval.sourceRoot) -ne [IO.Path]::GetFullPath($ProjectRoot)) { throw 'ANDALUCIA_ISOLATED_RUNTIME_APPROVAL_MISMATCH' }
+      Assert-AndaluciaGitAncestor $ProjectRoot $headSha $originMainSha 'ANDALUCIA_ISOLATED_RUNTIME_NOT_FROM_APPROVED_MAIN'
+      return [ordered]@{ Sha=$headSha; Branch='main'; Mode='verified_isolated_main'; ApprovedMainSha=$headSha; AvailableMainSha=$originMainSha; CanonicalProjectRoot=$canonicalRoot }
+    }
+  }
   if ($branch -eq 'main') {
     if ($headSha -ne $originMainSha) { throw "ANDALUCIA_RUNTIME_SOURCE_NOT_APPROVED_MAIN:${headSha}:${originMainSha}" }
     return [ordered]@{ Sha=$headSha; Branch=$branch; Mode='verified_main'; ApprovedMainSha=$originMainSha }

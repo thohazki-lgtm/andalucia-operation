@@ -106,8 +106,13 @@ try {
     $allowHardTerminate = $taskDefinition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $taskNamespace).InnerText
     $stopOnIdleEnd = $taskDefinition.SelectSingleNode('//t:Settings/t:IdleSettings/t:StopOnIdleEnd', $taskNamespace).InnerText
     $executionTimeLimit = $taskDefinition.SelectSingleNode('//t:Settings/t:ExecutionTimeLimit', $taskNamespace).InnerText
-    $expectedLauncher = [IO.Path]::GetFullPath((Join-Path $projectRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
-    if ([IO.Path]::GetFullPath($taskWorkingDirectory) -ne $projectRoot -or $taskArguments -notlike "*$expectedLauncher*" -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { Stop-Readiness 'RUNTIME_TASK_ACTION_DRIFT' "$taskCommand $taskArguments $taskWorkingDirectory" }
+    $legacyLauncher = [IO.Path]::GetFullPath((Join-Path $projectRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
+    $isolatedRuntimeRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.runtime\live-main-source'))
+    $isolatedLauncher = [IO.Path]::GetFullPath((Join-Path $isolatedRuntimeRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
+    $taskDirectory = [IO.Path]::GetFullPath($taskWorkingDirectory)
+    $legacyTaskAction = $taskDirectory -eq $projectRoot -and $taskArguments -like "*$legacyLauncher*"
+    $isolatedTaskAction = $taskDirectory -eq $isolatedRuntimeRoot -and $taskArguments -like "*$isolatedLauncher*" -and $taskArguments -like '*-SourceRoot*' -and $taskArguments -like '*-CanonicalProjectRoot*'
+    if ((-not $legacyTaskAction -and -not $isolatedTaskAction) -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { Stop-Readiness 'RUNTIME_TASK_ACTION_DRIFT' "$taskCommand $taskArguments $taskWorkingDirectory" }
     if ($allowHardTerminate -ne 'false' -or $stopOnIdleEnd -ne 'false' -or $executionTimeLimit -ne 'PT0S') { Stop-Readiness 'RUNTIME_TASK_SAFETY_DRIFT' "AllowHardTerminate=$allowHardTerminate StopOnIdleEnd=$stopOnIdleEnd ExecutionTimeLimit=$executionTimeLimit" }
 
     if (-not (Test-Path -LiteralPath $listenerEvidenceModule -PathType Leaf)) { Stop-Readiness 'RUNTIME_LISTENER_EVIDENCE_CONTROL_MISSING' $listenerEvidenceModule }

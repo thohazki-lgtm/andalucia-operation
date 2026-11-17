@@ -1,8 +1,13 @@
 [CmdletBinding()]
-param([string]$ProjectRoot)
+param(
+  [string]$SourceRoot,
+  [string]$CanonicalProjectRoot,
+  [string]$ProjectRoot
+)
 
 $ErrorActionPreference = 'Stop'
-$root = if ($ProjectRoot) { [IO.Path]::GetFullPath($ProjectRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$root = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } elseif ($ProjectRoot) { [IO.Path]::GetFullPath($ProjectRoot) } else { $sourceRoot }
 $serviceName = 'AndaluciaShutdownGuard'
 $source = Join-Path $PSScriptRoot 'AndaluciaWindowsShutdownService.cs'
 $resolver = Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'
@@ -60,7 +65,7 @@ if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'SHUTDOWN_SERV
 if (-not (Test-Path -LiteralPath $handshakeSource -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_HANDSHAKE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $resolver -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_RESOLVER_MISSING' }
 . $resolver
-$approved = Get-AndaluciaApprovedSourceState -ProjectRoot $root
+$approved = Get-AndaluciaApprovedSourceState -ProjectRoot $sourceRoot -CanonicalProjectRoot $root
 if ($approved.Branch -ne 'main') { throw 'SHUTDOWN_SERVICE_APPROVED_MAIN_REQUIRED' }
 $git = (Get-Command git.exe -ErrorAction Stop).Source
 $identityPath = Join-Path $root '.data\andalucia-store-identity.json'
@@ -97,7 +102,7 @@ if ($existingService -and $existingService.Status -ne 'Stopped') {
 Move-Item -LiteralPath $serviceExeCandidate -Destination $serviceExe -Force
 Copy-Item -LiteralPath $handshakeSource -Destination $handshakeInstalled -Force
 $handshakeSha256 = (Get-FileHash -LiteralPath $handshakeInstalled -Algorithm SHA256).Hash.ToLowerInvariant()
-$binaryPath = ('\"{0}\" --project-root \"{1}\" --expected-sha {2} --git-path \"{3}\" --handshake-sha256 {4} --timeout-seconds 45' -f $serviceExe, $root, $approved.Sha, $git, $handshakeSha256)
+$binaryPath = ('\"{0}\" --source-root \"{1}\" --canonical-project-root \"{2}\" --expected-sha {3} --git-path \"{4}\" --handshake-sha256 {5} --timeout-seconds 45' -f $serviceExe, $sourceRoot, $root, $approved.Sha, $git, $handshakeSha256)
 if ($existingService) {
   Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
 } else {
@@ -111,10 +116,14 @@ Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60
 # plus modify access to its guarded control and durable log directories.
 & icacls.exe $serviceRoot /inheritance:r /grant:r 'SYSTEM:(OI)(CI)(F)' 'BUILTIN\Administrators:(OI)(CI)(F)' "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_BINARY_ACL_FAILED' }
-foreach ($path in @($root,(Join-Path $root '.data'),$canonicalData,(Join-Path $root '.backups'),(Join-Path $root '.backups\.db2'),(Join-Path $root '.backups\.db2\scheduler'),(Join-Path $root '.runtime'))) { & icacls.exe $path /grant "${serviceIdentity}:(RX)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_ACL_FAILED:$path" } }
-$gitMetadata = Join-Path $root '.git'
+foreach ($path in @($root,$sourceRoot,(Join-Path $root '.data'),$canonicalData,(Join-Path $root '.backups'),(Join-Path $root '.backups\.db2'),(Join-Path $root '.backups\.db2\scheduler'),(Join-Path $root '.runtime'))) { & icacls.exe $path /grant "${serviceIdentity}:(RX)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_ACL_FAILED:$path" } }
+$gitMetadata = Join-Path $sourceRoot '.git'
 if ((Get-Item -LiteralPath $gitMetadata -Force).PSIsContainer) { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null } else { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(R)" | Out-Null }
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_GIT_METADATA_ACL_FAILED' }
+$gitCommonMetadata = ((@(& git -C $sourceRoot rev-parse --path-format=absolute --git-common-dir)) -join '').Trim()
+if (-not $gitCommonMetadata -or -not (Test-Path -LiteralPath $gitCommonMetadata)) { throw 'SHUTDOWN_SERVICE_GIT_COMMON_METADATA_MISSING' }
+& icacls.exe $gitCommonMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_GIT_COMMON_METADATA_ACL_FAILED' }
 & icacls.exe $identityPath /grant "${serviceIdentity}:(R)" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_IDENTITY_ACL_FAILED' }
 foreach ($path in @($controlRoot,$logRoot)) { & icacls.exe $path /grant "${serviceIdentity}:(OI)(CI)(M)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_WRITE_ACL_FAILED:$path" } }
