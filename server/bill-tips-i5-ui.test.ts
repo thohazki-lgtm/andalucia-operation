@@ -240,10 +240,10 @@ assert.match(styles, /\.earnings-staff-card \.earnings-total\{border-color:#9fcd
 assert.doesNotMatch(styles, /\.earnings-staff-card(?:>|\s)[^{]*\{[^}]*#(?:eadbbd|f4ead6|f9f6ef)/)
 assert.match(corporateTheme, /\.earnings-staff-card \{[\s\S]*?background: linear-gradient\(145deg, #effaf3 0%, #e3f4e9 100%\);/)
 assert.match(component, /className="bill-tip-staff-identity"[\s\S]*?<\/div><p className="bill-tip-membership"/)
-assert.match(styles, /\.bill-tip-staff-identity\{[\s\S]*?background:linear-gradient\(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%\)\}/)
+assert.match(styles, /\.bill-tip-staff-identity\{[\s\S]*?border:1px solid var\(--ao-staff-line-strong\);[\s\S]*?background:linear-gradient\(100deg,var\(--ao-staff-emerald-deep\) 0%,var\(--ao-lagoon-teal\) 48%,var\(--ao-soft-mint\) 100%\)\}/)
 assert.match(styles, /\.bill-tip-staff-identity>header b\{color:#fff;/)
 assert.match(styles, /\.bill-tip-membership\{[\s\S]*?margin:4px 0 5px;[\s\S]*?color:#657d87/)
-assert.match(styles, /\.earnings-staff-card>header\{[\s\S]*?background:linear-gradient\(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%\)\}/)
+assert.match(styles, /\.earnings-staff-card>header\{[\s\S]*?border:1px solid var\(--ao-staff-line-strong\);[\s\S]*?background:linear-gradient\(100deg,var\(--ao-staff-emerald-deep\) 0%,var\(--ao-lagoon-teal\) 48%,var\(--ao-soft-mint\) 100%\)\}/)
 assert.match(styles, /\.earnings-staff-card>header b\{color:#fff;/)
 
 console.log('Bill Tips I5 UI assertions passed.')

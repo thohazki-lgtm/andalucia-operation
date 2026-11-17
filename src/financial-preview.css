@@ -219,7 +219,7 @@
   .bill-tip-team-table{display:none}
   .bill-tip-staff-cards{display:grid;gap:10px;margin-top:12px}
   .bill-tip-staff-card{min-width:0;padding:13px;border:1px solid var(--financial-gold);border-radius:10px;background:linear-gradient(180deg,#fffdf8 0%,#fff 100%)}
-  .bill-tip-staff-identity{margin:-5px -5px 0;padding:9px 10px 8px;border:1px solid #71ad95;border-radius:8px;background:linear-gradient(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%)}
+  .bill-tip-staff-identity{margin:-5px -5px 0;padding:9px 10px 8px;border:1px solid var(--ao-staff-line-strong);border-radius:8px;background:linear-gradient(100deg,var(--ao-staff-emerald-deep) 0%,var(--ao-lagoon-teal) 48%,var(--ao-soft-mint) 100%)}
   .bill-tip-staff-identity>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .bill-tip-staff-identity>header>div{display:grid;gap:3px;min-width:0}
   .bill-tip-staff-identity>header b{color:#fff;font-size:13px;line-height:1.2}
@@ -312,7 +312,7 @@
   .earnings-summary-desktop{display:none}
   .earnings-staff-cards{display:grid;gap:7px;margin-top:8px}
   .earnings-staff-card{min-width:0;padding:10px;border:1px solid #82b9a2;border-radius:10px;background:linear-gradient(145deg,#effaf3 0%,#e3f4e9 100%)}
-  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:-3px -3px 7px;padding:8px 9px;border:1px solid #71ad95;border-radius:8px;background:linear-gradient(100deg,#165a4e 0%,#2f826d 44%,#dff3e7 100%)}
+  .earnings-staff-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:-3px -3px 7px;padding:8px 9px;border:1px solid var(--ao-staff-line-strong);border-radius:8px;background:linear-gradient(100deg,var(--ao-staff-emerald-deep) 0%,var(--ao-lagoon-teal) 48%,var(--ao-soft-mint) 100%)}
   .earnings-staff-card>header>div{display:grid;gap:2px;min-width:0}
   .earnings-staff-card>header b{color:#fff;font-size:13px;line-height:1.2}
   .earnings-staff-card>header small{color:#effaf3;font-size:10px}
