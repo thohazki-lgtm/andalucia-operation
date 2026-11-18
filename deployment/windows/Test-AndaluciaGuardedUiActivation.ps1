@@ -79,7 +79,12 @@ try {
         if ($schemaMigrationActivation) {
             if ($branch -ne 'main' -or $previousSchema -ne '027' -or $targetSchema -ne '028' -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'SCHEMA_028_STOPPED_RUNTIME_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
         } elseif ($stoppedMainActivation) {
-            if ($branch -ne 'main' -or $previousSchema -ne '028' -or $targetSchema -ne '028' -or [string]$evidence.previousLiveSha -ne $headSha -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
+            # inspect-target already verifies the exact reviewed source-successor
+            # transition and every protected recovery binding. Preserve the
+            # historical recovery SHA here; the ancestry gate below proves that
+            # it is an ancestor of the exact authorized target SHA.
+            $historicalRecoverySha = [string]$evidence.previousLiveSha
+            if ($branch -ne 'main' -or $previousSchema -ne '028' -or $targetSchema -ne '028' -or $historicalRecoverySha -notmatch '^[0-9a-f]{40}$' -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
         } elseif (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
         $runtimeSha = [string]$evidence.previousLiveSha
     } else {
