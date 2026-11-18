@@ -201,6 +201,11 @@ const stoppedMainSuccessorFixture = async () => {
 // The production exception is pinned to the exact reviewed transition and excludes data/migration paths.
 {
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
+  assert.deepEqual(reviewedStoppedMainSourceSuccessor.activationChangedFiles, [
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
+    'server/requested-backup-activation-control.ts',
+    'server/requested-backup-activation-security.test.mjs',
+  ])
   assert.equal([...reviewedStoppedMainSourceSuccessor.changedFiles, ...reviewedStoppedMainSourceSuccessor.activationChangedFiles].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
   const checkpointSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
   if (checkpointSha !== reviewedStoppedMainSourceSuccessor.targetSha) assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, checkpointSha), 'reviewed-successor')
