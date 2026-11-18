@@ -161,7 +161,11 @@ try {
         if ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne $requiredBackupCategory -or ($schemaMigrationActivation -and [string]$latestBackup.schemaVersion -ne '027') -or ($stoppedMainActivation -and [string]$latestBackup.schemaVersion -ne '028')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category) required=$requiredBackupCategory" }
     }
     $backupAgeHours = ([DateTime]::UtcNow - [DateTime]::Parse([string]$latestBackup.createdAt).ToUniversalTime()).TotalHours
-    if ($backupAgeHours -gt $MaximumBackupAgeHours) { Stop-Readiness 'VERIFIED_BACKUP_TOO_OLD' ([Math]::Round($backupAgeHours, 2).ToString()) }
+    # A stopped-main authorization is bound to the exact immutable recovery
+    # backup and is revalidated by inspect-target. Its freshness comes from the
+    # new ten-minute, single-use manager authorization; live and migration
+    # activations continue to require a recently created backup.
+    if ($backupAgeHours -gt $MaximumBackupAgeHours -and -not $stoppedMainActivation) { Stop-Readiness 'VERIFIED_BACKUP_TOO_OLD' ([Math]::Round($backupAgeHours, 2).ToString()) }
 
     [ordered]@{
         status = if ($stoppedRuntimeMode) { 'READY_STOPPED_RUNTIME' } elseif ($runtimeSha -eq $headSha) { 'ALREADY_ACTIVE' } else { 'READY' }
