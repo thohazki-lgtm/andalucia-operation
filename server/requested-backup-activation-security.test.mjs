@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { cp, mkdir, mkdtemp, readFile, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { DatabaseOperationCoordinator } from './database-operation-coordinator.ts'
-import { RequestedBackupActivationControl, runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
+import { RequestedBackupActivationControl, prepareStoppedMainActivation, runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
 
 const previousLiveSha = '1'.repeat(40)
 const targetSha = '2'.repeat(40)
@@ -64,6 +65,27 @@ const verified = async () => {
   return value
 }
 
+// A stopped Schema 028 main activation is fresh, manager-bound, expiring, and single-use.
+{
+  const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-main-authorization-'))
+  const clock = { value: new Date('2026-11-18T00:00:00.000Z') }
+  const coordinator = new DatabaseOperationCoordinator(root, { now: () => clock.value })
+  const control = new RequestedBackupActivationControl(coordinator, () => clock.value)
+  const stoppedMainInput = {
+    targetSha, approvalManifestSha256: 'a'.repeat(64), canonicalIdentitySha256: 'b'.repeat(64), canonicalStoreId: 'andalucia-canonical-live',
+    recoveryAuthorizationId: 'c'.repeat(32), recoveryAuthorizationSha256: 'd'.repeat(64), recoveryIntegritySha256: 'e'.repeat(64),
+    backupId: 'verified-schema-028', requestedBy: { userId: 'manager-1', displayName: 'Manager' }, schemaEvidenceSha256: 'f'.repeat(64),
+  }
+  const authorization = await control.prepareStoppedMainActivation(stoppedMainInput)
+  assert.equal(authorization.authorizationMode, 'stopped_main_runtime_activation')
+  assert.equal(authorization.state, 'BACKUP_VERIFIED')
+  assert.equal(authorization.schema, '028')
+  assert.equal(Date.parse(authorization.expiresAt) - clock.value.getTime(), 10 * 60_000)
+  await assert.rejects(() => control.prepareStoppedMainActivation(stoppedMainInput), /CANONICAL_MAINTENANCE_REQUEST_ALREADY_AUTHORIZED/)
+  const claims = await Promise.allSettled([control.claimTarget(authorization.authorizationId), control.claimTarget(authorization.authorizationId)])
+  assert.equal(claims.filter(item => item.status === 'fulfilled').length, 1)
+}
+
 // Atomic claim permits exactly one concurrent target activation and blocks replay.
 {
   const { control, authorization } = await verified()
@@ -96,6 +118,7 @@ const [orchestrator, preflight, activation, startup, resolver] = await Promise.a
   readFile('deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1', 'utf8'), readFile('deployment/windows/Test-AndaluciaGuardedUiActivation.ps1', 'utf8'),
   readFile('deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1', 'utf8'), readFile('deployment/windows/Start-AndaluciaGuardedApplication.ps1', 'utf8'), readFile('deployment/windows/Resolve-AndaluciaApprovedSource.ps1', 'utf8'),
 ])
+const stoppedMainWrapper = await readFile('deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1', 'utf8')
 for (const source of [orchestrator, preflight, activation]) {
   assert.doesNotMatch(source, /StoppedRuntimeEvidenceSha256|YES_I_APPROVE_ONE_GUARDED_REQUESTED_BACKUP_ACTIVATION_WINDOW|\.consumed\.json/)
   assert.match(source, /MaintenanceAuthorizationId/)
@@ -106,6 +129,41 @@ assert.match(orchestrator, /Invoke-GuardedPreviousRuntimeRecovery/)
 assert.match(startup, /RecoveryAuthorizationId/)
 assert.match(resolver, /approved_journal_bound_recovery/)
 assert.match(resolver, /inspect-recovery-source/)
+assert.match(preflight, /stopped_main_runtime_activation/)
+assert.match(preflight, /STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID/)
+assert.match(stoppedMainWrapper, /Read-Host 'Manager password' -AsSecureString/)
+assert.match(stoppedMainWrapper, /Invoke-AndaluciaNativeJsonControl/)
+assert.doesNotMatch(stoppedMainWrapper, /postmaster\.pid[^\n]+Remove-Item|Remove-Item[^\n]+postmaster\.pid/i)
+
+// The complete stopped-main issuer revalidates exact main/runtime/recovery/backup bindings and authenticates once.
+{
+  const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-main-integration-'))
+  const fixtureGit = (workingRoot, ...args) => execFileSync('git', ['-C', workingRoot, ...args], { encoding: 'utf8' }).trim()
+  fixtureGit(root, 'init', '-b', 'main'); fixtureGit(root, 'config', 'user.email', 'security-test@example.invalid'); fixtureGit(root, 'config', 'user.name', 'Security Test')
+  await writeFile(join(root, 'approved.txt'), 'approved source')
+  fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'approved source')
+  const sha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase(); fixtureGit(root, 'update-ref', 'refs/remotes/origin/main', sha)
+  const sourceRoot = join(root, '.runtime', 'live-main-source'); await mkdir(join(root, '.runtime'), { recursive: true }); fixtureGit(root, 'worktree', 'add', '--detach', sourceRoot, sha)
+  const canonicalDirectory = join(root, '.data', 'postgres'); await mkdir(canonicalDirectory, { recursive: true })
+  const identityPath = join(root, '.data', 'andalucia-store-identity.json')
+  await writeFile(identityPath, JSON.stringify({ role: 'canonical', storeId: 'andalucia-canonical-live', databaseDirectory: canonicalDirectory }))
+  await writeFile(join(root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: sha, sourceRoot }))
+  const backupId = 'verified-schema-028'; const backupFolder = join(root, '.backups', backupId); await mkdir(join(backupFolder, 'postgres'), { recursive: true })
+  await writeFile(join(backupFolder, 'backup-metadata.json'), JSON.stringify({ backupId, createdAt: '2026-11-18T00:00:00.000Z', category: 'automatic-daily', schemaVersion: '028', verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY', sourceDirectory: canonicalDirectory, backupDirectory: join(backupFolder, 'postgres'), storeIdentity: { storeId: 'andalucia-canonical-live' }, backupManifest: { entries: [] } }))
+  await writeFile(join(backupFolder, 'restore-test.json'), JSON.stringify({ backupId, status: 'RESTORE_TEST_PASSED', manifestMatch: true, fingerprintMatch: true, migrationMatch: true, preflightStatus: 'READY' }))
+  const coordinator = new DatabaseOperationCoordinator(join(root, '.backups', '.db2', 'operations'))
+  const identitySha = createHash('sha256').update(await readFile(identityPath)).digest('hex')
+  const recovery = await coordinator.createCanonicalMaintenanceAuthorization({ authorizationMode: 'stale_marker_recovery', previousLiveSha: sha, targetSha: sha, targetBranch: 'main', approvalManifestSha256: '1'.repeat(64), canonicalIdentitySha256: identitySha, canonicalStoreId: 'andalucia-canonical-live', schema: '028', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false, requestId: `db3-fixture:${sha}`, requestSha256: '2'.repeat(64), requestedBy: { userId: 'manager-1', displayName: 'Manager' }, backupId, historicalRuntimeEvidenceSha256: '3'.repeat(64), schemaEvidenceSha256: '4'.repeat(64), expiresAt: new Date(Date.now() + 60_000).toISOString() }, 'RECOVERY_AUTHORIZED')
+  await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_AUTHORIZED'], 'RECOVERY_CLAIMED')
+  await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_CLAIMED'], 'RECOVERY_HEALTHY')
+  let authentications = 0
+  const authorization = await prepareStoppedMainActivation(root, sha, recovery.authorizationId, { identifier: 'owner', password: 'secret' }, { portsClosed: async () => true, authenticate: async () => { authentications += 1; return { userId: 'manager-1', displayName: 'Manager' } } })
+  assert.equal(authentications, 1)
+  assert.equal(authorization.state, 'BACKUP_VERIFIED')
+  assert.equal(authorization.backupId, backupId)
+  const inspected = await runRequestedBackupActivationControl('inspect-target', ['node', 'control', '--project-root', root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true })
+  assert.equal(inspected.authorizationId, authorization.authorizationId)
+}
 
 // Execute the stopped-runtime bootstrap and the real PowerShell recovery orchestrator against disposable fixtures.
 const repositoryRoot = resolve('.')
@@ -274,4 +332,4 @@ const runOrchestrator = async (mode) => {
   assert.equal(record.state, 'RECOVERY_FAILED')
 }
 
-console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 18, executablePowerShellRecoveryCases: 2, productionDataTouched: false }, null, 2))
+console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 20, executablePowerShellRecoveryCases: 2, productionDataTouched: false }, null, 2))

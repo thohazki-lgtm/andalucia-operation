@@ -94,6 +94,7 @@ if ($compilerExitCode -ne 0 -or -not (Test-Path -LiteralPath $serviceExeCandidat
 }
 
 $serviceIdentity = "NT SERVICE\$serviceName"
+$accountIdentity = 'NT AUTHORITY\LOCAL SERVICE'
 $existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 if ($existingService -and $existingService.Status -ne 'Stopped') {
   Stop-Service -Name $serviceName
@@ -112,21 +113,39 @@ Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILE
 $serviceRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName"
 Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60000
 
-# Grant the service only traversal/read access needed to validate identity and marker state,
-# plus modify access to its guarded control and durable log directories.
-& icacls.exe $serviceRoot /inheritance:r /grant:r 'SYSTEM:(OI)(CI)(F)' 'BUILTIN\Administrators:(OI)(CI)(F)' "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null
+# A restricted service token must pass access checks for both LocalService and the
+# restricted service SID. Keep ancestor grants traverse-only and scope read/write
+# permissions to the exact runtime evidence and guarded service directories.
+function Grant-AndaluciaServiceAcl {
+  param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)][string]$Rights,[switch]$Replace)
+  $verb = if ($Replace) { '/grant:r' } else { '/grant' }
+  & icacls.exe $Path $verb "${serviceIdentity}:$Rights" "${accountIdentity}:$Rights" | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_ACL_FAILED:${Path}:$Rights" }
+}
+
+& icacls.exe $serviceRoot /inheritance:r /grant:r 'SYSTEM:(OI)(CI)(F)' 'BUILTIN\Administrators:(OI)(CI)(F)' "${serviceIdentity}:(OI)(CI)(RX)" "${accountIdentity}:(OI)(CI)(RX)" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_BINARY_ACL_FAILED' }
-foreach ($path in @($root,$sourceRoot,(Join-Path $root '.data'),$canonicalData,(Join-Path $root '.backups'),(Join-Path $root '.backups\.db2'),(Join-Path $root '.backups\.db2\scheduler'),(Join-Path $root '.runtime'))) { & icacls.exe $path /grant "${serviceIdentity}:(RX)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_ACL_FAILED:$path" } }
+$profileRoot = [IO.Path]::GetFullPath((Join-Path $env:SystemDrive 'Users'))
+if (-not $root.StartsWith(($profileRoot + [IO.Path]::DirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase)) { throw 'SHUTDOWN_SERVICE_PROJECT_ROOT_OUTSIDE_USER_PROFILE' }
+$ancestor = [IO.DirectoryInfo]::new($root)
+while ($ancestor -and $ancestor.FullName -ne $profileRoot -and $ancestor.Parent) {
+  Grant-AndaluciaServiceAcl -Path $ancestor.FullName -Rights '(X)'
+  $ancestor = $ancestor.Parent
+}
+foreach ($path in @((Join-Path $root '.data'),$canonicalData,(Join-Path $root '.backups'),(Join-Path $root '.backups\.db2'),(Join-Path $root '.backups\.db2\scheduler'),(Join-Path $root '.runtime'))) { Grant-AndaluciaServiceAcl -Path $path -Rights '(RX)' }
+Grant-AndaluciaServiceAcl -Path $sourceRoot -Rights '(OI)(CI)(RX)'
 $gitMetadata = Join-Path $sourceRoot '.git'
-if ((Get-Item -LiteralPath $gitMetadata -Force).PSIsContainer) { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null } else { & icacls.exe $gitMetadata /grant "${serviceIdentity}:(R)" | Out-Null }
+if ((Get-Item -LiteralPath $gitMetadata -Force).PSIsContainer) { Grant-AndaluciaServiceAcl -Path $gitMetadata -Rights '(OI)(CI)(RX)' } else { Grant-AndaluciaServiceAcl -Path $gitMetadata -Rights '(R)' }
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_GIT_METADATA_ACL_FAILED' }
 $gitCommonMetadata = ((@(& git -C $sourceRoot rev-parse --path-format=absolute --git-common-dir)) -join '').Trim()
 if (-not $gitCommonMetadata -or -not (Test-Path -LiteralPath $gitCommonMetadata)) { throw 'SHUTDOWN_SERVICE_GIT_COMMON_METADATA_MISSING' }
-& icacls.exe $gitCommonMetadata /grant "${serviceIdentity}:(OI)(CI)(RX)" | Out-Null
+Grant-AndaluciaServiceAcl -Path $gitCommonMetadata -Rights '(OI)(CI)(RX)'
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_GIT_COMMON_METADATA_ACL_FAILED' }
-& icacls.exe $identityPath /grant "${serviceIdentity}:(R)" | Out-Null
+Grant-AndaluciaServiceAcl -Path $identityPath -Rights '(R)'
 if ($LASTEXITCODE -ne 0) { throw 'SHUTDOWN_SERVICE_IDENTITY_ACL_FAILED' }
-foreach ($path in @($controlRoot,$logRoot)) { & icacls.exe $path /grant "${serviceIdentity}:(OI)(CI)(M)" | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SHUTDOWN_SERVICE_WRITE_ACL_FAILED:$path" } }
+$runtimeApprovalPath = Join-Path $root '.runtime\approved-runtime-source.json'
+Grant-AndaluciaServiceAcl -Path $runtimeApprovalPath -Rights '(R)'
+foreach ($path in @($controlRoot,$logRoot)) { Grant-AndaluciaServiceAcl -Path $path -Rights '(OI)(CI)(M)' }
 
 $legacyTask = 'ANDALUCIA OPERATION - Graceful Windows Shutdown'
 if (Get-ScheduledTask -TaskName $legacyTask -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $legacyTask -Confirm:$false }

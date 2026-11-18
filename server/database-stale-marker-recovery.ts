@@ -107,7 +107,7 @@ export class Db3StaleMarkerRecoveryControl {
   }
 }
 
-const latestRestoreReadyBackup = async (backupRoot: string, canonicalDirectory: string): Promise<Db3BackupEvidence> => {
+export const restoreReadyBackupEvidence = async (backupRoot: string, canonicalDirectory: string, expectedBackupId?: string): Promise<Db3BackupEvidence> => {
   const candidates: Db3BackupEvidence[] = []
   for (const entry of await readdir(backupRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
@@ -120,7 +120,7 @@ const latestRestoreReadyBackup = async (backupRoot: string, canonicalDirectory: 
       candidates.push({ backupId: metadata.backupId, backupDirectory: metadata.backupDirectory, createdAt: metadata.createdAt, schemaVersion: metadata.schemaVersion, verificationStatus: metadata.verificationStatus, openTestStatus: metadata.openTestStatus, preflightStatus: metadata.preflightStatus, restoreStatus: restore.status, manifestMatch: Boolean(restore.manifestMatch), fingerprintMatch: Boolean(restore.fingerprintMatch), migrationMatch: Boolean(restore.migrationMatch), restorePreflightStatus: restore.preflightStatus, metadataSha256: sha256(metadataBuffer), restoreSha256: sha256(restoreBuffer), backupManifest: metadata.backupManifest })
     } catch { /* Invalid evidence is never eligible. */ }
   }
-  const eligible = candidates.filter(item => RECOVERABLE_SCHEMAS.has(item.schemaVersion) && item.verificationStatus === 'VERIFIED' && item.openTestStatus === 'PASS' && item.preflightStatus === 'READY' && item.restoreStatus === 'RESTORE_TEST_PASSED' && item.manifestMatch && item.fingerprintMatch && item.migrationMatch && item.restorePreflightStatus === 'READY').sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const eligible = candidates.filter(item => (!expectedBackupId || item.backupId === expectedBackupId) && RECOVERABLE_SCHEMAS.has(item.schemaVersion) && item.verificationStatus === 'VERIFIED' && item.openTestStatus === 'PASS' && item.preflightStatus === 'READY' && item.restoreStatus === 'RESTORE_TEST_PASSED' && item.manifestMatch && item.fingerprintMatch && item.migrationMatch && item.restorePreflightStatus === 'READY').sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   return eligible[0] || fail('DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED')
 }
 
@@ -132,7 +132,7 @@ const inspectEvidence = async (projectRoot: string, coordinator: DatabaseOperati
   const ownership = JSON.parse(execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-File', ownershipScript, '-MarkerPath', markerPath, '-CanonicalRoot', canonicalDirectory, '-InspectorProcessId', String(process.pid)], { encoding: 'utf8' }))
   const git = (args: string[]) => execFileSync('git', ['-C', projectRoot, ...args], { encoding: 'utf8' }).trim().toLowerCase()
   const sourceSha = git(['rev-parse', 'HEAD']); const sourceBranch = git(['branch', '--show-current']); const originMainSha = git(['rev-parse', 'refs/remotes/origin/main']); const sourceClean = !git(['status', '--porcelain', '--untracked-files=no'])
-  const backup = await latestRestoreReadyBackup(resolve(projectRoot, '.backups'), canonicalDirectory)
+  const backup = await restoreReadyBackupEvidence(resolve(projectRoot, '.backups'), canonicalDirectory)
   if (expectedBackupId && backup.backupId !== expectedBackupId) fail('DB3_RECOVERY_BACKUP_CHANGED')
   const activeOperations = (await coordinator.activeLeases()).filter(item => item.operationId !== allowedOperationId)
   return {
@@ -144,7 +144,7 @@ const inspectEvidence = async (projectRoot: string, coordinator: DatabaseOperati
   }
 }
 
-const authenticateFromBackup = async (projectRoot: string, backup: Db3BackupEvidence, identifier: string, password: string) => {
+export const authenticateManagerFromBackup = async (projectRoot: string, backup: Db3BackupEvidence, identifier: string, password: string) => {
   const temporaryRoot = resolve(projectRoot, '.backups', '.db2', 'temporary', `db3-auth-${randomUUID()}`); const disposable = join(temporaryRoot, 'postgres')
   try {
     const copied = await copyStoreVerified(backup.backupDirectory, disposable)
@@ -188,7 +188,7 @@ async function readCredentials() {
 export async function runDb3StaleMarkerRecovery(projectRootInput: string, credentials: { identifier: string; password: string }) {
   const projectRoot = resolve(projectRootInput); const operationsRoot = resolve(projectRoot, '.backups', '.db2', 'operations'); const coordinator = new DatabaseOperationCoordinator(operationsRoot); const control = new Db3StaleMarkerRecoveryControl(coordinator)
   const initial = await inspectEvidence(projectRoot, coordinator); assertDb3StaleMarkerEvidence(initial)
-  const actor = await authenticateFromBackup(projectRoot, initial.backup, credentials.identifier, credentials.password)
+  const actor = await authenticateManagerFromBackup(projectRoot, initial.backup, credentials.identifier, credentials.password)
   const authorization = await control.prepare(initial, actor)
   return control.recover(authorization.authorizationId, { inspect: operationId => inspectEvidence(projectRoot, coordinator, initial.backup.backupId, operationId), preserve: (record, evidence) => preserveIncidentEvidence(projectRoot, record, evidence), recoverStore: recoverPgliteStore })
 }

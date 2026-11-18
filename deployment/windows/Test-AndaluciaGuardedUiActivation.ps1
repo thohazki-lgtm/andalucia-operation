@@ -75,8 +75,11 @@ try {
         $validTransition = $previousSchema -eq $targetSchema -or ($previousSchema -eq '027' -and $targetSchema -eq '028')
         if (-not $validTransition -or [string]$evidence.databaseStatus -ne 'HEALTHY' -or [bool]$evidence.migrationRequired -or [bool]$evidence.recoveryRequired) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_DATABASE_INVALID' ($evidence | ConvertTo-Json -Compress) }
         $schemaMigrationActivation = [string]$evidence.authorizationMode -eq 'schema_028_migration_activation'
+        $stoppedMainActivation = [string]$evidence.authorizationMode -eq 'stopped_main_runtime_activation'
         if ($schemaMigrationActivation) {
             if ($branch -ne 'main' -or $previousSchema -ne '027' -or $targetSchema -ne '028' -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'SCHEMA_028_STOPPED_RUNTIME_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
+        } elseif ($stoppedMainActivation) {
+            if ($branch -ne 'main' -or $previousSchema -ne '028' -or $targetSchema -ne '028' -or [string]$evidence.previousLiveSha -ne $headSha -or -not [string]$evidence.historicalRuntimeEvidenceSha256 -or -not [string]$evidence.schemaEvidenceSha256) { Stop-Readiness 'STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID' ($evidence | ConvertTo-Json -Compress) }
         } elseif (-not $approvedSource -or [string]$approvedSource.PreviousLiveSha -ne [string]$evidence.previousLiveSha) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_PREVIOUS_LIVE_MISMATCH' ([string]$evidence.previousLiveSha) }
         $runtimeSha = [string]$evidence.previousLiveSha
     } else {
@@ -137,6 +140,7 @@ try {
     $latestRestore = $null
     foreach ($metadataFile in $backupMetadataFiles) {
         try { $candidate = Get-Content -LiteralPath $metadataFile.FullName -Raw | ConvertFrom-Json } catch { continue }
+        if ($stoppedRuntimeMode -and [string]$candidate.backupId -ne [string]$evidence.backupId) { continue }
         if ($candidate.verificationStatus -ne 'VERIFIED' -or $candidate.openTestStatus -ne 'PASS' -or $candidate.preflightStatus -ne 'READY') { continue }
         $restorePath = Join-Path $metadataFile.Directory.FullName 'restore-test.json'
         if (-not (Test-Path -LiteralPath $restorePath -PathType Leaf)) { continue }
@@ -148,8 +152,8 @@ try {
     }
     if (-not $latestBackup) { Stop-Readiness 'VERIFIED_BACKUP_REQUIRED' 'No verified and restore-tested backup was found.' }
     if ($stoppedRuntimeMode) {
-        $requiredBackupCategory = if ($schemaMigrationActivation) { 'pre-migration' } else { 'manual' }
-        if ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne $requiredBackupCategory -or ($schemaMigrationActivation -and [string]$latestBackup.schemaVersion -ne '027')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category) required=$requiredBackupCategory" }
+        $requiredBackupCategory = if ($schemaMigrationActivation) { 'pre-migration' } elseif ($stoppedMainActivation) { [string]$latestBackup.category } else { 'manual' }
+        if ([string]$evidence.backupId -ne [string]$latestBackup.backupId -or [string]$latestBackup.category -ne $requiredBackupCategory -or ($schemaMigrationActivation -and [string]$latestBackup.schemaVersion -ne '027') -or ($stoppedMainActivation -and [string]$latestBackup.schemaVersion -ne '028')) { Stop-Readiness 'STOPPED_RUNTIME_EVIDENCE_BACKUP_MISMATCH' "authorization=$($evidence.backupId) latest=$($latestBackup.backupId) category=$($latestBackup.category) required=$requiredBackupCategory" }
     }
     $backupAgeHours = ([DateTime]::UtcNow - [DateTime]::Parse([string]$latestBackup.createdAt).ToUniversalTime()).TotalHours
     if ($backupAgeHours -gt $MaximumBackupAgeHours) { Stop-Readiness 'VERIFIED_BACKUP_TOO_OLD' ([Math]::Round($backupAgeHours, 2).ToString()) }
