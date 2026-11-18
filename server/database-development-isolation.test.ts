@@ -36,12 +36,35 @@ try {
     ANDALUCIA_ACTIVE_SOURCE_BRANCH: `recovery/${recoveryAuthorizationId}`
   })
   assert.equal(recoveryRuntime.dataDirectory, canonical)
+  const isolatedMainRuntime = resolveApplicationRuntimeStore({
+    ANDALUCIA_DATA_DIR: canonical,
+    ANDALUCIA_STORE_ROLE: 'canonical',
+    ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
+    ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical,
+    ANDALUCIA_ACTIVE_SOURCE_MODE: 'verified_isolated_main',
+    ANDALUCIA_ACTIVE_SOURCE_BRANCH: 'main',
+    ANDALUCIA_ACTIVE_SOURCE_SHA: 'b'.repeat(40)
+  })
+  assert.equal(isolatedMainRuntime.dataDirectory, canonical)
   assert.throws(() => resolveApplicationRuntimeStore({
     ANDALUCIA_DATA_DIR: canonical,
     ANDALUCIA_STORE_ROLE: 'canonical',
     ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
     ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical
   }), /RECOVERY_CANONICAL_PATH_BINDING_INVALID/)
+  for (const invalidBinding of [
+    { ANDALUCIA_ACTIVE_SOURCE_MODE: 'local_ui_approval', ANDALUCIA_ACTIVE_SOURCE_BRANCH: 'main', ANDALUCIA_ACTIVE_SOURCE_SHA: 'b'.repeat(40) },
+    { ANDALUCIA_ACTIVE_SOURCE_MODE: 'verified_isolated_main', ANDALUCIA_ACTIVE_SOURCE_BRANCH: 'feature/test', ANDALUCIA_ACTIVE_SOURCE_SHA: 'b'.repeat(40) },
+    { ANDALUCIA_ACTIVE_SOURCE_MODE: 'verified_isolated_main', ANDALUCIA_ACTIVE_SOURCE_BRANCH: 'main', ANDALUCIA_ACTIVE_SOURCE_SHA: 'not-a-sha' }
+  ]) {
+    assert.throws(() => resolveApplicationRuntimeStore({
+      ANDALUCIA_DATA_DIR: canonical,
+      ANDALUCIA_STORE_ROLE: 'canonical',
+      ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION: CANONICAL_STARTUP_AUTHORIZATION,
+      ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR: canonical,
+      ...invalidBinding
+    }), /RECOVERY_CANONICAL_PATH_BINDING_INVALID/)
+  }
   assert.throws(() => resolveApplicationRuntimeStore({
     ANDALUCIA_DATA_DIR: canonical,
     ANDALUCIA_STORE_ROLE: 'canonical',
@@ -65,5 +88,5 @@ try {
   await repository.close()
   assert.equal(StaffRepository.length, 2)
 
-  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, recoveryCanonicalPathBoundToJournalAuthorization: true, unboundRecoveryPathRejected: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
+  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, recoveryCanonicalPathBoundToJournalAuthorization: true, isolatedMainCanonicalPathBoundToApprovedSource: true, invalidIsolatedMainBindingsRejected: true, unboundRecoveryPathRejected: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
 } finally { await rm(root, { recursive: true, force: true }) }

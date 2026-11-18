@@ -88,9 +88,13 @@ try {
   $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
   $env:ANDALUCIA_ACTIVE_SOURCE_SHA = $source.Sha
   $env:ANDALUCIA_ACTIVE_SOURCE_BRANCH = $source.Branch
+  $env:ANDALUCIA_ACTIVE_SOURCE_MODE = $source.Mode
   $env:ANDALUCIA_GUARDED_STARTUP_LOG = $startupLog
   if ($RecoveryAuthorizationId) {
     $env:ANDALUCIA_RECOVERY_AUTHORIZATION_ID = $RecoveryAuthorizationId
+    $env:ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR = $canonicalData
+  } elseif ($source.Mode -eq 'verified_isolated_main') {
+    Remove-Item Env:ANDALUCIA_RECOVERY_AUTHORIZATION_ID -ErrorAction SilentlyContinue
     $env:ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR = $canonicalData
   } else {
     Remove-Item Env:ANDALUCIA_RECOVERY_AUTHORIZATION_ID -ErrorAction SilentlyContinue
