@@ -97,8 +97,12 @@ export const resolveApplicationRuntimeStore = (environment: NodeJS.ProcessEnv = 
   const expectedCanonicalDirectory = environment.ANDALUCIA_EXPECTED_CANONICAL_DATA_DIR?.trim()
   if (!expectedCanonicalDirectory) return resolveRuntimeStore(environment)
   const authorizationId = environment.ANDALUCIA_RECOVERY_AUTHORIZATION_ID?.trim() || ''
-  const recoveryBranch = environment.ANDALUCIA_ACTIVE_SOURCE_BRANCH?.trim() || ''
-  if (!/^[0-9a-f]{32}$/i.test(authorizationId) || recoveryBranch !== `recovery/${authorizationId}`) {
+  const activeBranch = environment.ANDALUCIA_ACTIVE_SOURCE_BRANCH?.trim() || ''
+  const activeSourceMode = environment.ANDALUCIA_ACTIVE_SOURCE_MODE?.trim() || ''
+  const activeSourceSha = environment.ANDALUCIA_ACTIVE_SOURCE_SHA?.trim() || ''
+  const recoveryBindingValid = /^[0-9a-f]{32}$/i.test(authorizationId) && activeBranch === `recovery/${authorizationId}`
+  const isolatedMainBindingValid = !authorizationId && activeSourceMode === 'verified_isolated_main' && activeBranch === 'main' && /^[0-9a-f]{40}$/i.test(activeSourceSha)
+  if (!recoveryBindingValid && !isolatedMainBindingValid) {
     throw new DatabaseProtectionError('STORE_CONFIGURATION_ERROR', 'RECOVERY_CANONICAL_PATH_BINDING_INVALID')
   }
   return resolveRuntimeStore(environment, { canonicalDirectory: expectedCanonicalDirectory })
