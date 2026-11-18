@@ -26,13 +26,13 @@ function Initialize-ApprovedRuntimeSource([string]$ApprovedSha) {
   $runtimeParent = Split-Path $runtimeSourceRoot -Parent
   New-Item -ItemType Directory -Path $runtimeParent -Force | Out-Null
   if (-not (Test-Path -LiteralPath $runtimeSourceRoot)) {
-    & git -C $projectRoot worktree add --detach $runtimeSourceRoot $ApprovedSha
+    & git -C $projectRoot worktree add --quiet --detach $runtimeSourceRoot $ApprovedSha
     if ($LASTEXITCODE -ne 0) { throw 'RUNTIME_SOURCE_WORKTREE_CREATE_FAILED' }
   } else {
     $runtimeGitRoot = ((@(& git -C $runtimeSourceRoot rev-parse --show-toplevel 2>$null)) -join '').Trim()
     if (-not $runtimeGitRoot -or [IO.Path]::GetFullPath($runtimeGitRoot) -ne $runtimeSourceRoot) { throw 'RUNTIME_SOURCE_PATH_NOT_ISOLATED_WORKTREE' }
     if (@(& git -C $runtimeSourceRoot status --porcelain).Count -gt 0) { throw 'RUNTIME_SOURCE_WORKTREE_DIRTY' }
-    & git -C $runtimeSourceRoot switch --detach $ApprovedSha
+    & git -C $runtimeSourceRoot switch --quiet --detach $ApprovedSha
     if ($LASTEXITCODE -ne 0) { throw 'RUNTIME_SOURCE_WORKTREE_UPDATE_FAILED' }
   }
   $runtimeHead = ((@(& git -C $runtimeSourceRoot rev-parse HEAD)) -join '').Trim()
