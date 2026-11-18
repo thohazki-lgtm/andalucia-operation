@@ -6,7 +6,7 @@ import { cp, mkdir, mkdtemp, readFile, symlink, unlink, writeFile } from 'node:f
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { DatabaseOperationCoordinator } from './database-operation-coordinator.ts'
-import { RequestedBackupActivationControl, prepareStoppedMainActivation, runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
+import { RequestedBackupActivationControl, assertReviewedStoppedMainSourceSuccessor, prepareStoppedMainActivation, reviewedStoppedMainSourceSuccessor, runRequestedBackupActivationControl } from './requested-backup-activation-control.ts'
 
 const previousLiveSha = '1'.repeat(40)
 const targetSha = '2'.repeat(40)
@@ -72,7 +72,7 @@ const verified = async () => {
   const coordinator = new DatabaseOperationCoordinator(root, { now: () => clock.value })
   const control = new RequestedBackupActivationControl(coordinator, () => clock.value)
   const stoppedMainInput = {
-    targetSha, approvalManifestSha256: 'a'.repeat(64), canonicalIdentitySha256: 'b'.repeat(64), canonicalStoreId: 'andalucia-canonical-live',
+    previousLiveSha, targetSha, approvalManifestSha256: 'a'.repeat(64), canonicalIdentitySha256: 'b'.repeat(64), canonicalStoreId: 'andalucia-canonical-live',
     recoveryAuthorizationId: 'c'.repeat(32), recoveryAuthorizationSha256: 'd'.repeat(64), recoveryIntegritySha256: 'e'.repeat(64),
     backupId: 'verified-schema-028', requestedBy: { userId: 'manager-1', displayName: 'Manager' }, schemaEvidenceSha256: 'f'.repeat(64),
   }
@@ -163,6 +163,80 @@ assert.doesNotMatch(stoppedMainWrapper, /postmaster\.pid[^\n]+Remove-Item|Remove
   assert.equal(authorization.backupId, backupId)
   const inspected = await runRequestedBackupActivationControl('inspect-target', ['node', 'control', '--project-root', root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true })
   assert.equal(inspected.authorizationId, authorization.authorizationId)
+}
+
+const stoppedMainSuccessorFixture = async () => {
+  const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-main-successor-'))
+  const fixtureGit = (workingRoot, ...args) => execFileSync('git', ['-C', workingRoot, ...args], { encoding: 'utf8' }).trim()
+  fixtureGit(root, 'init', '-b', 'main'); fixtureGit(root, 'config', 'user.email', 'security-test@example.invalid'); fixtureGit(root, 'config', 'user.name', 'Security Test')
+  await writeFile(join(root, 'historical.txt'), 'healthy recovery source'); fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'healthy recovery source')
+  const previousSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  await writeFile(join(root, 'reviewed-a.txt'), 'reviewed successor a'); await writeFile(join(root, 'reviewed-b.txt'), 'reviewed successor b')
+  fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'reviewed source successor')
+  const reviewedTargetSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  await writeFile(join(root, 'activation-a.txt'), 'activation correction a'); await writeFile(join(root, 'activation-b.txt'), 'activation correction b')
+  fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'activation source binding correction')
+  const targetSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase(); fixtureGit(root, 'update-ref', 'refs/remotes/origin/main', targetSha)
+  const sourceRoot = join(root, '.runtime', 'live-main-source'); await mkdir(join(root, '.runtime'), { recursive: true }); fixtureGit(root, 'worktree', 'add', '--detach', sourceRoot, targetSha)
+  const canonicalDirectory = join(root, '.data', 'postgres'); await mkdir(canonicalDirectory, { recursive: true })
+  const identityPath = join(root, '.data', 'andalucia-store-identity.json')
+  await writeFile(identityPath, JSON.stringify({ role: 'canonical', storeId: 'andalucia-canonical-live', databaseDirectory: canonicalDirectory }))
+  await writeFile(join(root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: targetSha, sourceRoot }))
+  const backupId = 'verified-schema-028'; const backupFolder = join(root, '.backups', backupId); await mkdir(join(backupFolder, 'postgres'), { recursive: true })
+  await writeFile(join(backupFolder, 'backup-metadata.json'), JSON.stringify({ backupId, createdAt: '2026-11-18T00:00:00.000Z', category: 'automatic-daily', schemaVersion: '028', verificationStatus: 'VERIFIED', openTestStatus: 'PASS', preflightStatus: 'READY', sourceDirectory: canonicalDirectory, backupDirectory: join(backupFolder, 'postgres'), storeIdentity: { storeId: 'andalucia-canonical-live' }, backupManifest: { entries: [] } }))
+  await writeFile(join(backupFolder, 'restore-test.json'), JSON.stringify({ backupId, status: 'RESTORE_TEST_PASSED', manifestMatch: true, fingerprintMatch: true, migrationMatch: true, preflightStatus: 'READY' }))
+  const coordinator = new DatabaseOperationCoordinator(join(root, '.backups', '.db2', 'operations'))
+  const identitySha = createHash('sha256').update(await readFile(identityPath)).digest('hex')
+  const recovery = await coordinator.createCanonicalMaintenanceAuthorization({ authorizationMode: 'stale_marker_recovery', previousLiveSha: previousSha, targetSha: previousSha, targetBranch: 'main', approvalManifestSha256: '1'.repeat(64), canonicalIdentitySha256: identitySha, canonicalStoreId: 'andalucia-canonical-live', schema: '028', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false, requestId: `db3-successor-fixture:${previousSha}`, requestSha256: '2'.repeat(64), requestedBy: { userId: 'manager-1', displayName: 'Manager' }, backupId, historicalRuntimeEvidenceSha256: '3'.repeat(64), schemaEvidenceSha256: '4'.repeat(64), expiresAt: new Date(Date.now() + 60_000).toISOString() }, 'RECOVERY_AUTHORIZED')
+  await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_AUTHORIZED'], 'RECOVERY_CLAIMED')
+  await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_CLAIMED'], 'RECOVERY_HEALTHY')
+  const reviewedSourceSuccessor = { previousSha, targetSha: reviewedTargetSha, changedFiles: ['reviewed-a.txt', 'reviewed-b.txt'], activationChangedFiles: ['activation-a.txt', 'activation-b.txt'] }
+  const dependencies = { portsClosed: async () => true, authenticate: async () => ({ userId: 'manager-1', displayName: 'Manager' }), reviewedSourceSuccessor }
+  return { root, fixtureGit, previousSha, reviewedTargetSha, targetSha, sourceRoot, canonicalDirectory, identityPath, backupFolder, coordinator, recovery, reviewedSourceSuccessor, dependencies }
+}
+
+// The production exception is pinned to the exact reviewed transition and excludes data/migration paths.
+{
+  assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
+  assert.equal([...reviewedStoppedMainSourceSuccessor.changedFiles, ...reviewedStoppedMainSourceSuccessor.activationChangedFiles].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
+  const checkpointSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
+  if (checkpointSha !== reviewedStoppedMainSourceSuccessor.targetSha) assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, checkpointSha), 'reviewed-successor')
+}
+
+// A reviewed source successor keeps the immutable recovery SHA and binds the new target before a single atomic claim.
+{
+  const value = await stoppedMainSuccessorFixture()
+  const authorization = await prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies)
+  assert.equal(authorization.previousLiveSha, value.previousSha)
+  assert.equal(authorization.targetSha, value.targetSha)
+  assert.equal(authorization.requestSha256, createHash('sha256').update(await readFile(value.coordinator.maintenancePath(value.recovery.authorizationId))).digest('hex'))
+  const claimDependencies = { portsClosed: async () => true, reviewedSourceSuccessor: value.reviewedSourceSuccessor }
+  const claims = await Promise.allSettled([runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId], claimDependencies), runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId], claimDependencies)])
+  assert.equal(claims.filter(item => item.status === 'fulfilled').length, 1)
+  assert.equal(claims.filter(item => item.status === 'rejected').length, 1)
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId], claimDependencies), /CANONICAL_MAINTENANCE_STATE_INVALID/)
+}
+
+// Wrong ancestry, later/unrelated successors, journal tampering, identity drift, and invalid backups fail closed.
+{
+  const value = await stoppedMainSuccessorFixture()
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.targetSha, value.previousSha, { previousSha: value.targetSha, targetSha: value.previousSha, changedFiles: value.reviewedSourceSuccessor.changedFiles, activationChangedFiles: value.reviewedSourceSuccessor.activationChangedFiles }), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  await writeFile(join(value.root, 'unreviewed.txt'), 'unreviewed successor'); value.fixtureGit(value.root, 'add', 'unreviewed.txt'); value.fixtureGit(value.root, 'commit', '-m', 'unreviewed later successor')
+  const laterSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, laterSha, value.reviewedSourceSuccessor), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+}
+{
+  const value = await stoppedMainSuccessorFixture(); const recoveryPath = value.coordinator.maintenancePath(value.recovery.authorizationId)
+  const tampered = JSON.parse(await readFile(recoveryPath, 'utf8')); tampered.backupId = 'forged-backup'; await writeFile(recoveryPath, JSON.stringify(tampered))
+  await assert.rejects(() => prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies), /CANONICAL_MAINTENANCE_AUTHORIZATION_TAMPERED/)
+}
+{
+  const value = await stoppedMainSuccessorFixture(); await writeFile(value.identityPath, JSON.stringify({ role: 'canonical', storeId: 'changed-store', databaseDirectory: value.canonicalDirectory }))
+  await assert.rejects(() => prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies), /STOPPED_MAIN_ACTIVATION_RECOVERY_EVIDENCE_INVALID/)
+}
+{
+  const value = await stoppedMainSuccessorFixture(); await writeFile(join(value.backupFolder, 'restore-test.json'), JSON.stringify({ backupId: 'verified-schema-028', status: 'FAILED', manifestMatch: true, fingerprintMatch: true, migrationMatch: true, preflightStatus: 'READY' }))
+  await assert.rejects(() => prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies), /DB3_VERIFIED_RESTORE_READY_BACKUP_REQUIRED/)
 }
 
 // Execute the stopped-runtime bootstrap and the real PowerShell recovery orchestrator against disposable fixtures.
@@ -332,4 +406,4 @@ const runOrchestrator = async (mode) => {
   assert.equal(record.state, 'RECOVERY_FAILED')
 }
 
-console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 20, executablePowerShellRecoveryCases: 2, productionDataTouched: false }, null, 2))
+console.log(JSON.stringify({ status: 'PASS', suite: 'requested-backup-activation-security', behavioralCases: 26, sourceSuccessorCases: 6, executablePowerShellRecoveryCases: 2, productionDataTouched: false }, null, 2))
