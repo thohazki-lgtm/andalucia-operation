@@ -38,6 +38,7 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
     'server/windows-shutdown-watcher-security.test.mjs',
   ],
   activationChangedFiles: [
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ],
