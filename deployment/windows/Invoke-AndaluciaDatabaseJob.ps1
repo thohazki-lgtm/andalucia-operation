@@ -12,6 +12,7 @@ $backupRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.backups'))
 $schedulerRoot = Join-Path $backupRoot '.db2\scheduler'
 $logRoot = Join-Path $schedulerRoot 'logs'
 $runtimeTask = 'ANDALUCIA OPERATION - Guarded Application'
+$stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
 $stamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
 $logPath = Join-Path $logRoot ("windows-{0}-{1}.log" -f $Job.ToLowerInvariant(), $stamp)
@@ -108,26 +109,9 @@ try {
     $runningBefore = $apiOpen -and $frontOpen
     Write-JobLog "applicationRunningBefore=$runningBefore"
     if ($runningBefore) {
-      $requestId = [Guid]::NewGuid().ToString('N')
-      $requestRoot = Join-Path $schedulerRoot 'control\requests'
-      $responsePath = Join-Path $schedulerRoot ("control\responses\{0}.json" -f $requestId)
-      New-Item -ItemType Directory -Path $requestRoot -Force | Out-Null
-      $temporaryRequest = Join-Path $requestRoot (".{0}.tmp" -f $requestId)
-      $requestPath = Join-Path $requestRoot ("{0}.json" -f $requestId)
-      $request = @{ version='andalucia-scheduler-shutdown-v1'; requestId=$requestId; requestedAt=[DateTime]::UtcNow.ToString('o'); action='graceful_shutdown'; source='windows_task_scheduler' } | ConvertTo-Json -Compress
-      [IO.File]::WriteAllText($temporaryRequest, $request, [Text.UTF8Encoding]::new($false))
-      Move-Item -LiteralPath $temporaryRequest -Destination $requestPath
-      $deadline = [DateTime]::UtcNow.AddSeconds(90)
-      $completed = $false
-      do {
-        if (Test-Path -LiteralPath $responsePath) {
-          $response = Get-Content -LiteralPath $responsePath -Raw | ConvertFrom-Json
-          if ($response.state -eq 'failed') { throw "ANDALUCIA_GRACEFUL_SHUTDOWN_FAILED:$($response.error)" }
-          if ($response.state -eq 'completed') { $completed = $true; break }
-        }
-        Start-Sleep -Milliseconds 500
-      } while ([DateTime]::UtcNow -lt $deadline)
-      if (-not $completed -or -not (Wait-PortsClosed 30)) { throw 'ANDALUCIA_GRACEFUL_SHUTDOWN_NOT_CONFIRMED' }
+      if (-not (Test-Path -LiteralPath $stopScript -PathType Leaf)) { throw 'ANDALUCIA_GUARDED_STOP_SCRIPT_MISSING' }
+      & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+      if ($LASTEXITCODE -ne 0 -or -not (Wait-PortsClosed 30)) { throw 'ANDALUCIA_GRACEFUL_SHUTDOWN_NOT_CONFIRMED' }
       Write-JobLog 'gracefulShutdown=CONFIRMED'
     } elseif (-not (Wait-PortsClosed 1)) { throw 'ANDALUCIA_LIVE_STORE_NOT_EXCLUSIVE' }
 

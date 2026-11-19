@@ -7,6 +7,8 @@ $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
 $markerPath = Join-Path $canonicalData 'postmaster.pid'
 $schedulerRoot = Join-Path $projectRoot '.backups\.db2\scheduler'
+$runtimeApprovalPath = Join-Path $projectRoot '.runtime\approved-runtime-source.json'
+$expectedIsolatedRuntimeRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.runtime\live-main-source'))
 $frontendShutdownRequest = Join-Path $projectRoot '.runtime\frontend-shutdown.request'
 
 function Test-LoopbackEndpoint([string]$LoopbackHost, [int]$Port) {
@@ -50,28 +52,48 @@ if (-not $apiOpen) {
 }
 
 $requestId = [Guid]::NewGuid().ToString('N')
-$requestRoot = Join-Path $schedulerRoot 'control\requests'
-$responsePath = Join-Path $schedulerRoot ("control\responses\{0}.json" -f $requestId)
-New-Item -ItemType Directory -Path $requestRoot -Force | Out-Null
-$temporaryRequest = Join-Path $requestRoot (".{0}.tmp" -f $requestId)
-$requestPath = Join-Path $requestRoot ("{0}.json" -f $requestId)
+$controlRoots = @((Join-Path $schedulerRoot 'control'))
+if (Test-Path -LiteralPath $runtimeApprovalPath -PathType Leaf) {
+  try { $runtimeApproval = Get-Content -LiteralPath $runtimeApprovalPath -Raw | ConvertFrom-Json } catch { throw 'ANDALUCIA_RUNTIME_APPROVAL_INVALID' }
+  $approvedRuntimeRoot = [IO.Path]::GetFullPath([string]$runtimeApproval.sourceRoot)
+  $approvedRuntimeSha = [string]$runtimeApproval.approvedSha
+  $approvedRuntimeHead = ((@(& git -C $approvedRuntimeRoot rev-parse HEAD 2>$null)) -join '').Trim()
+  if ($runtimeApproval.version -ne 'andalucia-approved-runtime-source-v1' -or $approvedRuntimeRoot -ne $expectedIsolatedRuntimeRoot -or $approvedRuntimeSha -notmatch '^[0-9a-f]{40}$' -or $approvedRuntimeHead -ne $approvedRuntimeSha) { throw 'ANDALUCIA_RUNTIME_APPROVAL_INVALID' }
+  $controlRoots += Join-Path $approvedRuntimeRoot '.backups\.db2\scheduler\control'
+}
+$controlRoots = @($controlRoots | Select-Object -Unique)
+$requestPaths = @()
+$responsePaths = @()
 $request = @{ version='andalucia-scheduler-shutdown-v1'; requestId=$requestId; requestedAt=[DateTime]::UtcNow.ToString('o'); action='graceful_shutdown'; source='guarded_operator' } | ConvertTo-Json -Compress
-[IO.File]::WriteAllText($temporaryRequest, $request, [Text.UTF8Encoding]::new($false))
-Move-Item -LiteralPath $temporaryRequest -Destination $requestPath
+foreach ($controlRoot in $controlRoots) {
+  $requestRoot = Join-Path $controlRoot 'requests'
+  New-Item -ItemType Directory -Path $requestRoot -Force | Out-Null
+  $temporaryRequest = Join-Path $requestRoot (".{0}.tmp" -f $requestId)
+  $requestPath = Join-Path $requestRoot ("{0}.json" -f $requestId)
+  [IO.File]::WriteAllText($temporaryRequest, $request, [Text.UTF8Encoding]::new($false))
+  Move-Item -LiteralPath $temporaryRequest -Destination $requestPath
+  $requestPaths += $requestPath
+  $responsePaths += Join-Path $controlRoot ("responses\{0}.json" -f $requestId)
+}
 
 $deadline = [DateTime]::UtcNow.AddSeconds(90)
+$completedResponsePath = $null
 do {
-  if (Test-Path -LiteralPath $responsePath) {
-    $response = Get-Content -LiteralPath $responsePath -Raw | ConvertFrom-Json
-    if ($response.state -eq 'failed') { throw "ANDALUCIA_GUARDED_SHUTDOWN_FAILED:$($response.error)" }
-    if ($response.state -eq 'completed') { break }
+  foreach ($responsePath in $responsePaths) {
+    if (Test-Path -LiteralPath $responsePath) {
+      $response = Get-Content -LiteralPath $responsePath -Raw | ConvertFrom-Json
+      if ($response.state -eq 'failed') { throw "ANDALUCIA_GUARDED_SHUTDOWN_FAILED:$($response.error)" }
+      if ($response.state -eq 'completed') { $completedResponsePath = $responsePath; break }
+    }
   }
+  if ($completedResponsePath) { break }
   Start-Sleep -Milliseconds 250
 } while ([DateTime]::UtcNow -lt $deadline)
 
-if (-not (Test-Path -LiteralPath $responsePath)) { throw 'ANDALUCIA_GUARDED_SHUTDOWN_TIMEOUT' }
-$response = Get-Content -LiteralPath $responsePath -Raw | ConvertFrom-Json
+if (-not $completedResponsePath) { throw 'ANDALUCIA_GUARDED_SHUTDOWN_TIMEOUT' }
+$response = Get-Content -LiteralPath $completedResponsePath -Raw | ConvertFrom-Json
 if ($response.state -ne 'completed') { throw 'ANDALUCIA_GUARDED_SHUTDOWN_NOT_CONFIRMED' }
+foreach ($requestPath in $requestPaths) { Remove-Item -LiteralPath $requestPath -Force -ErrorAction SilentlyContinue }
 
 if ($frontOpen) {
   $frontendRuntime = Split-Path $frontendShutdownRequest -Parent
