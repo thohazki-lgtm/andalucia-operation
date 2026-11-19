@@ -2,15 +2,17 @@
    This file is intentionally loaded after the shared corporate theme so the
    six configuration areas can share one coherent blue system without
    changing their existing components or operational behaviour. */
-.module-customization-center {
+main.module-customization-center {
   --custom-navy: #1c2e4c;
   --custom-blue: #285f8f;
   --custom-sky: #6cd0ff;
   --custom-gold: #c5a35a;
   --custom-line: #7aa9c7;
   --custom-ice: #eaf7ff;
-  --custom-ivory: #fffdf6;
+  --custom-ivory: #eaf6fb;
   --custom-header: #d8effc;
+  --ao-module-line: #8fb8cd;
+  --ao-module-surface: #e8f4fa;
   --ao-module-accent: var(--custom-sky);
   --ao-module-accent-ink: var(--custom-navy);
   --ao-module-accent-soft: var(--custom-ice);
@@ -132,7 +134,7 @@ main.module-customization-center :is(
   border: 1px solid var(--custom-gold);
   border-top: 3px solid var(--custom-gold);
   border-radius: 12px;
-  background: linear-gradient(180deg, rgb(255 253 246 / 98%), rgb(234 247 255 / 97%));
+  background: linear-gradient(180deg, rgb(238 248 252 / 98%), rgb(220 239 248 / 97%));
   color: var(--custom-navy);
   box-shadow: 0 10px 24px rgb(13 40 71 / 10%);
 }
@@ -342,4 +344,75 @@ body:has(main.module-customization-center) .modal .ao-action--secondary {
   main.module-customization-center :is(.booking-config-r2, .training-customization-r1, .occasion-config-grid, .chargeable-config-grid, .maintenance-config-grid) { gap: 10px; }
   main.module-customization-center :is(.booking-config-section, .training-custom-card, .occasion-config-card, .chargeable-config-card, .maintenance-config-card) { padding: 10px; }
   body:has(main.module-customization-center) .modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+}
+
+/* Bookings: pale-blue working surface with independently sized cards. */
+html body .app-shell main.module-customization-center .customization-category-panel:has(.booking-config-r2) {
+  padding: 14px;
+  border: 1px solid #9fc5d8;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #dceff8 0%, #cfe7f3 100%);
+}
+
+html body .app-shell main.module-customization-center .booking-config-r2 {
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 18px;
+}
+
+html body .app-shell main.module-customization-center .booking-config-r2 > .panel.booking-config-section {
+  height: auto;
+  border-color: #8fb8cd;
+  border-top-color: #76a8c1;
+  background: linear-gradient(145deg, #eef8fc 0%, #dfedf5 100%);
+  box-shadow: 0 10px 24px rgb(23 62 84 / 11%);
+}
+
+html body .app-shell main.module-customization-center .booking-config-section .panel-title {
+  border-color: #8fb8cd;
+  background: #d7edf7;
+}
+
+html body .app-shell main.module-customization-center :is(.booking-config-rows, .table-range-list, .walk-in-field-list) {
+  border-color: #8fb8cd;
+  background: #e8f4fa;
+}
+
+html body .app-shell main.module-customization-center :is(.booking-status-config-row, .table-range-row, .walk-in-field-row) {
+  border-color: rgb(111 160 184 / 50%);
+  background: #edf7fb;
+}
+
+html body .app-shell main.module-customization-center :is(.booking-status-config-row, .table-range-row):nth-child(even),
+html body .app-shell main.module-customization-center .walk-in-field-row:nth-child(4n + 2),
+html body .app-shell main.module-customization-center .walk-in-field-row:nth-child(4n + 3) {
+  background: #dceef7;
+}
+
+html body .app-shell main.module-customization-center .booking-config-section :is(.compact-config-action, .reset-walk-in, .config-icon-action, .compact-state, .protected-config, .field-control-state, .compact-active-control),
+html body .app-shell main.module-customization-center .booking-config-section .field-mode-control button {
+  border-color: #89b4c9;
+  background: #e7f4fa;
+}
+
+html body .app-shell main.module-customization-center .booking-config-section .field-mode-control button.selected {
+  background: #173e54;
+}
+
+html body .app-shell main.module-customization-center .booking-config-r2 > .walk-in-config-section {
+  grid-column: 1 / -1;
+  margin-top: 16px;
+  border-top-width: 4px;
+  box-shadow: 0 14px 30px rgb(23 62 84 / 15%);
+}
+
+body:has(main.module-customization-center) .modal.booking-config-modal,
+body:has(main.module-customization-center) .booking-config-modal :is(input, select, .booking-status-advanced) {
+  border-color: #8fb8cd;
+  background: #e8f4fa;
+}
+
+@media (max-width: 900px) {
+  html body .app-shell main.module-customization-center .booking-config-r2 { row-gap: 14px; }
+  html body .app-shell main.module-customization-center .booking-config-r2 > .walk-in-config-section { grid-column: auto; margin-top: 8px; }
 }

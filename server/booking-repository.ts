@@ -58,7 +58,7 @@ export class BookingRepository {
     const expanded = new Map<number, ConfigOption>()
     for (const option of output.tableRanges.filter(range => range.active)) {
       const start = Number(option.metadata?.tableRangeStart); const end = Number(option.metadata?.tableRangeEnd)
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start > end || end - start > 100) continue
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end > 100 || start > end) continue
       for (let table = start; table <= end; table++) if (!expanded.has(table)) expanded.set(table, { id: `${option.id}:${table}`, value: String(table), label: `Table ${table}`, active: true, metadata: { systemControlled: true } })
     }
     // Legacy restaurant_tables rows remain stored for historical display, but only
@@ -80,7 +80,7 @@ export class BookingRepository {
     }
     if (group === 'tableRanges') {
       const start = Number(option.metadata?.tableRangeStart); const end = Number(option.metadata?.tableRangeEnd)
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start || end - start > 100) throw new Error('Enter a valid table range of no more than 101 tables.')
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end > 100 || end < start) throw new Error('Enter a valid table range from 1 to 100.')
       const overlaps = await this.db.query<{ count: number }>("select count(*)::int count from configuration_options where group_key=$1 and id<>$2 and active=true and coalesce((metadata->>'tableRangeStart')::int,0)<=$4 and coalesce((metadata->>'tableRangeEnd')::int,0)>=$3", [groupKeys.tableRanges, option.id, start, end])
       if (overlaps.rows[0].count > 0) throw new Error('This table range overlaps an existing active range.')
       option = { ...option, value: `${start}-${end}`, label: `${start}–${end}`, metadata: { ...option.metadata, tableRangeStart: start, tableRangeEnd: end } }
