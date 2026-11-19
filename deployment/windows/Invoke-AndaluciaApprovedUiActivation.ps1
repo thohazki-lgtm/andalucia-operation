@@ -19,6 +19,7 @@ $canonicalMarker = Join-Path $projectRoot '.data\postgres\postmaster.pid'
 $startupLog = Join-Path $projectRoot '.runtime\logs\guarded-startup.jsonl'
 $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
 $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
+$schedulerInstaller = Join-Path $projectRoot 'deployment\windows\Install-AndaluciaDatabaseScheduler.ps1'
 
 $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'APPROVED_SOURCE_RESOLVER_MISSING' }
@@ -66,6 +67,12 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $runtimeTaskReady) { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDOWN' }
+
+if (-not (Test-Path -LiteralPath $schedulerInstaller -PathType Leaf)) { throw 'GUARDED_RUNTIME_SOURCE_INSTALLER_MISSING' }
+& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller
+if ($LASTEXITCODE -ne 0) { throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE" }
+$runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
+if ([string]$runtimeTask.State -ne 'Ready') { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL' }
 
 if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
     if (-not $MaintenanceAuthorizationId -or -not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }

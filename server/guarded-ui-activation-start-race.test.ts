@@ -8,11 +8,13 @@ import { createDisposableDevelopmentStore } from './test-store-fixture.js'
 const sourceRoot = resolve('.')
 const activation = await readFile(resolve('deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1'), 'utf8')
 const readyGate = activation.indexOf("GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDOWN")
+const sourceInstall = activation.indexOf('$schedulerInstaller') > -1 ? activation.indexOf('& powershell.exe', activation.indexOf("GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDOWN")) : -1
 const stoppedRuntimeClaim = activation.indexOf('requested-backup-activation-control.ts') > -1 ? activation.indexOf('$claimOutput = & $tsxCommand') : -1
 const startRequest = activation.indexOf('Start-ScheduledTask -TaskName $runtimeTaskName')
 const startEvidence = activation.indexOf("GUARDED_RUNTIME_TASK_START_NOT_OBSERVED")
 const healthVerification = activation.indexOf("Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health'")
 assert.ok(readyGate > 0, 'guarded activation must fail closed until the prior task instance is fully ready')
+assert.ok(sourceInstall > readyGate && sourceInstall < startRequest, 'the approved isolated runtime source must be installed after shutdown and before restart')
 assert.ok(stoppedRuntimeClaim > readyGate, 'a stopped-runtime authorization must not be claimed before the task is ready to start')
 assert.ok(startRequest > readyGate, 'the scheduled task must not be started before the ready-state gate')
 assert.ok(startEvidence > startRequest, 'a new launcher instance must be observed after the start request')
