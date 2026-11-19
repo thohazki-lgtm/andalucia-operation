@@ -18,6 +18,7 @@ assert.ok(sourceInstall > readyGate && sourceInstall < startRequest, 'the approv
 assert.ok(stoppedRuntimeClaim > readyGate, 'a stopped-runtime authorization must not be claimed before the task is ready to start')
 assert.ok(stoppedRuntimeClaim < sourceInstall, 'the one-time stopped-runtime authorization must be claimed before the installer changes the approved source binding')
 assert.match(activation, /GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:[^\r\n]*[\s\S]*target-failed/)
+assert.match(activation, /\$ErrorActionPreference = 'Continue'[\s\S]*\$schedulerInstallerExitCode = \$LASTEXITCODE[\s\S]*target-failed/)
 assert.ok(startRequest > readyGate, 'the scheduled task must not be started before the ready-state gate')
 assert.ok(startEvidence > startRequest, 'a new launcher instance must be observed after the start request')
 assert.ok(healthVerification > startEvidence, 'health verification must begin only after a new launcher record is observed')

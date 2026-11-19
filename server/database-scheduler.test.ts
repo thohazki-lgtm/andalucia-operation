@@ -109,6 +109,8 @@ try {
   assert.match(installer, /RUNTIME_TASK_SAFETY_DRIFT:ExecutionTimeLimit/)
   assert.match(installer, /SCHEDULER_INSTALL_SOURCE_RESOLVER_MISSING/)
   assert.match(installer, /\.runtime\\live-main-source/)
+  assert.match(installer, /\[IO\.File\]::Replace\(\$runtimeApprovalTemporary, \$runtimeApprovalPath, \$null\)/)
+  assert.doesNotMatch(installer, /Move-Item[^\r\n]+\$runtimeApprovalTemporary[^\r\n]+-Force/)
   assert.match(installer, /worktree add --quiet --detach/)
   assert.match(installer, /switch --quiet --detach \$ApprovedSha/)
   assert.match(installer, /-SourceRoot `"\{1\}`" -CanonicalProjectRoot `"\{2\}`"/)

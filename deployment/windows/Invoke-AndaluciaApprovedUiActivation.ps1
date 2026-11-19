@@ -75,10 +75,15 @@ if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
 }
 
 if (-not (Test-Path -LiteralPath $schedulerInstaller -PathType Leaf)) { throw 'GUARDED_RUNTIME_SOURCE_INSTALLER_MISSING' }
-& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller
-if ($LASTEXITCODE -ne 0) {
-    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE" | Out-Null }
-    throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE"
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$schedulerInstallerOutput = @(& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller 2>&1)
+$schedulerInstallerExitCode = $LASTEXITCODE
+$ErrorActionPreference = $previousErrorActionPreference
+if ($schedulerInstallerExitCode -ne 0) {
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$schedulerInstallerExitCode" | Out-Null }
+    $schedulerInstallerOutput | Write-Output
+    throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$schedulerInstallerExitCode"
 }
 $runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
 if ([string]$runtimeTask.State -ne 'Ready') {
