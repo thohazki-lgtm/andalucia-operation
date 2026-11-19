@@ -40,7 +40,11 @@ function Initialize-ApprovedRuntimeSource([string]$ApprovedSha) {
   $runtimeApprovalPath = Join-Path $projectRoot '.runtime\approved-runtime-source.json'
   $runtimeApprovalTemporary = "$runtimeApprovalPath.tmp"
   [IO.File]::WriteAllText($runtimeApprovalTemporary, (([ordered]@{ version='andalucia-approved-runtime-source-v1'; approvedSha=$ApprovedSha; sourceRoot=$runtimeSourceRoot; approvedAt=[DateTime]::UtcNow.ToString('o') } | ConvertTo-Json -Compress)), [Text.UTF8Encoding]::new($false))
-  Move-Item -LiteralPath $runtimeApprovalTemporary -Destination $runtimeApprovalPath -Force
+  if (Test-Path -LiteralPath $runtimeApprovalPath -PathType Leaf) {
+    [IO.File]::Replace($runtimeApprovalTemporary, $runtimeApprovalPath, $null)
+  } else {
+    Move-Item -LiteralPath $runtimeApprovalTemporary -Destination $runtimeApprovalPath
+  }
   . (Join-Path $runtimeSourceRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1')
   $resolved = Get-AndaluciaApprovedSourceState -ProjectRoot $runtimeSourceRoot -CanonicalProjectRoot $projectRoot
   if ($resolved.Mode -ne 'verified_isolated_main' -or $resolved.Sha -ne $ApprovedSha) { throw 'RUNTIME_SOURCE_WORKTREE_APPROVAL_FAILED' }

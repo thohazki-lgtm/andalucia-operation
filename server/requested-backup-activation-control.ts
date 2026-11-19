@@ -44,6 +44,8 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
   ],
   activationChangedFiles: [
     'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+    'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
+    'server/database-scheduler.test.ts',
     'server/guarded-ui-activation-start-race.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
