@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { initializeDevelopmentStore } from './development-store-init.js'
-import { CANONICAL_STARTUP_AUTHORIZATION, resolveApplicationRuntimeStore, resolveRuntimeStore } from './database-protection.js'
+import { CANONICAL_STARTUP_AUTHORIZATION, resolveApplicationRuntimeStore, resolveDefaultBackupRoot, resolveRuntimeStore } from './database-protection.js'
 import { StaffRepository } from './staff-repository.js'
 
 const root = await mkdtemp(join(tmpdir(), 'andalucia-development-isolation-'))
@@ -15,6 +15,13 @@ for (const path of [canonical, backup]) { await mkdir(path, { recursive: true })
 const expected = { canonicalDirectory: canonical, developmentDirectory: development }
 
 try {
+  const isolatedSourceRoot = join(root, 'isolated-source')
+  const canonicalProjectRoot = join(root, 'canonical-project')
+  const canonicalProjectData = join(canonicalProjectRoot, '.data', 'postgres')
+  assert.equal(resolveDefaultBackupRoot({}, isolatedSourceRoot), join(isolatedSourceRoot, '.backups'))
+  assert.equal(resolveDefaultBackupRoot({ ANDALUCIA_CANONICAL_PROJECT_ROOT: canonicalProjectRoot, ANDALUCIA_DATA_DIR: canonicalProjectData, ANDALUCIA_STORE_ROLE: 'canonical' }, isolatedSourceRoot), join(canonicalProjectRoot, '.backups'))
+  assert.throws(() => resolveDefaultBackupRoot({ ANDALUCIA_CANONICAL_PROJECT_ROOT: canonicalProjectRoot, ANDALUCIA_DATA_DIR: join(root, 'wrong', '.data', 'postgres'), ANDALUCIA_STORE_ROLE: 'canonical' }, isolatedSourceRoot), /BACKUP_ROOT_CANONICAL_BINDING_INVALID/)
+  assert.throws(() => resolveDefaultBackupRoot({ ANDALUCIA_CANONICAL_PROJECT_ROOT: canonicalProjectRoot, ANDALUCIA_DATA_DIR: canonicalProjectData, ANDALUCIA_STORE_ROLE: 'development' }, isolatedSourceRoot), /BACKUP_ROOT_CANONICAL_BINDING_INVALID/)
   const initialized = await initializeDevelopmentStore(development)
   assert.equal(initialized.identity.role, 'development')
   assert.notEqual(initialized.identity.storeId, 'andalucia-canonical-live')
@@ -88,5 +95,5 @@ try {
   await repository.close()
   assert.equal(StaffRepository.length, 2)
 
-  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, recoveryCanonicalPathBoundToJournalAuthorization: true, isolatedMainCanonicalPathBoundToApprovedSource: true, invalidIsolatedMainBindingsRejected: true, unboundRecoveryPathRejected: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
+  console.log(JSON.stringify({ developmentStoreInitialized: true, disposableTestDevelopmentSupported: true, developmentIdentityDistinct: true, developmentPhysicallySeparate: true, developmentCannotTargetCanonical: true, developmentCannotOpenBackup: true, testCannotOpenCanonicalRuntime: true, canonicalRequiresGuardedAuthorization: true, canonicalCannotTargetDevelopment: true, canonicalBackupRootBoundAcrossIsolatedSource: true, invalidCanonicalBackupBindingsRejected: true, recoveryCanonicalPathBoundToJournalAuthorization: true, isolatedMainCanonicalPathBoundToApprovedSource: true, invalidIsolatedMainBindingsRejected: true, unboundRecoveryPathRejected: true, missingConfigurationFailsClosed: true, repositoryRequiresInjectedDatabase: true }, null, 2))
 } finally { await rm(root, { recursive: true, force: true }) }
