@@ -65,6 +65,8 @@ try {
 
     $health = $null
     $evidence = $null
+    $schemaMigrationActivation = $false
+    $stoppedMainActivation = $false
     if ($stoppedRuntimeMode) {
         if (-not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { Stop-Readiness 'STOPPED_RUNTIME_CONTROL_MISSING' $controlScript }
         $controlOutput = & $tsxCommand $controlScript inspect-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
