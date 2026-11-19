@@ -41,7 +41,9 @@ function Initialize-ApprovedRuntimeSource([string]$ApprovedSha) {
   $runtimeApprovalTemporary = "$runtimeApprovalPath.tmp"
   [IO.File]::WriteAllText($runtimeApprovalTemporary, (([ordered]@{ version='andalucia-approved-runtime-source-v1'; approvedSha=$ApprovedSha; sourceRoot=$runtimeSourceRoot; approvedAt=[DateTime]::UtcNow.ToString('o') } | ConvertTo-Json -Compress)), [Text.UTF8Encoding]::new($false))
   if (Test-Path -LiteralPath $runtimeApprovalPath -PathType Leaf) {
-    [IO.File]::Replace($runtimeApprovalTemporary, $runtimeApprovalPath, $null)
+    $runtimeApprovalBackup = "$runtimeApprovalPath.$([Guid]::NewGuid().ToString('N')).bak"
+    [IO.File]::Replace($runtimeApprovalTemporary, $runtimeApprovalPath, $runtimeApprovalBackup)
+    Remove-Item -LiteralPath $runtimeApprovalBackup -Force
   } else {
     Move-Item -LiteralPath $runtimeApprovalTemporary -Destination $runtimeApprovalPath
   }
