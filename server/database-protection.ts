@@ -12,7 +12,17 @@ import { ANDALUCIA_SCOPE_ID, ANDALUCIA_SCOPE_KEY } from './outlet-membership-rep
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const canonicalStoreDirectory = resolve(projectRoot, '.data/postgres')
 export const developmentStoreDirectory = resolve(projectRoot, '.data-development/postgres')
-export const defaultBackupRoot = resolve(projectRoot, '.backups')
+const samePath = (left: string, right: string) => process.platform === 'win32' ? left.toLowerCase() === right.toLowerCase() : left === right
+export const resolveDefaultBackupRoot = (env: NodeJS.ProcessEnv = process.env, sourceProjectRoot = projectRoot) => {
+  const canonicalProjectRoot = env.ANDALUCIA_CANONICAL_PROJECT_ROOT?.trim()
+  if (!canonicalProjectRoot) return resolve(sourceProjectRoot, '.backups')
+  if (!isAbsolute(canonicalProjectRoot) || env.ANDALUCIA_STORE_ROLE !== 'canonical') throw new Error('BACKUP_ROOT_CANONICAL_BINDING_INVALID')
+  const resolvedCanonicalRoot = resolve(canonicalProjectRoot)
+  const configuredData = env.ANDALUCIA_DATA_DIR?.trim()
+  if (!configuredData || !isAbsolute(configuredData) || !samePath(resolve(configuredData), resolve(resolvedCanonicalRoot, '.data/postgres'))) throw new Error('BACKUP_ROOT_CANONICAL_BINDING_INVALID')
+  return resolve(resolvedCanonicalRoot, '.backups')
+}
+export const defaultBackupRoot = resolveDefaultBackupRoot()
 export const STORE_IDENTITY_VERSION = 'andalucia-store-identity-v1'
 export const SUPPORTED_SCHEMA_VERSION = '028'
 export const STORE_IDENTITY_AUTHORIZATION = 'YES_I_APPROVE_CANONICAL_STORE_IDENTITY'

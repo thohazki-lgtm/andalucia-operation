@@ -85,6 +85,7 @@ try {
   Set-Location -LiteralPath $runtimeSourceRoot
   $env:ANDALUCIA_DATA_DIR = $canonicalData
   $env:ANDALUCIA_STORE_ROLE = 'canonical'
+  $env:ANDALUCIA_CANONICAL_PROJECT_ROOT = $projectRoot
   $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
   $env:ANDALUCIA_ACTIVE_SOURCE_SHA = $source.Sha
   $env:ANDALUCIA_ACTIVE_SOURCE_BRANCH = $source.Branch

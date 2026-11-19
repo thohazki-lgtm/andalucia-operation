@@ -123,6 +123,7 @@ try {
   assert.match(approvedSourceResolver, /ANDALUCIA_RUNTIME_SOURCE_DIRTY/)
   assert.match(guardedStart, /ANDALUCIA_ACTIVE_SOURCE_SHA/)
   assert.match(guardedStart, /ANDALUCIA_ACTIVE_SOURCE_MODE/)
+  assert.match(guardedStart, /ANDALUCIA_CANONICAL_PROJECT_ROOT\s*=\s*\$projectRoot/)
   assert.match(guardedStart, /verified_isolated_main/)
   assert.match(guardedStart, /guarded-startup\.jsonl/)
   assert.match(guardedStart, /ANDALUCIA_STARTUP_DATABASE_MARKER_PRESENT_REQUIRES_DB3_REVIEW/)
