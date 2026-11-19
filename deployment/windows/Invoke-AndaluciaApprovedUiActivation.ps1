@@ -68,16 +68,22 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 }
 if (-not $runtimeTaskReady) { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDOWN' }
 
-if (-not (Test-Path -LiteralPath $schedulerInstaller -PathType Leaf)) { throw 'GUARDED_RUNTIME_SOURCE_INSTALLER_MISSING' }
-& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller
-if ($LASTEXITCODE -ne 0) { throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE" }
-$runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
-if ([string]$runtimeTask.State -ne 'Ready') { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL' }
-
 if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
     if (-not $MaintenanceAuthorizationId -or -not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }
     $claimOutput = & $tsxCommand $controlScript claim-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
     if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_CLAIM_FAILED:$($claimOutput -join [Environment]::NewLine)" }
+}
+
+if (-not (Test-Path -LiteralPath $schedulerInstaller -PathType Leaf)) { throw 'GUARDED_RUNTIME_SOURCE_INSTALLER_MISSING' }
+& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller
+if ($LASTEXITCODE -ne 0) {
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE" | Out-Null }
+    throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$LASTEXITCODE"
+}
+$runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
+if ([string]$runtimeTask.State -ne 'Ready') {
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL' | Out-Null }
+    throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL'
 }
 
 $launchRequestedAtUtc = [DateTime]::UtcNow

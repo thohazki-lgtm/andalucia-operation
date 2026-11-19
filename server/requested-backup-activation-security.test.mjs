@@ -203,12 +203,19 @@ const stoppedMainSuccessorFixture = async () => {
 {
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.activationChangedFiles, [
+    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+    'server/guarded-ui-activation-start-race.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ])
   assert.equal([...reviewedStoppedMainSourceSuccessor.changedFiles, ...reviewedStoppedMainSourceSuccessor.activationChangedFiles].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
   const checkpointSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
-  if (checkpointSha !== reviewedStoppedMainSourceSuccessor.targetSha) assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, checkpointSha), 'reviewed-successor')
+  if (checkpointSha !== reviewedStoppedMainSourceSuccessor.targetSha) {
+    const trackedChanges = execFileSync('git', ['diff', '--name-only', reviewedStoppedMainSourceSuccessor.targetSha], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
+    const hasTrackedWorktreeChanges = Boolean(execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim())
+    if (hasTrackedWorktreeChanges) assert.deepEqual(trackedChanges.sort(), [...reviewedStoppedMainSourceSuccessor.activationChangedFiles].sort())
+    else assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, checkpointSha), 'reviewed-successor')
+  }
 }
 
 // A reviewed source successor keeps the immutable recovery SHA and binds the new target before a single atomic claim.
@@ -223,6 +230,21 @@ const stoppedMainSuccessorFixture = async () => {
   assert.equal(claims.filter(item => item.status === 'fulfilled').length, 1)
   assert.equal(claims.filter(item => item.status === 'rejected').length, 1)
   await assert.rejects(() => runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId], claimDependencies), /CANONICAL_MAINTENANCE_STATE_INVALID/)
+
+  value.fixtureGit(value.sourceRoot, 'checkout', '--detach', value.targetSha)
+  await writeFile(join(value.root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: value.targetSha, sourceRoot: value.sourceRoot }))
+  const failed = await runRequestedBackupActivationControl('target-failed', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId, '--failure', 'INSTALL_FAILED'], claimDependencies)
+  assert.equal(failed.state, 'TARGET_FAILED')
+}
+
+// A stopped runtime already refreshed to the exact reviewed target can issue and inspect a fresh authorization.
+{
+  const value = await stoppedMainSuccessorFixture()
+  value.fixtureGit(value.sourceRoot, 'checkout', '--detach', value.targetSha)
+  await writeFile(join(value.root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: value.targetSha, sourceRoot: value.sourceRoot }))
+  const authorization = await prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies)
+  const inspected = await runRequestedBackupActivationControl('inspect-target', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true, reviewedSourceSuccessor: value.reviewedSourceSuccessor })
+  assert.equal(inspected.state, 'BACKUP_VERIFIED')
 }
 
 // Wrong ancestry, later/unrelated successors, journal tampering, identity drift, and invalid backups fail closed.

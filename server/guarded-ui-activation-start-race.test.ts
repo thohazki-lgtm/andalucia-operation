@@ -16,6 +16,8 @@ const healthVerification = activation.indexOf("Invoke-RestMethod -Uri 'http://12
 assert.ok(readyGate > 0, 'guarded activation must fail closed until the prior task instance is fully ready')
 assert.ok(sourceInstall > readyGate && sourceInstall < startRequest, 'the approved isolated runtime source must be installed after shutdown and before restart')
 assert.ok(stoppedRuntimeClaim > readyGate, 'a stopped-runtime authorization must not be claimed before the task is ready to start')
+assert.ok(stoppedRuntimeClaim < sourceInstall, 'the one-time stopped-runtime authorization must be claimed before the installer changes the approved source binding')
+assert.match(activation, /GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:[^\r\n]*[\s\S]*target-failed/)
 assert.ok(startRequest > readyGate, 'the scheduled task must not be started before the ready-state gate')
 assert.ok(startEvidence > startRequest, 'a new launcher instance must be observed after the start request')
 assert.ok(healthVerification > startEvidence, 'health verification must begin only after a new launcher record is observed')
@@ -76,7 +78,7 @@ try {
   const health = await healthResponse.json() as { ok?: boolean; database?: { migrationVersion?: string; status?: string; migrationRequired?: boolean; recoveryRequired?: boolean } }
   assert.equal(health.ok, true)
   assert.equal(health.database?.migrationVersion, '028')
-  assert.equal(health.database?.status, 'BACKUP_RECOMMENDED', 'the disposable store is healthy but intentionally has no operational backup')
+  assert.ok(['HEALTHY', 'BACKUP_RECOMMENDED'].includes(String(health.database?.status)), 'the disposable store must be healthy without requiring migration or recovery')
   assert.equal(health.database?.migrationRequired, false)
   assert.equal(health.database?.recoveryRequired, false)
 

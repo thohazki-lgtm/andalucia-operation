@@ -43,6 +43,8 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
     'src/customization-center.css',
   ],
   activationChangedFiles: [
+    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+    'server/guarded-ui-activation-start-race.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ],
@@ -242,7 +244,9 @@ const stoppedMainActivationBindings = async (projectRoot: string, expectedSha: s
   if (recovery.authorizationMode !== 'stale_marker_recovery' || recovery.state !== 'RECOVERY_HEALTHY' || recovery.targetBranch !== 'main' || recovery.previousLiveSha !== recovery.targetSha || recovery.schema !== '028' || recovery.databaseStatus !== 'HEALTHY' || recovery.migrationRequired || recovery.recoveryRequired || !recovery.backupId) fail('STOPPED_MAIN_ACTIVATION_RECOVERY_EVIDENCE_INVALID')
   const runtimeApproval = await json<any>(p.runtimeApproval); const runtimeApprovalSha = await fileSha256(p.runtimeApproval)
   const sourceRoot = resolve(String(runtimeApproval.sourceRoot || '')); const requiredSourceRoot = resolve(projectRoot, '.runtime', 'live-main-source')
-  if (runtimeApproval.version !== 'andalucia-approved-runtime-source-v1' || String(runtimeApproval.approvedSha || '').toLowerCase() !== recovery.targetSha || sourceRoot !== requiredSourceRoot || git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase() !== recovery.targetSha || git(sourceRoot, 'status', '--porcelain', '--untracked-files=no')) fail('STOPPED_MAIN_ACTIVATION_RUNTIME_SOURCE_INVALID')
+  const runtimeSourceSha = git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase()
+  const approvedRuntimeSha = String(runtimeApproval.approvedSha || '').toLowerCase()
+  if (runtimeApproval.version !== 'andalucia-approved-runtime-source-v1' || sourceRoot !== requiredSourceRoot || approvedRuntimeSha !== runtimeSourceSha || ![recovery.targetSha, expectedSha].includes(runtimeSourceSha) || git(sourceRoot, 'status', '--porcelain', '--untracked-files=no')) fail('STOPPED_MAIN_ACTIVATION_RUNTIME_SOURCE_INVALID')
   const identityBuffer = await readFile(p.identity); const identity = JSON.parse(identityBuffer.toString('utf8')) as StoreIdentity; const identitySha = sha256(identityBuffer)
   if (identity.role !== 'canonical' || resolve(identity.databaseDirectory) !== resolve(projectRoot, '.data', 'postgres')) fail('STOPPED_MAIN_ACTIVATION_CANONICAL_IDENTITY_INVALID')
   if (recovery.canonicalIdentitySha256 !== identitySha || recovery.canonicalStoreId !== identity.storeId) fail('STOPPED_MAIN_ACTIVATION_RECOVERY_EVIDENCE_INVALID')
@@ -256,7 +260,7 @@ const stoppedMainActivationBindings = async (projectRoot: string, expectedSha: s
     if (!await exclusiveCheck() || existsSync(p.ownerMarker) || existsSync(resolve(projectRoot, '.data', 'postgres', 'postmaster.pid'))) fail('STOPPED_MAIN_ACTIVATION_RUNTIME_NOT_EXCLUSIVE')
     if (existsSync(resolve(projectRoot, '.data', 'migration-in-progress')) || existsSync(resolve(projectRoot, '.data', 'recovery-in-progress'))) fail('STOPPED_MAIN_ACTIVATION_OPERATION_CONFLICT')
   }
-  return { runtimeApprovalSha, identity, identitySha, recovery, recoverySha, backup, schemaEvidenceSha }
+  return { runtimeApprovalSha, runtimeSourceSha, identity, identitySha, recovery, recoverySha, backup, schemaEvidenceSha }
 }
 
 const assertBindings = async (projectRoot: string, record: CanonicalMaintenanceAuthorization, verifyStoppedStore = false, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
@@ -264,7 +268,9 @@ const assertBindings = async (projectRoot: string, record: CanonicalMaintenanceA
     if (Date.parse(record.expiresAt) <= Date.now()) fail('STOPPED_MAIN_ACTIVATION_AUTHORIZATION_EXPIRED')
     const prefix = `stopped-main-activation:${record.previousLiveSha}:${record.targetSha}:`; const recoveryAuthorizationId = record.requestId.startsWith(prefix) ? record.requestId.slice(prefix.length) : ''
     const bindings = await stoppedMainActivationBindings(projectRoot, record.targetSha, recoveryAuthorizationId, verifyStoppedStore, exclusiveCheck, reviewedSuccessor)
-    if (record.previousLiveSha !== bindings.recovery.targetSha || record.targetBranch !== 'main' || record.schema !== '028' || record.approvalManifestSha256 !== bindings.runtimeApprovalSha || record.canonicalIdentitySha256 !== bindings.identitySha || record.canonicalStoreId !== bindings.identity.storeId || record.requestSha256 !== bindings.recoverySha || record.historicalRuntimeEvidenceSha256 !== bindings.recovery.integritySha256 || record.schemaEvidenceSha256 !== bindings.schemaEvidenceSha || record.backupId !== bindings.backup.backupId) fail('STOPPED_MAIN_ACTIVATION_PROTECTED_BINDING_MISMATCH')
+    const approvalStillBound = record.approvalManifestSha256 === bindings.runtimeApprovalSha
+    const claimedTargetTransition = record.state === 'TARGET_CLAIMED' && bindings.runtimeSourceSha === record.targetSha
+    if (record.previousLiveSha !== bindings.recovery.targetSha || record.targetBranch !== 'main' || record.schema !== '028' || (!approvalStillBound && !claimedTargetTransition) || record.canonicalIdentitySha256 !== bindings.identitySha || record.canonicalStoreId !== bindings.identity.storeId || record.requestSha256 !== bindings.recoverySha || record.historicalRuntimeEvidenceSha256 !== bindings.recovery.integritySha256 || record.schemaEvidenceSha256 !== bindings.schemaEvidenceSha || record.backupId !== bindings.backup.backupId) fail('STOPPED_MAIN_ACTIVATION_PROTECTED_BINDING_MISMATCH')
     return bindings
   }
   if (record.authorizationMode === 'schema_028_migration_activation') {
