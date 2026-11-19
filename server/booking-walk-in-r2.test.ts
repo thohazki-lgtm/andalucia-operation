@@ -26,6 +26,16 @@ assert.equal(configuration.tables.some(option => option.value === '50'), false)
 assert.equal(configuration.tables.some(option => option.value.includes('–')), false)
 assert.deepEqual(configuration.tables.map(option => Number(option.value)), [...configuration.tables.map(option => Number(option.value))].sort((left, right) => left - right))
 
+await assert.rejects(() => repository.saveConfiguration('tableRanges', { id: randomUUID(), value: '', label: '', active: true, metadata: { tableRangeStart: 0, tableRangeEnd: 8 } }, 'R2 Test'), /from 1 to 100/)
+await assert.rejects(() => repository.saveConfiguration('tableRanges', { id: randomUUID(), value: '', label: '', active: true, metadata: { tableRangeStart: 90, tableRangeEnd: 101 } }, 'R2 Test'), /from 1 to 100/)
+await assert.rejects(() => repository.saveConfiguration('tableRanges', { id: randomUUID(), value: '', label: '', active: true, metadata: { tableRangeStart: 19, tableRangeEnd: 8 } }, 'R2 Test'), /from 1 to 100/)
+const customRange = await repository.saveConfiguration('tableRanges', { id: randomUUID(), value: '', label: '', active: true, metadata: { tableRangeStart: 80, tableRangeEnd: 100 } }, 'R2 Test')
+assert.equal(customRange.label, '80–100')
+const withCustomRange = await repository.configuration()
+assert.equal(withCustomRange.tables.some(option => option.value === '80'), true)
+assert.equal(withCustomRange.tables.some(option => option.value === '100'), true)
+assert.equal(withCustomRange.tables.filter(option => Number(option.value) >= 80 && Number(option.value) <= 100).length, 21)
+
 const base: WalkInBookingInput = { id: randomUUID(), guestName: '', roomNumber: '', birthDate: null, arrivalDate: null, departureDate: null, mealPeriod: 'Dinner', reservationDate: '2026-09-14', reservationTime: '19:30', covers: 2, guestNotes: '', tableNumber: '20', waiterId: null }
 await repository.validateWalkIn(base)
 await assert.rejects(() => repository.validateWalkIn({ ...base, tableNumber: 'T01' }), /active configured restaurant table/)
