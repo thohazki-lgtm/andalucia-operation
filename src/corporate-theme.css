@@ -11484,3 +11484,412 @@ html body:has(.app-shell main.module-incentives-and-bill-tips) .chargeable-drawe
     min-height: 44px;
   }
 }
+
+
+/* Weekly Reports: pale purple highlights and Good Sans numeric values. */
+html body .app-shell main.module-reports .reports-page #weekly-performance .weekly-kpis .report-stat:nth-child(odd) {
+  background: linear-gradient(145deg, #f1e8f6 0%, #e4d4ed 100%);
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-performance .weekly-kpis .report-stat:nth-child(even) {
+  background: linear-gradient(145deg, #eadcf1 0%, #f6f0f9 100%);
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-performance .report-stat > strong,
+html body .app-shell main.module-reports .reports-page .weekly-service-table .report-table td:nth-child(n + 3):nth-child(-n + 9) {
+  font-family: 'Good Sans', Arial, sans-serif;
+  font-synthesis: none;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-performance .weekly-kpis .report-stat {
+  display: block;
+  position: relative;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-performance .weekly-kpis .report-stat > span {
+  display: block;
+  position: absolute;
+  top: 3px;
+  right: 9px;
+  left: 9px;
+  z-index: 1;
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-performance .weekly-kpis .report-stat > strong {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100% - 20px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: var(--reports-numeric-font, Arial, Helvetica, sans-serif) !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  font-feature-settings: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-synthesis: none;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-service-table .report-table tbody tr:nth-child(odd) > td {
+  background: #f2e9f6;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-service-table .report-table tbody tr:nth-child(even) > td {
+  background: #e8dcef;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-service-table .report-table tbody td:first-child {
+  background: #eee3f3;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-service-table .weekly-view-daily {
+  background: #eee3f3;
+}
+
+/* Weekly Reports: remove scrollbar-gutter strips and finish authority-card corners. */
+html body .app-shell main.module-reports .reports-page #weekly-service-performance .report-table-wrap {
+  scrollbar-gutter: auto;
+  border-color: var(--reports-purple-line, #c6b3d3);
+  border-radius: 10px;
+  background: #f2e9f6;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-service-performance .report-table {
+  width: 100%;
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page :is(#weekly-service-charges-card, #weekly-completeness-card) {
+  border-color: var(--reports-purple-line, #c6b3d3);
+  overflow: hidden;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-service-charges-card .weekly-service-charges,
+html body .app-shell main.module-reports .reports-page #weekly-completeness-card .weekly-completeness {
+  box-sizing: border-box;
+  padding: 10px !important;
+  overflow: hidden;
+  border: 1px solid var(--reports-purple-line, #c6b3d3) !important;
+  border-radius: 10px;
+  background: #e9dff0;
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-service-charges-card :is(.weekly-service-charge-total, dl > div),
+html body .app-shell main.module-reports .reports-page #weekly-completeness-card .weekly-completeness > div:last-child > span {
+  border-color: var(--reports-purple-line, #c6b3d3);
+}
+
+html body .app-shell main.module-reports .reports-page #weekly-service-charges-card .weekly-service-charges > p {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #f1e9f5;
+}
+
+/* Weekly Reports: center commercial figures while retaining top-aligned labels. */
+html body .app-shell main.module-reports .reports-page .weekly-report :is(
+  .weekly-revenue,
+  .weekly-mini-grid,
+  #weekly-incentives .compact-metrics
+) .report-stat {
+  display: block;
+  position: relative;
+  min-height: 58px;
+  box-sizing: border-box;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report :is(
+  .weekly-revenue,
+  .weekly-mini-grid,
+  #weekly-incentives .compact-metrics
+) .report-stat > span {
+  display: block;
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  left: 10px;
+  z-index: 1;
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report :is(
+  .weekly-revenue,
+  .weekly-mini-grid,
+  #weekly-incentives .compact-metrics
+) .report-stat > strong {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: calc(100% - 20px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-mini-grid + .weekly-sources > span {
+  position: relative;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding-top: 7px;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-mini-grid + .weekly-sources > span > b {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  float: none;
+  width: calc(100% - 20px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+/* Weekly Reports: center Guest Experience and Service Attention figures. */
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-occasion-grid > article,
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-attention > .report-stat {
+  display: block;
+  position: relative;
+  min-height: 58px;
+  box-sizing: border-box;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-occasion-grid > article > span,
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-attention > .report-stat > span {
+  display: block;
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  left: 10px;
+  z-index: 1;
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-occasion-grid .weekly-occasion-summary,
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-attention > .report-stat > strong {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: calc(100% - 20px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report .weekly-occasion-grid .weekly-occasion-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Custom Reports: module-coloured date picker and consistently centred figures. */
+html body .app-shell main.module-reports .reports-page .custom-report .report-stat {
+  display: block;
+  position: relative;
+  min-height: 66px;
+  box-sizing: border-box;
+}
+
+html body .app-shell main.module-reports .reports-page .custom-report .report-stat > span {
+  display: block;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  left: 10px;
+  z-index: 1;
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page .custom-report .report-stat > strong {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: calc(100% - 20px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-picker {
+  position: relative;
+  width: 100%;
+  color: var(--reports-purple-deep, #35154d);
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-picker[open] {
+  z-index: 30;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-picker > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 13px;
+  border: 1px solid var(--reports-gold, #d8b04c);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #f4eaf8 0%, #e4d3ee 100%);
+  color: var(--reports-purple-deep, #35154d);
+  font-family: var(--ao-font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 4px 12px rgba(37,14,54,.16);
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-picker-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--reports-gold, #d8b04c);
+  border-radius: 8px;
+  background: var(--reports-purple-deep, #35154d);
+  color: #fff;
+  font-size: 16px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-popover {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: min(330px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--reports-gold, #d8b04c);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #f3e9f7 0%, #dcc7e8 100%);
+  box-shadow: 0 18px 42px rgba(34,12,49,.32);
+}
+
+html body .app-shell main.module-reports .reports-page .custom-date-range > label:last-child .report-date-popover {
+  right: 0;
+  left: auto;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-popover > header {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-popover > header > b {
+  color: var(--reports-purple-deep, #35154d);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-popover .ao-icon-action {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--reports-gold, #d8b04c);
+  border-radius: 9px;
+  background: var(--reports-purple-deep, #35154d);
+  color: #fff;
+}
+
+html body .app-shell main.module-reports .reports-page :is(.report-date-weekdays, .report-date-days) {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-weekdays {
+  margin-bottom: 5px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-weekdays > span {
+  color: #76528c;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-days > button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: rgba(255,255,255,.58);
+  color: var(--reports-purple-deep, #35154d);
+  font: 500 12px/1 var(--ao-font-ui);
+  cursor: pointer;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-days > button:hover,
+html body .app-shell main.module-reports .reports-page .report-date-days > button:focus-visible {
+  border-color: var(--reports-gold, #d8b04c);
+  background: #fff;
+  outline: none;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-days > button.today {
+  box-shadow: inset 0 0 0 1px #8f5aa8;
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-days > button.selected {
+  border-color: var(--reports-gold, #d8b04c);
+  background: var(--reports-purple-deep, #35154d);
+  color: #fff;
+  box-shadow: 0 3px 9px rgba(53,21,77,.24);
+}
+
+html body .app-shell main.module-reports .reports-page .report-date-days > button:disabled {
+  opacity: .32;
+  cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+  html body .app-shell main.module-reports .reports-page .report-date-popover {
+    position: fixed;
+    top: 50%;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Reports tables: clip every header and body fill to the table shell radius. */
+html body .app-shell main.module-reports .reports-page .report-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: auto;
+  border-radius: 12px;
+  isolation: isolate;
+  clip-path: inset(0 round 12px);
+}
+
+html body .app-shell main.module-reports .reports-page .report-table {
+  margin: 0;
+}
+
+html body .app-shell main.module-reports .reports-page .report-table thead tr:first-child > th:first-child {
+  border-top-left-radius: 11px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-table thead tr:first-child > th:last-child {
+  border-top-right-radius: 11px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-table tbody tr:last-child > td:first-child {
+  border-bottom-left-radius: 11px;
+}
+
+html body .app-shell main.module-reports .reports-page .report-table tbody tr:last-child > td:last-child {
+  border-bottom-right-radius: 11px;
+}
