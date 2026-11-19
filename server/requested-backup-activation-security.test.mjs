@@ -203,11 +203,6 @@ const stoppedMainSuccessorFixture = async () => {
 {
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.activationChangedFiles, [
-    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
-    'server/database-development-isolation.test.ts',
-    'server/database-protection.ts',
-    'server/database-scheduler.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ])
