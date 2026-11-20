@@ -1305,3 +1305,68 @@ html body .app-shell main.module-reports .reports-page :is(
     justify-self:end;
   }
 }
+
+/* Monthly Reports fast UI repair: keep the month picker and revenue figures readable. */
+.module-reports .reports-page .monthly-report-header .monthly-header-nav{
+  grid-template-columns:44px minmax(220px,250px) 44px;
+  align-items:center;
+}
+.module-reports .reports-page .monthly-report-header .monthly-report-month-control{
+  width:100%;
+  min-width:220px;
+}
+.module-reports .reports-page .monthly-report-header .monthly-report-month-control input{
+  min-width:0;
+  padding:0 42px 0 12px;
+  font-size:21px;
+  line-height:1;
+  white-space:nowrap;
+}
+.module-reports .reports-page .monthly-report-header .monthly-report-month-control .ao-date-control__icon{
+  right:12px;
+}
+.module-reports .reports-page .monthly-report .monthly-dashboard-grid.revenue .monthly-trend-card{
+  display:grid;
+  grid-template-rows:auto 1fr;
+  min-height:98px;
+}
+.module-reports .reports-page .monthly-report .monthly-dashboard-grid.revenue .monthly-trend-content{
+  display:grid;
+  grid-template-columns:1fr;
+  align-content:center;
+  justify-items:center;
+  gap:4px;
+  width:100%;
+  min-width:0;
+}
+.module-reports .reports-page .monthly-report .monthly-dashboard-grid.revenue .monthly-trend-content>strong{
+  width:100%;
+  font-family:'DM Sans',Arial,Helvetica,sans-serif;
+  font-size:18px;
+  font-weight:500;
+  line-height:1.15;
+  text-align:center;
+  white-space:nowrap;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.module-reports .reports-page .monthly-report .monthly-dashboard-grid.revenue :is(.monthly-trend,.monthly-trend-unavailable){
+  justify-items:center;
+  text-align:center;
+}
+@media(max-width:650px){
+  .module-reports .reports-page .monthly-report-header .monthly-header-nav{
+    grid-template-columns:44px minmax(0,1fr) 44px;
+    width:100%;
+  }
+  .module-reports .reports-page .monthly-report-header .monthly-report-month-control{
+    min-width:0;
+  }
+  .module-reports .reports-page .monthly-report-header .monthly-report-month-control input{
+    padding-inline:36px;
+    font-size:17px;
+  }
+  .module-reports .reports-page .monthly-report .monthly-dashboard-grid.revenue .monthly-trend-card{
+    min-height:90px;
+  }
+}
