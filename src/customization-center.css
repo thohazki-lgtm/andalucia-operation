@@ -349,9 +349,12 @@ body:has(main.module-customization-center) .modal .ao-action--secondary {
 /* Bookings: pale-blue working surface with independently sized cards. */
 html body .app-shell main.module-customization-center .customization-category-panel:has(.booking-config-r2) {
   padding: 14px;
-  border: 1px solid #9fc5d8;
+  border: 2px solid #d5ad61;
+  outline: 2px solid #d5ad61;
+  outline-offset: -2px;
   border-radius: 14px;
   background: linear-gradient(145deg, #dceff8 0%, #cfe7f3 100%);
+  box-shadow: 0 12px 30px rgb(23 62 84 / 14%);
 }
 
 html body .app-shell main.module-customization-center .booking-config-r2 {
