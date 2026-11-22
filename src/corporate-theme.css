@@ -507,6 +507,22 @@ body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-button,
   }
 }
 
+/* Dashboard compact type scale: preserve the premium layout and touch targets
+   while keeping dense operational content easy to scan at both breakpoints. */
+html body .app-shell main.module-dashboard > .page-header h1 {
+  font-size: 25px;
+}
+
+html body .app-shell main.module-dashboard .dashboard-card-action {
+  font-size: 10px !important;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-dashboard > .page-header h1 {
+    font-size: 23px;
+  }
+}
+
 /* Duty Roster blue-surface polish. Configured duty-code colors remain authoritative. */
 html body .app-shell main.module-duty-roster .duty-roster-page > .duty-roster-tabs button:not(.selected),
 html body .app-shell main.module-duty-roster .duty-roster-page .roster-period-label.ao-action,
@@ -1090,7 +1106,7 @@ main.module-dashboard .dashboard-page .tonight-scroll {
 
   .dashboard-mobile-priority span {
     color: var(--ao-dashboard-gold);
-    font: 600 11px/1.2 var(--ao-font-ui);
+    font: 600 9px/1.2 var(--ao-font-ui);
     letter-spacing: 0.035em;
     text-transform: uppercase;
   }
@@ -1098,7 +1114,7 @@ main.module-dashboard .dashboard-page .tonight-scroll {
   .dashboard-mobile-priority strong {
     margin-top: 4px;
     color: var(--ao-dashboard-text);
-    font: 600 21px/1 var(--ao-font-ui);
+    font: 600 17px/1 var(--ao-font-ui);
     text-align: center;
   }
 }
@@ -5797,6 +5813,41 @@ main.module-staff-management .staff-training-controls .ao-action {
     padding: 0;
   }
 
+  main.module-staff-management .staff-profile-overlay {
+    align-items: center;
+    padding: 10px 10px 10px 18px;
+  }
+
+  main.module-staff-management .staff-profile-drawer {
+    align-items: stretch;
+    width: min(480px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    height: calc(100dvh - 20px);
+    margin-left: auto;
+    border: 1px solid var(--ao-staff-gold);
+    border-radius: 14px;
+    background: var(--ao-staff-surface-strong);
+    box-shadow: -14px 0 38px rgb(8 47 43 / 24%);
+  }
+
+  main.module-staff-management .staff-profile-scroll-content > section,
+  main.module-staff-management .staff-profile-drawer .staff-training-history {
+    background: var(--ao-staff-surface-strong);
+  }
+
+  main.module-staff-management .staff-profile-grid > div,
+  main.module-staff-management .staff-profile-drawer .leave-summary-cards article,
+  main.module-staff-management .staff-training-summary article,
+  main.module-staff-management .staff-training-mobile-cards article,
+  main.module-staff-management .staff-profile-drawer :is(.leave-history-link, .staff-training-controls select, .staff-training-controls .ao-action) {
+    background: var(--ao-staff-surface) !important;
+  }
+
+  main.module-staff-management .staff-profile-drawer .staff-profile-header > .staff-status,
+  main.module-staff-management .staff-profile-drawer > footer {
+    background: var(--ao-staff-surface-strong) !important;
+  }
+
   main.module-staff-management .staff-section-bar .staff-section-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
@@ -6028,12 +6079,37 @@ main.module-staff-management .staff-training-controls .ao-action {
   }
 
   main.module-staff-management .staff-profile-scroll {
+    min-height: 0;
     padding: 8px 10px;
     overflow-y: scroll;
     overscroll-behavior: contain;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ao-staff-emerald-deep) var(--ao-staff-surface);
+  }
+
+  main.module-staff-management .staff-profile-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  main.module-staff-management .staff-profile-scroll::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: var(--ao-staff-surface);
+  }
+
+  main.module-staff-management .staff-profile-scroll::-webkit-scrollbar-thumb {
+    min-height: 36px;
+    border: 1px solid var(--ao-staff-gold);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #4f9c87 0%, var(--ao-staff-emerald) 52%, var(--ao-staff-emerald-deep) 100%);
+  }
+
+  main.module-staff-management .staff-profile-scroll::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   main.module-staff-management .staff-profile-drawer > .staff-profile-header {
@@ -11892,4 +11968,83 @@ html body .app-shell main.module-reports .reports-page .report-table tbody tr:la
 
 html body .app-shell main.module-reports .reports-page .report-table tbody tr:last-child > td:last-child {
   border-bottom-right-radius: 11px;
+}
+
+/* Staff Management compact type scale. Dimensions and touch targets remain
+   unchanged; only Team Directory typography is tightened. */
+html body .app-shell main.module-staff-management > .page-header h1 {
+  font-size: 25px;
+}
+
+html body .app-shell main.module-staff-management > .page-header .eyebrow {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-staff-management .staff-section-bar .staff-section-tabs button,
+html body .app-shell main.module-staff-management .staff-section-add {
+  font-size: 10px !important;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-summary span {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-summary strong {
+  font-size: 17px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-summary strong .staff-summary-zero {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-control-card {
+  align-content: center;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-control-card > span {
+  font-size: 8px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-tools .staff-control-card :is(input, select),
+html body .app-shell main.module-staff-management .staff-directory-page .staff-filter-select-trigger {
+  font-size: 10px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table th {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table td {
+  font-size: 10.5px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page .staff-table-identity b {
+  font-size: 11px;
+}
+
+html body .app-shell main.module-staff-management .staff-directory-page :is(.staff-status, .today-duty) {
+  font-size: 9px;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-staff-management > .page-header h1 {
+    font-size: 23px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card > header b {
+    font-size: 12px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card > header small {
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card dt {
+    font-size: 8px;
+  }
+
+  html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card dd {
+    font-size: 10px;
+  }
 }

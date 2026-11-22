@@ -30,6 +30,28 @@ test('mobile Team Directory cards use the compact light green treatment', () => 
   assert.match(css, /\.staff-summary strong \.staff-summary-zero\s*\{[\s\S]*?font-family:\s*inherit;/)
 })
 
+test('Team Directory uses the approved compact typography on desktop and mobile', () => {
+  assert.match(css, /main\.module-staff-management > \.page-header h1\s*\{[\s\S]*?font-size:\s*25px;/)
+  assert.match(css, /\.staff-section-bar \.staff-section-tabs button,[\s\S]*?\.staff-section-add\s*\{[\s\S]*?font-size:\s*10px;/)
+  assert.match(css, /\.staff-directory-page \.staff-summary strong\s*\{[\s\S]*?font-size:\s*17px;/)
+  assert.match(css, /\.staff-directory-page \.staff-table th\s*\{[\s\S]*?font-size:\s*9px;/)
+  assert.match(css, /\.staff-directory-page \.staff-table td\s*\{[\s\S]*?font-size:\s*10\.5px;/)
+  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*?main\.module-staff-management > \.page-header h1\s*\{[\s\S]*?font-size:\s*23px;[\s\S]*?\.staff-mobile-card > header b\s*\{[\s\S]*?font-size:\s*12px;[\s\S]*?\.staff-mobile-card dd\s*\{[\s\S]*?font-size:\s*10px;/)
+})
+
+test('Team Directory filters stay simple and accessible without visible headings', () => {
+  assert.doesNotMatch(app, /<span>Search team<\/span>/)
+  assert.doesNotMatch(app, /<span>Designation<\/span>/)
+  assert.doesNotMatch(app, /<span>Employment status<\/span>/)
+  assert.doesNotMatch(app, /<span>Sort team<\/span>/)
+  assert.match(app, /aria-label="Search staff"/)
+  assert.match(app, /label="Filter by position"/)
+  assert.match(app, /label="Filter by employment status"/)
+  assert.match(app, /label="Sort staff"/)
+  assert.match(css, /\.staff-summary strong \.staff-summary-zero\s*\{[\s\S]*?font-size:\s*inherit;/)
+  assert.match(css, /\.staff-control-card\s*\{[\s\S]*?align-content:\s*center;/)
+})
+
 test('mobile staff profile uses a compact two-column layout', () => {
   assert.match(css, /\.staff-profile-drawer > \.staff-profile-header\s*\{[\s\S]*?padding:\s*12px 14px 11px;/)
   assert.match(css, /\.staff-profile-scroll\s*\{[\s\S]*?padding:\s*8px 10px;/)
@@ -46,4 +68,11 @@ test('mobile staff profile uses the same native emerald scrollbar as desktop', (
   assert.match(css, /body:has\(\.app-shell > main\.module-staff-management\) \*::\-webkit-scrollbar-thumb\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*linear-gradient\(180deg, #4f9c87 0%, #287a69 52%, #103e38 100%\);/)
   assert.match(css, /\.staff-profile-scroll\s*\{[\s\S]*?overflow-y:\s*scroll;[\s\S]*?overscroll-behavior:\s*contain;[\s\S]*?touch-action:\s*pan-y;[\s\S]*?\-webkit-overflow-scrolling:\s*touch;[\s\S]*?scrollbar-gutter:\s*stable;/)
   assert.doesNotMatch(css, /staff-profile-scroll-indicator/)
+})
+
+test('mobile staff profile is narrower and uses green surfaces throughout', () => {
+  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*?\.staff-profile-drawer\s*\{[\s\S]*?align-items:\s*stretch;[\s\S]*?width:\s*min\(480px, calc\(100vw - 28px\)\);[\s\S]*?height:\s*calc\(100dvh - 20px\);[\s\S]*?background:\s*var\(--ao-staff-surface-strong\);/)
+  assert.match(css, /\.staff-profile-scroll-content > section,[\s\S]*?\.staff-training-history\s*\{[\s\S]*?background:\s*var\(--ao-staff-surface-strong\);/)
+  assert.match(css, /\.staff-profile-grid > div,[\s\S]*?\.leave-summary-cards article,[\s\S]*?\.staff-training-summary article,[\s\S]*?\.staff-training-mobile-cards article,[\s\S]*?\.leave-history-link[\s\S]*?background:\s*var\(--ao-staff-surface\) !important;/)
+  assert.match(css, /\.staff-profile-scroll::-[wW]ebkit-scrollbar\s*\{[\s\S]*?width:\s*5px;[\s\S]*?\.staff-profile-scroll::-[wW]ebkit-scrollbar-thumb\s*\{[\s\S]*?border:\s*1px solid var\(--ao-staff-gold\);[\s\S]*?background:\s*linear-gradient\(180deg, #4f9c87 0%, var\(--ao-staff-emerald\) 52%, var\(--ao-staff-emerald-deep\) 100%\);/)
 })
