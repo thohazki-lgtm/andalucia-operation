@@ -9,7 +9,7 @@ import './maintenance-customization.css'
 import { serviceDate } from './service-date'
 import { consumeWorkflow } from './workflow-intent'
 import { defaultMaintenanceReporterId, isActiveAndaluciaStaff } from './maintenance-reporter'
-import { ActionButton, IconAction, StatusPill, StatusSelect, SvgIcon } from './action-system'
+import { ActionButton, IconAction, StatusPill, SvgIcon } from './action-system'
 import { FinancialDateControl } from './financial-date-control'
 
 export interface MaintenanceConfiguration { areas: ConfigOption[]; statuses: ConfigOption[] }
@@ -44,12 +44,13 @@ export function MaintenancePage({ staff, authenticatedStaffId, configuration, fo
   const resolvedCount = records.filter(record => stage(record) === 'completed').length
   return <>
     <section className="maintenance-toolbar" aria-label="Maintenance actions">
-      <div className="maintenance-toolbar-heading"><h2>Maintenance Issues</h2><ActionButton variant="primary" icon="add" onClick={() => setEditing('new')}>Add Maintenance Issue</ActionButton></div>
+      <div className="maintenance-toolbar-heading"><h2>Maintenance Issues</h2></div>
       <div className="maintenance-date-navigation" role="group" aria-label="Maintenance date reported filter">
         <IconAction className="maintenance-date-step" icon="chevron-left" label="Previous reported date" onClick={() => selectDate(shiftDate(dateCursor, -1))}/>
         <FinancialDateControl className="maintenance-date-control" label="Choose reported date" type="date" value={dateCursor} onChange={selectDate}/>
         <IconAction className="maintenance-date-step" icon="chevron-right" label="Next reported date" onClick={() => selectDate(shiftDate(dateCursor, 1))}/>
       </div>
+      <ActionButton className="maintenance-add-action" variant="primary" icon="add" onClick={() => setEditing('new')}>Add Maintenance Issue</ActionButton>
       {dateFilter && <ActionButton className="maintenance-date-clear" variant="secondary" icon="close" compact onClick={() => setDateFilter('')}>Show all dates</ActionButton>}
     </section>
     <section className="maintenance-summary"><article className="panel total"><span>Total Issues</span><strong>{records.length}</strong></article><article className="panel open"><span>Open Issues</span><strong>{summary.openIssues}</strong></article><article className="panel progress"><span>In Progress</span><strong>{summary.inProgress}</strong></article><article className="panel complete"><span>Resolved</span><strong>{resolvedCount}</strong></article></section>
@@ -65,8 +66,27 @@ export function MaintenancePage({ staff, authenticatedStaffId, configuration, fo
 
 function MaintenanceStatusControl({ record, configuration, onChange }: { record: MaintenanceRecord; configuration: MaintenanceConfiguration; onChange: (status: string) => void }) {
   const status = configuration.statuses.find(option => option.value === record.status)
+  const [open, setOpen] = useState(false)
+  const controlRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const closeOutside = (event: PointerEvent) => { if (!controlRef.current?.contains(event.target as Node)) setOpen(false) }
+    const closeEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeEscape)
+    return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape) }
+  }, [open])
   if (maintenanceStage(configuration.statuses, record.status) === 'completed') return <StatusPill tone="success" className="maintenance-status maintenance-status-pill" style={{ borderColor: status?.color }}>{maintenanceStageLabel(configuration.statuses, record.status)}</StatusPill>
-  return <StatusSelect className="maintenance-status-select" label={`Status for ${record.issue}`} value={record.status} style={{ borderColor: status?.color }} onChange={event => onChange(event.target.value)}>{configuration.statuses.filter(option => option.active || option.value === record.status).map(option => <option key={option.id} value={option.value}>{maintenanceStageLabel(configuration.statuses, option.value)}</option>)}</StatusSelect>
+  const options = configuration.statuses.filter(option => option.active || option.value === record.status)
+  return <div ref={controlRef} className={`maintenance-status-menu-control${open ? ' is-open' : ''}`}>
+    <button type="button" className="maintenance-status-select maintenance-status-trigger" aria-label={`Status for ${record.issue}`} aria-haspopup="listbox" aria-expanded={open} style={{ borderColor: status?.color }} onClick={() => setOpen(current => !current)}>
+      <span className="maintenance-status-dot" style={{ background: status?.color }}/><span>{maintenanceStageLabel(configuration.statuses, record.status)}</span><SvgIcon name="chevron-right"/>
+    </button>
+    {open && <div className="maintenance-status-menu" role="listbox" aria-label={`Status options for ${record.issue}`}>{options.map(option => {
+      const selected = option.value === record.status
+      return <button type="button" role="option" aria-selected={selected} className={selected ? 'selected' : ''} key={option.id} onClick={() => { if (!selected) onChange(option.value); setOpen(false) }}><span className="maintenance-status-dot" style={{ background: option.color }}/><span>{maintenanceStageLabel(configuration.statuses, option.value)}</span><span className="maintenance-status-check" aria-hidden="true">{selected ? '✓' : ''}</span></button>
+    })}</div>}
+  </div>
 }
 
 function MaintenanceForm({ record, staff, authenticatedStaffId, configuration, onClose, onSave, onViewExisting }: { record?: MaintenanceRecord; staff: Staff[]; authenticatedStaffId: string | null; configuration: MaintenanceConfiguration; onClose: () => void; onSave: (record: MaintenanceRecord) => Promise<void>; onViewExisting: (id: string) => void }) {

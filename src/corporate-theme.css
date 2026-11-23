@@ -507,6 +507,133 @@ body:has(.app-shell > main.module-dashboard)::-webkit-scrollbar-button,
   }
 }
 
+/* Reports calendar command: match the Guest Occasions three-part control.
+   Navigation arrows stay visually separate from the light-purple date field. */
+html body .app-shell main.module-reports .reports-page :is(
+  .daily-report-header,
+  .weekly-report-header,
+  .monthly-report-header
+) :is(.report-header-nav, .monthly-header-nav) {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+html body .app-shell main.module-reports .reports-page .daily-report-header .report-header-main,
+html body .app-shell main.module-reports .reports-page .daily-report-header .daily-header-controls {
+  width: 100%;
+  min-width: 0;
+}
+
+html body .app-shell main.module-reports .reports-page .daily-report-header .report-header-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+html body .app-shell main.module-reports .reports-page .daily-report-header .daily-header-controls {
+  justify-items: stretch;
+}
+
+html body .app-shell main.module-reports .reports-page :is(.weekly-report-header, .monthly-report-header) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+html body .app-shell main.module-reports .reports-page .weekly-report-header .weekly-header-nav,
+html body .app-shell main.module-reports .reports-page .monthly-report-header .monthly-header-nav {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+html body .app-shell main.module-reports .reports-page :is(
+  .daily-report-header,
+  .weekly-report-header,
+  .monthly-report-header
+) :is(.report-header-nav, .monthly-header-nav) > .ao-icon-action {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--reports-gold, #c5a35a);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #35154d 0%, #6f348b 100%);
+  color: #f5eafa;
+  box-shadow: inset 0 1px rgb(245 234 250 / 14%);
+}
+
+html body .app-shell main.module-reports .reports-page :is(
+  .daily-report-header,
+  .weekly-report-header,
+  .monthly-report-header
+) :is(.report-header-nav, .monthly-header-nav) > .ao-date-control {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 44px;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--reports-gold, #c5a35a);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #e6d2f2 0%, #f3e8fa 52%, #dcc2ec 100%);
+  box-shadow: inset 0 1px rgb(245 234 250 / 72%), 0 6px 16px rgb(39 13 57 / 18%);
+}
+
+html body .app-shell main.module-reports .reports-page :is(
+  .daily-report-header,
+  .weekly-report-header,
+  .monthly-report-header
+) :is(.report-header-nav, .monthly-header-nav) > .ao-date-control input {
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  padding: 6px 38px 6px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent !important;
+  color: #35104f !important;
+  font: 500 18px/1.15 var(--ao-font-display) !important;
+  text-align: center;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+html body .app-shell main.module-reports .reports-page :is(
+  .daily-report-header,
+  .weekly-report-header,
+  .monthly-report-header
+) :is(.report-header-nav, .monthly-header-nav) > .ao-date-control .ao-date-control__icon {
+  right: 12px;
+  color: #45176b;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-reports .reports-page :is(
+    .daily-report-header,
+    .weekly-report-header,
+    .monthly-report-header
+  ) :is(.report-header-nav, .monthly-header-nav) {
+    gap: 8px;
+  }
+
+  html body .app-shell main.module-reports .reports-page :is(
+    .daily-report-header,
+    .weekly-report-header,
+    .monthly-report-header
+  ) :is(.report-header-nav, .monthly-header-nav) > .ao-date-control input {
+    font-size: 16px !important;
+  }
+}
+
 /* Dashboard compact type scale: preserve the premium layout and touch targets
    while keeping dense operational content easy to scan at both breakpoints. */
 html body .app-shell main.module-dashboard > .page-header h1 {
@@ -1537,11 +1664,13 @@ html body .app-shell main.module-bookings :is(
 
 html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
   border: 0;
-  background: transparent;
-  color: #fffdf5;
+  background: linear-gradient(135deg, #eaf7ff 0%, #cfefff 100%);
+  color: #1c2e4c;
   font-family: var(--ao-font-display);
-  font-size: 31px;
+  font-size: 18px;
+  font-weight: 500;
   font-synthesis: none;
+  line-height: 1.15;
   box-shadow: none;
 }
 
@@ -1578,7 +1707,9 @@ html body .app-shell main.module-bookings .booking-command {
   }
 
   html body .app-shell main.module-bookings .booking-command .ao-date-control input[type='date'] {
-    font-size: 26px;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.15;
   }
 }
 
@@ -6258,6 +6389,29 @@ main.module-training .training-r2 {
   font-family: var(--ao-font-ui);
 }
 
+html body .app-shell main.module-training .training-r2 :is(
+  .training-r2-overview-frame,
+  .training-r2-schedule-frame
+) {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 14px;
+  border: 2px solid var(--ao-training-gold) !important;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ao-training-surface) 88%, transparent);
+  box-shadow: 0 12px 28px rgb(18 62 72 / .13);
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-overview-frame {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-schedule-frame > :is(.training-r2-view, .training-r2-list) {
+  margin: 0;
+}
+
 main.module-training :is(
   .training-r2 .panel,
   .training-r2-filters,
@@ -6291,6 +6445,24 @@ main.module-training :is(
 
 main.module-training :is(.training-r2 h3, .training-r2 th, .training-r2 label, .training-r2 input, .training-r2 select, .training-r2 button, .training-r2 dt, .training-r2 dd, .training-r2 span, .training-r2 small) {
   font-family: var(--ao-font-ui);
+}
+
+/* Keep Training's dense planning views aligned with the approved compact
+   typography used across the operational modules. */
+html body .app-shell main.module-training > .page-header h1 {
+  font-size: 25px;
+}
+
+html body .app-shell main.module-training > .page-header .eyebrow,
+main.module-training .training-r2 :is(.training-next, .training-r2-view-heading, .training-r2-list > header) .eyebrow {
+  font-size: 9px;
+}
+
+main.module-training .training-r2-toolbar .ao-action,
+main.module-training .training-r2-actions .ao-action,
+main.module-training .training-next .ao-action,
+main.module-training .training-r2 :is(.training-r2-filters input, .training-r2-filters select) {
+  font-size: 10px;
 }
 
 main.module-training .training-r2-toolbar {
@@ -6399,7 +6571,7 @@ main.module-training .training-r2-month {
 
 html body .app-shell main.module-training .training-r2 .training-r2-month > span {
   color: var(--ao-training-ink-strong);
-  font: 500 clamp(21px, 2.2vw, 27px)/1.05 var(--ao-font-display);
+  font: 500 clamp(19px, 1.8vw, 23px)/1.05 var(--ao-font-display);
   letter-spacing: -.02em;
   text-align: center;
 }
@@ -6442,7 +6614,7 @@ main.module-training .training-review-alert {
 main.module-training .training-r2-kpis span {
   min-height: 0;
   color: #fff;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 650;
   line-height: 1.15;
   letter-spacing: .08em;
@@ -6451,7 +6623,7 @@ main.module-training .training-r2-kpis span {
 
 main.module-training .training-r2-kpis strong {
   color: #fff;
-  font: 600 clamp(15px, 1.5vw, 19px)/1.05 var(--ao-font-ui);
+  font: 600 clamp(15px, 1.25vw, 17px)/1.05 var(--ao-font-ui);
   text-align: center;
 }
 
@@ -6463,7 +6635,7 @@ main.module-training .training-coverage > header span {
 
 main.module-training .training-r2-kpis small {
   color: color-mix(in srgb, var(--ao-training-mint) 78%, white);
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.15;
 }
 
@@ -6479,6 +6651,18 @@ html body .app-shell main.module-training .training-r2 .training-next {
 
 html body .app-shell main.module-training .training-r2 .training-next :is(.eyebrow, h2, span) {
   color: #fff !important;
+}
+
+main.module-training .training-review-alert :is(b, span) {
+  font-size: 9px;
+}
+
+main.module-training .training-next h2 {
+  font-size: 15px;
+}
+
+main.module-training .training-next span {
+  font-size: 9px;
 }
 
 html body .app-shell main.module-training .training-r2 .training-next .ao-action {
@@ -6557,13 +6741,13 @@ main.module-training .training-r2-view-heading {
 main.module-training .training-r2-view-heading h2 {
   margin: 2px 0 0;
   color: #fff;
-  font: 500 19px/1.2 var(--ao-font-display);
+  font: 500 16px/1.2 var(--ao-font-display);
 }
 
 main.module-training .training-r2-view-heading > span,
 main.module-training .training-r2-list > header > div > span {
   color: #516968;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 550;
 }
 
@@ -6608,7 +6792,7 @@ main.module-training .training-weekdays {
 
 main.module-training .training-weekdays b {
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 650;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -6656,7 +6840,7 @@ main.module-training .training-event {
 
 main.module-training .training-event b {
   color: var(--ao-training-ink-strong);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -6715,6 +6899,7 @@ main.module-training .training-r2-list > header > div {
 
 main.module-training .training-r2-list > header h2 {
   margin-bottom: 2px;
+  font-size: 16px;
 }
 
 main.module-training .training-r2-table {
@@ -6758,7 +6943,7 @@ main.module-training .training-r2-table :is(th, td):not(:nth-child(2), :nth-chil
 main.module-training .training-r2-table td:nth-child(2) b {
   display: block;
   color: var(--ao-training-ink-strong);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -6768,7 +6953,7 @@ main.module-training .training-r2-table th {
   border-color: var(--ao-training-divider);
   background: transparent;
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 650;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -6782,7 +6967,21 @@ main.module-training .training-r2-table td {
   border-color: var(--ao-training-divider);
   background: transparent;
   color: var(--ao-premium-navy);
-  font-size: 12px;
+  font-size: 10px;
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-filters :is(input, select),
+html body .app-shell main.module-training .training-r2 .training-r2-table td,
+html body .app-shell main.module-training .training-r2 .training-r2-table td:nth-child(2) b {
+  font-size: 10px;
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-filters :is(input, select) {
+  font-size: 10px !important;
+}
+
+html body .app-shell main.module-training .training-r2 .training-r2-table th {
+  font-size: 9px;
 }
 
 main.module-training .training-r2-table :is(th, td):is(:nth-child(1), :nth-child(3), :nth-child(5), :nth-child(6), :nth-child(7)) {
@@ -7525,7 +7724,7 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-month > span {
-    font-size: clamp(21px, 6.5vw, 27px);
+    font-size: clamp(19px, 6vw, 23px);
   }
 
   main.module-training .training-calendar-grid {
@@ -7579,7 +7778,7 @@ main.module-training .training-import-list > article {
     border-color: var(--ao-training-line);
     background: var(--ao-training-surface-soft);
     color: var(--ao-training-ink-strong);
-    font-size: 14px;
+    font-size: 11px !important;
   }
 
   main.module-training .training-filter-fields {
@@ -7599,7 +7798,23 @@ main.module-training .training-import-list > article {
 }
 
 @media (max-width: 430px) {
+  html body .app-shell main.module-training > .page-header h1 {
+    font-size: 23px;
+  }
+
   main.module-training .training-r2 {
+    gap: 10px;
+  }
+
+  html body .app-shell main.module-training .training-r2 :is(
+    .training-r2-overview-frame,
+    .training-r2-schedule-frame
+  ) {
+    padding: 10px;
+    border-radius: 13px;
+  }
+
+  html body .app-shell main.module-training .training-r2 .training-r2-overview-frame {
     gap: 10px;
   }
 
@@ -7610,7 +7825,7 @@ main.module-training .training-import-list > article {
   }
 
   main.module-training .training-r2-kpis strong {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   main.module-training .training-r2-view-heading {
@@ -9511,7 +9726,7 @@ html body .app-shell main.module-incentives-and-bill-tips .chargeable-filters {
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-filters {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-tabs button,
@@ -9522,7 +9737,7 @@ html body .app-shell main.module-incentives-and-bill-tips .mobile-chargeable-car
 }
 
 html body .app-shell main.module-incentives-and-bill-tips .chargeable-table-wrap {
-  margin-top: 8px;
+  margin-top: 6px;
   overflow: hidden;
   border-width: 2px 1px 1px;
   border-style: solid;
@@ -12046,5 +12261,621 @@ html body .app-shell main.module-staff-management .staff-directory-page :is(.sta
 
   html body .app-shell main.module-staff-management .staff-directory-page .staff-mobile-card dd {
     font-size: 10px;
+  }
+}
+
+/* Compact Guest Occasions typography without changing the approved purple layout. */
+html body .app-shell main.module-guest-occasions > .page-header h1 {
+  font-size: clamp(25px, 2.4vw, 30px);
+}
+
+html body .app-shell main.module-guest-occasions .occasion-calendar-title-row h2 {
+  font-size: 18px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control input {
+  font-size: 15px !important;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-add-manual,
+html body .app-shell main.module-guest-occasions .occasion-tabs button {
+  font-size: 10px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-tabs b {
+  font-size: 8.5px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-filters :is(input, select) {
+  font-size: 11px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card span {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-summary-card strong {
+  font-size: 18px;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-records, .attention-records) > header h3 {
+  font-size: 13px;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-records, .attention-records) > header .eyebrow {
+  font-size: 8px;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) th {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) td {
+  font-size: 10.5px;
+}
+
+html body .app-shell main.module-guest-occasions :is(.occasion-table, .attention-table) td small,
+html body .app-shell main.module-guest-occasions .attention-evidence {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-guest-occasions .occasion-time {
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-guest-occasions > .page-header h1 {
+    font-size: 23px;
+  }
+
+  html body .app-shell main.module-guest-occasions .occasion-calendar-title-row h2 {
+    font-size: 15px;
+  }
+
+  html body .app-shell main.module-guest-occasions .occasion-date-picker .ao-date-control input {
+    font-size: 14px !important;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.occasion-add-manual, .occasion-tabs button) {
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-guest-occasions .occasion-filters :is(input, select) {
+    font-size: 10px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.occasion-records, .attention-records) > header h3 {
+    font-size: 12px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) :is(.mobile-occasion-guest-trigger, .mobile-attention-guest-trigger) {
+    font-size: 12px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) .occasion-card-time {
+    font-size: 10.5px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) :is(.occasion-chip, .badge, .attention-flag) {
+    font-size: 8px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) .mobile-card-facts small {
+    font-size: 8px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-occasion-card, .mobile-attention-card) .mobile-card-facts b,
+  html body .app-shell main.module-guest-occasions .mobile-attention-card p {
+    font-size: 10px;
+  }
+
+  html body .app-shell main.module-guest-occasions :is(.mobile-card-status, .mobile-card-actions .ao-action) {
+    font-size: 9px;
+  }
+}
+
+/* Compact Maintenance typography while preserving the approved blue and gold structure. */
+html body .app-shell main.module-maintenance > .page-header h1 {
+  font-size: clamp(25px, 2.4vw, 30px);
+}
+
+html body .app-shell main.module-maintenance > .page-header .eyebrow {
+  font-size: 10px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-toolbar h2 {
+  font-size: 18px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-toolbar-heading > .ao-action {
+  font-size: 10px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger {
+  font-size: 18px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary span {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary strong {
+  font-size: 18px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-filters :is(input, select) {
+  font-size: 11px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-card-date {
+  font-size: 9.5px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-issue-trigger {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+html body .app-shell main.module-maintenance .maintenance-card dt,
+html body .app-shell main.module-maintenance .maintenance-card-footer label > span {
+  font-size: 9px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-card dd {
+  font-size: 11px;
+}
+
+html body .app-shell main.module-maintenance :is(.maintenance-status-select, .maintenance-status-pill, .maintenance-card-footer .ao-action) {
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance > .page-header h1 {
+    font-size: 23px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-toolbar h2 {
+    font-size: 16px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-toolbar-heading > .ao-action {
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger {
+    font-size: 16px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary span {
+    font-size: 8px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary strong {
+    font-size: 15px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-filters :is(input, select) {
+    font-size: 10px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card-date {
+    font-size: 9px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-issue-trigger.mobile {
+    font-size: 12px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card dt,
+  html body .app-shell main.module-maintenance .maintenance-card-footer label > span {
+    font-size: 8px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-card dd,
+  html body .app-shell main.module-maintenance :is(.maintenance-status-select, .maintenance-status-pill, .maintenance-card-footer .ao-action) {
+    font-size: 9px;
+  }
+}
+
+/* Maintenance calendar parity with Guest Occasions and compact detail text. */
+html body .app-shell main.module-maintenance .maintenance-toolbar-heading {
+  margin-bottom: 10px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-navigation {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 12px;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-step {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1c2e4c 0%, #31587b 58%, #478dba 100%);
+  color: #fff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger {
+  min-height: 44px;
+  padding: 6px 12px;
+  justify-content: center;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #d7effb 0%, #edf8ff 52%, #c4e5f5 100%);
+  color: #1c2e4c;
+  box-shadow: inset 0 1px rgb(255 255 255 / 62%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-date-control .ao-financial-date-control__trigger svg {
+  color: #31587b;
+}
+
+html body .app-shell main.module-maintenance .maintenance-add-action {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  justify-content: center;
+  border-color: #9ab6c9;
+  background: #1c2e4c;
+  color: #fff;
+  font-size: 10px;
+}
+
+html body .maintenance-details-modal .modal-title h3 {
+  font-size: 17px;
+}
+
+html body .maintenance-details-modal .maintenance-detail-date {
+  font-size: 9px;
+}
+
+html body .maintenance-details-modal .maintenance-detail-hero h3 {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+html body .maintenance-details-modal .maintenance-detail-badges .ao-status-pill {
+  min-height: 26px;
+  padding: 4px 8px;
+  font-size: 9px;
+}
+
+html body .maintenance-details-modal .maintenance-detail-section h4 {
+  font-size: 13px;
+}
+
+html body .maintenance-details-modal .maintenance-detail-section dt {
+  font-size: 8px;
+}
+
+html body .maintenance-details-modal .maintenance-detail-section dd {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance .maintenance-toolbar-heading {
+    margin-bottom: 9px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-date-navigation {
+    gap: 8px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-add-action {
+    margin-top: 9px;
+    font-size: 9px;
+  }
+
+  html body .maintenance-details-modal .modal-title h3 {
+    font-size: 15px;
+  }
+
+  html body .maintenance-details-modal .maintenance-detail-hero h3 {
+    font-size: 15px;
+  }
+
+  html body .maintenance-details-modal .maintenance-detail-section h4 {
+    font-size: 12px;
+  }
+
+  html body .maintenance-details-modal .maintenance-detail-section dd {
+    font-size: 10px;
+  }
+}
+
+/* Maintenance summary labels: clearer wording without the top accent rule. */
+html body .app-shell main.module-maintenance .maintenance-summary article::before {
+  content: none;
+  display: none;
+}
+
+html body .app-shell main.module-maintenance .maintenance-summary span {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance .maintenance-summary span {
+    font-size: 11px;
+  }
+}
+
+/* Training summary labels: improve card wording legibility. */
+html body .app-shell main.module-training .training-r2-kpis span {
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-training .training-r2-kpis span {
+    font-size: 11px;
+  }
+}
+
+/* Bookings summary labels: improve the six card headings without resizing values. */
+html body .app-shell main.module-bookings .booking-service-overview .service-summary > .panel > span {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-bookings .booking-service-overview .service-summary > .panel > span {
+    font-size: 11px;
+  }
+
+  html body .app-shell main.module-bookings .booking-command {
+    gap: 6px;
+    row-gap: 6px;
+  }
+
+  html body .app-shell main.module-bookings .booking-command > .booking-command-actions {
+    margin-top: 0;
+  }
+}
+
+/* Incentives & Bill Tips: use the Guest Occasions calendar composition across
+   Chargeable Items, Wine & Spirits, Bill Tips, and Earnings Summary. */
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-controls,
+  .wine-date-navigation,
+  .wine-month-navigation,
+  .bill-tip-month-navigation,
+  .earnings-month-navigation
+) {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-step,
+  .wine-date-step,
+  .wine-month-step,
+  .bill-tip-month-step,
+  .earnings-month-step
+) {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  flex-basis: 44px;
+  border: 1px solid var(--ao-financial-gold);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ao-staff-emerald-deep), var(--ao-staff-emerald));
+  color: #fff;
+  box-shadow: 0 4px 12px rgb(7 48 43 / 16%);
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-picker,
+  .wine-date-control,
+  .wine-month-control,
+  .bill-tip-month-control,
+  .earnings-month-control
+) {
+  width: 100%;
+  min-width: 0;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-picker,
+  .wine-date-control,
+  .wine-month-control,
+  .bill-tip-month-control,
+  .earnings-month-control
+) .ao-financial-date-control__trigger {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--ao-financial-gold);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #dff3e7 0%, #f3fbf6 52%, #cfeada 100%);
+  color: var(--ao-staff-emerald-deep);
+  box-shadow: inset 0 1px rgb(255 255 255 / 72%), 0 5px 14px rgb(16 62 56 / 14%);
+  font: 500 16px/1.15 var(--ao-font-display);
+  text-align: center;
+}
+
+html body .app-shell main.module-incentives-and-bill-tips :is(
+  .chargeable-date-picker,
+  .wine-date-control,
+  .wine-month-control,
+  .bill-tip-month-control,
+  .earnings-month-control
+) .ao-financial-date-control__trigger :is(span, svg) {
+  color: inherit;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .chargeable-date-controls,
+    .wine-date-navigation,
+    .wine-month-navigation,
+    .bill-tip-month-navigation,
+    .earnings-month-navigation
+  ) {
+    gap: 8px;
+  }
+
+  html body .app-shell main.module-incentives-and-bill-tips :is(
+    .chargeable-date-picker,
+    .wine-date-control,
+    .wine-month-control,
+    .bill-tip-month-control,
+    .earnings-month-control
+  ) .ao-financial-date-control__trigger {
+    padding-inline: 9px;
+    font-size: 15px;
+  }
+}
+
+/* Maintenance summary: aligned edges with compact, even spacing. */
+html body .app-shell main.module-maintenance .maintenance-summary article {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance .maintenance-summary {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin: 0 0 6px;
+    column-gap: 6px;
+    row-gap: 6px;
+    align-content: start;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-summary article {
+    min-height: 64px;
+    padding: 7px 10px;
+  }
+}
+
+/* Maintenance status: an in-card dropdown with calm blue option cards. */
+html body .app-shell main.module-maintenance .panel.maintenance-panel {
+  overflow: visible;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu-control {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-trigger {
+  display: grid;
+  width: 100%;
+  min-height: 40px;
+  grid-template-columns: 9px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px;
+  border: 1px solid #86acc5;
+  border-radius: 12px;
+  background: linear-gradient(105deg, #f7fcff 0%, #e4f4fc 100%);
+  color: #1c2e4c;
+  font: 600 11px/1.2 var(--ao-font-ui);
+  text-align: left;
+  box-shadow: inset 0 1px rgb(255 255 255 / 78%), 0 3px 9px rgb(15 44 72 / 9%);
+  cursor: pointer;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-trigger > svg {
+  width: 17px;
+  height: 17px;
+  color: #31587b;
+  transform: rotate(90deg);
+  transition: transform .16s ease;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu-control.is-open .maintenance-status-trigger > svg {
+  transform: rotate(-90deg);
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-dot {
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgb(255 255 255 / 76%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(28 46 76 / 18%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  width: 100%;
+  min-width: 170px;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid var(--ao-maintenance-gold);
+  border-radius: 13px;
+  background: linear-gradient(145deg, #edf8ff 0%, #d8effb 100%);
+  box-shadow: 0 14px 30px rgb(15 44 72 / 24%);
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu > button {
+  display: grid;
+  min-height: 38px;
+  grid-template-columns: 9px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid #b7d2e2;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 72%);
+  color: #24445c;
+  font: 600 10px/1.2 var(--ao-font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu > button:hover,
+html body .app-shell main.module-maintenance .maintenance-status-menu > button:focus-visible {
+  border-color: #6e9ebd;
+  background: #fff;
+  outline: none;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-menu > button.selected {
+  border-color: var(--ao-maintenance-gold);
+  background: linear-gradient(105deg, #1c2e4c 0%, #31587b 58%, #478dba 100%);
+  color: #fff;
+}
+
+html body .app-shell main.module-maintenance .maintenance-status-check {
+  color: inherit;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  html body .app-shell main.module-maintenance .maintenance-status-trigger {
+    min-height: 44px;
+    font-size: 10px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-status-menu > button {
+    min-height: 42px;
+    font-size: 10px;
+  }
+
+  html body .app-shell main.module-maintenance .maintenance-status-menu {
+    top: auto;
+    bottom: calc(100% + 6px);
   }
 }
