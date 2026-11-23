@@ -365,10 +365,10 @@ html body .app-shell main.module-customization-center .booking-config-r2 {
 
 html body .app-shell main.module-customization-center .booking-config-r2 > .panel.booking-config-section {
   height: auto;
-  border-color: #8fb8cd;
-  border-top-color: #76a8c1;
-  background: linear-gradient(145deg, #eef8fc 0%, #dfedf5 100%);
-  box-shadow: 0 10px 24px rgb(23 62 84 / 11%);
+  border: 1px solid #d5ad61 !important;
+  border-top: 4px solid #d5ad61 !important;
+  background: linear-gradient(145deg, #eef8fc 0%, #dceef7 100%);
+  box-shadow: 0 12px 26px rgb(23 62 84 / 14%);
 }
 
 html body .app-shell main.module-customization-center .booking-config-section .panel-title {
@@ -409,6 +409,52 @@ html body .app-shell main.module-customization-center .booking-config-r2 > .walk
   box-shadow: 0 14px 30px rgb(23 62 84 / 15%);
 }
 
+/* Customization cards: gold hierarchy with separated pale-blue surfaces. */
+html body .app-shell main.module-customization-center .customization-category-panel:is(
+  :has(.training-customization-r1),
+  :has(.occasion-config),
+  :has(.chargeable-config),
+  :has(.maintenance-config),
+  :has(.database-health-admin)
+) {
+  padding: 14px;
+  outline: 2px solid #d5ad61;
+  outline-offset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #dceff8 0%, #cfe7f3 100%);
+  box-shadow: 0 12px 30px rgb(23 62 84 / 14%);
+}
+
+html body .app-shell main.module-customization-center .training-custom-column {
+  gap: 22px;
+}
+
+html body .app-shell main.module-customization-center .training-custom-card {
+  border: 1px solid #d5ad61 !important;
+  border-top: 4px solid #d5ad61 !important;
+  background: linear-gradient(145deg, #edf8fc 0%, #d9edf7 100%);
+  box-shadow: 0 12px 26px rgb(23 62 84 / 14%);
+}
+
+html body .app-shell main.module-customization-center .training-custom-card .panel-title {
+  border-color: #8fb8cd;
+  background: linear-gradient(110deg, #d8eef8, #cbe7f4);
+}
+
+html body .app-shell main.module-customization-center .training-target-values > div,
+html body .app-shell main.module-customization-center .training-custom-card :is(input, select),
+html body .app-shell main.module-customization-center .training-category-row,
+html body .app-shell main.module-customization-center .training-workflow-rows label {
+  border-color: #8fb8cd;
+  background: #e9f5fa;
+}
+
+html body .app-shell main.module-customization-center .training-target-values > div:nth-child(even),
+html body .app-shell main.module-customization-center .training-category-row:nth-child(even),
+html body .app-shell main.module-customization-center .training-workflow-rows label:nth-child(even) {
+  background: #dceef7;
+}
+
 body:has(main.module-customization-center) .modal.booking-config-modal,
 body:has(main.module-customization-center) .booking-config-modal :is(input, select, .booking-status-advanced) {
   border-color: #8fb8cd;
@@ -418,4 +464,148 @@ body:has(main.module-customization-center) .booking-config-modal :is(input, sele
 @media (max-width: 900px) {
   html body .app-shell main.module-customization-center .booking-config-r2 { row-gap: 14px; }
   html body .app-shell main.module-customization-center .booking-config-r2 > .walk-in-config-section { grid-column: auto; margin-top: 8px; }
+}
+
+/* Remaining customization areas: one blue card system with dark gradient headers. */
+html body .app-shell main.module-customization-center :is(
+  .occasion-config-card,
+  .chargeable-config-card,
+  .maintenance-config-card,
+  .database-health-heading,
+  .database-health-cards article,
+  .database-health-warnings,
+  .backup-history,
+  .recovery-incident,
+  .recovery-history
+) {
+  border: 1px solid #d5ad61 !important;
+  border-top: 4px solid #d5ad61 !important;
+  background: linear-gradient(145deg, #edf8fc 0%, #d9edf7 100%) !important;
+  box-shadow: 0 12px 26px rgb(23 62 84 / 14%);
+}
+
+html body .app-shell main.module-customization-center :is(
+  .booking-config-section .panel-title,
+  .training-custom-card .panel-title,
+  .occasion-config-heading,
+  .chargeable-config-card .config-heading,
+  .maintenance-config-heading,
+  .database-health-heading,
+  .backup-history > header,
+  .recovery-incident > header,
+  .recovery-history > header
+) {
+  padding: 12px 14px !important;
+  border: 1px solid #d5ad61 !important;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #173e54 0%, #285f8f 100%) !important;
+  color: #fff !important;
+}
+
+html body .app-shell main.module-customization-center :is(
+  .booking-config-section .panel-title,
+  .training-custom-card .panel-title,
+  .occasion-config-heading,
+  .chargeable-config-card .config-heading,
+  .maintenance-config-heading,
+  .database-health-heading,
+  .backup-history > header,
+  .recovery-incident > header,
+  .recovery-history > header
+) :is(h2, h3, h4, p, small, .eyebrow, span, b, label) {
+  color: #fff !important;
+}
+
+html body .app-shell main.module-customization-center .booking-config-section .panel-title :is(
+  .compact-config-action,
+  .reset-walk-in
+),
+html body .app-shell main.module-customization-center .booking-config-section .panel-title :is(
+  .compact-config-action,
+  .reset-walk-in
+) :is(.ao-action__label, .ao-icon) {
+  color: #173e54 !important;
+  -webkit-text-fill-color: #173e54;
+}
+
+html body .app-shell main.module-customization-center .training-workflow-card .panel-title > .badge {
+  color: #173e54 !important;
+  -webkit-text-fill-color: #173e54;
+}
+
+html body .app-shell main.module-customization-center :is(
+  .occasion-config,
+  .chargeable-config,
+  .maintenance-config,
+  .database-health-admin
+) :is(input, select, textarea, .secondary, .ao-action--secondary) {
+  border-color: #8fb8cd;
+  background: #e9f5fa !important;
+}
+
+html body .app-shell main.module-customization-center :is(
+  .occasion-config-row,
+  .chargeable-config-row,
+  .maintenance-config-row,
+  .backup-mobile-list article,
+  .recovery-mobile-list article
+) {
+  background: #e9f5fa !important;
+}
+
+html body .app-shell main.module-customization-center :is(
+  .occasion-config-row,
+  .chargeable-config-row,
+  .maintenance-config-row
+):nth-child(even),
+html body .app-shell main.module-customization-center :is(
+  .backup-history,
+  .recovery-history
+) tbody tr:nth-child(even) {
+  background: #dceef7 !important;
+}
+
+html body .app-shell main.module-customization-center :is(
+  .chargeable-catalog-empty,
+  .chargeable-protection-note,
+  .maintenance-protection-note,
+  .database-policy-note,
+  .backup-pagination,
+  .recovery-empty
+) {
+  border-color: #8fb8cd;
+  background: #dceef7 !important;
+}
+
+html body .app-shell main.module-customization-center .database-health-admin :is(th, .backup-mobile-list, .recovery-mobile-list) {
+  background: #cfe7f3 !important;
+}
+
+html:has(main.module-customization-center),
+body:has(main.module-customization-center) {
+  scrollbar-width: thin;
+  scrollbar-color: #285f8f #cfe7f3;
+}
+
+body:has(main.module-customization-center)::-webkit-scrollbar,
+main.module-customization-center *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body:has(main.module-customization-center)::-webkit-scrollbar-track,
+main.module-customization-center *::-webkit-scrollbar-track {
+  background: #cfe7f3;
+}
+
+body:has(main.module-customization-center)::-webkit-scrollbar-thumb,
+main.module-customization-center *::-webkit-scrollbar-thumb {
+  border: 2px solid #cfe7f3;
+  border-radius: 999px;
+  background: #285f8f;
+}
+
+body:has(main.module-customization-center)::-webkit-scrollbar-thumb:hover,
+main.module-customization-center *::-webkit-scrollbar-thumb:hover {
+  background: #173e54;
 }

@@ -30,7 +30,6 @@ export function ChargeableItemsPage({ staff, configuration, onToast, initialDate
   const [status, setStatus] = useState('all')
   const [item, setItem] = useState('all')
   const [waiter, setWaiter] = useState('all')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [editing, setEditing] = useState<ChargeableRecord | 'new' | null>(null)
   const [viewing, setViewing] = useState<ChargeableRecord | null>(null)
   const [correcting, setCorrecting] = useState<ChargeableRecord | null>(null)
@@ -107,8 +106,7 @@ export function ChargeableItemsPage({ staff, configuration, onToast, initialDate
 </section>
     <section className="panel chargeable-panel">
 <nav className="chargeable-tabs" aria-label="Chargeable items"><button className={item === 'all' ? 'active' : ''} onClick={() => setItem('all')}>All <b>{records.filter(record => record.active).length}</b></button>{itemFamilies.map(family => <button key={family.value} className={item === family.value ? 'active' : ''} onClick={() => setItem(family.value)}>{family.label} <b>{records.filter(record => record.active && familyForItem(configuration.items.find(option => option.value === record.itemValue))?.value === family.value).length}</b></button>)}</nav>
-<ActionButton className="chargeable-filter-toggle" icon="filter" compact aria-expanded={filtersOpen} aria-controls="chargeable-item-filters" onClick={() => setFiltersOpen(open => !open)}>Filters{[status !== 'all', item !== 'all', waiter !== 'all'].filter(Boolean).length ? ` (${[status !== 'all', item !== 'all', waiter !== 'all'].filter(Boolean).length})` : ''}</ActionButton>
-<div id="chargeable-item-filters" className={`chargeable-filters${filtersOpen ? ' open' : ''}`}>
+<div id="chargeable-item-filters" className="chargeable-filters">
 <input aria-label="Search chargeable records" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search guest, room, check / invoice, item or waiter" />
 <select aria-label="Filter chargeable status" value={status} onChange={event => setStatus(event.target.value)}>
 <option value="all">All statuses</option>{configuration.statuses.map(option => <option key={option.id} value={option.value}>{option.label}</option>)}</select>

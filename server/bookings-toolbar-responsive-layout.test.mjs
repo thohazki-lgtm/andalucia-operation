@@ -17,6 +17,21 @@ assert.match(corporateCss, /@media \(max-width: 900px\) and \(min-width: 701px\)
 assert.match(corporateCss, /@media \(max-width: 700px\)[\s\S]*?main\.module-bookings \.booking-command[\s\S]*?"copy"\s*"navigation"\s*"actions"/)
 assert.match(
   css,
+  /\.booking-command \.booking-date-picker\{[^}]*border:1px solid #c5a35a[^}]*background:linear-gradient\(135deg,#eaf7ff 0%,#cfefff 100%\)/,
+  'booking date card must use the separated pale-blue calendar treatment',
+)
+assert.match(
+  css,
+  /\.booking-command \.booking-date-picker \.ao-financial-date-control__trigger\{[^}]*color:#1c2e4c[^}]*font:500 18px\/1\.15 var\(--ao-font-display/,
+  'booking date typography must match the Guest Occasions calendar',
+)
+assert.match(
+  css,
+  /\.booking-command \.date-step\{[^}]*border-radius:12px[^}]*background:#24577f[^}]*color:#fffdf5/,
+  'booking calendar arrows must remain visibly separated from the date card',
+)
+assert.match(
+  css,
   /\.mobile-booking-list \.mobile-operation-card>header\{align-items:center;margin:-13px -13px 10px;padding:11px 12px 10px;border-bottom:1px solid #9fcce4;border-radius:8px 8px 0 0;background:#cfefff\}/,
   'mobile booking guest-name headers must use the light-blue treatment',
 )
@@ -57,6 +72,21 @@ assert.match(
   css,
   /\.booking-tlc-pill\{border-color:#55a9d0!important;background:#e4eff4!important;color:#23678c!important\}/,
   'booking sheets must display authoritative TLC findings as a blue pill',
+)
+assert.match(
+  css,
+  /main\.module-bookings \.service-summary \.panel strong\{font-size:18px;line-height:1\}/,
+  'booking KPI figures must use the reduced shared type scale',
+)
+assert.match(
+  css,
+  /main\.module-bookings \.booking-service-tabs button\{font-size:10px;font-weight:700;line-height:1\.15\}/,
+  'booking tabs must use compact typography on desktop and mobile',
+)
+assert.match(
+  css,
+  /@media\(max-width:700px\)\{[\s\S]*?main\.module-bookings \.service-summary \.panel strong\{font-size:16px\}[\s\S]*?main\.module-bookings \.booking-service-tabs button\{font-size:9px\}[\s\S]*?main\.module-bookings \.mobile-booking-list \.booking-guest-trigger b\{font-size:11px;line-height:1\.15\}/,
+  'mobile booking guest names must use the reduced card type scale',
 )
 
 console.log('Bookings responsive toolbar layout verified')
