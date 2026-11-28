@@ -87,11 +87,33 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
         'server/requested-backup-activation-security.test.mjs',
       ],
     },
+    {
+      previousSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
+      targetSha: 'ef557c5ecb5a0898655162f1fca235cbdd9f1270',
+      reviewedHeadSha: '872af8e779f9983133181d7c564a30ae01fbd62a',
+      pullRequest: 117,
+      changedFiles: [
+        'deployment/approvals/stopped-main-successor-pr117.json',
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
+    {
+      previousSha: 'ef557c5ecb5a0898655162f1fca235cbdd9f1270',
+      targetSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
+      reviewedHeadSha: 'c424415d9c17488994c8aab8f12ac49ab914e582',
+      pullRequest: 118,
+      changedFiles: [
+        'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
   ],
   registration: {
-    previousSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
-    pullRequest: 117,
-    evidencePath: 'deployment/approvals/stopped-main-successor-pr117.json',
+    previousSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
+    pullRequest: 119,
+    evidencePath: 'deployment/approvals/stopped-main-successor-pr119.json',
     implementationChangedFiles: [
       'server/requested-backup-activation-control.ts',
       'server/requested-backup-activation-security.test.mjs',

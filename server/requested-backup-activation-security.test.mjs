@@ -235,20 +235,20 @@ const stoppedMainSuccessorFixture = async () => {
 // circular commit hash.
 {
   const transitions = reviewedStoppedMainSourceSuccessor.transitions
-  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116])
+  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116, 117, 118])
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions[0].targetSha), 'reviewed-transition')
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions.at(-1).targetSha), 'reviewed-successor')
   assert.deepEqual(transitions.at(-1), {
-    previousSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
-    targetSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
-    reviewedHeadSha: 'f2bd836ed1d1493d87aa04587e73c95f6a4ecb44',
-    pullRequest: 116,
-    changedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
+    previousSha: 'ef557c5ecb5a0898655162f1fca235cbdd9f1270',
+    targetSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
+    reviewedHeadSha: 'c424415d9c17488994c8aab8f12ac49ab914e582',
+    pullRequest: 118,
+    changedFiles: ['deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1', 'server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
   })
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.registration, {
-    previousSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
-    pullRequest: 117,
-    evidencePath: 'deployment/approvals/stopped-main-successor-pr117.json',
+    previousSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
+    pullRequest: 119,
+    evidencePath: 'deployment/approvals/stopped-main-successor-pr119.json',
     implementationChangedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
   })
   assert.equal([...transitions.flatMap(value => value.changedFiles), reviewedStoppedMainSourceSuccessor.registration.evidencePath].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
