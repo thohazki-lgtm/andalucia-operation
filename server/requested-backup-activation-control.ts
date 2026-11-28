@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
@@ -224,16 +224,16 @@ export class RequestedBackupActivationControl {
   async prepareStoppedMainActivation(input: {
     previousLiveSha: string; targetSha: string; approvalManifestSha256: string; canonicalIdentitySha256: string; canonicalStoreId: string
     recoveryAuthorizationId: string; recoveryAuthorizationSha256: string; recoveryIntegritySha256: string
-    backupId: string; requestedBy: { userId: string; displayName: string }; schemaEvidenceSha256: string
+    attemptId: string; backupId: string; requestedBy: { userId: string; displayName: string }; schemaEvidenceSha256: string
   }) {
     if (!/^[0-9a-f]{40}$/i.test(input.previousLiveSha) || !/^[0-9a-f]{40}$/i.test(input.targetSha) || !/^[0-9a-f]{64}$/i.test(input.approvalManifestSha256) || !/^[0-9a-f]{64}$/i.test(input.canonicalIdentitySha256) || !/^[0-9a-f]{64}$/i.test(input.recoveryAuthorizationSha256) || !/^[0-9a-f]{64}$/i.test(input.recoveryIntegritySha256) || !/^[0-9a-f]{64}$/i.test(input.schemaEvidenceSha256)) fail('STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID')
-    if (!/^[0-9a-f]{32}$/i.test(input.recoveryAuthorizationId) || !input.backupId || !input.requestedBy.userId || !input.requestedBy.displayName) fail('STOPPED_MAIN_ACTIVATION_MANAGER_AUTHORIZATION_INVALID')
+    if (!/^[0-9a-f]{32}$/i.test(input.recoveryAuthorizationId) || !/^[0-9a-f]{32}$/i.test(input.attemptId) || !input.backupId || !input.requestedBy.userId || !input.requestedBy.displayName) fail('STOPPED_MAIN_ACTIVATION_MANAGER_AUTHORIZATION_INVALID')
     const authorized = await this.coordinator.createCanonicalMaintenanceAuthorization({
       previousLiveSha: input.previousLiveSha.toLowerCase(), targetSha: input.targetSha.toLowerCase(), targetBranch: 'main',
       authorizationMode: 'stopped_main_runtime_activation', approvalManifestSha256: input.approvalManifestSha256,
       canonicalIdentitySha256: input.canonicalIdentitySha256, canonicalStoreId: input.canonicalStoreId,
       schema: '028', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false,
-      requestId: `stopped-main-activation:${input.previousLiveSha.toLowerCase()}:${input.targetSha.toLowerCase()}:${input.recoveryAuthorizationId.toLowerCase()}`,
+      requestId: `stopped-main-activation:${input.previousLiveSha.toLowerCase()}:${input.targetSha.toLowerCase()}:${input.recoveryAuthorizationId.toLowerCase()}:${input.attemptId.toLowerCase()}`,
       requestSha256: input.recoveryAuthorizationSha256, requestedBy: input.requestedBy,
       historicalRuntimeEvidenceSha256: input.recoveryIntegritySha256, schemaEvidenceSha256: input.schemaEvidenceSha256,
       backupId: input.backupId, expiresAt: new Date(this.now().getTime() + 10 * 60_000).toISOString(),
@@ -348,7 +348,10 @@ const stoppedMainActivationBindings = async (projectRoot: string, sourceRoot: st
 const assertBindings = async (projectRoot: string, sourceRoot: string, record: CanonicalMaintenanceAuthorization, verifyStoppedStore = false, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
   if (record.authorizationMode === 'stopped_main_runtime_activation') {
     if (Date.parse(record.expiresAt) <= Date.now()) fail('STOPPED_MAIN_ACTIVATION_AUTHORIZATION_EXPIRED')
-    const prefix = `stopped-main-activation:${record.previousLiveSha}:${record.targetSha}:`; const recoveryAuthorizationId = record.requestId.startsWith(prefix) ? record.requestId.slice(prefix.length) : ''
+    const prefix = `stopped-main-activation:${record.previousLiveSha}:${record.targetSha}:`
+    const requestSuffix = record.requestId.startsWith(prefix) ? record.requestId.slice(prefix.length) : ''
+    const [recoveryAuthorizationId, attemptId, ...unexpected] = requestSuffix.split(':')
+    if (!/^[0-9a-f]{32}$/i.test(recoveryAuthorizationId) || unexpected.length > 0 || (attemptId !== undefined && !/^[0-9a-f]{32}$/i.test(attemptId))) fail('STOPPED_MAIN_ACTIVATION_PROTECTED_BINDING_MISMATCH')
     const bindings = await stoppedMainActivationBindings(projectRoot, sourceRoot, record.targetSha, recoveryAuthorizationId, verifyStoppedStore, exclusiveCheck, reviewedSuccessor)
     const approvalStillBound = record.approvalManifestSha256 === bindings.runtimeApprovalSha
     const claimedTargetTransition = record.state === 'TARGET_CLAIMED' && bindings.runtimeSourceSha === record.targetSha
@@ -489,7 +492,7 @@ export const prepareStoppedMainActivation = async (projectRootInput: string, exp
   const authenticate = dependencies.authenticate || (await import('./database-stale-marker-recovery.js')).authenticateManagerFromBackup
   const actor = await authenticate(projectRoot, bindings.backup, credentials.identifier, credentials.password)
   const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
-  return new RequestedBackupActivationControl(coordinator).prepareStoppedMainActivation({ previousLiveSha: bindings.recovery.targetSha, targetSha: expectedSha, approvalManifestSha256: bindings.runtimeApprovalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, recoveryAuthorizationId, recoveryAuthorizationSha256: bindings.recoverySha, recoveryIntegritySha256: bindings.recovery.integritySha256, backupId: bindings.backup.backupId, requestedBy: actor, schemaEvidenceSha256: bindings.schemaEvidenceSha })
+  return new RequestedBackupActivationControl(coordinator).prepareStoppedMainActivation({ previousLiveSha: bindings.recovery.targetSha, targetSha: expectedSha, approvalManifestSha256: bindings.runtimeApprovalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, recoveryAuthorizationId, recoveryAuthorizationSha256: bindings.recoverySha, recoveryIntegritySha256: bindings.recovery.integritySha256, attemptId: randomUUID().replaceAll('-', ''), backupId: bindings.backup.backupId, requestedBy: actor, schemaEvidenceSha256: bindings.schemaEvidenceSha })
 }
 
 export async function runRequestedBackupActivationControl(command: string, argv = process.argv, dependencies: { portsClosed?: () => Promise<boolean>; reviewedSourceSuccessor?: ReviewedStoppedMainSourceSuccessor } = {}) {

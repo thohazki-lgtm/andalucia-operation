@@ -56,6 +56,12 @@ if ($preflight.status -ne 'READY_STOPPED_RUNTIME') {
     if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
 }
 
+$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$currentPrincipal = [Security.Principal.WindowsPrincipal]::new($currentIdentity)
+if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw 'GUARDED_ACTIVATION_ADMINISTRATOR_REQUIRED_BEFORE_AUTHORIZATION_CLAIM'
+}
+
 $released = $false
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
     $activePorts = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001,5173,5174 })
