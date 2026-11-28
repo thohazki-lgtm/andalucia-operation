@@ -26,17 +26,18 @@ const assertReviewedActivationSuccessor = (projectRoot: string, migrationSourceS
   if (!changed.includes('server/runtime-schema-activation-control.ts') || changed.some(path => !reviewedActivationSuccessorFiles.has(path))) fail('SCHEMA_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
 }
 
-export const resolveRuntimeSchemaActivation = async (projectRootInput: string, approvedSourceSha: string, reviewedSuccessorSha = reviewedActivationSuccessorSha) => {
-  const projectRoot = resolve(projectRootInput)
+export const resolveRuntimeSchemaActivation = async (sourceRootInput: string, approvedSourceSha: string, reviewedSuccessorSha = reviewedActivationSuccessorSha, canonicalProjectRootInput = sourceRootInput) => {
+  const sourceRoot = resolve(sourceRootInput)
+  const canonicalProjectRoot = resolve(canonicalProjectRootInput)
   if (!sha.test(approvedSourceSha)) fail('SCHEMA_ACTIVATION_SOURCE_SHA_INVALID')
-  const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
-  const origin = execFileSync('git', ['-C', projectRoot, 'rev-parse', 'refs/remotes/origin/main'], { encoding: 'utf8' }).trim().toLowerCase()
+  const head = execFileSync('git', ['-C', sourceRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
+  const origin = execFileSync('git', ['-C', sourceRoot, 'rev-parse', 'refs/remotes/origin/main'], { encoding: 'utf8' }).trim().toLowerCase()
   if (head !== approvedSourceSha.toLowerCase() || origin !== head) fail('SCHEMA_ACTIVATION_SOURCE_MISMATCH')
-  const identity = await json<any>(join(projectRoot, '.data', 'andalucia-store-identity.json'))
-  const canonicalData = resolve(projectRoot, '.data', 'postgres')
+  const identity = await json<any>(join(canonicalProjectRoot, '.data', 'andalucia-store-identity.json'))
+  const canonicalData = resolve(canonicalProjectRoot, '.data', 'postgres')
   if (identity.role !== 'canonical' || identity.storeId !== 'andalucia-canonical-live' || normalized(identity.databaseDirectory) !== normalized(canonicalData)) fail('SCHEMA_ACTIVATION_CANONICAL_IDENTITY_INVALID')
 
-  const backupRoot = join(projectRoot, '.backups')
+  const backupRoot = join(canonicalProjectRoot, '.backups')
   const folders = existsSync(backupRoot) ? await readdir(backupRoot, { withFileTypes: true }) : []
   const candidates: Array<{ folder: string; artifact: any }> = []
   for (const entry of folders) {
@@ -52,7 +53,7 @@ export const resolveRuntimeSchemaActivation = async (projectRootInput: string, a
   if (candidates.length !== 1) fail('SCHEMA_ACTIVATION_AUTHORIZATION_AMBIGUOUS')
   const { folder, artifact } = candidates[0]
   if (artifact.artifactVersion !== 'andalucia-live-migration-authorization-v2' || artifact.state !== 'consumed') fail('SCHEMA_ACTIVATION_MIGRATION_INCOMPLETE')
-  assertReviewedActivationSuccessor(projectRoot, artifact.approvedSourceSha, head, reviewedSuccessorSha)
+  assertReviewedActivationSuccessor(sourceRoot, artifact.approvedSourceSha, head, reviewedSuccessorSha)
   if (artifact.canonicalStoreId !== identity.storeId || artifact.outletScopeId !== identity.outletScopeId || normalized(artifact.sourceDirectory) !== normalized(canonicalData)) fail('SCHEMA_ACTIVATION_AUTHORIZATION_BINDING_INVALID')
   if (artifact.rehearsal?.status !== 'PASS' || artifact.rehearsal?.rollbackSchema !== '027' || artifact.rehearsal?.migratedSchema !== '028' || artifact.protectedBackup?.pinned !== true || artifact.protectedBackup?.restoreRehearsal !== 'PASS') fail('SCHEMA_ACTIVATION_REHEARSAL_EVIDENCE_INVALID')
   const source027 = artifact.sourceMigrationLedger?.migrations?.find((item: any) => item.version === '027')
@@ -72,7 +73,7 @@ export const resolveRuntimeSchemaActivation = async (projectRootInput: string, a
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   const arg = (name: string) => { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : undefined }
-  const projectRoot = arg('--project-root'); const expectedSha = arg('--expected-sha')
-  if (!projectRoot || !isAbsolute(projectRoot) || !expectedSha) fail('SCHEMA_ACTIVATION_ARGUMENT_REQUIRED')
-  console.log(JSON.stringify(await resolveRuntimeSchemaActivation(projectRoot!, expectedSha!)))
+  const legacyProjectRoot = arg('--project-root'); const sourceRoot = arg('--source-root') || legacyProjectRoot; const canonicalProjectRoot = arg('--canonical-root') || legacyProjectRoot || sourceRoot; const expectedSha = arg('--expected-sha')
+  if (!sourceRoot || !isAbsolute(sourceRoot) || !canonicalProjectRoot || !isAbsolute(canonicalProjectRoot) || !expectedSha) fail('SCHEMA_ACTIVATION_ARGUMENT_REQUIRED')
+  console.log(JSON.stringify(await resolveRuntimeSchemaActivation(sourceRoot!, expectedSha!, reviewedActivationSuccessorSha, canonicalProjectRoot!)))
 }

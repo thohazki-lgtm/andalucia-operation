@@ -112,7 +112,7 @@ try {
     $env:ANDALUCIA_REQUIRED_SCHEMA_VERSION = '027'
   } else {
     if (-not (Test-Path -LiteralPath $tsxCommand -PathType Leaf) -or -not (Test-Path -LiteralPath $schemaActivationControl -PathType Leaf)) { throw 'ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_MISSING' }
-    $schemaOutput = & $tsxCommand $schemaActivationControl --project-root $projectRoot --expected-sha $source.Sha
+    $schemaOutput = & $tsxCommand $schemaActivationControl --source-root $runtimeSourceRoot --canonical-root $projectRoot --expected-sha $source.Sha
     if ($LASTEXITCODE -ne 0) { throw "ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_FAILED:$($schemaOutput -join [Environment]::NewLine)" }
     try { $schemaResolution = ($schemaOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { throw 'ANDALUCIA_SCHEMA_ACTIVATION_CONTROL_INVALID' }
     if ([string]$schemaResolution.requiredSchemaVersion -notin @('027','028')) { throw 'ANDALUCIA_SCHEMA_ACTIVATION_VERSION_UNSUPPORTED' }
