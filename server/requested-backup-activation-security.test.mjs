@@ -74,7 +74,7 @@ const verified = async () => {
   const stoppedMainInput = {
     previousLiveSha, targetSha, approvalManifestSha256: 'a'.repeat(64), canonicalIdentitySha256: 'b'.repeat(64), canonicalStoreId: 'andalucia-canonical-live',
     recoveryAuthorizationId: 'c'.repeat(32), recoveryAuthorizationSha256: 'd'.repeat(64), recoveryIntegritySha256: 'e'.repeat(64),
-    backupId: 'verified-schema-028', requestedBy: { userId: 'manager-1', displayName: 'Manager' }, schemaEvidenceSha256: 'f'.repeat(64),
+    attemptId: '1'.repeat(32), backupId: 'verified-schema-028', requestedBy: { userId: 'manager-1', displayName: 'Manager' }, schemaEvidenceSha256: 'f'.repeat(64),
   }
   const authorization = await control.prepareStoppedMainActivation(stoppedMainInput)
   assert.equal(authorization.authorizationMode, 'stopped_main_runtime_activation')
@@ -136,6 +136,9 @@ assert.match(resolver, /approved_journal_bound_recovery/)
 assert.match(resolver, /inspect-recovery-source/)
 assert.match(preflight, /stopped_main_runtime_activation/)
 assert.match(preflight, /STOPPED_MAIN_ACTIVATION_EVIDENCE_INVALID/)
+const administratorGuardIndex = activation.indexOf('GUARDED_ACTIVATION_ADMINISTRATOR_REQUIRED_BEFORE_AUTHORIZATION_CLAIM')
+const targetClaimIndex = activation.indexOf('claim-target')
+assert.ok(administratorGuardIndex >= 0 && targetClaimIndex > administratorGuardIndex, 'administrator privilege must be proven before the single-use target claim')
 assert.doesNotMatch(preflight, /evidence\.previousLiveSha\s+-ne\s+\$headSha/, 'preflight must retain the protected historical recovery SHA for an approved source successor')
 assert.match(preflight, /historicalRecoverySha\s+-notmatch\s+'\^\[0-9a-f\]\{40\}\$'/, 'preflight must reject a malformed historical recovery SHA')
 assert.match(preflight, /merge-base[^\n]+--is-ancestor[^\n]+\$runtimeSha[^\n]+\$headSha/, 'preflight must retain the historical-to-target ancestry gate')
@@ -294,6 +297,11 @@ const stoppedMainSuccessorFixture = async () => {
   await writeFile(join(value.root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: value.targetSha, sourceRoot: value.sourceRoot }))
   const failed = await runRequestedBackupActivationControl('target-failed', ['node', 'control', '--project-root', value.root, '--authorization-id', authorization.authorizationId, '--failure', 'INSTALL_FAILED'], claimDependencies)
   assert.equal(failed.state, 'TARGET_FAILED')
+  const retryAuthorization = await prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies)
+  assert.equal(retryAuthorization.state, 'BACKUP_VERIFIED')
+  assert.notEqual(retryAuthorization.authorizationId, authorization.authorizationId)
+  assert.notEqual(retryAuthorization.requestId, authorization.requestId)
+  assert.match(retryAuthorization.requestId, new RegExp(`:${value.recovery.authorizationId}:[0-9a-f]{32}$`))
 }
 
 // A stopped runtime already refreshed to the exact reviewed target can issue and inspect a fresh authorization.
