@@ -227,20 +227,54 @@ const stoppedMainSuccessorFixture = async () => {
 }
 
 // The production exception is pinned to each normal PR merge, its reviewed head tree,
-// exact parents and exact changed-file set, and excludes data/migration paths.
+// exact parents and exact changed-file set. The final registration uses a separate
+// evidence-only commit so the reviewed implementation can identify itself without a
+// circular commit hash.
 {
   const transitions = reviewedStoppedMainSourceSuccessor.transitions
-  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115])
+  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116])
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions[0].targetSha), 'reviewed-transition')
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions.at(-1).targetSha), 'reviewed-successor')
   assert.deepEqual(transitions.at(-1), {
-    previousSha: 'cb09d72a0474136e13299c775ccd8bf414978cc3',
-    targetSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
-    reviewedHeadSha: '3517e7e194e48aba5b96665a9b68bc1fedd4e171',
-    pullRequest: 115,
-    changedFiles: ['deployment/windows/Install-AndaluciaWindowsShutdownService.ps1', 'server/windows-shutdown-watcher-security.test.mjs'],
+    previousSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
+    targetSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
+    reviewedHeadSha: 'f2bd836ed1d1493d87aa04587e73c95f6a4ecb44',
+    pullRequest: 116,
+    changedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
   })
-  assert.equal(transitions.flatMap(value => value.changedFiles).some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
+  assert.deepEqual(reviewedStoppedMainSourceSuccessor.registration, {
+    previousSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
+    pullRequest: 117,
+    evidencePath: 'deployment/approvals/stopped-main-successor-pr117.json',
+    implementationChangedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
+  })
+  assert.equal([...transitions.flatMap(value => value.changedFiles), reviewedStoppedMainSourceSuccessor.registration.evidencePath].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
+}
+
+// A reviewed implementation plus one evidence-only child commit can authorize its
+// normal merge without trusting an unreviewed future descendant.
+{
+  const value = await stoppedMainSuccessorFixture()
+  value.fixtureGit(value.root, 'checkout', '-b', 'registered-implementation')
+  await writeFile(join(value.root, 'registered-a.txt'), 'registered implementation a')
+  await writeFile(join(value.root, 'registered-b.txt'), 'registered implementation b')
+  value.fixtureGit(value.root, 'add', '.'); value.fixtureGit(value.root, 'commit', '-m', 'reviewed registered implementation')
+  const reviewedHeadSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
+  const evidencePath = 'deployment/approvals/stopped-main-successor.json'
+  await mkdir(join(value.root, 'deployment', 'approvals'), { recursive: true })
+  await writeFile(join(value.root, evidencePath), JSON.stringify({ version: 'andalucia-stopped-main-successor-registration-v1', previousSha: value.targetSha, reviewedHeadSha, pullRequest: 3, implementationChangedFiles: ['registered-a.txt', 'registered-b.txt'] }))
+  value.fixtureGit(value.root, 'add', evidencePath); value.fixtureGit(value.root, 'commit', '-m', 'register reviewed successor evidence')
+  value.fixtureGit(value.root, 'checkout', 'main'); value.fixtureGit(value.root, 'merge', '--no-ff', 'registered-implementation', '-m', 'merge registered successor')
+  const registeredTargetSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
+  const registration = { previousSha: value.targetSha, pullRequest: 3, evidencePath, implementationChangedFiles: ['registered-a.txt', 'registered-b.txt'] }
+  const reviewed = { ...value.reviewedSourceSuccessor, registration }
+  assert.equal(assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, registeredTargetSha, reviewed), 'reviewed-registered-successor')
+  const wrongReview = structuredClone(reviewed); wrongReview.registration.pullRequest = 4
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, registeredTargetSha, wrongReview), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  await writeFile(join(value.root, 'unreviewed-after-registration.txt'), 'future source')
+  value.fixtureGit(value.root, 'add', '.'); value.fixtureGit(value.root, 'commit', '-m', 'unreviewed future source')
+  const futureSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, futureSha, reviewed), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
 }
 
 // A reviewed source successor keeps the immutable recovery SHA and binds the new target before a single atomic claim.

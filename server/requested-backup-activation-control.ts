@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import { createConnection } from 'node:net'
-import { basename, join, resolve } from 'node:path'
+import { basename, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DatabaseOperationCoordinator, type CanonicalMaintenanceAuthorization, type CanonicalMaintenanceState } from './database-operation-coordinator.js'
 
@@ -25,6 +25,12 @@ export type ReviewedStoppedMainSourceTransition = {
 export type ReviewedStoppedMainSourceSuccessor = {
   recoverySha: string
   transitions: readonly ReviewedStoppedMainSourceTransition[]
+  registration?: {
+    previousSha: string
+    pullRequest: number
+    evidencePath: string
+    implementationChangedFiles: readonly string[]
+  }
 }
 
 export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSuccessor = {
@@ -71,7 +77,26 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
         'server/windows-shutdown-watcher-security.test.mjs',
       ],
     },
+    {
+      previousSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
+      targetSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
+      reviewedHeadSha: 'f2bd836ed1d1493d87aa04587e73c95f6a4ecb44',
+      pullRequest: 116,
+      changedFiles: [
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
   ],
+  registration: {
+    previousSha: 'b4edb9948ddaaf898a8882e91a51c33662aec2a1',
+    pullRequest: 117,
+    evidencePath: 'deployment/approvals/stopped-main-successor-pr117.json',
+    implementationChangedFiles: [
+      'server/requested-backup-activation-control.ts',
+      'server/requested-backup-activation-security.test.mjs',
+    ],
+  },
 }
 
 export const assertReviewedStoppedMainSourceSuccessor = (
@@ -104,7 +129,29 @@ export const assertReviewedStoppedMainSourceSuccessor = (
     previous = transition.targetSha
     if (approvedSourceSha === previous) return index === 0 ? 'reviewed-transition' as const : 'reviewed-successor' as const
   }
-  fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const registration = reviewed.registration ?? fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  if (registration.previousSha !== previous || !Number.isSafeInteger(registration.pullRequest) || registration.pullRequest < 1) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const projectPath = resolve(projectRoot)
+  const registrationPath = resolve(projectPath, registration.evidencePath)
+  if (!registration.evidencePath || !registrationPath.startsWith(`${projectPath}${sep}`)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const targetParents = git(projectRoot, 'rev-list', '--parents', '-n', '1', approvedSourceSha).split(/\s+/)
+  if (targetParents.length !== 3 || targetParents[0] !== approvedSourceSha || targetParents[1] !== previous) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const registeredHeadSha = targetParents[2]
+  const registeredHeadParents = git(projectRoot, 'rev-list', '--parents', '-n', '1', registeredHeadSha).split(/\s+/)
+  if (registeredHeadParents.length !== 2 || registeredHeadParents[0] !== registeredHeadSha) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const reviewedHeadSha = registeredHeadParents[1]
+  let evidence: any
+  try { evidence = JSON.parse(git(projectRoot, 'show', `${registeredHeadSha}:${registration.evidencePath}`)) } catch { fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID') }
+  const exactStrings = (actual: unknown, expected: readonly string[]) => Array.isArray(actual) && actual.length === expected.length && actual.every((value, index) => value === expected[index])
+  if (evidence?.version !== 'andalucia-stopped-main-successor-registration-v1' || evidence.previousSha !== previous || evidence.reviewedHeadSha !== reviewedHeadSha || evidence.pullRequest !== registration.pullRequest || !exactStrings(evidence.implementationChangedFiles, registration.implementationChangedFiles)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  assertAncestry(previous, reviewedHeadSha)
+  assertExactChangedFiles(previous, reviewedHeadSha, registration.implementationChangedFiles)
+  assertExactChangedFiles(reviewedHeadSha, registeredHeadSha, [registration.evidencePath])
+  assertExactChangedFiles(previous, approvedSourceSha, [...registration.implementationChangedFiles, registration.evidencePath])
+  const targetTree = git(projectRoot, 'rev-parse', `${approvedSourceSha}^{tree}`)
+  const registeredTree = git(projectRoot, 'rev-parse', `${registeredHeadSha}^{tree}`)
+  if (targetTree !== registeredTree) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  return 'reviewed-registered-successor' as const
 }
 
 export class RequestedBackupActivationControl {
