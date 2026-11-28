@@ -38,14 +38,23 @@ const permissionNames: Array<[AuthorizationPermissionKey, string, string]> = [
   ['edit_own_timesheet', 'Edit Own Timesheet', 'Edit only draft timesheets belonging to the linked Staff profile.'],
   ['confirm_own_timesheet_days', 'Confirm Own Timesheet Days', 'Confirm only timesheet days belonging to the linked Staff profile.'],
   ['submit_own_timesheet_month', 'Submit Own Timesheet Month', 'Submit only a monthly timesheet belonging to the linked Staff profile.'],
-  ['manage_timesheets', 'Manage Timesheets', 'Review and reopen employee timesheets within the authorized outlet.']
+  ['manage_timesheets', 'Manage Timesheets', 'Review and reopen employee timesheets within the authorized outlet.'],
+  ['view_staff_dashboard', 'View Staff Dashboard', 'View the employee-safe operational Dashboard.'],
+  ['view_staff_directory', 'View Staff Directory', 'View the employee profile and minimum operational colleague details.'],
+  ['view_own_leave', 'View Own Leave', 'View only leave information belonging to the linked Staff profile.'],
+  ['view_staff_training', 'View Staff Training', 'View employee-relevant training sessions without administration.'],
+  ['view_service_bookings', 'View Service Bookings', 'View redacted service booking information.'],
+  ['view_guest_occasions', 'View Guest Occasions', 'View redacted operational guest occasion requirements.'],
+  ['view_own_earnings', 'View Own Earnings', 'View only finalized earnings belonging to the linked Staff profile.'],
+  ['view_maintenance', 'View Maintenance', 'View operational maintenance issues without administration.'],
+  ['view_staff_reports', 'View Staff Reports', 'View non-financial operational reports without manager controls.']
 ]
 const permissionDefinitions: AuthorizationPermission[] = permissionNames.map(([key, displayName, description], index) => ({ id: `00000000-0000-4000-8000-${String(2001 + index).padStart(12, '0')}`, key, displayName, description, active: true }))
 const initialRolePermissions: Record<Exclude<AuthorizationRoleKey, 'owner'>, AuthorizationPermissionKey[]> = {
   outlet_manager: ['manage_staff', 'manage_staff_membership', 'manage_staff_membership_baseline', 'approve_staff_membership_baseline', 'manage_duty_roster', 'manage_timesheets', 'manage_training', 'manage_bookings', 'manage_guest_occasions', 'manage_chargeables', 'manage_maintenance', 'view_reports', 'manage_reports'],
   operational_user: ['manage_training', 'manage_bookings', 'manage_guest_occasions', 'manage_chargeables', 'manage_maintenance'],
   viewer: ['view_reports'],
-  employee_self_service: ['view_own_roster', 'view_own_timesheet', 'edit_own_timesheet', 'confirm_own_timesheet_days', 'submit_own_timesheet_month']
+  employee_self_service: ['view_own_roster', 'view_own_timesheet', 'edit_own_timesheet', 'confirm_own_timesheet_days', 'submit_own_timesheet_month', 'view_staff_dashboard', 'view_staff_directory', 'view_own_leave', 'view_staff_training', 'view_service_bookings', 'view_guest_occasions', 'view_own_earnings', 'view_maintenance', 'view_staff_reports']
 }
 
 export class AuthorizationError extends Error {
@@ -73,6 +82,11 @@ export class AuthorizationService {
           const permission = permissionDefinitions.find(item => item.key === permissionKey)!
           await transaction.query('insert into authorization_role_permissions(role_id,permission_id,created_by) values($1,$2,$3) on conflict(role_id,permission_id) do nothing', [role.id, permission.id, systemActor])
         }
+      }
+      const employeeRole = roleDefinitions.find(role => role.key === 'employee_self_service')!
+      for (const permissionKey of initialRolePermissions.employee_self_service) {
+        const permission = permissionDefinitions.find(item => item.key === permissionKey)!
+        await transaction.query('insert into authorization_role_permissions(role_id,permission_id,created_by) values($1,$2,$3) on conflict(role_id,permission_id) do nothing', [employeeRole.id, permission.id, systemActor])
       }
     })
   }

@@ -40,6 +40,9 @@ export type AuthorizationPermissionKey =
   | 'manage_timesheets'
   | 'view_own_roster' | 'view_own_timesheet' | 'edit_own_timesheet'
   | 'confirm_own_timesheet_days' | 'submit_own_timesheet_month'
+  | 'view_staff_dashboard' | 'view_staff_directory' | 'view_own_leave'
+  | 'view_staff_training' | 'view_service_bookings' | 'view_guest_occasions'
+  | 'view_own_earnings' | 'view_maintenance' | 'view_staff_reports'
 export interface AuthorizationSummary { roleKeys: AuthorizationRoleKey[]; permissionKeys: AuthorizationPermissionKey[]; globalScope: boolean; allowedOutletScopeIds: string[]; isOwner: boolean }
 export interface UserAccountIdentity { userId: string; loginIdentifier: string; displayName: string; status: UserAccountStatus; staffId: string | null; mustChangePassword: boolean }
 export interface AuthenticatedUser extends UserAccountIdentity, AuthorizationSummary {}
@@ -362,6 +365,20 @@ export interface OperationalReport {
   maintenance: { issuesReported: number; open: number; inProgress: number; completed: number; completedDuringPeriod: number; completedToday: number; unresolved: number; urgentUnresolved: number; normalUnresolved: number; byArea: ReportBreakdown[]; byDate: Array<{ date: string; issuesReported: number; completed: number }>; byWeek: Array<{ weekStart: string; weekEnd: string; label: string; issuesReported: number; completed: number }>; records: Array<{ id: string; date: string; completionDate: string | null; issue: string; area: string; status: string; priority: string; referenceFollowUp: string }> }
   comparison: Array<{ key: string; label: string; current: number; previous: number; changePercent: number | null; movement: 'up' | 'down' | 'flat'; favorableWhen: 'up' | 'down' | 'neutral' }>
   managerSummary: ReportManagerSummary | null
+}
+export interface EmployeeEarningsView { month: string; status: 'finalized' | 'not_finalized'; amount: string; eligibleDays: number; designation: string }
+export interface EmployeeLeaveView { balance: StaffEntitlementBalance; booked: PlannedLeavePeriod[]; history: StaffLeaveRecord[] }
+export interface EmployeeAccessSnapshot {
+  self: Staff
+  directory: Staff[]
+  roster: RosterEntry[]
+  leave: EmployeeLeaveView
+  training: TrainingSession[]
+  bookings: BookingRecord[]
+  occasions: GuestOccasionRecord[]
+  earnings: EmployeeEarningsView
+  maintenance: MaintenanceRecord[]
+  report: OperationalReport
 }
 export type DailyReportStatus = 'draft' | 'reviewed' | 'approved' | 'superseded'
 export type DailyReportReadinessState = 'complete' | 'warning' | 'missing'

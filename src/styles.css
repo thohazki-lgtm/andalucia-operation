@@ -917,3 +917,6 @@ main{min-width:0}
 @media(max-width:390px){
  .mobile-brand .mobile-wordmark{width:132px}
 }
+/* Employee-safe module views reuse the approved panel, typography and module palette. */
+.employee-safe-page{display:grid;gap:18px}.employee-safe-page>.panel{border-color:var(--gold,#c9a227)}.employee-safe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.employee-safe-grid article,.employee-safe-list article{display:flex;flex-direction:column;gap:5px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--gold,#c9a227) 68%,transparent);border-radius:18px;background:rgba(255,255,255,.5)}.employee-safe-grid span,.employee-safe-list span{color:var(--muted,#607789);font-family:var(--ao-font-ui)}.employee-safe-grid strong,.employee-safe-list strong{color:var(--ink,#0b3b59);font-family:var(--ao-font-ui)}.employee-safe-list{display:grid;gap:10px;margin-top:16px}.employee-readonly-pill{padding:7px 12px;border:1px solid var(--gold,#c9a227);border-radius:999px;font-family:var(--ao-font-ui);font-size:.78rem;letter-spacing:.08em}.employee-earnings-card>h2{font-family:var(--ao-font-ui);font-size:clamp(2rem,5vw,3.6rem)}
+@media(max-width:640px){.employee-safe-grid{grid-template-columns:1fr}.employee-safe-grid article,.employee-safe-list article{padding:13px 14px;border-radius:15px}}

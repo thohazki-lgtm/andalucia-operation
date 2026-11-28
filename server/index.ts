@@ -28,7 +28,8 @@ import { OfficialTimesheetExportService } from './official-timesheet-export.js'
 import { requireOwnWorkforcePermission } from './workforce-authorization.js'
 import { assertTrustedOrigin, AuthError, AuthService, clearSessionCookie, LoginAttemptLimiter, parseSessionToken, requireAuthenticatedUser, sessionCookie } from './auth-service.js'
 import { auditActorLabel, AuthorizationError, AuthorizationService } from './authorization-service.js'
-import type { AttendanceRecord, AuthorizationPermissionKey, BookingImportReviewChanges, BookingImportReviewDecision, BookingRecord, ChargeableCorrectionRequest, ChargeableWriteRequest, ConfigOption, EntitlementPolicy, FinancialPreviewExternalAllocation, GuestOccasionRecord, MaintenanceRecord, PlannedLeaveWriteInput, PublicHoliday, ReportManagerSummary, ReportPeriodType, Staff, StaffEntitlementUpdate, StaffMembershipBaselineSelection, StaffYearlyEntitlementDraft, StaffYearlyEntitlementWrite, TimesheetDayInput, TrainingCompletionInput, TrainingDefaults, TrainingImportDecision, TrainingImportPreview, TrainingOperationalStatus, TrainingSession, WalkInBookingInput, WineSpiritSaleInput, WineSpiritSaleWriteRequest } from '../src/domain.js'
+import type { AttendanceRecord, AuthorizationPermissionKey, BookingImportReviewChanges, BookingImportReviewDecision, BookingRecord, ChargeableCorrectionRequest, ChargeableWriteRequest, ConfigOption, EmployeeAccessSnapshot, EntitlementPolicy, FinancialPreviewExternalAllocation, GuestOccasionRecord, MaintenanceRecord, PlannedLeaveWriteInput, PublicHoliday, ReportManagerSummary, ReportPeriodType, Staff, StaffEntitlementUpdate, StaffMembershipBaselineSelection, StaffYearlyEntitlementDraft, StaffYearlyEntitlementWrite, TimesheetDayInput, TrainingCompletionInput, TrainingDefaults, TrainingImportDecision, TrainingImportPreview, TrainingOperationalStatus, TrainingSession, WalkInBookingInput, WineSpiritSaleInput, WineSpiritSaleWriteRequest } from '../src/domain.js'
+import { employeeBookings, employeeDirectory, employeeMaintenance, employeeOccasions, employeeReport, employeeTraining } from './staff-access-policy.js'
 import { ACTIVITY_PROGRAM_PARSER_VERSION, parseActivityProgramPdf } from './activity-program-parser.js'
 import { analyzeBookingCandidates, reconcileAnalyzedBookingCovers } from './booking-intelligence-engine.js'
 import { parseTrainingCalendar } from './training-calendar-parser.js'
@@ -110,6 +111,7 @@ const expectedErrorStatus = (error: unknown): 400 | 409 | null => {
 }
 
 await repository.assertCompatibleSchema()
+await authorization.initialize()
 await incentives.initialize()
 await bookings.initialize()
 await occasions.initialize()
@@ -239,6 +241,23 @@ const server = createServer(async (request, response) => {
     if (request.method === 'GET' && baselineDiffMatch) { await authorizeBaselineReview(request, baselineDiffMatch[1], 'manage_staff_membership_baseline'); return send(response, 200, await membershipBaseline.diff(baselineDiffMatch[1])) }
     const baselineActionMatch = url.pathname.match(/^\/api\/staff-membership\/baseline-reviews\/([^/]+)\/(approve|reset|reopen)$/)
     if (request.method === 'POST' && baselineActionMatch) { assertTrustedOrigin(request); const input = await body(request) as { reason?: string; outletScopeId?: string; month?: string }; const action=baselineActionMatch[2]; const permission: AuthorizationPermissionKey = action === 'approve' ? 'approve_staff_membership_baseline' : action === 'reopen' ? 'reopen_staff_membership_baseline' : 'manage_staff_membership_baseline'; const principal = await authorizeBaselineReview(request, baselineActionMatch[1], permission); if (action === 'approve') return send(response, 200, await membershipBaseline.approve(baselineActionMatch[1], principal)); if(action==='reopen') return send(response, 201, await membershipBaseline.reopen(baselineActionMatch[1], { reason:input.reason||'', outletScopeId:input.outletScopeId||'', month:input.month||'' }, principal)); await membershipBaseline.resetReview(baselineActionMatch[1], input.reason || '', principal); return send(response, 200, { reset: true }) }
+    if (request.method === 'GET' && url.pathname === '/api/staff-access/snapshot') {
+      const context = await authorizedEmployeeAccessContext(request)
+      const date = url.searchParams.get('date') || serviceDate(); const month = url.searchParams.get('month') || date.slice(0, 7)
+      if (!validCalendarDate(date) || !/^\d{4}-\d{2}$/.test(month)) return send(response, 400, { message: 'Select a valid staff access date and month.' })
+      const year = Number(date.slice(0, 4)); const [weekStart, weekEnd] = rosterWeekRange(date)
+      const [allStaff, roster, balance, booked, history, sessions, bookingRecords, occasionRecords, maintenanceRecords, report, billTips] = await Promise.all([
+        repository.list(), operations.roster(date, date), repository.entitlementBalance(context.principal.staffId!, year, weekStart, weekEnd),
+        plannedLeave.list(context.outlet.id, `${year}-01-01`, `${year}-12-31`, context.principal.staffId!, true), repository.leaveRecords(`${year}-01-01`, `${year}-12-31`, context.principal.staffId!),
+        trainingR2.list(), bookings.list(date), occasions.list(date, context.outlet.scopeKey), maintenance.list(context.outlet.id), reporting.report('today', date, date),
+        billTipWorkflow.state(month, { id: context.outlet.id, key: context.outlet.scopeKey, name: context.outlet.displayName })
+      ])
+      const self = allStaff.find(person => person.id === context.principal.staffId)
+      if (!self) throw new AuthorizationError('FORBIDDEN', 'The linked Staff profile is unavailable.')
+      const allocation = billTips.currentFinalized?.staff.find(item => item.staffId === context.principal.staffId)
+      const payload: EmployeeAccessSnapshot = { self, directory: employeeDirectory(allStaff, self.id), roster: roster.filter(item => item.staffId === self.id), leave: { balance, booked, history }, training: employeeTraining(sessions, self.id), bookings: employeeBookings(bookingRecords), occasions: employeeOccasions(occasionRecords), earnings: { month, status: allocation ? 'finalized' : 'not_finalized', amount: allocation?.finalAmount || '0.00', eligibleDays: allocation?.eligibleDays || 0, designation: allocation?.designation || self.position }, maintenance: employeeMaintenance(maintenanceRecords, self.id), report: employeeReport(report, self.id) }
+      return send(response, 200, payload, { 'Cache-Control': 'no-store' })
+    }
     if (request.method === 'GET' && url.pathname === '/api/staff') { await authorizedStaffContext(request); return send(response, 200, await repository.list(), { 'Cache-Control': 'no-store' }) }
     if (request.method === 'GET' && url.pathname === '/api/training') { await authorizedTrainingContext(request); return send(response, 200, await trainingR2.list(), { 'Cache-Control': 'no-store' }) }
     if (request.method === 'GET' && url.pathname === '/api/training/performance') { await authorizedTrainingContext(request); return send(response, 200, await trainingR2.performance(url.searchParams.get('month') || serviceDate().slice(0, 7)), { 'Cache-Control': 'no-store' }) }
@@ -278,8 +297,8 @@ const server = createServer(async (request, response) => {
     const trainingImportBatchMatch = url.pathname.match(/^\/api\/training\/import-batches\/([^/]+)$/)
     if (request.method === 'GET' && trainingImportBatchMatch) { await authorizedTrainingContext(request); const batch = await training.importBatch(trainingImportBatchMatch[1]); if (!batch) throw new Error('Active training import batch not found.'); return send(response, 200, batch) }
     if (request.method === 'DELETE' && trainingImportBatchMatch) { assertTrustedOrigin(request); const context = await authorizedTrainingContext(request); const removed = await training.removeImportBatch(trainingImportBatchMatch[1], auditActorLabel(context.principal)); return send(response, 200, { imported: 0, skipped: 0, duplicates: 0, failed: 0, importedIds: [], removed }) }
-    if (request.method === 'GET' && url.pathname === '/api/bookings') return send(response, 200, await bookings.list(url.searchParams.get('date') || serviceDate()))
-    if (request.method === 'GET' && url.pathname === '/api/bookings/summary') return send(response, 200, await bookings.summary(url.searchParams.get('date') || serviceDate()))
+    if (request.method === 'GET' && url.pathname === '/api/bookings') { await authorizedBookingsContext(request); return send(response, 200, await bookings.list(url.searchParams.get('date') || serviceDate())) }
+    if (request.method === 'GET' && url.pathname === '/api/bookings/summary') { await authorizedBookingsContext(request); return send(response, 200, await bookings.summary(url.searchParams.get('date') || serviceDate())) }
     if (request.method === 'GET' && url.pathname === '/api/chargeables') { const context = await authorizedChargeableContext(request); return send(response, 200, await chargeables.list(url.searchParams.get('date') || serviceDate(), context.outlet.id)) }
     if (request.method === 'GET' && url.pathname === '/api/chargeables/summary') { const context = await authorizedChargeableContext(request); return send(response, 200, await chargeables.summary(url.searchParams.get('date') || serviceDate(), context.outlet.id)) }
     if (request.method === 'GET' && url.pathname === '/api/guest-occasions') { const context = await authorizedGuestOccasionsContext(request); return send(response, 200, await occasions.list(url.searchParams.get('date') || serviceDate(), context.outlet.scopeKey)) }
@@ -296,7 +315,7 @@ const server = createServer(async (request, response) => {
     if(request.method==='GET'&&url.pathname==='/api/reports/monthly'){const context=await authorizedReportsContext(request);return send(response,200,await monthlyReports.view(url.searchParams.get('month')||serviceDate().slice(0,7),context.outlet),{'Cache-Control':'no-store'})}
     const monthlyRoute=url.pathname.match(/^\/api\/reports\/monthly\/(\d{4}-\d{2})(\/verify)?$/)
     if(monthlyRoute&&request.method===(monthlyRoute[2]?'POST':'PUT')){assertTrustedOrigin(request);const context=await authorizedReportsContext(request),input=await body(request) as {expectedRevision?:number|null;financePayload?:unknown;managerCommentary?:string;followUpsChanges?:string};if(monthlyRoute[2])return send(response,200,await monthlyReports.verify(monthlyRoute[1],Number(input.expectedRevision),context.outlet,context.principal),{'Cache-Control':'no-store'});return send(response,200,await monthlyReports.save(monthlyRoute[1],{expectedRevision:input.expectedRevision??null,financePayload:input.financePayload,managerCommentary:input.managerCommentary,followUpsChanges:input.followUpsChanges},context.outlet,context.principal),{'Cache-Control':'no-store'})}
-    if (request.method === 'GET' && url.pathname === '/api/reports') { const start = url.searchParams.get('start') || serviceDate(); const end = url.searchParams.get('end') || serviceDate(); if (!validCalendarDate(start) || !validCalendarDate(end) || start > end) return send(response, 400, { message: 'Select a valid report date range.' }); return send(response, 200, await reporting.report((url.searchParams.get('periodType') || 'today') as ReportPeriodType, start, end)) }
+    if (request.method === 'GET' && url.pathname === '/api/reports') { await authorizedReportsContext(request); const start = url.searchParams.get('start') || serviceDate(); const end = url.searchParams.get('end') || serviceDate(); if (!validCalendarDate(start) || !validCalendarDate(end) || start > end) return send(response, 400, { message: 'Select a valid report date range.' }); return send(response, 200, await reporting.report((url.searchParams.get('periodType') || 'today') as ReportPeriodType, start, end)) }
     if (request.method === 'POST' && url.pathname === '/api/bookings/import-preview') {
       assertTrustedOrigin(request)
       const context = await authorizedBookingsContext(request)
@@ -486,7 +505,7 @@ const server = createServer(async (request, response) => {
     if (request.method === 'POST' && url.pathname === '/api/maintenance') { assertTrustedOrigin(request); const context = await authorizedMaintenanceContext(request); const input = await body(request) as MaintenanceRecord; if (!input.id || !input.issue?.trim() || !input.dateReported || !input.area || !input.status || !input.priority) return send(response, 400, { message: 'Issue, date reported, area, priority and status are required.' }); return send(response, 201, await maintenance.save(input, { outletScopeId: context.outlet.id, actor: context.principal })) }
     const maintenanceMatch = url.pathname.match(/^\/api\/maintenance\/([^/]+)$/)
     if (request.method === 'PUT' && maintenanceMatch) { assertTrustedOrigin(request); const context = await authorizedMaintenanceContext(request); const input = await body(request) as MaintenanceRecord; if (!input.issue?.trim() || !input.dateReported || !input.area || !input.status || !input.priority) return send(response, 400, { message: 'Issue, date reported, area, priority and status are required.' }); return send(response, 200, await maintenance.save({ ...input, id: maintenanceMatch[1] }, { outletScopeId: context.outlet.id, actor: context.principal })) }
-    if (request.method === 'PUT' && url.pathname === '/api/reports/manager-summary') { const input = await body(request) as ReportManagerSummary; if (!input.periodType || !input.startDate || !input.endDate) return send(response, 400, { message: 'Report period is required.' }); return send(response, 200, await reporting.saveManagerSummary(input)) }
+    if (request.method === 'PUT' && url.pathname === '/api/reports/manager-summary') { assertTrustedOrigin(request); const context = await authorizedReportsContext(request); const input = await body(request) as ReportManagerSummary; if (!input.periodType || !input.startDate || !input.endDate) return send(response, 400, { message: 'Report period is required.' }); return send(response, 200, await reporting.saveManagerSummary(input, auditActorLabel(context.principal))) }
     return send(response, 404, { message: 'Not found.' })
   } catch (error) { if (error instanceof AuthError || error instanceof AuthorizationError || error instanceof TimesheetError) return send(response, error.status, { code: error.code, message: error.message }, { 'Cache-Control': 'no-store' }); const expectedStatus = expectedErrorStatus(error); if (!expectedStatus) console.error(error); return send(response, expectedStatus || 500, { message: error instanceof Error ? error.message : 'Unexpected server error.' }) }
 })
@@ -551,6 +570,16 @@ async function authorizedOwnTimesheet(request: import('node:http').IncomingMessa
   const outlet = await outletMembership.findOutletByKey('andalucia')
   if (!outlet?.active) throw new Error('The Andalucía Workforce outlet is unavailable.')
   await requireOwnWorkforcePermission(authorization, principal, permission, outlet.id, principal.staffId)
+  return { principal, outlet }
+}
+
+async function authorizedEmployeeAccessContext(request: import('node:http').IncomingMessage) {
+  const principal = await requireAuthenticatedUser(request, auth)
+  if (!principal.staffId) throw new AuthorizationError('FORBIDDEN', 'This account is not linked to a Staff profile.')
+  const outlet = await outletMembership.findOutletByKey('andalucia')
+  if (!outlet?.active) throw new Error('The Andalucía Staff outlet is unavailable.')
+  const permissions: AuthorizationPermissionKey[] = ['view_staff_dashboard', 'view_staff_directory', 'view_own_leave', 'view_staff_training', 'view_service_bookings', 'view_guest_occasions', 'view_own_earnings', 'view_maintenance', 'view_staff_reports']
+  for (const permission of permissions) await authorization.requireOutletPermission(principal, permission, outlet.id)
   return { principal, outlet }
 }
 

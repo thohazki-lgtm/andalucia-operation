@@ -2,7 +2,7 @@ import type { AttendanceRecord, AuthenticatedUser, BillTipVersionDiff, BillTipVe
 import type { ChargeableCorrectionHistory, ChargeableCorrectionRequest, ChargeableDuplicateWarning, ChargeableWriteRequest } from './domain'
 import type { WineSpiritSaleWriteRequest } from './domain'
 import type { AnnualLeaveCarryForwardDraft, AnnualLeaveCarryForwardPreview, AnnualLeaveCarryForwardWrite, StaffEntitlementReconciliation, StaffYearlyEntitlementBalance, StaffYearlyEntitlementDraft, StaffYearlyEntitlementPreview, StaffYearlyEntitlementRecord, StaffYearlyEntitlementWrite } from './domain'
-import type { AccumulatedOffBalance, LeavePlannerReadModel, PlannedLeavePeriod, PlannedLeaveWriteInput } from './domain'
+import type { AccumulatedOffBalance, EmployeeAccessSnapshot, LeavePlannerReadModel, PlannedLeavePeriod, PlannedLeaveWriteInput } from './domain'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...init }); if (!response.ok) { const error = await response.json().catch(() => ({})) as { message?: string }; throw new Error(error.message || 'The request could not be completed.') } if (response.status === 204) return undefined as T; const payload = await response.text(); return (payload ? JSON.parse(payload) : undefined) as T }
 async function download(path: string) { const response = await fetch(path); if (!response.ok) { const error = await response.json().catch(() => ({})) as { message?: string }; throw new Error(error.message || 'The official timesheet could not be generated.') } const disposition = response.headers.get('Content-Disposition') || ''; const filename = /filename="([^"]+)"/.exec(disposition)?.[1] || 'Siyam-World-Timesheet.xlsx'; const url = URL.createObjectURL(await response.blob()); try { const link = document.createElement('a'); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove() } finally { URL.revokeObjectURL(url) } }
@@ -12,6 +12,9 @@ export const authApi = {
   login: (identifier: string, password: string) => request<AuthenticatedUser>('/api/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
   changePassword: (replacementPassword: string, currentPassword = '') => request<AuthenticatedUser>('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, replacementPassword }) }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) })
+}
+export const staffAccessApi = {
+  snapshot: (date: string, month = date.slice(0, 7)) => request<EmployeeAccessSnapshot>(`/api/staff-access/snapshot?date=${encodeURIComponent(date)}&month=${encodeURIComponent(month)}`)
 }
 export const employeeAccountApi = {
   list: () => request<StaffAccountSummary[]>('/api/staff-accounts'),
