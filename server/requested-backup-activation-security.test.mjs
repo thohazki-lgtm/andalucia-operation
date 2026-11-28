@@ -231,24 +231,23 @@ const stoppedMainSuccessorFixture = async () => {
 
 // The production exception is pinned to each normal PR merge, its reviewed head tree,
 // exact parents and exact changed-file set. The final registration uses a separate
-// evidence-only commit so the reviewed implementation can identify itself without a
-// circular commit hash.
+// evidence-only commit and the GitHub merge subject so the reviewed implementation can
+// identify itself without a circular merge hash or a broad future-source allowlist.
 {
   const transitions = reviewedStoppedMainSourceSuccessor.transitions
-  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116, 117, 118])
+  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116, 117, 118, 119, 120])
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions[0].targetSha), 'reviewed-transition')
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions.at(-1).targetSha), 'reviewed-successor')
   assert.deepEqual(transitions.at(-1), {
-    previousSha: 'ef557c5ecb5a0898655162f1fca235cbdd9f1270',
-    targetSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
-    reviewedHeadSha: 'c424415d9c17488994c8aab8f12ac49ab914e582',
-    pullRequest: 118,
-    changedFiles: ['deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1', 'server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
+    previousSha: 'ffd2e6598dc0a1c9c7f587c1bed5433e43a518ee',
+    targetSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+    reviewedHeadSha: 'cbfc4d2d226be71c6e5f4bb79c7faaae45c25b20',
+    pullRequest: 120,
+    changedFiles: ['server/authorization-service.test.ts', 'server/authorization-service.ts', 'server/dashboard-data.test.ts', 'server/index.ts', 'server/staff-access-api-security.test.ts', 'server/staff-access-policy.test.ts', 'server/staff-access-policy.ts', 'server/staff-module-access.test.ts', 'src/App.tsx', 'src/api.ts', 'src/domain.ts', 'src/module-access.ts', 'src/staff-access.tsx', 'src/styles.css'],
   })
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.registration, {
-    previousSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
-    pullRequest: 119,
-    evidencePath: 'deployment/approvals/stopped-main-successor-pr119.json',
+    previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+    evidencePath: 'deployment/approvals/stopped-main-successor-staff-phase2.json',
     implementationChangedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
   })
   assert.equal([...transitions.flatMap(value => value.changedFiles), reviewedStoppedMainSourceSuccessor.registration.evidencePath].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
@@ -267,13 +266,31 @@ const stoppedMainSuccessorFixture = async () => {
   await mkdir(join(value.root, 'deployment', 'approvals'), { recursive: true })
   await writeFile(join(value.root, evidencePath), JSON.stringify({ version: 'andalucia-stopped-main-successor-registration-v1', previousSha: value.targetSha, reviewedHeadSha, pullRequest: 3, implementationChangedFiles: ['registered-a.txt', 'registered-b.txt'] }))
   value.fixtureGit(value.root, 'add', evidencePath); value.fixtureGit(value.root, 'commit', '-m', 'register reviewed successor evidence')
-  value.fixtureGit(value.root, 'checkout', 'main'); value.fixtureGit(value.root, 'merge', '--no-ff', 'registered-implementation', '-m', 'merge registered successor')
+  value.fixtureGit(value.root, 'checkout', 'main'); value.fixtureGit(value.root, 'merge', '--no-ff', 'registered-implementation', '-m', 'Merge pull request #3 from test/registered-implementation')
   const registeredTargetSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
-  const registration = { previousSha: value.targetSha, pullRequest: 3, evidencePath, implementationChangedFiles: ['registered-a.txt', 'registered-b.txt'] }
+  value.fixtureGit(value.root, 'update-ref', 'refs/remotes/origin/main', registeredTargetSha)
+  const registration = { previousSha: value.targetSha, evidencePath, implementationChangedFiles: ['registered-a.txt', 'registered-b.txt'] }
   const reviewed = { ...value.reviewedSourceSuccessor, registration }
   assert.equal(assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, registeredTargetSha, reviewed), 'reviewed-registered-successor')
-  const wrongReview = structuredClone(reviewed); wrongReview.registration.pullRequest = 4
+  const wrongReview = structuredClone(reviewed); wrongReview.registration.evidencePath = 'deployment/approvals/missing-successor.json'
   assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, registeredTargetSha, wrongReview), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  value.fixtureGit(value.root, 'commit', '--amend', '-m', 'Merge pull request #4 from test/registered-implementation')
+  const alteredPrEvidenceSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, alteredPrEvidenceSha, reviewed), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  value.fixtureGit(value.root, 'reset', '--hard', registeredTargetSha)
+  value.fixtureGit(value.root, 'update-ref', 'refs/remotes/origin/main', registeredTargetSha)
+
+  value.fixtureGit(value.sourceRoot, 'checkout', '--detach', registeredTargetSha)
+  await writeFile(join(value.root, '.runtime', 'approved-runtime-source.json'), JSON.stringify({ version: 'andalucia-approved-runtime-source-v1', approvedSha: registeredTargetSha, sourceRoot: value.sourceRoot }))
+  const dependencies = { portsClosed: async () => true, authenticate: async () => ({ userId: 'manager-1', displayName: 'Manager' }), reviewedSourceSuccessor: reviewed }
+  const authorization = await prepareStoppedMainActivation(value.root, registeredTargetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, dependencies, value.root)
+  assert.equal(authorization.state, 'BACKUP_VERIFIED')
+  assert.ok(Date.parse(authorization.expiresAt) - Date.parse(authorization.createdAt) >= 599_000)
+  assert.ok(Date.parse(authorization.expiresAt) - Date.parse(authorization.createdAt) <= 600_000)
+  const inspected = await runRequestedBackupActivationControl('inspect-target', ['node', 'control', '--project-root', value.root, '--source-root', value.root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true, reviewedSourceSuccessor: reviewed })
+  assert.equal(inspected.targetSha, registeredTargetSha)
+  await runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--source-root', value.root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true, reviewedSourceSuccessor: reviewed })
+  await assert.rejects(() => runRequestedBackupActivationControl('claim-target', ['node', 'control', '--project-root', value.root, '--source-root', value.root, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true, reviewedSourceSuccessor: reviewed }), /CANONICAL_MAINTENANCE_STATE_INVALID/)
   await writeFile(join(value.root, 'unreviewed-after-registration.txt'), 'future source')
   value.fixtureGit(value.root, 'add', '.'); value.fixtureGit(value.root, 'commit', '-m', 'unreviewed future source')
   const futureSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()

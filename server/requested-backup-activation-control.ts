@@ -27,7 +27,6 @@ export type ReviewedStoppedMainSourceSuccessor = {
   transitions: readonly ReviewedStoppedMainSourceTransition[]
   registration?: {
     previousSha: string
-    pullRequest: number
     evidencePath: string
     implementationChangedFiles: readonly string[]
   }
@@ -109,11 +108,43 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
         'server/requested-backup-activation-security.test.mjs',
       ],
     },
+    {
+      previousSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
+      targetSha: 'ffd2e6598dc0a1c9c7f587c1bed5433e43a518ee',
+      reviewedHeadSha: '01917f687b4d2102477ae753fee665a2a4f21b93',
+      pullRequest: 119,
+      changedFiles: [
+        'deployment/approvals/stopped-main-successor-pr119.json',
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
+    {
+      previousSha: 'ffd2e6598dc0a1c9c7f587c1bed5433e43a518ee',
+      targetSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+      reviewedHeadSha: 'cbfc4d2d226be71c6e5f4bb79c7faaae45c25b20',
+      pullRequest: 120,
+      changedFiles: [
+        'server/authorization-service.test.ts',
+        'server/authorization-service.ts',
+        'server/dashboard-data.test.ts',
+        'server/index.ts',
+        'server/staff-access-api-security.test.ts',
+        'server/staff-access-policy.test.ts',
+        'server/staff-access-policy.ts',
+        'server/staff-module-access.test.ts',
+        'src/App.tsx',
+        'src/api.ts',
+        'src/domain.ts',
+        'src/module-access.ts',
+        'src/staff-access.tsx',
+        'src/styles.css',
+      ],
+    },
   ],
   registration: {
-    previousSha: 'fde745aa0c90c0ad3528376fb3c0b3bda943f729',
-    pullRequest: 119,
-    evidencePath: 'deployment/approvals/stopped-main-successor-pr119.json',
+    previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+    evidencePath: 'deployment/approvals/stopped-main-successor-staff-phase2.json',
     implementationChangedFiles: [
       'server/requested-backup-activation-control.ts',
       'server/requested-backup-activation-security.test.mjs',
@@ -152,7 +183,7 @@ export const assertReviewedStoppedMainSourceSuccessor = (
     if (approvedSourceSha === previous) return index === 0 ? 'reviewed-transition' as const : 'reviewed-successor' as const
   }
   const registration = reviewed.registration ?? fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
-  if (registration.previousSha !== previous || !Number.isSafeInteger(registration.pullRequest) || registration.pullRequest < 1) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  if (registration.previousSha !== previous) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
   const projectPath = resolve(projectRoot)
   const registrationPath = resolve(projectPath, registration.evidencePath)
   if (!registration.evidencePath || !registrationPath.startsWith(`${projectPath}${sep}`)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
@@ -165,7 +196,9 @@ export const assertReviewedStoppedMainSourceSuccessor = (
   let evidence: any
   try { evidence = JSON.parse(git(projectRoot, 'show', `${registeredHeadSha}:${registration.evidencePath}`)) } catch { fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID') }
   const exactStrings = (actual: unknown, expected: readonly string[]) => Array.isArray(actual) && actual.length === expected.length && actual.every((value, index) => value === expected[index])
-  if (evidence?.version !== 'andalucia-stopped-main-successor-registration-v1' || evidence.previousSha !== previous || evidence.reviewedHeadSha !== reviewedHeadSha || evidence.pullRequest !== registration.pullRequest || !exactStrings(evidence.implementationChangedFiles, registration.implementationChangedFiles)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  if (evidence?.version !== 'andalucia-stopped-main-successor-registration-v1' || evidence.previousSha !== previous || evidence.reviewedHeadSha !== reviewedHeadSha || !Number.isSafeInteger(evidence.pullRequest) || evidence.pullRequest < 1 || !exactStrings(evidence.implementationChangedFiles, registration.implementationChangedFiles)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  const mergeSubject = git(projectRoot, 'show', '-s', '--format=%s', approvedSourceSha)
+  if (!mergeSubject.startsWith(`Merge pull request #${evidence.pullRequest} from `)) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
   assertAncestry(previous, reviewedHeadSha)
   assertExactChangedFiles(previous, reviewedHeadSha, registration.implementationChangedFiles)
   assertExactChangedFiles(reviewedHeadSha, registeredHeadSha, [registration.evidencePath])
