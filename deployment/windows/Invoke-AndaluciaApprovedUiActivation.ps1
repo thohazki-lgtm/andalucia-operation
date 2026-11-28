@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ExpectedSha,
     [string]$RepositoryRoot,
+    [string]$SourceRoot,
+    [string]$CanonicalProjectRoot,
     [switch]$AllowReviewedNonUiPaths,
     [switch]$ManagerAuthorizedRestart,
     [string]$MaintenanceAuthorizationId
@@ -11,24 +13,26 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
-$preflightScript = Join-Path $PSScriptRoot 'Test-AndaluciaGuardedUiActivation.ps1'
-$stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
+$defaultRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { $defaultRoot }
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $defaultRoot }
+$preflightScript = Join-Path $sourceRoot 'deployment\windows\Test-AndaluciaGuardedUiActivation.ps1'
+$stopScript = Join-Path $sourceRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
 $canonicalMarker = Join-Path $projectRoot '.data\postgres\postmaster.pid'
 $startupLog = Join-Path $projectRoot '.runtime\logs\guarded-startup.jsonl'
-$controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
+$controlScript = Join-Path $sourceRoot 'server\requested-backup-activation-control.ts'
 $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
-$schedulerInstaller = Join-Path $projectRoot 'deployment\windows\Install-AndaluciaDatabaseScheduler.ps1'
+$schedulerInstaller = Join-Path $sourceRoot 'deployment\windows\Install-AndaluciaDatabaseScheduler.ps1'
 
-$resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
+$resolverPath = Join-Path $sourceRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
 if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { throw 'APPROVED_SOURCE_RESOLVER_MISSING' }
 . $resolverPath
-$approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
+$approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $sourceRoot -CanonicalProjectRoot $projectRoot
 $isApprovedLocalCheckpoint = $approvedSource.Mode -in @('approved_local_reviewed_ui_checkpoint', 'approved_local_reviewed_backend_checkpoint')
 if ($approvedSource.Sha -ne $ExpectedSha) { throw "APPROVED_SOURCE_SHA_MISMATCH:$($approvedSource.Sha):$ExpectedSha" }
 
-$preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-RepositoryRoot',$projectRoot)
+$preflightArguments = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$preflightScript,'-ExpectedSha',$ExpectedSha,'-SourceRoot',$sourceRoot,'-CanonicalProjectRoot',$projectRoot)
 if ($AllowReviewedNonUiPaths -or $isApprovedLocalCheckpoint) { $preflightArguments += '-AllowReviewedNonUiPaths' }
 if ($isApprovedLocalCheckpoint) { $preflightArguments += '-AllowApprovedLocalCheckpoint' }
 if ($MaintenanceAuthorizationId) {
@@ -48,7 +52,7 @@ if (-not $ManagerAuthorizedRestart) {
 }
 
 if ($preflight.status -ne 'READY_STOPPED_RUNTIME') {
-    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript -CanonicalProjectRoot $projectRoot
     if ($LASTEXITCODE -ne 0) { throw "GUARDED_STOP_FAILED:$LASTEXITCODE" }
 }
 
@@ -70,24 +74,24 @@ if (-not $runtimeTaskReady) { throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SHUTDO
 
 if ($preflight.status -eq 'READY_STOPPED_RUNTIME') {
     if (-not $MaintenanceAuthorizationId -or -not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { throw 'STOPPED_RUNTIME_MAINTENANCE_AUTHORIZATION_REQUIRED' }
-    $claimOutput = & $tsxCommand $controlScript claim-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+    $claimOutput = & $tsxCommand $controlScript claim-target --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId
     if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_CLAIM_FAILED:$($claimOutput -join [Environment]::NewLine)" }
 }
 
 if (-not (Test-Path -LiteralPath $schedulerInstaller -PathType Leaf)) { throw 'GUARDED_RUNTIME_SOURCE_INSTALLER_MISSING' }
 $previousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-$schedulerInstallerOutput = @(& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller 2>&1)
+$schedulerInstallerOutput = @(& powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $schedulerInstaller -SourceRoot $sourceRoot -CanonicalProjectRoot $projectRoot -ApprovedSha $ExpectedSha 2>&1)
 $schedulerInstallerExitCode = $LASTEXITCODE
 $ErrorActionPreference = $previousErrorActionPreference
 if ($schedulerInstallerExitCode -ne 0) {
-    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$schedulerInstallerExitCode" | Out-Null }
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId --failure "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$schedulerInstallerExitCode" | Out-Null }
     $schedulerInstallerOutput | Write-Output
     throw "GUARDED_RUNTIME_SOURCE_INSTALL_FAILED:$schedulerInstallerExitCode"
 }
 $runtimeTask = Get-ScheduledTask -TaskName $runtimeTaskName -ErrorAction Stop
 if ([string]$runtimeTask.State -ne 'Ready') {
-    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL' | Out-Null }
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL' | Out-Null }
     throw 'GUARDED_RUNTIME_TASK_NOT_READY_AFTER_SOURCE_INSTALL'
 }
 
@@ -108,7 +112,7 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $launcherStarted) {
-    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_START_NOT_OBSERVED' | Out-Null }
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_RUNTIME_TASK_START_NOT_OBSERVED' | Out-Null }
     throw 'GUARDED_RUNTIME_TASK_START_NOT_OBSERVED'
 }
 
@@ -121,12 +125,12 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
     Start-Sleep -Seconds 1
 }
 if (-not $healthy) {
-    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_START_HEALTH_VERIFICATION_FAILED' | Out-Null }
+    if ($MaintenanceAuthorizationId) { & $tsxCommand $controlScript target-failed --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId --failure 'GUARDED_START_HEALTH_VERIFICATION_FAILED' | Out-Null }
     throw 'GUARDED_START_HEALTH_VERIFICATION_FAILED; guarded recovery authorization is required before any retry.'
 }
 
 if ($MaintenanceAuthorizationId) {
-    $completeOutput = & $tsxCommand $controlScript target-healthy --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+    $completeOutput = & $tsxCommand $controlScript target-healthy --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId
     if ($LASTEXITCODE -ne 0) { throw "STOPPED_RUNTIME_AUTHORIZATION_COMPLETION_FAILED:$($completeOutput -join [Environment]::NewLine)" }
 }
 

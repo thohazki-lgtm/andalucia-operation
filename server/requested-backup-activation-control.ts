@@ -22,31 +22,24 @@ export type ReviewedStoppedMainSourceSuccessor = {
 }
 
 export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSuccessor = {
-  previousSha: '78377f2286c1baef2c86a1ca526596ff221e21c4',
-  targetSha: '420e00e3af0563a7bda90bedcd0a34d040df157d',
+  previousSha: '556fac61b957956cf0f4695c88c24bb13f280753',
+  targetSha: '2e7e7775bae109446ea01a40adcddf5d690e25c4',
   changedFiles: [
-    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
-    'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
     'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
-    'server/booking-repository.ts',
-    'server/booking-walk-in-r2.test.ts',
-    'server/bookings-customization-ui-browser.test.ts',
-    'server/database-development-isolation.test.ts',
-    'server/database-protection.ts',
-    'server/database-safe-shutdown.test.ts',
-    'server/database-scheduler.test.ts',
-    'server/guarded-ui-activation-start-race.test.ts',
-    'server/guarded-ui-backup-preflight-ordering-security.test.mjs',
-    'src/bookings.tsx',
-    'src/customization-center.css',
+    'server/runtime-schema-activation-control.ts',
+    'server/schema-028-activation-control.test.ts',
   ],
   activationChangedFiles: [
     'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+    'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
+    'deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1',
     'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
+    'deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1',
+    'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
+    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
+    'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
     'server/database-scheduler.test.ts',
-    'server/guarded-ui-activation-start-race.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ],
@@ -211,11 +204,11 @@ const currentBindings = async (projectRoot: string) => {
   return { approval, identity, approvalSha: await fileSha256(p.approval), identitySha: await fileSha256(p.identity) }
 }
 
-const completedSchema028Bindings = async (projectRoot: string, expectedSha: string, verifyStoppedStore: boolean, exclusiveCheck = portsClosed) => {
-  const head = git(projectRoot, 'rev-parse', 'HEAD').toLowerCase(); const origin = git(projectRoot, 'rev-parse', 'refs/remotes/origin/main').toLowerCase(); const branch = git(projectRoot, 'branch', '--show-current')
-  if (branch !== 'main' || head !== expectedSha || origin !== head) fail('SCHEMA_028_ACTIVATION_SOURCE_MISMATCH')
+const completedSchema028Bindings = async (projectRoot: string, sourceRoot: string, expectedSha: string, verifyStoppedStore: boolean, exclusiveCheck = portsClosed) => {
+  const head = git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase(); const origin = git(sourceRoot, 'rev-parse', 'refs/remotes/origin/main').toLowerCase(); const branch = git(sourceRoot, 'branch', '--show-current')
+  if (branch !== 'main' || head !== expectedSha || origin !== head || git(sourceRoot, 'status', '--porcelain')) fail('SCHEMA_028_ACTIVATION_SOURCE_MISMATCH')
   const { resolveRuntimeSchemaActivation } = await import('./runtime-schema-activation-control.js')
-  const resolution = await resolveRuntimeSchemaActivation(projectRoot, expectedSha)
+  const resolution = await resolveRuntimeSchemaActivation(sourceRoot, expectedSha, undefined, projectRoot)
   if (resolution.mode !== 'approved-027-to-028' || resolution.requiredSchemaVersion !== '028') fail('SCHEMA_028_ACTIVATION_MIGRATION_INCOMPLETE')
   const artifactPath = join(projectRoot, '.backups', resolution.backupId, 'live-migration-authorization.json')
   const artifact = await json<any>(artifactPath); const artifactSha = await fileSha256(artifactPath)
@@ -238,21 +231,21 @@ const completedSchema028Bindings = async (projectRoot: string, expectedSha: stri
   return { resolution, artifact, artifactPath, artifactSha, identity, identitySha }
 }
 
-const stoppedMainActivationBindings = async (projectRoot: string, expectedSha: string, recoveryAuthorizationId: string, verifyStoppedStore: boolean, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
+const stoppedMainActivationBindings = async (projectRoot: string, sourceRoot: string, expectedSha: string, recoveryAuthorizationId: string, verifyStoppedStore: boolean, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
   const p = paths(projectRoot); const coordinator = new DatabaseOperationCoordinator(p.operations)
-  const head = git(projectRoot, 'rev-parse', 'HEAD').toLowerCase(); const origin = git(projectRoot, 'rev-parse', 'refs/remotes/origin/main').toLowerCase(); const branch = git(projectRoot, 'branch', '--show-current')
-  if (branch !== 'main' || head !== expectedSha || origin !== head || git(projectRoot, 'status', '--porcelain', '--untracked-files=no')) fail('STOPPED_MAIN_ACTIVATION_SOURCE_MISMATCH')
+  const head = git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase(); const origin = git(sourceRoot, 'rev-parse', 'refs/remotes/origin/main').toLowerCase(); const branch = git(sourceRoot, 'branch', '--show-current')
+  if (branch !== 'main' || head !== expectedSha || origin !== head || git(sourceRoot, 'status', '--porcelain')) fail('STOPPED_MAIN_ACTIVATION_SOURCE_MISMATCH')
   const recovery = await coordinator.readCanonicalMaintenanceAuthorization(recoveryAuthorizationId)
   if (recovery.authorizationMode !== 'stale_marker_recovery' || recovery.state !== 'RECOVERY_HEALTHY' || recovery.targetBranch !== 'main' || recovery.previousLiveSha !== recovery.targetSha || recovery.schema !== '028' || recovery.databaseStatus !== 'HEALTHY' || recovery.migrationRequired || recovery.recoveryRequired || !recovery.backupId) fail('STOPPED_MAIN_ACTIVATION_RECOVERY_EVIDENCE_INVALID')
   const runtimeApproval = await json<any>(p.runtimeApproval); const runtimeApprovalSha = await fileSha256(p.runtimeApproval)
-  const sourceRoot = resolve(String(runtimeApproval.sourceRoot || '')); const requiredSourceRoot = resolve(projectRoot, '.runtime', 'live-main-source')
-  const runtimeSourceSha = git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase()
+  const approvedRuntimeRoot = resolve(String(runtimeApproval.sourceRoot || '')); const requiredSourceRoot = resolve(projectRoot, '.runtime', 'live-main-source')
+  const runtimeSourceSha = git(approvedRuntimeRoot, 'rev-parse', 'HEAD').toLowerCase()
   const approvedRuntimeSha = String(runtimeApproval.approvedSha || '').toLowerCase()
-  if (runtimeApproval.version !== 'andalucia-approved-runtime-source-v1' || sourceRoot !== requiredSourceRoot || approvedRuntimeSha !== runtimeSourceSha || ![recovery.targetSha, expectedSha].includes(runtimeSourceSha) || git(sourceRoot, 'status', '--porcelain', '--untracked-files=no')) fail('STOPPED_MAIN_ACTIVATION_RUNTIME_SOURCE_INVALID')
+  if (runtimeApproval.version !== 'andalucia-approved-runtime-source-v1' || approvedRuntimeRoot !== requiredSourceRoot || approvedRuntimeSha !== runtimeSourceSha || ![recovery.targetSha, expectedSha].includes(runtimeSourceSha) || git(approvedRuntimeRoot, 'status', '--porcelain')) fail('STOPPED_MAIN_ACTIVATION_RUNTIME_SOURCE_INVALID')
   const identityBuffer = await readFile(p.identity); const identity = JSON.parse(identityBuffer.toString('utf8')) as StoreIdentity; const identitySha = sha256(identityBuffer)
   if (identity.role !== 'canonical' || resolve(identity.databaseDirectory) !== resolve(projectRoot, '.data', 'postgres')) fail('STOPPED_MAIN_ACTIVATION_CANONICAL_IDENTITY_INVALID')
   if (recovery.canonicalIdentitySha256 !== identitySha || recovery.canonicalStoreId !== identity.storeId) fail('STOPPED_MAIN_ACTIVATION_RECOVERY_EVIDENCE_INVALID')
-  assertReviewedStoppedMainSourceSuccessor(projectRoot, recovery.targetSha, expectedSha, reviewedSuccessor)
+  assertReviewedStoppedMainSourceSuccessor(sourceRoot, recovery.targetSha, expectedSha, reviewedSuccessor)
   const recoveryPath = coordinator.maintenancePath(recoveryAuthorizationId); const recoverySha = await fileSha256(recoveryPath)
   const { restoreReadyBackupEvidence } = await import('./database-stale-marker-recovery.js')
   const backup = await restoreReadyBackupEvidence(resolve(projectRoot, '.backups'), resolve(projectRoot, '.data', 'postgres'), recovery.backupId)
@@ -265,21 +258,21 @@ const stoppedMainActivationBindings = async (projectRoot: string, expectedSha: s
   return { runtimeApprovalSha, runtimeSourceSha, identity, identitySha, recovery, recoverySha, backup, schemaEvidenceSha }
 }
 
-const assertBindings = async (projectRoot: string, record: CanonicalMaintenanceAuthorization, verifyStoppedStore = false, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
+const assertBindings = async (projectRoot: string, sourceRoot: string, record: CanonicalMaintenanceAuthorization, verifyStoppedStore = false, exclusiveCheck = portsClosed, reviewedSuccessor = reviewedStoppedMainSourceSuccessor) => {
   if (record.authorizationMode === 'stopped_main_runtime_activation') {
     if (Date.parse(record.expiresAt) <= Date.now()) fail('STOPPED_MAIN_ACTIVATION_AUTHORIZATION_EXPIRED')
     const prefix = `stopped-main-activation:${record.previousLiveSha}:${record.targetSha}:`; const recoveryAuthorizationId = record.requestId.startsWith(prefix) ? record.requestId.slice(prefix.length) : ''
-    const bindings = await stoppedMainActivationBindings(projectRoot, record.targetSha, recoveryAuthorizationId, verifyStoppedStore, exclusiveCheck, reviewedSuccessor)
+    const bindings = await stoppedMainActivationBindings(projectRoot, sourceRoot, record.targetSha, recoveryAuthorizationId, verifyStoppedStore, exclusiveCheck, reviewedSuccessor)
     const approvalStillBound = record.approvalManifestSha256 === bindings.runtimeApprovalSha
     const claimedTargetTransition = record.state === 'TARGET_CLAIMED' && bindings.runtimeSourceSha === record.targetSha
     if (record.previousLiveSha !== bindings.recovery.targetSha || record.targetBranch !== 'main' || record.schema !== '028' || (!approvalStillBound && !claimedTargetTransition) || record.canonicalIdentitySha256 !== bindings.identitySha || record.canonicalStoreId !== bindings.identity.storeId || record.requestSha256 !== bindings.recoverySha || record.historicalRuntimeEvidenceSha256 !== bindings.recovery.integritySha256 || record.schemaEvidenceSha256 !== bindings.schemaEvidenceSha || record.backupId !== bindings.backup.backupId) fail('STOPPED_MAIN_ACTIVATION_PROTECTED_BINDING_MISMATCH')
     return bindings
   }
   if (record.authorizationMode === 'schema_028_migration_activation') {
-    const bindings = await completedSchema028Bindings(projectRoot, record.targetSha, verifyStoppedStore, exclusiveCheck)
-    const runtimeDigest = await historicalRuntimeEvidence(projectRoot, record.previousLiveSha, 'main', 'verified_main')
+    const bindings = await completedSchema028Bindings(projectRoot, sourceRoot, record.targetSha, verifyStoppedStore, exclusiveCheck)
+    const runtimeDigest = await historicalRuntimeEvidence(projectRoot, sourceRoot, record.previousLiveSha, 'main', 'verified_main')
     const schemaEvidenceSha256 = sha256(JSON.stringify({ targetSha: record.targetSha, migrationAuthorizationId: bindings.artifact.id, backupId: bindings.resolution.backupId, postMigrationFingerprint: bindings.artifact.consumedPostMigrationFingerprint }))
-    try { execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', record.previousLiveSha, record.targetSha], { stdio: 'ignore' }) } catch { fail('SCHEMA_028_ACTIVATION_RUNTIME_ANCESTRY_INVALID') }
+    try { execFileSync('git', ['-C', sourceRoot, 'merge-base', '--is-ancestor', record.previousLiveSha, record.targetSha], { stdio: 'ignore' }) } catch { fail('SCHEMA_028_ACTIVATION_RUNTIME_ANCESTRY_INVALID') }
     if (record.previousLiveSha === record.targetSha || record.targetBranch !== 'main' || record.expiresAt !== bindings.artifact.expiresAt || record.canonicalIdentitySha256 !== bindings.identitySha || record.canonicalStoreId !== bindings.identity.storeId || record.requestId !== `schema-028:${bindings.artifact.id}` || record.requestSha256 !== bindings.artifactSha || record.approvalManifestSha256 !== bindings.artifactSha || record.backupId !== bindings.resolution.backupId || record.historicalRuntimeEvidenceSha256 !== runtimeDigest || record.schemaEvidenceSha256 !== schemaEvidenceSha256 || record.requestedBy.userId !== bindings.artifact.ownerSession.userId || record.requestedBy.displayName !== bindings.artifact.ownerSession.displayName) fail('SCHEMA_028_ACTIVATION_PROTECTED_BINDING_MISMATCH')
     return bindings
   }
@@ -329,7 +322,7 @@ const canonicalTimestamp = (value: unknown): string => {
   return `${year}-${month}-${day}T${hour}:${minute}:${second}.${fraction.padEnd(7, '0')}Z`
 }
 
-const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
+const historicalRuntimeEvidence = async (projectRoot: string, sourceRoot: string, previousLiveSha: string, expectedBranch: string, expectedMode: string): Promise<string> => {
   const logPath = paths(projectRoot).startupLog
   if (!existsSync(logPath)) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_MISSING')
   if (!expectedBranch || !expectedMode) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
@@ -352,11 +345,11 @@ const historicalRuntimeEvidence = async (projectRoot: string, previousLiveSha: s
   if (terminal.item.state !== 'EXITED' || terminal.recordedAt < approved.recordedAt) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
   const exitDetail = structuredDetail(terminal.item.detail)
   if (Object.keys(exitDetail).length !== 1 || !/^-?\d+$/.test(exitDetail.exitCode || '') || Number(exitDetail.exitCode) !== 0) fail('REQUESTED_BACKUP_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
-  git(projectRoot, 'cat-file', '-e', `${previousLiveSha}^{commit}`)
+  git(sourceRoot, 'cat-file', '-e', `${previousLiveSha}^{commit}`)
   return sha256(`${approved.raw}\n${terminal.raw}`)
 }
 
-const latestStoppedMainRuntimeEvidence = async (projectRoot: string, targetSha: string) => {
+const latestStoppedMainRuntimeEvidence = async (projectRoot: string, sourceRoot: string, targetSha: string) => {
   const logPath = paths(projectRoot).startupLog
   if (!existsSync(logPath)) fail('SCHEMA_028_ACTIVATION_HISTORICAL_RUNTIME_EVIDENCE_MISSING')
   const lines = (await readFile(logPath, 'utf8')).split(/\r?\n/).filter(Boolean)
@@ -368,8 +361,8 @@ const latestStoppedMainRuntimeEvidence = async (projectRoot: string, targetSha: 
     try { detail = structuredDetail(item.detail) } catch { continue }
     const previousLiveSha = String(detail.sha || '').toLowerCase()
     if (!/^[0-9a-f]{40}$/.test(previousLiveSha) || previousLiveSha === targetSha || detail.branch !== 'main' || detail.mode !== 'verified_main') continue
-    try { execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', previousLiveSha, targetSha], { stdio: 'ignore' }) } catch { continue }
-    try { return { previousLiveSha, digest: await historicalRuntimeEvidence(projectRoot, previousLiveSha, 'main', 'verified_main') } } catch { /* continue to an older complete runtime */ }
+    try { execFileSync('git', ['-C', sourceRoot, 'merge-base', '--is-ancestor', previousLiveSha, targetSha], { stdio: 'ignore' }) } catch { continue }
+    try { return { previousLiveSha, digest: await historicalRuntimeEvidence(projectRoot, sourceRoot, previousLiveSha, 'main', 'verified_main') } } catch { /* continue to an older complete runtime */ }
   }
   return fail('SCHEMA_028_ACTIVATION_HISTORICAL_RUNTIME_EVIDENCE_INVALID')
 }
@@ -386,11 +379,11 @@ const portsClosed = async () => {
   return true
 }
 
-export const prepareCompletedSchema028Activation = async (projectRootInput: string, expectedShaInput: string, dependencies: { portsClosed?: () => Promise<boolean> } = {}) => {
-  const projectRoot = resolve(projectRootInput); const expectedSha = expectedShaInput.toLowerCase()
+export const prepareCompletedSchema028Activation = async (projectRootInput: string, expectedShaInput: string, dependencies: { portsClosed?: () => Promise<boolean> } = {}, sourceRootInput = projectRootInput) => {
+  const projectRoot = resolve(projectRootInput); const sourceRoot = resolve(sourceRootInput); const expectedSha = expectedShaInput.toLowerCase()
   if (!/^[0-9a-f]{40}$/.test(expectedSha) || !await (dependencies.portsClosed || portsClosed)() || existsSync(paths(projectRoot).ownerMarker)) fail('SCHEMA_028_ACTIVATION_STOPPED_RUNTIME_NOT_EXCLUSIVE')
-  const bindings = await completedSchema028Bindings(projectRoot, expectedSha, true, dependencies.portsClosed || portsClosed)
-  const runtime = await latestStoppedMainRuntimeEvidence(projectRoot, expectedSha)
+  const bindings = await completedSchema028Bindings(projectRoot, sourceRoot, expectedSha, true, dependencies.portsClosed || portsClosed)
+  const runtime = await latestStoppedMainRuntimeEvidence(projectRoot, sourceRoot, expectedSha)
   const schemaEvidenceSha256 = sha256(JSON.stringify({ targetSha: expectedSha, migrationAuthorizationId: bindings.artifact.id, backupId: bindings.resolution.backupId, postMigrationFingerprint: bindings.artifact.consumedPostMigrationFingerprint }))
   const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
   return new RequestedBackupActivationControl(coordinator).prepareCompletedSchema028Migration({
@@ -402,10 +395,10 @@ export const prepareCompletedSchema028Activation = async (projectRootInput: stri
   })
 }
 
-export const prepareStoppedMainActivation = async (projectRootInput: string, expectedShaInput: string, recoveryAuthorizationId: string, credentials: { identifier: string; password: string }, dependencies: { portsClosed?: () => Promise<boolean>; authenticate?: (projectRoot: string, backup: any, identifier: string, password: string) => Promise<{ userId: string; displayName: string }>; reviewedSourceSuccessor?: ReviewedStoppedMainSourceSuccessor } = {}) => {
-  const projectRoot = resolve(projectRootInput); const expectedSha = expectedShaInput.toLowerCase(); const exclusiveCheck = dependencies.portsClosed || portsClosed
+export const prepareStoppedMainActivation = async (projectRootInput: string, expectedShaInput: string, recoveryAuthorizationId: string, credentials: { identifier: string; password: string }, dependencies: { portsClosed?: () => Promise<boolean>; authenticate?: (projectRoot: string, backup: any, identifier: string, password: string) => Promise<{ userId: string; displayName: string }>; reviewedSourceSuccessor?: ReviewedStoppedMainSourceSuccessor } = {}, sourceRootInput = projectRootInput) => {
+  const projectRoot = resolve(projectRootInput); const sourceRoot = resolve(sourceRootInput); const expectedSha = expectedShaInput.toLowerCase(); const exclusiveCheck = dependencies.portsClosed || portsClosed
   if (!/^[0-9a-f]{40}$/.test(expectedSha) || !/^[0-9a-f]{32}$/i.test(recoveryAuthorizationId)) fail('STOPPED_MAIN_ACTIVATION_ARGUMENT_INVALID')
-  const bindings = await stoppedMainActivationBindings(projectRoot, expectedSha, recoveryAuthorizationId, true, exclusiveCheck, dependencies.reviewedSourceSuccessor || reviewedStoppedMainSourceSuccessor)
+  const bindings = await stoppedMainActivationBindings(projectRoot, sourceRoot, expectedSha, recoveryAuthorizationId, true, exclusiveCheck, dependencies.reviewedSourceSuccessor || reviewedStoppedMainSourceSuccessor)
   const authenticate = dependencies.authenticate || (await import('./database-stale-marker-recovery.js')).authenticateManagerFromBackup
   const actor = await authenticate(projectRoot, bindings.backup, credentials.identifier, credentials.password)
   const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
@@ -416,12 +409,14 @@ export async function runRequestedBackupActivationControl(command: string, argv 
   const arg = (name: string) => { const index = argv.indexOf(name); return index >= 0 ? argv[index + 1] : undefined }
   const required = (name: string) => arg(name) || fail(`ARGUMENT_REQUIRED:${name}`)
   const projectRoot = resolve(required('--project-root'))
+  const sourceRoot = resolve(arg('--source-root') || projectRoot)
   const coordinator = new DatabaseOperationCoordinator(paths(projectRoot).operations)
   const control = new RequestedBackupActivationControl(coordinator)
   if (command === 'prepare') {
     const expectedSha = required('--expected-sha').toLowerCase()
     const bindings = await currentBindings(projectRoot)
-    const head = git(projectRoot, 'rev-parse', 'HEAD').toLowerCase(); const branch = git(projectRoot, 'branch', '--show-current')
+    const head = git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase(); const branch = git(sourceRoot, 'branch', '--show-current')
+    if (git(sourceRoot, 'status', '--porcelain')) fail('REQUESTED_BACKUP_SOURCE_DIRTY')
     if (head !== expectedSha || bindings.approval.activeSourceSha !== expectedSha || bindings.approval.controlCommitSha !== expectedSha || bindings.approval.branch !== branch) fail('REQUESTED_BACKUP_APPROVED_SOURCE_MISMATCH')
     const request = await requestById(projectRoot)
     const health = await (await fetch('http://127.0.0.1:3001/api/health')).json() as any
@@ -433,19 +428,19 @@ export async function runRequestedBackupActivationControl(command: string, argv 
     const previousLiveSha = bindings.approval.previousLiveSha.toLowerCase()
     if (!await (dependencies.portsClosed || portsClosed)() || existsSync(paths(projectRoot).ownerMarker)) fail('REQUESTED_BACKUP_STOPPED_RUNTIME_NOT_EXCLUSIVE')
     const request = await requestById(projectRoot, arg('--request-id'))
-    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, previousLiveSha, bindings.approval.branch, String(bindings.approval.mode || ''))
+    const runtimeEvidence = await historicalRuntimeEvidence(projectRoot, sourceRoot, previousLiveSha, bindings.approval.branch, String(bindings.approval.mode || ''))
     const schemaEvidence = await latestVerifiedSchemaEvidence(projectRoot)
     return control.prepareStoppedRecovery({ previousLiveSha, targetSha: bindings.approval.activeSourceSha.toLowerCase(), targetBranch: bindings.approval.branch, approvalManifestSha256: bindings.approvalSha, canonicalIdentitySha256: bindings.identitySha, canonicalStoreId: bindings.identity.storeId, request, requestAuditVerified: await requestAuditVerified(projectRoot, request), historicalRuntimeEvidenceSha256: runtimeEvidence, schemaEvidenceSha256: schemaEvidence })
   }
-  if (command === 'prepare-schema-028-activation') return prepareCompletedSchema028Activation(projectRoot, required('--expected-sha'))
+  if (command === 'prepare-schema-028-activation') return prepareCompletedSchema028Activation(projectRoot, required('--expected-sha'), {}, sourceRoot)
   if (command === 'prepare-stopped-main-activation') {
     let value = ''; for await (const chunk of process.stdin) value += String(chunk)
     const credentials = JSON.parse(value || '{}') as { identifier?: string; password?: string }
-    return prepareStoppedMainActivation(projectRoot, required('--expected-sha'), required('--recovery-authorization-id'), { identifier: String(credentials.identifier || ''), password: String(credentials.password || '') }, dependencies)
+    return prepareStoppedMainActivation(projectRoot, required('--expected-sha'), required('--recovery-authorization-id'), { identifier: String(credentials.identifier || ''), password: String(credentials.password || '') }, dependencies, sourceRoot)
   }
   const authorizationId = required('--authorization-id')
   const record = await control.read(authorizationId)
-  await assertBindings(projectRoot, record, command === 'inspect-target' || command === 'claim-target', dependencies.portsClosed || portsClosed, dependencies.reviewedSourceSuccessor || reviewedStoppedMainSourceSuccessor)
+  await assertBindings(projectRoot, sourceRoot, record, command === 'inspect-target' || command === 'claim-target', dependencies.portsClosed || portsClosed, dependencies.reviewedSourceSuccessor || reviewedStoppedMainSourceSuccessor)
   if (command === 'bind-backup') {
     const request = await requestById(projectRoot, record.requestId)
     const backupId = String(request.backupId || '')
@@ -467,8 +462,8 @@ export async function runRequestedBackupActivationControl(command: string, argv 
     'recovery-failed': () => control.recoveryFailed(authorizationId, arg('--failure') || 'RECOVERY_FAILED'),
     'inspect-recovery-source': async () => {
       if (record.state !== 'RECOVERY_CLAIMED') fail(`REQUESTED_BACKUP_RECOVERY_NOT_CLAIMED:${record.state}`)
-      const sourceRoot = resolve(required('--source-root'))
-      if (git(sourceRoot, 'rev-parse', 'HEAD').toLowerCase() !== record.previousLiveSha || git(sourceRoot, 'status', '--porcelain', '--untracked-files=no')) fail('REQUESTED_BACKUP_RECOVERY_SOURCE_INVALID')
+      const recoverySourceRoot = resolve(required('--recovery-source-root'))
+      if (git(recoverySourceRoot, 'rev-parse', 'HEAD').toLowerCase() !== record.previousLiveSha || git(recoverySourceRoot, 'status', '--porcelain')) fail('REQUESTED_BACKUP_RECOVERY_SOURCE_INVALID')
       return record
     },
   }

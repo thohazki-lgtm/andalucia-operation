@@ -119,6 +119,11 @@ const [orchestrator, preflight, activation, startup, resolver] = await Promise.a
   readFile('deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1', 'utf8'), readFile('deployment/windows/Start-AndaluciaGuardedApplication.ps1', 'utf8'), readFile('deployment/windows/Resolve-AndaluciaApprovedSource.ps1', 'utf8'),
 ])
 const stoppedMainWrapper = await readFile('deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1', 'utf8')
+const [schedulerInstaller, databaseJob, guardedStop] = await Promise.all([
+  readFile('deployment/windows/Install-AndaluciaDatabaseScheduler.ps1', 'utf8'),
+  readFile('deployment/windows/Invoke-AndaluciaDatabaseJob.ps1', 'utf8'),
+  readFile('deployment/windows/Stop-AndaluciaGuardedApplication.ps1', 'utf8'),
+])
 for (const source of [orchestrator, preflight, activation]) {
   assert.doesNotMatch(source, /StoppedRuntimeEvidenceSha256|YES_I_APPROVE_ONE_GUARDED_REQUESTED_BACKUP_ACTIVATION_WINDOW|\.consumed\.json/)
   assert.match(source, /MaintenanceAuthorizationId/)
@@ -137,6 +142,17 @@ assert.match(preflight, /merge-base[^\n]+--is-ancestor[^\n]+\$runtimeSha[^\n]+\$
 assert.match(preflight, /backupAgeHours\s+-gt\s+\$MaximumBackupAgeHours\s+-and\s+-not\s+\$stoppedMainActivation/, 'only the exact stopped-main recovery path may use its immutable recovery-bound backup beyond the live-update age limit')
 assert.match(stoppedMainWrapper, /Read-Host 'Manager password' -AsSecureString/)
 assert.match(stoppedMainWrapper, /Invoke-AndaluciaNativeJsonControl/)
+for (const source of [orchestrator, preflight, activation, schedulerInstaller, databaseJob]) {
+  assert.match(source, /SourceRoot/, 'every protected activation stage must accept or propagate the approved source root')
+  assert.match(source, /CanonicalProjectRoot/, 'every protected activation stage must accept or propagate the canonical data root')
+}
+assert.match(preflight, /--source-root\s+\$sourceRoot\s+--canonical-root\s+\$projectRoot/)
+assert.match(activation, /-SourceRoot\s+\$sourceRoot\s+-CanonicalProjectRoot\s+\$projectRoot\s+-ApprovedSha\s+\$ExpectedSha/)
+assert.match(schedulerInstaller, /-Job DailyBackup -SourceRoot/)
+assert.match(databaseJob, /Set-Location -LiteralPath \$sourceRoot/)
+assert.match(guardedStop, /\[string\]\$CanonicalProjectRoot/)
+assert.match(startup, /--strictPort `"\$runtimeSourceRoot`"/)
+assert.doesNotMatch(startup, /--strictPort `"\$projectRoot`"/)
 assert.doesNotMatch(stoppedMainWrapper, /postmaster\.pid[^\n]+Remove-Item|Remove-Item[^\n]+postmaster\.pid/i)
 
 // The complete stopped-main issuer revalidates exact main/runtime/recovery/backup bindings and authenticates once.
@@ -144,6 +160,7 @@ assert.doesNotMatch(stoppedMainWrapper, /postmaster\.pid[^\n]+Remove-Item|Remove
   const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-main-integration-'))
   const fixtureGit = (workingRoot, ...args) => execFileSync('git', ['-C', workingRoot, ...args], { encoding: 'utf8' }).trim()
   fixtureGit(root, 'init', '-b', 'main'); fixtureGit(root, 'config', 'user.email', 'security-test@example.invalid'); fixtureGit(root, 'config', 'user.name', 'Security Test')
+  await writeFile(join(root, '.gitignore'), '.data\n.runtime\n.backups\n')
   await writeFile(join(root, 'approved.txt'), 'approved source')
   fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'approved source')
   const sha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase(); fixtureGit(root, 'update-ref', 'refs/remotes/origin/main', sha)
@@ -173,6 +190,7 @@ const stoppedMainSuccessorFixture = async () => {
   const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-main-successor-'))
   const fixtureGit = (workingRoot, ...args) => execFileSync('git', ['-C', workingRoot, ...args], { encoding: 'utf8' }).trim()
   fixtureGit(root, 'init', '-b', 'main'); fixtureGit(root, 'config', 'user.email', 'security-test@example.invalid'); fixtureGit(root, 'config', 'user.name', 'Security Test')
+  await writeFile(join(root, '.gitignore'), '.data\n.runtime\n.backups\n')
   await writeFile(join(root, 'historical.txt'), 'healthy recovery source'); fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'healthy recovery source')
   const previousSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
   await writeFile(join(root, 'reviewed-a.txt'), 'reviewed successor a'); await writeFile(join(root, 'reviewed-b.txt'), 'reviewed successor b')
@@ -204,9 +222,15 @@ const stoppedMainSuccessorFixture = async () => {
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.activationChangedFiles, [
     'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+    'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
+    'deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1',
     'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
+    'deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1',
+    'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
+    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
+    'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
+    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
     'server/database-scheduler.test.ts',
-    'server/guarded-ui-activation-start-race.test.ts',
     'server/requested-backup-activation-control.ts',
     'server/requested-backup-activation-security.test.mjs',
   ])
@@ -249,6 +273,22 @@ const stoppedMainSuccessorFixture = async () => {
   assert.equal(inspected.state, 'BACKUP_VERIFIED')
 }
 
+// A clean approved source remains authoritative when the canonical checkout is dirty,
+// while dirty/unapproved source and a wrong canonical store both fail closed.
+{
+  const value = await stoppedMainSuccessorFixture()
+  const cleanSource = join(await mkdtemp(join(tmpdir(), 'andalucia-approved-clean-source-')), 'source')
+  execFileSync('git', ['clone', '--quiet', value.root, cleanSource])
+  await writeFile(join(value.root, 'unfinished-canonical-ui.tmp'), 'preserved unfinished UI work')
+  const authorization = await prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies, cleanSource)
+  assert.equal(authorization.state, 'BACKUP_VERIFIED')
+  const inspected = await runRequestedBackupActivationControl('inspect-target', ['node', 'control', '--project-root', value.root, '--source-root', cleanSource, '--authorization-id', authorization.authorizationId], { portsClosed: async () => true, reviewedSourceSuccessor: value.reviewedSourceSuccessor })
+  assert.equal(inspected.targetSha, value.targetSha)
+  await assert.rejects(() => prepareStoppedMainActivation(value.root, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies, value.root), /STOPPED_MAIN_ACTIVATION_SOURCE_MISMATCH/)
+  const wrongCanonicalRoot = await mkdtemp(join(tmpdir(), 'andalucia-wrong-canonical-root-'))
+  await assert.rejects(() => prepareStoppedMainActivation(wrongCanonicalRoot, value.targetSha, value.recovery.authorizationId, { identifier: 'owner', password: 'secret' }, value.dependencies, cleanSource), /ENOENT|CANONICAL|RECOVERY_EVIDENCE/)
+}
+
 // Wrong ancestry, later/unrelated successors, journal tampering, identity drift, and invalid backups fail closed.
 {
   const value = await stoppedMainSuccessorFixture()
@@ -278,9 +318,12 @@ const startupRecord = (state, detail, recordedAt) => JSON.stringify({ version: '
 const integrationFixture = async () => {
   const root = await mkdtemp(join(tmpdir(), 'andalucia-stopped-recovery-integration-'))
   await mkdir(join(root, 'server'), { recursive: true })
+  await mkdir(join(root, 'deployment', 'windows'), { recursive: true })
   await cp(join(repositoryRoot, 'server', 'database-operation-coordinator.ts'), join(root, 'server', 'database-operation-coordinator.ts'))
   await cp(join(repositoryRoot, 'server', 'requested-backup-activation-control.ts'), join(root, 'server', 'requested-backup-activation-control.ts'))
+  await cp(join(repositoryRoot, 'deployment', 'windows', 'Start-AndaluciaGuardedApplication.ps1'), join(root, 'deployment', 'windows', 'Start-AndaluciaGuardedApplication.ps1'))
   await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { 'dev:canonical': 'node -e "setInterval(()=>{},1000)"' } }))
+  await writeFile(join(root, '.gitignore'), 'node_modules\n.data\n.runtime\n.backups\nresolver-*.ps1\norchestrator-*.ps1\n')
   git(root, 'init'); git(root, 'config', 'user.email', 'security-test@example.invalid'); git(root, 'config', 'user.name', 'Security Test')
   git(root, 'add', '.'); git(root, 'commit', '-m', 'previous healthy source')
   const previous = git(root, 'rev-parse', 'HEAD').toLowerCase()

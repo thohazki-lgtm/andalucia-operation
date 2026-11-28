@@ -1,15 +1,20 @@
 [CmdletBinding()]
-param()
+param(
+  [string]$SourceRoot,
+  [string]$CanonicalProjectRoot,
+  [ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ApprovedSha
+)
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $sourceRoot }
 $runtimeSourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.runtime\live-main-source'))
-$jobScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Invoke-AndaluciaDatabaseJob.ps1'))
-$runtimeScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Start-AndaluciaGuardedApplication.ps1'))
-$shutdownScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Stop-AndaluciaGuardedApplication.ps1'))
-$shutdownSignalScript = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Signal-AndaluciaWindowsShutdown.cmd'))
-$shutdownServiceInstaller = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Install-AndaluciaWindowsShutdownService.ps1'))
-$sourceResolver = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'Resolve-AndaluciaApprovedSource.ps1'))
+$jobScript = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Invoke-AndaluciaDatabaseJob.ps1'))
+$runtimeScript = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
+$shutdownScript = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'))
+$shutdownSignalScript = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Signal-AndaluciaWindowsShutdown.cmd'))
+$shutdownServiceInstaller = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Install-AndaluciaWindowsShutdownService.ps1'))
+$sourceResolver = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'))
 $exportRoot = Join-Path $projectRoot '.backups\.db2\scheduler\task-exports'
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $runtimeName = 'ANDALUCIA OPERATION - Guarded Application'
@@ -19,14 +24,14 @@ $rehearsalName = 'ANDALUCIA OPERATION - Weekly Restore Rehearsal'
 function Assert-ApprovedCheckout {
   if (-not (Test-Path -LiteralPath $sourceResolver -PathType Leaf)) { throw 'SCHEDULER_INSTALL_SOURCE_RESOLVER_MISSING' }
   . $sourceResolver
-  return Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot
+  return Get-AndaluciaApprovedSourceState -ProjectRoot $sourceRoot -CanonicalProjectRoot $projectRoot
 }
 
 function Initialize-ApprovedRuntimeSource([string]$ApprovedSha) {
   $runtimeParent = Split-Path $runtimeSourceRoot -Parent
   New-Item -ItemType Directory -Path $runtimeParent -Force | Out-Null
   if (-not (Test-Path -LiteralPath $runtimeSourceRoot)) {
-    & git -C $projectRoot worktree add --quiet --detach $runtimeSourceRoot $ApprovedSha
+    & git -C $sourceRoot worktree add --quiet --detach $runtimeSourceRoot $ApprovedSha
     if ($LASTEXITCODE -ne 0) { throw 'RUNTIME_SOURCE_WORKTREE_CREATE_FAILED' }
   } else {
     $runtimeGitRoot = ((@(& git -C $runtimeSourceRoot rev-parse --show-toplevel 2>$null)) -join '').Trim()
@@ -85,12 +90,14 @@ function Set-RuntimeTaskHardTerminateProtection {
 foreach ($path in @($jobScript, $runtimeScript, $shutdownScript, $shutdownSignalScript, $shutdownServiceInstaller, $sourceResolver)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SCHEDULER_SCRIPT_MISSING:$path" } }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
 $approvedSource = Assert-ApprovedCheckout
+if ($ApprovedSha -and $approvedSource.Sha -ne $ApprovedSha.ToLowerInvariant()) { throw "SCHEDULER_APPROVED_SOURCE_SHA_MISMATCH:$($approvedSource.Sha):$($ApprovedSha.ToLowerInvariant())" }
 $activeRuntimeListeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3001,5173 })
 if ($activeRuntimeListeners.Count -gt 0 -or (Test-Path -LiteralPath (Join-Path $projectRoot '.data\postgres\postmaster.pid'))) { throw 'RUNTIME_SOURCE_INSTALL_REQUIRES_GUARDED_STOP' }
 $runtimeSource = Initialize-ApprovedRuntimeSource -ApprovedSha $approvedSource.Sha
 $runtimeScript = Join-Path $runtimeSourceRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'
+$runtimeJobScript = Join-Path $runtimeSourceRoot 'deployment\windows\Invoke-AndaluciaDatabaseJob.ps1'
 $runtimeShutdownServiceInstaller = Join-Path $runtimeSourceRoot 'deployment\windows\Install-AndaluciaWindowsShutdownService.ps1'
-foreach ($path in @($runtimeScript,$runtimeShutdownServiceInstaller)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "RUNTIME_SOURCE_SCRIPT_MISSING:$path" } }
+foreach ($path in @($runtimeScript,$runtimeJobScript,$runtimeShutdownServiceInstaller)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "RUNTIME_SOURCE_SCRIPT_MISSING:$path" } }
 
 $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Limited
 $commonSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2)
@@ -98,8 +105,8 @@ $runtimeSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -Al
 $powerShell = Join-Path $PSHOME 'powershell.exe'
 $commandPrompt = Join-Path $env:SystemRoot 'System32\cmd.exe'
 $runtimeAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -SourceRoot `"{1}`" -CanonicalProjectRoot `"{2}`"" -f $runtimeScript,$runtimeSourceRoot,$projectRoot) -WorkingDirectory $runtimeSourceRoot
-$dailyAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job DailyBackup" -f $jobScript) -WorkingDirectory $projectRoot
-$rehearsalAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job WeeklyRestoreRehearsal" -f $jobScript) -WorkingDirectory $projectRoot
+$dailyAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job DailyBackup -SourceRoot `"{1}`" -CanonicalProjectRoot `"{2}`"" -f $runtimeJobScript,$runtimeSourceRoot,$projectRoot) -WorkingDirectory $runtimeSourceRoot
+$rehearsalAction = New-ScheduledTaskAction -Execute $powerShell -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`" -Job WeeklyRestoreRehearsal -SourceRoot `"{1}`" -CanonicalProjectRoot `"{2}`"" -f $runtimeJobScript,$runtimeSourceRoot,$projectRoot) -WorkingDirectory $runtimeSourceRoot
 $dailyTrigger = New-ScheduledTaskTrigger -Daily -At '02:00'
 $rehearsalTrigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Sunday -At '03:30'
 $runtimeTrigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser

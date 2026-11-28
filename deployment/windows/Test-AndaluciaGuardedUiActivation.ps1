@@ -2,6 +2,8 @@
 param(
     [string]$ExpectedSha,
     [string]$RepositoryRoot,
+    [string]$SourceRoot,
+    [string]$CanonicalProjectRoot,
     [int]$MaximumBackupAgeHours = 24,
     [switch]$AllowReviewedNonUiPaths,
     [switch]$AllowApprovedLocalCheckpoint,
@@ -18,40 +20,42 @@ function Stop-Readiness {
 
 try {
     $scriptProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-    $projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { $scriptProjectRoot }
+    $defaultRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { $scriptProjectRoot }
+    $sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { $defaultRoot }
+    $projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $defaultRoot }
     $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
     $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
     $runtimeTaskName = 'ANDALUCIA OPERATION - Guarded Application'
     $stoppedRuntimeMode = [bool]$MaintenanceAuthorizationId
-    $controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
+    $controlScript = Join-Path $sourceRoot 'server\requested-backup-activation-control.ts'
     $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
-    $schemaActivationControl = Join-Path $projectRoot 'server\runtime-schema-activation-control.ts'
-    $listenerEvidenceModule = Join-Path $PSScriptRoot 'AndaluciaRuntimeListenerEvidence.psm1'
+    $schemaActivationControl = Join-Path $sourceRoot 'server\runtime-schema-activation-control.ts'
+    $listenerEvidenceModule = Join-Path $sourceRoot 'deployment\windows\AndaluciaRuntimeListenerEvidence.psm1'
 
-    $gitRoot = (& git -C $projectRoot rev-parse --show-toplevel 2>$null).Trim()
-    if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $projectRoot) { Stop-Readiness 'SOURCE_NOT_AUTHORITATIVE' $projectRoot }
-    $branch = (& git -C $projectRoot branch --show-current 2>$null).Trim()
+    $gitRoot = (& git -C $sourceRoot rev-parse --show-toplevel 2>$null).Trim()
+    if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne $sourceRoot) { Stop-Readiness 'SOURCE_NOT_AUTHORITATIVE' $sourceRoot }
+    $branch = (& git -C $sourceRoot branch --show-current 2>$null).Trim()
     $approvedSource = $null
-    $trackedChanges = @(& git -C $projectRoot status --porcelain --untracked-files=no)
+    $trackedChanges = @(& git -C $sourceRoot status --porcelain)
     if ($trackedChanges.Count -gt 0) { Stop-Readiness 'SOURCE_TRACKED_CHANGES_PRESENT' ($trackedChanges -join '; ') }
-    $headSha = (& git -C $projectRoot rev-parse HEAD 2>$null).Trim()
-    $originSha = (& git -C $projectRoot rev-parse refs/remotes/origin/main 2>$null).Trim()
+    $headSha = (& git -C $sourceRoot rev-parse HEAD 2>$null).Trim()
+    $originSha = (& git -C $sourceRoot rev-parse refs/remotes/origin/main 2>$null).Trim()
     if ($branch -ne 'main') {
         if (-not $AllowApprovedLocalCheckpoint) { Stop-Readiness 'SOURCE_BRANCH_NOT_MAIN' $branch }
-        $resolverPath = Join-Path $projectRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
+        $resolverPath = Join-Path $sourceRoot 'deployment\windows\Resolve-AndaluciaApprovedSource.ps1'
         if (-not (Test-Path -LiteralPath $resolverPath -PathType Leaf)) { Stop-Readiness 'APPROVED_SOURCE_RESOLVER_MISSING' $resolverPath }
         . $resolverPath
-        try { $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $projectRoot } catch { Stop-Readiness 'APPROVED_LOCAL_SOURCE_INVALID' $_.Exception.Message }
+        try { $approvedSource = Get-AndaluciaApprovedSourceState -ProjectRoot $sourceRoot -CanonicalProjectRoot $projectRoot } catch { Stop-Readiness 'APPROVED_LOCAL_SOURCE_INVALID' $_.Exception.Message }
         if ($approvedSource.Mode -notin @('approved_local_reviewed_ui_checkpoint', 'approved_local_reviewed_backend_checkpoint') -or $approvedSource.Sha -ne $headSha) { Stop-Readiness 'APPROVED_LOCAL_SOURCE_MODE_MISMATCH' ([string]$approvedSource.Mode) }
     }
     if (-not $ExpectedSha) { $ExpectedSha = if ($branch -eq 'main') { $originSha } else { $headSha } }
-    $expectedFullSha = (& git -C $projectRoot rev-parse $ExpectedSha 2>$null).Trim()
+    $expectedFullSha = (& git -C $sourceRoot rev-parse $ExpectedSha 2>$null).Trim()
     if (-not $headSha -or $headSha -ne $expectedFullSha -or ($branch -eq 'main' -and $headSha -ne $originSha)) { Stop-Readiness 'SOURCE_SHA_MISMATCH' "head=$headSha origin=$originSha expected=$expectedFullSha" }
 
     $targetSchema = '027'
     if ($branch -eq 'main') {
         if (-not (Test-Path -LiteralPath $tsxCommand -PathType Leaf) -or -not (Test-Path -LiteralPath $schemaActivationControl -PathType Leaf)) { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_MISSING' $schemaActivationControl }
-        $schemaOutput = & $tsxCommand $schemaActivationControl --project-root $projectRoot --expected-sha $headSha
+        $schemaOutput = & $tsxCommand $schemaActivationControl --source-root $sourceRoot --canonical-root $projectRoot --expected-sha $headSha
         if ($LASTEXITCODE -ne 0) { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_FAILED' ($schemaOutput -join [Environment]::NewLine) }
         try { $schemaResolution = ($schemaOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { Stop-Readiness 'SCHEMA_ACTIVATION_CONTROL_INVALID' $_.Exception.Message }
         $targetSchema = [string]$schemaResolution.requiredSchemaVersion
@@ -69,7 +73,7 @@ try {
     $stoppedMainActivation = $false
     if ($stoppedRuntimeMode) {
         if (-not (Test-Path -LiteralPath $controlScript -PathType Leaf) -or -not (Test-Path -LiteralPath $tsxCommand -PathType Leaf)) { Stop-Readiness 'STOPPED_RUNTIME_CONTROL_MISSING' $controlScript }
-        $controlOutput = & $tsxCommand $controlScript inspect-target --project-root $projectRoot --authorization-id $MaintenanceAuthorizationId
+        $controlOutput = & $tsxCommand $controlScript inspect-target --project-root $projectRoot --source-root $sourceRoot --authorization-id $MaintenanceAuthorizationId
         if ($LASTEXITCODE -ne 0) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' ($controlOutput -join [Environment]::NewLine) }
         try { $evidence = ($controlOutput -join [Environment]::NewLine) | ConvertFrom-Json } catch { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_INVALID' $_.Exception.Message }
         if ([string]$evidence.targetSha -ne $headSha -or [string]$evidence.targetSha -ne $expectedFullSha -or [string]$evidence.targetBranch -ne $branch) { Stop-Readiness 'STOPPED_RUNTIME_AUTHORIZATION_TARGET_MISMATCH' ([string]$evidence.targetSha) }
@@ -97,10 +101,10 @@ try {
         $runtimeSha = [string]$health.application.sha
         if (-not $runtimeSha) { Stop-Readiness 'RUNTIME_SHA_MISSING' 'The health response did not identify its source.' }
     }
-    & git -C $projectRoot merge-base --is-ancestor $runtimeSha $headSha 2>$null
+    & git -C $sourceRoot merge-base --is-ancestor $runtimeSha $headSha 2>$null
     if ($LASTEXITCODE -ne 0) { Stop-Readiness 'RUNTIME_NOT_ANCESTOR_OF_TARGET' "runtime=$runtimeSha target=$headSha" }
 
-    $changedFiles = @(& git -C $projectRoot diff --name-only "$runtimeSha..$headSha")
+    $changedFiles = @(& git -C $sourceRoot diff --name-only "$runtimeSha..$headSha")
     $uiSafePattern = '^(src/|public/|docs/|AGENTS\.md$|server/[^/]*(browser|responsive|ui|interface)[^/]*\.test\.(ts|tsx|mjs)$)'
     $reviewedNonUiFiles = @($changedFiles | Where-Object { $_ -notmatch $uiSafePattern })
     if ($reviewedNonUiFiles.Count -gt 0 -and -not $AllowReviewedNonUiPaths) { Stop-Readiness 'NON_UI_REVIEW_REQUIRED' ($reviewedNonUiFiles -join ', ') }
@@ -116,11 +120,11 @@ try {
     $allowHardTerminate = $taskDefinition.SelectSingleNode('//t:Settings/t:AllowHardTerminate', $taskNamespace).InnerText
     $stopOnIdleEnd = $taskDefinition.SelectSingleNode('//t:Settings/t:IdleSettings/t:StopOnIdleEnd', $taskNamespace).InnerText
     $executionTimeLimit = $taskDefinition.SelectSingleNode('//t:Settings/t:ExecutionTimeLimit', $taskNamespace).InnerText
-    $legacyLauncher = [IO.Path]::GetFullPath((Join-Path $projectRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
+    $legacyLauncher = [IO.Path]::GetFullPath((Join-Path $sourceRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
     $isolatedRuntimeRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.runtime\live-main-source'))
     $isolatedLauncher = [IO.Path]::GetFullPath((Join-Path $isolatedRuntimeRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'))
     $taskDirectory = [IO.Path]::GetFullPath($taskWorkingDirectory)
-    $legacyTaskAction = $taskDirectory -eq $projectRoot -and $taskArguments -like "*$legacyLauncher*"
+    $legacyTaskAction = $sourceRoot -eq $projectRoot -and $taskDirectory -eq $projectRoot -and $taskArguments -like "*$legacyLauncher*"
     $isolatedTaskAction = $taskDirectory -eq $isolatedRuntimeRoot -and $taskArguments -like "*$isolatedLauncher*" -and $taskArguments -like '*-SourceRoot*' -and $taskArguments -like '*-CanonicalProjectRoot*'
     if ((-not $legacyTaskAction -and -not $isolatedTaskAction) -or $taskCommand -notlike '*\WindowsPowerShell\v1.0\powershell.exe') { Stop-Readiness 'RUNTIME_TASK_ACTION_DRIFT' "$taskCommand $taskArguments $taskWorkingDirectory" }
     if ($allowHardTerminate -ne 'false' -or $stopOnIdleEnd -ne 'false' -or $executionTimeLimit -ne 'PT0S') { Stop-Readiness 'RUNTIME_TASK_SAFETY_DRIFT' "AllowHardTerminate=$allowHardTerminate StopOnIdleEnd=$stopOnIdleEnd ExecutionTimeLimit=$executionTimeLimit" }
@@ -137,7 +141,7 @@ try {
         $listeners = @($listenerEvidence.Listeners)
         foreach ($listener in $listeners) {
             $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
-            if (-not $listenerProcess -or [string]$listenerProcess.CommandLine -notlike "*$projectRoot*") { Stop-Readiness 'RUNTIME_OWNER_MISMATCH' "port=$($listener.LocalPort) pid=$($listener.OwningProcess)" }
+            if (-not $listenerProcess -or ([string]$listenerProcess.CommandLine -notlike "*$isolatedRuntimeRoot*" -and [string]$listenerProcess.CommandLine -notlike "*$sourceRoot*")) { Stop-Readiness 'RUNTIME_OWNER_MISMATCH' "port=$($listener.LocalPort) pid=$($listener.OwningProcess)" }
         }
         if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { Stop-Readiness 'ACTIVE_RUNTIME_MARKER_MISSING' $markerPath }
     }

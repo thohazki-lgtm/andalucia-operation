@@ -23,7 +23,7 @@ $gitCommand = Join-Path $gitRoot 'git.exe'
 $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 $viteCommand = Join-Path $projectRoot 'node_modules\.bin\vite.cmd'
 $concurrentlyCommand = Join-Path $projectRoot 'node_modules\.bin\concurrently.cmd'
-$recoveryBootstrap = Join-Path $projectRoot 'server\recovery-runtime-bootstrap.mjs'
+$recoveryBootstrap = Join-Path $runtimeSourceRoot 'server\recovery-runtime-bootstrap.mjs'
 $schemaActivationControl = Join-Path $runtimeSourceRoot 'server\runtime-schema-activation-control.ts'
 
 function Write-StartupLog([string]$State, [string]$Detail) {
@@ -133,7 +133,7 @@ try {
       if (-not (Test-Path -LiteralPath $runtimeDependency -PathType Leaf)) { throw "ANDALUCIA_RUNTIME_DEPENDENCY_MISSING:$runtimeDependency" }
     }
     $apiCommand = "`"$tsxCommand`" `"$(Join-Path $runtimeSourceRoot 'server\index.ts')`""
-    $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$projectRoot`""
+    $clientCommand = "`"$viteCommand`" --host 127.0.0.1 --port 5173 --strictPort `"$runtimeSourceRoot`""
     $attempt = 0
     do {
       $attempt += 1
