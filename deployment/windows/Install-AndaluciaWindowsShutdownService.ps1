@@ -61,6 +61,68 @@ function Set-AndaluciaPreshutdownTimeout {
   if ($configuredTimeout -ne $TimeoutMs) { throw 'SHUTDOWN_SERVICE_PRESHUTDOWN_CONFIGURATION_MISMATCH' }
 }
 
+function Get-AndaluciaFileSha256 {
+  param([Parameter(Mandatory)][string]$Path)
+  $stream = [IO.File]::OpenRead($Path)
+  try {
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+    finally { $sha256.Dispose() }
+  } finally {
+    $stream.Dispose()
+  }
+}
+
+function Install-AndaluciaServiceExecutable {
+  param(
+    [Parameter(Mandatory)][string]$CandidatePath,
+    [Parameter(Mandatory)][string]$DestinationPath
+  )
+
+  if (-not (Test-Path -LiteralPath $CandidatePath -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_CANDIDATE_MISSING' }
+  $candidateSha256 = Get-AndaluciaFileSha256 -Path $CandidatePath
+  if (-not (Test-Path -LiteralPath $DestinationPath -PathType Leaf)) {
+    [IO.File]::Move($CandidatePath, $DestinationPath)
+    if ((Get-AndaluciaFileSha256 -Path $DestinationPath) -ne $candidateSha256) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_INSTALL_VERIFICATION_FAILED' }
+    return [pscustomobject]@{ Status='Installed'; CandidateSha256=$candidateSha256; PreviousSha256=$null; RollbackPath=$null }
+  }
+
+  $previousSha256 = Get-AndaluciaFileSha256 -Path $DestinationPath
+  if ($previousSha256 -eq $candidateSha256) {
+    Remove-Item -LiteralPath $CandidatePath -Force
+    return [pscustomobject]@{ Status='Reused'; CandidateSha256=$candidateSha256; PreviousSha256=$previousSha256; RollbackPath=$null }
+  }
+
+  # Keep the sibling rollback name compact. Windows PowerShell 5.1 commonly runs
+  # this installer from long protected paths, and embedding a 64-character hash
+  # in the filename can exceed the legacy Windows path limit before File.Replace
+  # has a chance to preserve the old image. The verified hash remains bound in
+  # the returned replacement record and is checked before any rollback.
+  $rollbackPath = '{0}.rollback.{1}' -f $DestinationPath,[Guid]::NewGuid().ToString('N')
+  if (Test-Path -LiteralPath $rollbackPath) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_PATH_CONFLICT' }
+  [IO.File]::Replace($CandidatePath, $DestinationPath, $rollbackPath, $true)
+  if ((Get-AndaluciaFileSha256 -Path $DestinationPath) -ne $candidateSha256 -or (Get-AndaluciaFileSha256 -Path $rollbackPath) -ne $previousSha256) {
+    throw "SHUTDOWN_SERVICE_EXECUTABLE_REPLACEMENT_VERIFICATION_FAILED:$rollbackPath"
+  }
+  return [pscustomobject]@{ Status='Replaced'; CandidateSha256=$candidateSha256; PreviousSha256=$previousSha256; RollbackPath=$rollbackPath }
+}
+
+function Restore-AndaluciaServiceExecutable {
+  param(
+    [Parameter(Mandatory)][string]$DestinationPath,
+    [Parameter(Mandatory)][string]$RollbackPath,
+    [Parameter(Mandatory)][string]$ExpectedInstalledSha256,
+    [Parameter(Mandatory)][string]$ExpectedRollbackSha256
+  )
+
+  if (-not (Test-Path -LiteralPath $DestinationPath -PathType Leaf) -or -not (Test-Path -LiteralPath $RollbackPath -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_FILE_MISSING' }
+  if ((Get-AndaluciaFileSha256 -Path $DestinationPath) -ne $ExpectedInstalledSha256 -or (Get-AndaluciaFileSha256 -Path $RollbackPath) -ne $ExpectedRollbackSha256) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_BINDING_INVALID' }
+  $failedCandidatePath = '{0}.failed.{1}' -f $DestinationPath,[Guid]::NewGuid().ToString('N')
+  [IO.File]::Replace($RollbackPath, $DestinationPath, $failedCandidatePath, $true)
+  if ((Get-AndaluciaFileSha256 -Path $DestinationPath) -ne $ExpectedRollbackSha256 -or (Get-AndaluciaFileSha256 -Path $failedCandidatePath) -ne $ExpectedInstalledSha256) { throw 'SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_VERIFICATION_FAILED' }
+  return [pscustomobject]@{ Status='RolledBack'; RestoredSha256=$ExpectedRollbackSha256; FailedCandidatePath=$failedCandidatePath }
+}
+
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $handshakeSource -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_HANDSHAKE_SOURCE_MISSING' }
 if (-not (Test-Path -LiteralPath $resolver -PathType Leaf)) { throw 'SHUTDOWN_SERVICE_SOURCE_RESOLVER_MISSING' }
@@ -96,22 +158,35 @@ if ($compilerExitCode -ne 0 -or -not (Test-Path -LiteralPath $serviceExeCandidat
 $serviceIdentity = "NT SERVICE\$serviceName"
 $accountIdentity = 'NT AUTHORITY\LOCAL SERVICE'
 $existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+$existingServiceConfiguration = if ($existingService) { Get-CimInstance Win32_Service -Filter "Name='$serviceName'" -ErrorAction Stop } else { $null }
+$expectedServiceAccount = 'NT AUTHORITY\LocalService'
+if ($existingServiceConfiguration -and [string]$existingServiceConfiguration.StartName -ne $expectedServiceAccount) { throw 'SHUTDOWN_SERVICE_EXISTING_ACCOUNT_MISMATCH' }
+$existingServiceWasRunning = [bool]($existingService -and $existingService.Status -ne 'Stopped')
 if ($existingService -and $existingService.Status -ne 'Stopped') {
   Stop-Service -Name $serviceName
   $existingService.WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(15))
 }
-Move-Item -LiteralPath $serviceExeCandidate -Destination $serviceExe -Force
-Copy-Item -LiteralPath $handshakeSource -Destination $handshakeInstalled -Force
-$handshakeSha256 = (Get-FileHash -LiteralPath $handshakeInstalled -Algorithm SHA256).Hash.ToLowerInvariant()
-$binaryPath = ('\"{0}\" --source-root \"{1}\" --canonical-project-root \"{2}\" --expected-sha {3} --git-path \"{4}\" --handshake-sha256 {5} --timeout-seconds 45' -f $serviceExe, $sourceRoot, $root, $approved.Sha, $git, $handshakeSha256)
-if ($existingService) {
-  Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
-} else {
-  Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CREATE_FAILED' -Arguments @('create',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
+$handshakeRollbackPath = $null
+if (Test-Path -LiteralPath $handshakeInstalled -PathType Leaf) {
+  $handshakeRollbackPath = '{0}.rollback.{1}.{2}' -f $handshakeInstalled,(Get-AndaluciaFileSha256 -Path $handshakeInstalled),[Guid]::NewGuid().ToString('N')
+  Copy-Item -LiteralPath $handshakeInstalled -Destination $handshakeRollbackPath
 }
-Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED' -Arguments @('sidtype',$serviceName,'restricted') | Out-Null
-$serviceRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName"
-Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60000
+$executableReplacement = $null
+$serviceCreatedThisAttempt = $false
+try {
+  $executableReplacement = Install-AndaluciaServiceExecutable -CandidatePath $serviceExeCandidate -DestinationPath $serviceExe
+  Copy-Item -LiteralPath $handshakeSource -Destination $handshakeInstalled -Force
+  $handshakeSha256 = Get-AndaluciaFileSha256 -Path $handshakeInstalled
+  $binaryPath = ('\"{0}\" --source-root \"{1}\" --canonical-project-root \"{2}\" --expected-sha {3} --git-path \"{4}\" --handshake-sha256 {5} --timeout-seconds 45' -f $serviceExe, $sourceRoot, $root, $approved.Sha, $git, $handshakeSha256)
+  if ($existingService) {
+    Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
+  } else {
+    Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_CREATE_FAILED' -Arguments @('create',$serviceName,'binPath=',$binaryPath,'start=','auto','obj=','NT AUTHORITY\LocalService','DisplayName=','ANDALUCIA OPERATION - Graceful Shutdown Guard') | Out-Null
+    $serviceCreatedThisAttempt = $true
+  }
+  Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_SID_CONFIGURATION_FAILED' -Arguments @('sidtype',$serviceName,'restricted') | Out-Null
+  $serviceRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName"
+  Set-AndaluciaPreshutdownTimeout -RegistryPath $serviceRegistryPath -TimeoutMs 60000
 
 # A restricted service token must pass access checks for both LocalService and the
 # restricted service SID. Keep ancestor grants traverse-only and scope read/write
@@ -147,9 +222,40 @@ $runtimeApprovalPath = Join-Path $root '.runtime\approved-runtime-source.json'
 Grant-AndaluciaServiceAcl -Path $runtimeApprovalPath -Rights '(R)'
 foreach ($path in @($controlRoot,$logRoot)) { Grant-AndaluciaServiceAcl -Path $path -Rights '(OI)(CI)(M)' }
 
-$legacyTask = 'ANDALUCIA OPERATION - Graceful Windows Shutdown'
-if (Get-ScheduledTask -TaskName $legacyTask -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $legacyTask -Confirm:$false }
-Start-Service -Name $serviceName
-$service = Get-Service -Name $serviceName
-if ($service.Status -ne 'Running') { throw 'SHUTDOWN_SERVICE_NOT_RUNNING' }
-[pscustomobject]@{ Service=$serviceName; Status=$service.Status; SourceSha=$approved.Sha; Account='NT AUTHORITY\LocalService'; PreshutdownTimeoutMs=60000 }
+  Start-Service -Name $serviceName
+  $service = Get-Service -Name $serviceName
+  if ($service.Status -ne 'Running') { throw 'SHUTDOWN_SERVICE_NOT_RUNNING' }
+  $legacyTask = 'ANDALUCIA OPERATION - Graceful Windows Shutdown'
+  if (Get-ScheduledTask -TaskName $legacyTask -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $legacyTask -Confirm:$false }
+  [pscustomobject]@{ Service=$serviceName; Status=$service.Status; SourceSha=$approved.Sha; Account='NT AUTHORITY\LocalService'; PreshutdownTimeoutMs=60000; ExecutableStatus=$executableReplacement.Status; RollbackExecutable=$executableReplacement.RollbackPath }
+} catch {
+  $installFailure = $_.Exception.Message
+  $rollbackFailures = [Collections.Generic.List[string]]::new()
+  try {
+    $currentService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    if ($currentService -and $currentService.Status -ne 'Stopped') { Stop-Service -Name $serviceName -Force; $currentService.WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(15)) }
+  } catch { $rollbackFailures.Add("service-stop:$($_.Exception.Message)") }
+  if ($executableReplacement -and $executableReplacement.Status -eq 'Replaced') {
+    try { Restore-AndaluciaServiceExecutable -DestinationPath $serviceExe -RollbackPath $executableReplacement.RollbackPath -ExpectedInstalledSha256 $executableReplacement.CandidateSha256 -ExpectedRollbackSha256 $executableReplacement.PreviousSha256 | Out-Null } catch { $rollbackFailures.Add("executable:$($_.Exception.Message)") }
+  }
+  if ($handshakeRollbackPath) {
+    try { Copy-Item -LiteralPath $handshakeRollbackPath -Destination $handshakeInstalled -Force } catch { $rollbackFailures.Add("handshake:$($_.Exception.Message)") }
+  }
+  if ($serviceCreatedThisAttempt) {
+    try { Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_ROLLBACK_DELETE_FAILED' -Arguments @('delete',$serviceName) | Out-Null } catch { $rollbackFailures.Add("service-delete:$($_.Exception.Message)") }
+  } elseif ($existingServiceConfiguration) {
+    $previousStartMode = switch ([string]$existingServiceConfiguration.StartMode) { 'Auto' { 'auto' } 'Manual' { 'demand' } 'Disabled' { 'disabled' } default { $null } }
+    if (-not $previousStartMode) {
+      $rollbackFailures.Add("configuration:SHUTDOWN_SERVICE_ROLLBACK_START_MODE_UNSUPPORTED:$($existingServiceConfiguration.StartMode)")
+    } else {
+      try {
+        Invoke-AndaluciaScCommand -FailureCode 'SHUTDOWN_SERVICE_ROLLBACK_CONFIG_FAILED' -Arguments @('config',$serviceName,'binPath=',([string]$existingServiceConfiguration.PathName),'start=',$previousStartMode,'obj=',([string]$existingServiceConfiguration.StartName),'DisplayName=',([string]$existingServiceConfiguration.DisplayName)) | Out-Null
+      } catch { $rollbackFailures.Add("configuration:$($_.Exception.Message)") }
+    }
+  }
+  if ($existingServiceWasRunning) {
+    try { Start-Service -Name $serviceName; (Get-Service -Name $serviceName).WaitForStatus([ServiceProcess.ServiceControllerStatus]::Running,[TimeSpan]::FromSeconds(15)) } catch { $rollbackFailures.Add("service-start:$($_.Exception.Message)") }
+  }
+  if ($rollbackFailures.Count -gt 0) { throw "SHUTDOWN_SERVICE_INSTALL_FAILED_ROLLBACK_FAILED:${installFailure}:$($rollbackFailures -join '|')" }
+  throw "SHUTDOWN_SERVICE_INSTALL_FAILED_ROLLED_BACK:${installFailure}"
+}

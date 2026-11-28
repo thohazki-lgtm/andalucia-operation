@@ -85,10 +85,61 @@ try {
   assert.match(installerText, /SHUTDOWN_SERVICE_CREATE_FAILED/)
   assert.doesNotMatch(installerText, /sc\.exe create[^\n]+\| Out-Null/)
   assert.match(installerText, /ProgramFiles[^\n]+ShutdownGuard/)
+  assert.doesNotMatch(installerText, /Move-Item[^\n]+\$serviceExeCandidate[^\n]+\$serviceExe/, 'PowerShell 5.1 Move-Item must not replace an existing service image')
+  assert.match(installerText, /\[IO\.File\]::Replace\(\$CandidatePath, \$DestinationPath, \$rollbackPath, \$true\)/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_BINDING_INVALID/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_INSTALL_FAILED_ROLLED_BACK/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_EXISTING_ACCOUNT_MISMATCH/)
+  assert.match(installerText, /SHUTDOWN_SERVICE_ROLLBACK_DELETE_FAILED/)
+  assert.match(installerText, /serviceCreatedThisAttempt/)
   assert.match(installerText, /inheritance:r[^\n]+SYSTEM:\(OI\)\(CI\)\(F\)[^\n]+Administrators:\(OI\)\(CI\)\(F\)[^\n]+\(OI\)\(CI\)\(RX\)/)
   assert.doesNotMatch(installerText, /LocalSystem|SYSTEM_ACCOUNT/i)
   assert.match(schedulerText, /Install-AndaluciaWindowsShutdownService\.ps1/)
   assert.doesNotMatch(schedulerText, /Register-GracefulShutdownTask|New-ScheduledTaskTrigger -AtLogOn[^\n]+shutdown/i)
+
+  const replacementRoot = await mkdtemp(join(tmpdir(), 'andalucia-scm-replacement-')); roots.push(replacementRoot)
+  const replacementFixture = `
+    $ErrorActionPreference = 'Stop'
+    $installerPath = '${serviceInstaller.replaceAll("'", "''")}'
+    $tokens = $null
+    $errors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($installerPath,[ref]$tokens,[ref]$errors)
+    if ($errors.Count -ne 0) { throw 'INSTALLER_PARSE_FAILED' }
+    foreach ($name in @('Get-AndaluciaFileSha256','Install-AndaluciaServiceExecutable','Restore-AndaluciaServiceExecutable')) {
+      $definition = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
+      if (-not $definition) { throw "REPLACEMENT_FUNCTION_MISSING:$name" }
+      . ([scriptblock]::Create($definition.Extent.Text))
+    }
+    $root = '${replacementRoot.replaceAll("'", "''")}'
+    $destination = Join-Path $root 'AndaluciaWindowsShutdownService.exe'
+    $candidate = Join-Path $root 'AndaluciaWindowsShutdownService.exe.new'
+    [IO.File]::WriteAllText($destination,'approved-existing-binary',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($candidate,'reviewed-new-binary',[Text.UTF8Encoding]::new($false))
+    $installed = Install-AndaluciaServiceExecutable -CandidatePath $candidate -DestinationPath $destination
+    if ($installed.Status -ne 'Replaced' -or (Test-Path -LiteralPath $candidate) -or -not (Test-Path -LiteralPath $installed.RollbackPath)) { throw 'EXISTING_DESTINATION_REPLACEMENT_FAILED' }
+    if ([IO.File]::ReadAllText($destination) -ne 'reviewed-new-binary' -or [IO.File]::ReadAllText($installed.RollbackPath) -ne 'approved-existing-binary') { throw 'REPLACEMENT_CONTENT_VERIFICATION_FAILED' }
+    $restored = Restore-AndaluciaServiceExecutable -DestinationPath $destination -RollbackPath $installed.RollbackPath -ExpectedInstalledSha256 $installed.CandidateSha256 -ExpectedRollbackSha256 $installed.PreviousSha256
+    if ($restored.Status -ne 'RolledBack' -or [IO.File]::ReadAllText($destination) -ne 'approved-existing-binary' -or [IO.File]::ReadAllText($restored.FailedCandidatePath) -ne 'reviewed-new-binary') { throw 'VERIFIED_ROLLBACK_FAILED' }
+    $unknownRollback = Join-Path $root 'unknown.rollback'
+    [IO.File]::WriteAllText($unknownRollback,'approved-existing-binary',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($destination,'unknown-file-content',[Text.UTF8Encoding]::new($false))
+    try {
+      Restore-AndaluciaServiceExecutable -DestinationPath $destination -RollbackPath $unknownRollback -ExpectedInstalledSha256 $installed.CandidateSha256 -ExpectedRollbackSha256 $installed.PreviousSha256 | Out-Null
+      throw 'UNKNOWN_DESTINATION_WAS_OVERWRITTEN'
+    } catch {
+      if ($_.Exception.Message -notmatch 'SHUTDOWN_SERVICE_EXECUTABLE_ROLLBACK_BINDING_INVALID') { throw }
+    }
+    if ([IO.File]::ReadAllText($destination) -ne 'unknown-file-content' -or [IO.File]::ReadAllText($unknownRollback) -ne 'approved-existing-binary') { throw 'UNKNOWN_FILE_PRESERVATION_FAILED' }
+    $reusedDestination = Join-Path $root 'reused.exe'
+    $reusedCandidate = Join-Path $root 'reused.exe.new'
+    [IO.File]::WriteAllText($reusedDestination,'same-reviewed-binary',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($reusedCandidate,'same-reviewed-binary',[Text.UTF8Encoding]::new($false))
+    $reused = Install-AndaluciaServiceExecutable -CandidatePath $reusedCandidate -DestinationPath $reusedDestination
+    if ($reused.Status -ne 'Reused' -or (Test-Path -LiteralPath $reusedCandidate) -or [IO.File]::ReadAllText($reusedDestination) -ne 'same-reviewed-binary') { throw 'IDEMPOTENT_REUSE_FAILED' }
+    [ordered]@{ replacement=$installed.Status; rollback=$restored.Status; unknownPreserved=$true; idempotent=$reused.Status } | ConvertTo-Json -Compress
+  `
+  const replacementResult = await exec('powershell.exe', ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(replacementFixture, 'utf16le').toString('base64')], { timeout: 30000 })
+  assert.deepEqual(JSON.parse(replacementResult.stdout.trim()), { replacement:'Replaced', rollback:'RolledBack', unknownPreserved:true, idempotent:'Reused' })
 
   const nativeDiagnosticFixture = `
     $ErrorActionPreference = 'Stop'
