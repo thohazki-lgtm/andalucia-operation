@@ -2,26 +2,31 @@
 param(
     [Parameter(Mandatory = $true)][string]$ExpectedSha,
     [string]$RepositoryRoot,
+    [string]$SourceRoot,
+    [string]$CanonicalProjectRoot,
     [string]$StoppedRuntimeRecoveryAuthorizationId
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$projectRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$defaultRoot = if ($RepositoryRoot) { [IO.Path]::GetFullPath($RepositoryRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { $defaultRoot }
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $defaultRoot }
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $evidenceRoot = Join-Path $projectRoot '.runtime\maintenance-evidence'
 $auditPath = Join-Path $evidenceRoot 'audit.jsonl'
-$stopScript = Join-Path $PSScriptRoot 'Stop-AndaluciaGuardedApplication.ps1'
-$preflightScript = Join-Path $PSScriptRoot 'Test-AndaluciaGuardedUiActivation.ps1'
-$activationScript = Join-Path $PSScriptRoot 'Invoke-AndaluciaApprovedUiActivation.ps1'
-$startScript = Join-Path $PSScriptRoot 'Start-AndaluciaGuardedApplication.ps1'
-$controlScript = Join-Path $projectRoot 'server\requested-backup-activation-control.ts'
+$stopScript = Join-Path $sourceRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
+$preflightScript = Join-Path $sourceRoot 'deployment\windows\Test-AndaluciaGuardedUiActivation.ps1'
+$activationScript = Join-Path $sourceRoot 'deployment\windows\Invoke-AndaluciaApprovedUiActivation.ps1'
+$startScript = Join-Path $sourceRoot 'deployment\windows\Start-AndaluciaGuardedApplication.ps1'
+$controlScript = Join-Path $sourceRoot 'server\requested-backup-activation-control.ts'
 $tsxCommand = Join-Path $projectRoot 'node_modules\.bin\tsx.cmd'
 $schedulerLock = Join-Path $projectRoot '.backups\.db2\scheduler\job.lock'
 $markerPath = Join-Path $canonicalData 'postmaster.pid'
 $authorizationId = $null
 $stopped = $false
+Set-Location -LiteralPath $sourceRoot
 
 function Write-MaintenanceAudit([string]$State, [hashtable]$Details = @{}) {
     New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
@@ -30,7 +35,7 @@ function Write-MaintenanceAudit([string]$State, [hashtable]$Details = @{}) {
 }
 
 function Invoke-Control([string]$Command, [string[]]$ExtraArguments = @()) {
-    $arguments = @($controlScript,$Command,'--project-root',$projectRoot)
+    $arguments = @($controlScript,$Command,'--project-root',$projectRoot,'--source-root',$sourceRoot)
     if ($authorizationId) { $arguments += @('--authorization-id',$authorizationId) }
     $arguments += $ExtraArguments
     $output = & $tsxCommand @arguments
@@ -47,7 +52,7 @@ function Invoke-GuardedPreviousRuntimeRecovery([string]$Failure) {
     $recoveryRoot = Join-Path $projectRoot ".runtime\recovery-source\$authorizationId"
     if (Test-Path -LiteralPath $recoveryRoot) { throw 'REQUESTED_BACKUP_RECOVERY_SOURCE_ALREADY_EXISTS' }
     New-Item -ItemType Directory -Path (Split-Path $recoveryRoot -Parent) -Force | Out-Null
-    & git -C $projectRoot worktree add --detach $recoveryRoot ([string]$recovery.previousLiveSha) | Out-Null
+    & git -C $sourceRoot worktree add --detach $recoveryRoot ([string]$recovery.previousLiveSha) | Out-Null
     if ($LASTEXITCODE -ne 0) { [void](Invoke-Control 'recovery-failed' @('--failure','RECOVERY_SOURCE_PREPARATION_FAILED')); throw 'REQUESTED_BACKUP_RECOVERY_SOURCE_PREPARATION_FAILED' }
     $process = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','RemoteSigned','-File',$startScript,'-SourceRoot',$recoveryRoot,'-CanonicalProjectRoot',$projectRoot,'-RecoveryAuthorizationId',$authorizationId) -WindowStyle Hidden -PassThru
     $healthy = $null
@@ -69,7 +74,7 @@ function Invoke-GuardedPreviousRuntimeRecovery([string]$Failure) {
 
 try {
     foreach ($requiredPath in @($controlScript,$tsxCommand,$startScript)) { if (-not (Test-Path -LiteralPath $requiredPath)) { throw "REQUESTED_BACKUP_REQUIRED_CONTROL_MISSING:$requiredPath" } }
-    if (@(& git -C $projectRoot status --porcelain --untracked-files=no).Count -gt 0) { throw 'REQUESTED_BACKUP_SOURCE_DIRTY' }
+    if (@(& git -C $sourceRoot status --porcelain).Count -gt 0) { throw 'REQUESTED_BACKUP_SOURCE_DIRTY' }
     if (Test-Path -LiteralPath $schedulerLock) { throw 'REQUESTED_BACKUP_SCHEDULER_BUSY' }
     foreach ($operationMarker in @('migration-in-progress','recovery-in-progress')) { if (Test-Path -LiteralPath (Join-Path (Split-Path $canonicalData -Parent) $operationMarker)) { throw "REQUESTED_BACKUP_OPERATION_BLOCKED:$operationMarker" } }
 
@@ -87,13 +92,13 @@ try {
     if (-not $authorizationId) { throw 'REQUESTED_BACKUP_AUTHORIZATION_ID_MISSING' }
     $source = $prepared
 
-    $preflightOutput = & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $preflightScript -ExpectedSha $ExpectedSha -RepositoryRoot $projectRoot -AllowReviewedNonUiPaths -AllowApprovedLocalCheckpoint
+    $preflightOutput = & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $preflightScript -ExpectedSha $ExpectedSha -SourceRoot $sourceRoot -CanonicalProjectRoot $projectRoot -AllowReviewedNonUiPaths -AllowApprovedLocalCheckpoint
     $preflightText = $preflightOutput -join [Environment]::NewLine
     $preflight = $preflightText | ConvertFrom-Json
     if ($LASTEXITCODE -eq 0 -or [string]$preflight.blocker -notmatch '^VERIFIED_BACKUP_TOO_OLD:') { throw "REQUESTED_BACKUP_PRE_SHUTDOWN_PREFLIGHT_NOT_EXCLUSIVELY_BACKUP_BLOCKED:$preflightText" }
 
     Write-MaintenanceAudit 'PRE_SHUTDOWN_VERIFIED' @{ previousLiveSha=[string]$source.previousLiveSha; requestId=[string]$source.requestId; schema='027' }
-    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript -CanonicalProjectRoot $projectRoot
     if ($LASTEXITCODE -ne 0) { throw "REQUESTED_BACKUP_GUARDED_STOP_FAILED:$LASTEXITCODE" }
     $stopped = $true
 
@@ -110,7 +115,7 @@ try {
     $bound = Invoke-Control 'bind-backup'
     Write-MaintenanceAudit 'BACKUP_VERIFIED_AND_JOURNAL_BOUND' @{ requestId=[string]$bound.requestId; backupId=[string]$bound.backupId }
 
-    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $activationScript -ExpectedSha $ExpectedSha -RepositoryRoot $projectRoot -AllowReviewedNonUiPaths -ManagerAuthorizedRestart -MaintenanceAuthorizationId $authorizationId
+    & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $activationScript -ExpectedSha $ExpectedSha -SourceRoot $sourceRoot -CanonicalProjectRoot $projectRoot -AllowReviewedNonUiPaths -ManagerAuthorizedRestart -MaintenanceAuthorizationId $authorizationId
     if ($LASTEXITCODE -ne 0) { throw "REQUESTED_BACKUP_ACTIVATION_FAILED:$LASTEXITCODE" }
     Write-MaintenanceAudit 'ACTIVATION_HEALTH_VERIFIED' @{ backupId=[string]$bound.backupId }
 } catch {

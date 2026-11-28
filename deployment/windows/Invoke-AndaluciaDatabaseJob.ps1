@@ -2,17 +2,20 @@
 param(
   [Parameter(Mandatory)]
   [ValidateSet('DailyBackup', 'WeeklyRestoreRehearsal')]
-  [string]$Job
+  [string]$Job,
+  [string]$SourceRoot,
+  [string]$CanonicalProjectRoot
 )
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$sourceRoot = if ($SourceRoot) { [IO.Path]::GetFullPath($SourceRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { $sourceRoot }
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $backupRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.backups'))
 $schedulerRoot = Join-Path $backupRoot '.db2\scheduler'
 $logRoot = Join-Path $schedulerRoot 'logs'
 $runtimeTask = 'ANDALUCIA OPERATION - Guarded Application'
-$stopScript = Join-Path $projectRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
+$stopScript = Join-Path $sourceRoot 'deployment\windows\Stop-AndaluciaGuardedApplication.ps1'
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
 $stamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
 $logPath = Join-Path $logRoot ("windows-{0}-{1}.log" -f $Job.ToLowerInvariant(), $stamp)
@@ -90,13 +93,14 @@ function Start-GuardedApplicationIfRequired {
 try {
   New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
   Write-JobLog "task=$Job state=STARTED"
-  if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'package.json') -PathType Leaf)) { throw 'ANDALUCIA_PROJECT_DIRECTORY_INVALID' }
+  if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot 'package.json') -PathType Leaf)) { throw 'ANDALUCIA_PROJECT_DIRECTORY_INVALID' }
   if (-not (Test-Path -LiteralPath (Join-Path $canonicalData 'PG_VERSION') -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_STORE_MISSING' }
   if (-not (Test-Path -LiteralPath $identityPath -PathType Leaf)) { throw 'ANDALUCIA_CANONICAL_IDENTITY_MISSING' }
   $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
   if ($identity.role -ne 'canonical' -or [IO.Path]::GetFullPath([string]$identity.databaseDirectory) -ne $canonicalData) { throw 'ANDALUCIA_CANONICAL_IDENTITY_MISMATCH' }
 
-  Set-Location -LiteralPath $projectRoot
+  Set-Location -LiteralPath $sourceRoot
+  $env:PATH = "$(Join-Path $projectRoot 'node_modules\.bin');$env:PATH"
   $env:ANDALUCIA_DATA_DIR = $canonicalData
   $env:ANDALUCIA_STORE_ROLE = 'canonical'
   $env:ANDALUCIA_CANONICAL_STARTUP_AUTHORIZATION = 'YES_I_APPROVE_GUARDED_CANONICAL_STARTUP'
@@ -110,7 +114,7 @@ try {
     Write-JobLog "applicationRunningBefore=$runningBefore"
     if ($runningBefore) {
       if (-not (Test-Path -LiteralPath $stopScript -PathType Leaf)) { throw 'ANDALUCIA_GUARDED_STOP_SCRIPT_MISSING' }
-      & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript
+      & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $stopScript -CanonicalProjectRoot $projectRoot
       if ($LASTEXITCODE -ne 0 -or -not (Wait-PortsClosed 30)) { throw 'ANDALUCIA_GRACEFUL_SHUTDOWN_NOT_CONFIRMED' }
       Write-JobLog 'gracefulShutdown=CONFIRMED'
     } elseif (-not (Wait-PortsClosed 1)) { throw 'ANDALUCIA_LIVE_STORE_NOT_EXCLUSIVE' }

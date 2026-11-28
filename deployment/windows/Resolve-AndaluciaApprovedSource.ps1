@@ -388,7 +388,7 @@ function Get-AndaluciaApprovedSourceState {
 
   $gitRoot = (& git -C $ProjectRoot rev-parse --show-toplevel 2>$null).Trim()
   if (-not $gitRoot -or [IO.Path]::GetFullPath($gitRoot) -ne [IO.Path]::GetFullPath($ProjectRoot)) { throw 'ANDALUCIA_RUNTIME_SOURCE_NOT_AUTHORITATIVE_GIT_CHECKOUT' }
-  $trackedChanges = @(& git -C $ProjectRoot status --porcelain --untracked-files=no)
+  $trackedChanges = @(& git -C $ProjectRoot status --porcelain)
   if ($trackedChanges.Count -gt 0) { throw 'ANDALUCIA_RUNTIME_SOURCE_DIRTY' }
 
   $branch = ((@(& git -C $ProjectRoot branch --show-current 2>$null)) -join '').Trim()
@@ -400,7 +400,7 @@ function Get-AndaluciaApprovedSourceState {
     $controlScript = Join-Path $canonicalRoot 'server\requested-backup-activation-control.ts'
     $tsxCommand = Join-Path $canonicalRoot 'node_modules\.bin\tsx.cmd'
     foreach ($requiredPath in @($controlScript,$tsxCommand)) { if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "ANDALUCIA_RECOVERY_CONTROL_MISSING:$requiredPath" } }
-    $controlOutput = & $tsxCommand $controlScript inspect-recovery-source --project-root $canonicalRoot --authorization-id $RecoveryAuthorizationId --source-root $ProjectRoot
+    $controlOutput = & $tsxCommand $controlScript inspect-recovery-source --project-root $canonicalRoot --source-root $ProjectRoot --authorization-id $RecoveryAuthorizationId --recovery-source-root $ProjectRoot
     if ($LASTEXITCODE -ne 0) { throw "ANDALUCIA_RECOVERY_SOURCE_NOT_AUTHORIZED:$($controlOutput -join [Environment]::NewLine)" }
     try { $authorization = (($controlOutput -join [Environment]::NewLine) | ConvertFrom-Json) } catch { throw 'ANDALUCIA_RECOVERY_AUTHORIZATION_INVALID' }
     if ([string]$authorization.state -ne 'RECOVERY_CLAIMED' -or [string]$authorization.previousLiveSha -ne $headSha) { throw 'ANDALUCIA_RECOVERY_SOURCE_BINDING_MISMATCH' }

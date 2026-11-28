@@ -1,8 +1,10 @@
 [CmdletBinding()]
-param()
+param(
+  [string]$CanonicalProjectRoot
+)
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$projectRoot = if ($CanonicalProjectRoot) { [IO.Path]::GetFullPath($CanonicalProjectRoot) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 $canonicalData = [IO.Path]::GetFullPath((Join-Path $projectRoot '.data\postgres'))
 $identityPath = Join-Path (Split-Path $canonicalData -Parent) 'andalucia-store-identity.json'
 $markerPath = Join-Path $canonicalData 'postmaster.pid'

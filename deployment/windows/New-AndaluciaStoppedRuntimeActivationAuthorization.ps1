@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory=$true)][string]$ProjectRoot,
+  [string]$SourceRoot,
   [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ExpectedSha,
   [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-fA-F]{32}$')][string]$RecoveryAuthorizationId,
   [string]$LoginIdentifier
@@ -8,6 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
+$source = if ($SourceRoot) { (Resolve-Path -LiteralPath $SourceRoot -ErrorAction Stop).Path } else { $root }
 if ([string]::IsNullOrWhiteSpace($LoginIdentifier)) { $LoginIdentifier = Read-Host 'Manager username or email' }
 $securePassword = Read-Host 'Manager password' -AsSecureString
 $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
@@ -17,10 +19,10 @@ try {
   $nativeControl = Join-Path $PSScriptRoot 'Invoke-AndaluciaNativeJsonControl.ps1'
   $node = (Get-Command node.exe -ErrorAction Stop).Source
   $tsx = Join-Path $root 'node_modules\tsx\dist\cli.mjs'
-  $control = Join-Path $root 'server\requested-backup-activation-control.ts'
+  $control = Join-Path $source 'server\requested-backup-activation-control.ts'
   if (-not (Test-Path -LiteralPath $nativeControl -PathType Leaf) -or -not (Test-Path -LiteralPath $tsx -PathType Leaf) -or -not (Test-Path -LiteralPath $control -PathType Leaf)) { throw 'STOPPED_MAIN_ACTIVATION_CONTROL_UNAVAILABLE' }
   . $nativeControl
-  $output = Invoke-AndaluciaNativeJsonControl -ExecutablePath $node -ArgumentList @($tsx,$control,'prepare-stopped-main-activation','--project-root',$root,'--expected-sha',$ExpectedSha.ToLowerInvariant(),'--recovery-authorization-id',$RecoveryAuthorizationId.ToLowerInvariant()) -Payload $payload
+  $output = Invoke-AndaluciaNativeJsonControl -ExecutablePath $node -ArgumentList @($tsx,$control,'prepare-stopped-main-activation','--project-root',$root,'--source-root',$source,'--expected-sha',$ExpectedSha.ToLowerInvariant(),'--recovery-authorization-id',$RecoveryAuthorizationId.ToLowerInvariant()) -Payload $payload
   $result = $output | ConvertFrom-Json
   if ($result.state -ne 'BACKUP_VERIFIED' -or $result.authorizationMode -ne 'stopped_main_runtime_activation' -or $result.targetSha -ne $ExpectedSha.ToLowerInvariant() -or $result.schema -ne '028') { throw 'STOPPED_MAIN_ACTIVATION_AUTHORIZATION_NOT_READY' }
   [pscustomobject]@{ AuthorizationId=$result.authorizationId; State=$result.state; SourceSha=$result.targetSha; BackupId=$result.backupId; Schema=$result.schema; ExpiresAt=$result.expiresAt }
