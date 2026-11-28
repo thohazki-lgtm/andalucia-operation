@@ -1,0 +1,10 @@
+{
+  "version": "andalucia-stopped-main-successor-registration-v1",
+  "previousSha": "0681451ebcad75866338d4d0d8793f2f2f407661",
+  "reviewedHeadSha": "1d08e4bba5539af6756dcc36ecf5808a2e7bddd6",
+  "pullRequest": 123,
+  "implementationChangedFiles": [
+    "server/requested-backup-activation-control.ts",
+    "server/requested-backup-activation-security.test.mjs"
+  ]
+}
