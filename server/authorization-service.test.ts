@@ -50,8 +50,9 @@ try {
   assert.equal(ownerPrincipal.userId, owner.userId); assert.equal(ownerPrincipal.isOwner, true)
   assert.notEqual((await auth.principalForToken(managerSession.token))?.isOwner, true)
   const roles = await authorization.roles(); const permissions = await authorization.permissions()
-  assert.equal(roles.length, 5); assert.equal(permissions.length, 28)
+  assert.equal(roles.length, 5); assert.equal(permissions.length, 37)
   assert(permissions.some(permission => permission.key === 'manage_timesheets'))
+  assert(permissions.some(permission => permission.key === 'view_staff_dashboard'))
   await assert.rejects(() => db.query("update authorization_roles set role_key='renamed_owner' where role_key='owner'"), /immutable/i)
   await assert.rejects(() => db.query("update authorization_permissions set permission_key='renamed_permission' where permission_key='manage_platform'"), /immutable/i)
 
@@ -62,6 +63,9 @@ try {
   const employee = await auth.createAccount({ identifier: 'employee.self', displayName: 'Employee Self', password: 'EmployeePassword2026', staffId }, ownerActor)
   await authorization.assignRole(employee.userId, 'employee_self_service', ownerActor); await authorization.assignOutlet(employee.userId, andaluciaId, ownerActor)
   const employeeSession = await auth.login('employee.self', 'EmployeePassword2026'); const employeePrincipal = (await auth.principalForToken(employeeSession.token))!
+  assert(employeePrincipal.permissionKeys.includes('view_staff_dashboard'))
+  assert(employeePrincipal.permissionKeys.includes('view_own_earnings'))
+  assert(!employeePrincipal.permissionKeys.includes('manage_staff'))
   await requireOwnWorkforcePermission(authorization, employeePrincipal, 'view_own_roster', andaluciaId, staffId)
   await assert.rejects(() => requireOwnWorkforcePermission(authorization, employeePrincipal, 'view_own_roster', andaluciaId, otherStaffId), (error: unknown) => error instanceof AuthorizationError && error.code === 'FORBIDDEN')
   await assert.rejects(() => authorization.requireOutletPermission(employeePrincipal, 'manage_duty_roster', andaluciaId), (error: unknown) => error instanceof AuthorizationError && error.code === 'INSUFFICIENT_PERMISSION')
@@ -77,5 +81,5 @@ try {
   const events = await db.query<any>("select event_type,user_id,actor_user_id,details from auth_security_events where event_type in ('role_assigned','owner_promoted','outlet_scope_assigned','authorization_denied')")
   assert(events.rows.some(row => row.event_type === 'owner_promoted' && row.user_id === owner.userId && row.actor_user_id === owner.userId))
   assert(events.rows.some(row => row.event_type === 'authorization_denied'))
-  console.log(JSON.stringify({ rolesSeeded: 5, permissionsSeeded: 28, employeeSelfServiceUnassignedByDefault: true, employeeOwnStaffAllowed: true, crossEmployeeDenied: true, employeeRosterManagementDenied: true, ownerPromotionIdempotent: true, ownerGlobalWithoutOutletRows: true, outletManagerAndaluciaAllowed: true, manipulatedOutletDenied: true, viewerMutationDenied: true, operationalApprovalDenied: true, lastOwnerRemovalBlocked: true, trustedClaims: true, authorizationAudit: true, isolatedBaselineWorkflow: true }, null, 2))
+  console.log(JSON.stringify({ rolesSeeded: 5, permissionsSeeded: 37, employeeSelfServiceUnassignedByDefault: true, employeeOwnStaffAllowed: true, crossEmployeeDenied: true, employeeRosterManagementDenied: true, ownerPromotionIdempotent: true, ownerGlobalWithoutOutletRows: true, outletManagerAndaluciaAllowed: true, manipulatedOutletDenied: true, viewerMutationDenied: true, operationalApprovalDenied: true, lastOwnerRemovalBlocked: true, trustedClaims: true, authorizationAudit: true, isolatedBaselineWorkflow: true }, null, 2))
 } finally { await db.close(); await rm(folder, { recursive: true, force: true }) }

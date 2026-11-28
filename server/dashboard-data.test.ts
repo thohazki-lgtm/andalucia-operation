@@ -152,6 +152,7 @@ assert.match(appSource, /style=\{!hasCurrentData && loadingMinHeight \? \{ minHe
 assert.match(appSource, /new ResizeObserver/, 'Dashboard must refresh its stored stable height when responsive content geometry changes')
 assert.match(appSource, /className="dashboard-card-action" onClick=\{onOccasions\}>View occasions<\/ActionButton>/, 'Guest Occasions must link to its operational source through the shared action system')
 assert.match(appSource, /trainingApi\.list\(\)/, 'Dashboard must use the existing Training API')
+assert.match(appSource, /staffAccessApi\.snapshot\(date\)/, 'Staff Dashboard must use the employee-filtered API without changing its cards')
 assert.match(appSource, /<p className="eyebrow">DAILY TRAINING<\/p>/, 'Dashboard must present Daily Training')
 assert.match(appSource, /className="dashboard-card-action" onClick=\{onTraining\}>View training<\/ActionButton>/, 'Daily Training must link to the existing Training module through the shared action system')
 assert.match(appSource, /UNASSIGNED · \{unassigned\.length\}/, 'Team Today must expose unassigned staff separately')
