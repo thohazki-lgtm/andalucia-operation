@@ -235,10 +235,24 @@ const stoppedMainSuccessorFixture = async () => {
 // identify itself without a circular merge hash or a broad future-source allowlist.
 {
   const transitions = reviewedStoppedMainSourceSuccessor.transitions
-  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116, 117, 118, 119, 120])
+  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115, 116, 117, 118, 119, 120, 121, 122])
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions[0].targetSha), 'reviewed-transition')
   assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions.at(-1).targetSha), 'reviewed-successor')
+  assert.deepEqual(transitions.at(-2), {
+    previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+    targetSha: 'a90eb5ff6706b49f65f6b4baf9d9ec6772d6515a',
+    reviewedHeadSha: '9955a1317410a3076ffa94749266b9efadf651e5',
+    pullRequest: 121,
+    changedFiles: ['deployment/approvals/stopped-main-successor-staff-phase2.json', 'server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
+  })
   assert.deepEqual(transitions.at(-1), {
+    previousSha: 'a90eb5ff6706b49f65f6b4baf9d9ec6772d6515a',
+    targetSha: '0681451ebcad75866338d4d0d8793f2f2f407661',
+    reviewedHeadSha: '64898f2eac554b72c6df9fc2bc9ad4ab3b707cad',
+    pullRequest: 122,
+    changedFiles: ['server/migration-store.ts', 'server/migration-tooling.test.ts'],
+  })
+  assert.deepEqual(transitions.at(-3), {
     previousSha: 'ffd2e6598dc0a1c9c7f587c1bed5433e43a518ee',
     targetSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
     reviewedHeadSha: 'cbfc4d2d226be71c6e5f4bb79c7faaae45c25b20',
@@ -246,8 +260,8 @@ const stoppedMainSuccessorFixture = async () => {
     changedFiles: ['server/authorization-service.test.ts', 'server/authorization-service.ts', 'server/dashboard-data.test.ts', 'server/index.ts', 'server/staff-access-api-security.test.ts', 'server/staff-access-policy.test.ts', 'server/staff-access-policy.ts', 'server/staff-module-access.test.ts', 'src/App.tsx', 'src/api.ts', 'src/domain.ts', 'src/module-access.ts', 'src/staff-access.tsx', 'src/styles.css'],
   })
   assert.deepEqual(reviewedStoppedMainSourceSuccessor.registration, {
-    previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
-    evidencePath: 'deployment/approvals/stopped-main-successor-staff-phase2.json',
+    previousSha: '0681451ebcad75866338d4d0d8793f2f2f407661',
+    evidencePath: 'deployment/approvals/stopped-main-successor-migration-009.json',
     implementationChangedFiles: ['server/requested-backup-activation-control.ts', 'server/requested-backup-activation-security.test.mjs'],
   })
   assert.equal([...transitions.flatMap(value => value.changedFiles), reviewedStoppedMainSourceSuccessor.registration.evidencePath].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)

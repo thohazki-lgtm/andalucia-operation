@@ -141,10 +141,31 @@ export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSucces
         'src/styles.css',
       ],
     },
+    {
+      previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
+      targetSha: 'a90eb5ff6706b49f65f6b4baf9d9ec6772d6515a',
+      reviewedHeadSha: '9955a1317410a3076ffa94749266b9efadf651e5',
+      pullRequest: 121,
+      changedFiles: [
+        'deployment/approvals/stopped-main-successor-staff-phase2.json',
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
+    {
+      previousSha: 'a90eb5ff6706b49f65f6b4baf9d9ec6772d6515a',
+      targetSha: '0681451ebcad75866338d4d0d8793f2f2f407661',
+      reviewedHeadSha: '64898f2eac554b72c6df9fc2bc9ad4ab3b707cad',
+      pullRequest: 122,
+      changedFiles: [
+        'server/migration-store.ts',
+        'server/migration-tooling.test.ts',
+      ],
+    },
   ],
   registration: {
-    previousSha: '2f0a5b6eff7b7ba79e9c49e80635a14751b672d7',
-    evidencePath: 'deployment/approvals/stopped-main-successor-staff-phase2.json',
+    previousSha: '0681451ebcad75866338d4d0d8793f2f2f407661',
+    evidencePath: 'deployment/approvals/stopped-main-successor-migration-009.json',
     implementationChangedFiles: [
       'server/requested-backup-activation-control.ts',
       'server/requested-backup-activation-security.test.mjs',
