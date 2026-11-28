@@ -12,7 +12,11 @@ const liveStore = resolve(projectRoot, '.data/postgres')
 const migrationsDirectory = resolve(projectRoot, 'database/migrations')
 const actorSource = 'versioned migration tooling'
 const foundationRoleDefinitionsV009 = roleDefinitions.filter(role => role.key !== 'employee_self_service')
-const postFoundationPermissions = new Set(['view_own_roster','view_own_timesheet','edit_own_timesheet','confirm_own_timesheet_days','submit_own_timesheet_month','manage_timesheets'])
+const postFoundationPermissions = new Set([
+  'view_own_roster', 'view_own_timesheet', 'edit_own_timesheet', 'confirm_own_timesheet_days', 'submit_own_timesheet_month', 'manage_timesheets',
+  'view_staff_dashboard', 'view_staff_directory', 'view_own_leave', 'view_staff_training', 'view_service_bookings',
+  'view_guest_occasions', 'view_own_earnings', 'view_maintenance', 'view_staff_reports'
+])
 const foundationPermissionDefinitionsV009 = permissionDefinitions.filter(permission => !postFoundationPermissions.has(permission.key))
 const foundationRolePermissionsV009 = Object.fromEntries(Object.entries(initialRolePermissions).filter(([roleKey]) => roleKey !== 'employee_self_service').map(([roleKey, permissions]) => [roleKey, permissions.filter(permission => !postFoundationPermissions.has(permission))]))
 const operationalTables = [

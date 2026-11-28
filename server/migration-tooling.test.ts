@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
-import { liveStore, migrationStatus, requireMigrationDataDirectory, runMigrations } from './migration-store.js'
+import { liveStore, migrationStatus, requireMigrationDataDirectory, reviewedMigrationSet, runMigrations } from './migration-store.js'
 import { StaffRepository } from './staff-repository.js'
 
 const previous = process.env.ANDALUCIA_MIGRATION_DATA_DIR
@@ -28,11 +28,21 @@ try {
   const path = join(folder, 'postgres')
   const fresh = new PGlite(path)
   try {
+    const historicalMigration009Checksum = '4c01120934e27e5392561404f73118eff8716e5ae705c4f785afb2a8f8c40d04'
+    const reviewed009 = (await reviewedMigrationSet()).versions.find(item => item.version === '009')
+    assert.equal(reviewed009?.source, 'code:foundation-reference-data')
+    assert.equal(reviewed009?.checksum, historicalMigration009Checksum)
     await fresh.exec(await readFile('database/schema.sql', 'utf8'))
     const incompatible = new StaffRepository(path, fresh)
     await assert.rejects(incompatible.assertCompatibleSchema(), /DATABASE_MIGRATION_REQUIRED/)
     await runMigrations(incompatible.getDatabase())
     await incompatible.assertCompatibleSchema()
+    const applied009 = (await migrationStatus(fresh)).migrations.find(item => item.version === '009')
+    assert.equal(applied009?.checksum, historicalMigration009Checksum)
+    assert.equal(applied009?.checksumMatches, true)
+    await runMigrations(fresh)
+    await fresh.query("update schema_migrations set checksum='altered-migration-009' where version='009'")
+    await assert.rejects(runMigrations(fresh), /MIGRATION_CHECKSUM_MISMATCH:009/)
   } finally { await fresh.close() }
 } finally { await rm(folder, { recursive: true, force: true }) }
 console.log('migration tooling guards, transactional rollback, and runtime compatibility checks passed')
