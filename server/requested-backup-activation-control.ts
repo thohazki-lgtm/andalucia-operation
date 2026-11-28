@@ -14,34 +14,63 @@ const git = (root: string, ...args: string[]) => execFileSync('git', ['-C', root
 const requestBinding = (request: any) => sha256(JSON.stringify({ id: request.id, category: request.category, requestedAt: request.requestedAt, requestedBy: request.requestedBy, instruction: request.instruction }))
 const fail = (code: string): never => { throw new Error(code) }
 
-export type ReviewedStoppedMainSourceSuccessor = {
+export type ReviewedStoppedMainSourceTransition = {
   previousSha: string
   targetSha: string
+  reviewedHeadSha: string
+  pullRequest: number
   changedFiles: readonly string[]
-  activationChangedFiles: readonly string[]
+}
+
+export type ReviewedStoppedMainSourceSuccessor = {
+  recoverySha: string
+  transitions: readonly ReviewedStoppedMainSourceTransition[]
 }
 
 export const reviewedStoppedMainSourceSuccessor: ReviewedStoppedMainSourceSuccessor = {
-  previousSha: '556fac61b957956cf0f4695c88c24bb13f280753',
-  targetSha: '2e7e7775bae109446ea01a40adcddf5d690e25c4',
-  changedFiles: [
-    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
-    'server/runtime-schema-activation-control.ts',
-    'server/schema-028-activation-control.test.ts',
-  ],
-  activationChangedFiles: [
-    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
-    'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
-    'deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1',
-    'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
-    'deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1',
-    'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
-    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
-    'server/database-scheduler.test.ts',
-    'server/requested-backup-activation-control.ts',
-    'server/requested-backup-activation-security.test.mjs',
+  recoverySha: '556fac61b957956cf0f4695c88c24bb13f280753',
+  transitions: [
+    {
+      previousSha: '556fac61b957956cf0f4695c88c24bb13f280753',
+      targetSha: '2e7e7775bae109446ea01a40adcddf5d690e25c4',
+      reviewedHeadSha: '872e0862286688fd3bc24c3fd507cff12042e4cc',
+      pullRequest: 113,
+      changedFiles: [
+        'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
+        'server/runtime-schema-activation-control.ts',
+        'server/schema-028-activation-control.test.ts',
+      ],
+    },
+    {
+      previousSha: '2e7e7775bae109446ea01a40adcddf5d690e25c4',
+      targetSha: 'cb09d72a0474136e13299c775ccd8bf414978cc3',
+      reviewedHeadSha: 'c5ebc6483c05fad685a934fd256837bc2eb8d2d5',
+      pullRequest: 114,
+      changedFiles: [
+        'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
+        'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
+        'deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1',
+        'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
+        'deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1',
+        'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
+        'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
+        'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
+        'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
+        'server/database-scheduler.test.ts',
+        'server/requested-backup-activation-control.ts',
+        'server/requested-backup-activation-security.test.mjs',
+      ],
+    },
+    {
+      previousSha: 'cb09d72a0474136e13299c775ccd8bf414978cc3',
+      targetSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
+      reviewedHeadSha: '3517e7e194e48aba5b96665a9b68bc1fedd4e171',
+      pullRequest: 115,
+      changedFiles: [
+        'deployment/windows/Install-AndaluciaWindowsShutdownService.ps1',
+        'server/windows-shutdown-watcher-security.test.mjs',
+      ],
+    },
   ],
 }
 
@@ -52,19 +81,30 @@ export const assertReviewedStoppedMainSourceSuccessor = (
   reviewed = reviewedStoppedMainSourceSuccessor,
 ) => {
   if (recoverySourceSha === approvedSourceSha) return 'exact' as const
-  if (recoverySourceSha !== reviewed.previousSha) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+  if (recoverySourceSha !== reviewed.recoverySha) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
   const assertAncestry = (previous: string, target: string) => { try { execFileSync('git', ['-C', projectRoot, 'merge-base', '--is-ancestor', previous, target], { stdio: 'ignore' }) } catch { fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID') } }
   const assertExactChangedFiles = (previous: string, target: string, expected: readonly string[]) => {
     const changed = execFileSync('git', ['-C', projectRoot, 'diff', '--name-only', `${previous}..${target}`], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
     const allowed = new Set(expected)
     if (changed.length !== allowed.size || changed.some(path => !allowed.has(path))) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
   }
-  assertAncestry(recoverySourceSha, reviewed.targetSha)
-  assertExactChangedFiles(recoverySourceSha, reviewed.targetSha, reviewed.changedFiles)
-  if (approvedSourceSha === reviewed.targetSha) return 'reviewed-transition' as const
-  assertAncestry(reviewed.targetSha, approvedSourceSha)
-  assertExactChangedFiles(reviewed.targetSha, approvedSourceSha, reviewed.activationChangedFiles)
-  return 'reviewed-successor' as const
+  let previous = recoverySourceSha
+  for (let index = 0; index < reviewed.transitions.length; index += 1) {
+    const transition = reviewed.transitions[index]
+    if (transition.previousSha !== previous || !Number.isSafeInteger(transition.pullRequest) || transition.pullRequest < 1) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+    assertAncestry(transition.previousSha, transition.reviewedHeadSha)
+    assertAncestry(transition.previousSha, transition.targetSha)
+    const parents = git(projectRoot, 'rev-list', '--parents', '-n', '1', transition.targetSha).split(/\s+/)
+    if (parents.length !== 3 || parents[0] !== transition.targetSha || parents[1] !== transition.previousSha || parents[2] !== transition.reviewedHeadSha) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+    const targetTree = git(projectRoot, 'rev-parse', `${transition.targetSha}^{tree}`)
+    const reviewedTree = git(projectRoot, 'rev-parse', `${transition.reviewedHeadSha}^{tree}`)
+    if (targetTree !== reviewedTree) fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
+    assertExactChangedFiles(transition.previousSha, transition.reviewedHeadSha, transition.changedFiles)
+    assertExactChangedFiles(transition.previousSha, transition.targetSha, transition.changedFiles)
+    previous = transition.targetSha
+    if (approvedSourceSha === previous) return index === 0 ? 'reviewed-transition' as const : 'reviewed-successor' as const
+  }
+  fail('STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID')
 }
 
 export class RequestedBackupActivationControl {

@@ -193,11 +193,17 @@ const stoppedMainSuccessorFixture = async () => {
   await writeFile(join(root, '.gitignore'), '.data\n.runtime\n.backups\n')
   await writeFile(join(root, 'historical.txt'), 'healthy recovery source'); fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'healthy recovery source')
   const previousSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  fixtureGit(root, 'checkout', '-b', 'reviewed-source')
   await writeFile(join(root, 'reviewed-a.txt'), 'reviewed successor a'); await writeFile(join(root, 'reviewed-b.txt'), 'reviewed successor b')
   fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'reviewed source successor')
+  const reviewedHeadSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  fixtureGit(root, 'checkout', 'main'); fixtureGit(root, 'merge', '--no-ff', 'reviewed-source', '-m', 'merge reviewed source successor')
   const reviewedTargetSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  fixtureGit(root, 'checkout', '-b', 'activation-source')
   await writeFile(join(root, 'activation-a.txt'), 'activation correction a'); await writeFile(join(root, 'activation-b.txt'), 'activation correction b')
   fixtureGit(root, 'add', '.'); fixtureGit(root, 'commit', '-m', 'activation source binding correction')
+  const activationHeadSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase()
+  fixtureGit(root, 'checkout', 'main'); fixtureGit(root, 'merge', '--no-ff', 'activation-source', '-m', 'merge activation source binding correction')
   const targetSha = fixtureGit(root, 'rev-parse', 'HEAD').toLowerCase(); fixtureGit(root, 'update-ref', 'refs/remotes/origin/main', targetSha)
   const sourceRoot = join(root, '.runtime', 'live-main-source'); await mkdir(join(root, '.runtime'), { recursive: true }); fixtureGit(root, 'worktree', 'add', '--detach', sourceRoot, previousSha)
   const canonicalDirectory = join(root, '.data', 'postgres'); await mkdir(canonicalDirectory, { recursive: true })
@@ -212,36 +218,29 @@ const stoppedMainSuccessorFixture = async () => {
   const recovery = await coordinator.createCanonicalMaintenanceAuthorization({ authorizationMode: 'stale_marker_recovery', previousLiveSha: previousSha, targetSha: previousSha, targetBranch: 'main', approvalManifestSha256: '1'.repeat(64), canonicalIdentitySha256: identitySha, canonicalStoreId: 'andalucia-canonical-live', schema: '028', databaseStatus: 'HEALTHY', migrationRequired: false, recoveryRequired: false, requestId: `db3-successor-fixture:${previousSha}`, requestSha256: '2'.repeat(64), requestedBy: { userId: 'manager-1', displayName: 'Manager' }, backupId, historicalRuntimeEvidenceSha256: '3'.repeat(64), schemaEvidenceSha256: '4'.repeat(64), expiresAt: new Date(Date.now() + 60_000).toISOString() }, 'RECOVERY_AUTHORIZED')
   await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_AUTHORIZED'], 'RECOVERY_CLAIMED')
   await coordinator.transitionCanonicalMaintenanceAuthorization(recovery.authorizationId, ['RECOVERY_CLAIMED'], 'RECOVERY_HEALTHY')
-  const reviewedSourceSuccessor = { previousSha, targetSha: reviewedTargetSha, changedFiles: ['reviewed-a.txt', 'reviewed-b.txt'], activationChangedFiles: ['activation-a.txt', 'activation-b.txt'] }
+  const reviewedSourceSuccessor = { recoverySha: previousSha, transitions: [
+    { previousSha, targetSha: reviewedTargetSha, reviewedHeadSha, pullRequest: 1, changedFiles: ['reviewed-a.txt', 'reviewed-b.txt'] },
+    { previousSha: reviewedTargetSha, targetSha, reviewedHeadSha: activationHeadSha, pullRequest: 2, changedFiles: ['activation-a.txt', 'activation-b.txt'] },
+  ] }
   const dependencies = { portsClosed: async () => true, authenticate: async () => ({ userId: 'manager-1', displayName: 'Manager' }), reviewedSourceSuccessor }
-  return { root, fixtureGit, previousSha, reviewedTargetSha, targetSha, sourceRoot, canonicalDirectory, identityPath, backupFolder, coordinator, recovery, reviewedSourceSuccessor, dependencies }
+  return { root, fixtureGit, previousSha, reviewedHeadSha, reviewedTargetSha, activationHeadSha, targetSha, sourceRoot, canonicalDirectory, identityPath, backupFolder, coordinator, recovery, reviewedSourceSuccessor, dependencies }
 }
 
-// The production exception is pinned to the exact reviewed transition and excludes data/migration paths.
+// The production exception is pinned to each normal PR merge, its reviewed head tree,
+// exact parents and exact changed-file set, and excludes data/migration paths.
 {
-  assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, reviewedStoppedMainSourceSuccessor.targetSha), 'reviewed-transition')
-  assert.deepEqual(reviewedStoppedMainSourceSuccessor.activationChangedFiles, [
-    'deployment/windows/Invoke-AndaluciaApprovedUiActivation.ps1',
-    'deployment/windows/Invoke-AndaluciaDatabaseJob.ps1',
-    'deployment/windows/Invoke-AndaluciaRequestedBackupUiActivation.ps1',
-    'deployment/windows/Install-AndaluciaDatabaseScheduler.ps1',
-    'deployment/windows/New-AndaluciaStoppedRuntimeActivationAuthorization.ps1',
-    'deployment/windows/Resolve-AndaluciaApprovedSource.ps1',
-    'deployment/windows/Start-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Stop-AndaluciaGuardedApplication.ps1',
-    'deployment/windows/Test-AndaluciaGuardedUiActivation.ps1',
-    'server/database-scheduler.test.ts',
-    'server/requested-backup-activation-control.ts',
-    'server/requested-backup-activation-security.test.mjs',
-  ])
-  assert.equal([...reviewedStoppedMainSourceSuccessor.changedFiles, ...reviewedStoppedMainSourceSuccessor.activationChangedFiles].some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
-  const checkpointSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase()
-  if (checkpointSha !== reviewedStoppedMainSourceSuccessor.targetSha) {
-    const trackedChanges = execFileSync('git', ['diff', '--name-only', reviewedStoppedMainSourceSuccessor.targetSha], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
-    const hasTrackedWorktreeChanges = Boolean(execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim())
-    if (hasTrackedWorktreeChanges) assert.deepEqual(trackedChanges.sort(), [...reviewedStoppedMainSourceSuccessor.activationChangedFiles].sort())
-    else assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.previousSha, checkpointSha), 'reviewed-successor')
-  }
+  const transitions = reviewedStoppedMainSourceSuccessor.transitions
+  assert.deepEqual(transitions.map(value => value.pullRequest), [113, 114, 115])
+  assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions[0].targetSha), 'reviewed-transition')
+  assert.equal(assertReviewedStoppedMainSourceSuccessor(resolve('.'), reviewedStoppedMainSourceSuccessor.recoverySha, transitions.at(-1).targetSha), 'reviewed-successor')
+  assert.deepEqual(transitions.at(-1), {
+    previousSha: 'cb09d72a0474136e13299c775ccd8bf414978cc3',
+    targetSha: '7b4961cf30797f49b7d2e68aeea8409629b3bfba',
+    reviewedHeadSha: '3517e7e194e48aba5b96665a9b68bc1fedd4e171',
+    pullRequest: 115,
+    changedFiles: ['deployment/windows/Install-AndaluciaWindowsShutdownService.ps1', 'server/windows-shutdown-watcher-security.test.mjs'],
+  })
+  assert.equal(transitions.flatMap(value => value.changedFiles).some(path => /(^|\/)(\.data|migrations?|backups?)(\/|$)/i.test(path)), false)
 }
 
 // A reviewed source successor keeps the immutable recovery SHA and binds the new target before a single atomic claim.
@@ -292,7 +291,11 @@ const stoppedMainSuccessorFixture = async () => {
 // Wrong ancestry, later/unrelated successors, journal tampering, identity drift, and invalid backups fail closed.
 {
   const value = await stoppedMainSuccessorFixture()
-  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.targetSha, value.previousSha, { previousSha: value.targetSha, targetSha: value.previousSha, changedFiles: value.reviewedSourceSuccessor.changedFiles, activationChangedFiles: value.reviewedSourceSuccessor.activationChangedFiles }), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.targetSha, value.previousSha, { recoverySha: value.targetSha, transitions: [...value.reviewedSourceSuccessor.transitions].reverse() }), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  const forgedReview = structuredClone(value.reviewedSourceSuccessor); forgedReview.transitions[1].reviewedHeadSha = value.reviewedHeadSha
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, value.targetSha, forgedReview), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
+  const widenedFiles = structuredClone(value.reviewedSourceSuccessor); widenedFiles.transitions[1].changedFiles.push('unreviewed.txt')
+  assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, value.targetSha, widenedFiles), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
   await writeFile(join(value.root, 'unreviewed.txt'), 'unreviewed successor'); value.fixtureGit(value.root, 'add', 'unreviewed.txt'); value.fixtureGit(value.root, 'commit', '-m', 'unreviewed later successor')
   const laterSha = value.fixtureGit(value.root, 'rev-parse', 'HEAD').toLowerCase()
   assert.throws(() => assertReviewedStoppedMainSourceSuccessor(value.root, value.previousSha, laterSha, value.reviewedSourceSuccessor), /STOPPED_MAIN_ACTIVATION_SOURCE_SUCCESSOR_INVALID/)
